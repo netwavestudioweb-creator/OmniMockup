@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Gradient d'arrière-plan premium Violet Royal -> Indigo Électrique -->
+    <linearGradient id="omni-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="50%" stop-color="#6D28D9" />
+      <stop offset="100%" stop-color="#4C1D95" />
+    </linearGradient>
+
+    <!-- Gradient éclat de verre (Glassmorphism highlight) -->
+    <linearGradient id="omni-glass-top" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#EDE9FE" stop-opacity="0.8" />
+    </linearGradient>
+
+    <linearGradient id="omni-glass-mid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C4B5FD" stop-opacity="0.65" />
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0.4" />
+    </linearGradient>
+
+    <!-- Gradient Étoile IA Gemini (Or & Ambre vibrant) -->
+    <linearGradient id="omni-spark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+
+    <!-- Ombre portée douce -->
+    <filter id="shadow-drop" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2.5" stdDeviation="2.5" flood-color="#1E1035" flood-opacity="0.45" />
+    </filter>
+
+    <filter id="glow-spark" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="1.5" flood-color="#FBBF24" flood-opacity="0.75" />
+    </filter>
+  </defs>
+
+  <!-- Forme de base (Squircle Apple-like moderne avec léger biseau) -->
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#omni-bg)" />
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="none" stroke="#A78BFA" stroke-width="1.2" stroke-opacity="0.35" />
+
+  <!-- Couche 1 : Base inférieure isométrique (mockup frame fond) -->
+  <path
+    d="M 16 38 L 32 46 L 48 38 L 32 30 Z"
+    fill="#31135E"
+    fill-opacity="0.6"
+  />
+
+  <!-- Couche 2 : Couche médiane en verre translucide (Layer flottant 2) -->
+  <g filter="url(#shadow-drop)">
+    <path
+      d="M 16 32 L 32 40 L 48 32 L 32 24 Z"
+      fill="url(#omni-glass-mid)"
+      stroke="#DDD6FE"
+      stroke-width="1"
+      stroke-opacity="0.5"
+    />
+  </g>
+
+  <!-- Couche 3 : Écran principal surélevé avec fenêtre de mockup (Browser/Laptop header) -->
+  <g filter="url(#shadow-drop)">
+    <!-- Carte / Mockup supérieur en perspective -->
+    <path
+      d="M 16 26 L 32 34 L 48 26 L 32 18 Z"
+      fill="url(#omni-glass-top)"
+    />
+
+    <!-- Grille de contenu stylisée du mockup intérieur -->
+    <!-- Barre supérieure de navigateur / mockup -->
+    <path
+      d="M 21 24.5 L 32 30 L 43 24.5"
+      stroke="#7C3AED"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-opacity="0.85"
+    />
+
+    <!-- Point caméra / bouton studio mockup -->
+    <circle cx="25" cy="23.5" r="0.9" fill="#8B5CF6" />
+    <circle cx="28" cy="25" r="0.9" fill="#8B5CF6" />
+  </g>
+
+  <!-- Étoile d'intelligence artificielle Gemini (4 branches dynamiques en haut à droite) -->
+  <g filter="url(#glow-spark)">
+    <path
+      d="M 47 10 Q 47 15 52 15 Q 47 15 47 20 Q 47 15 42 15 Q 47 15 47 10 Z"
+      fill="url(#omni-spark)"
+    />
+    <circle cx="47" cy="15" r="0.8" fill="#FFFFFF" />
+  </g>
+
+  <!-- Petite particule IA secondaire -->
+  <circle cx="15" cy="17" r="1.2" fill="#C4B5FD" fill-opacity="0.8" />
+</svg>

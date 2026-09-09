@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <defs>
+    <linearGradient id="apple-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="50%" stop-color="#6D28D9" />
+      <stop offset="100%" stop-color="#4C1D95" />
+    </linearGradient>
+
+    <linearGradient id="apple-glass-top" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.98" />
+      <stop offset="100%" stop-color="#EDE9FE" stop-opacity="0.85" />
+    </linearGradient>
+
+    <linearGradient id="apple-glass-mid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C4B5FD" stop-opacity="0.7" />
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0.45" />
+    </linearGradient>
+
+    <linearGradient id="apple-spark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+
+    <filter id="apple-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#1E1035" flood-opacity="0.4" />
+    </filter>
+
+    <filter id="apple-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#FBBF24" flood-opacity="0.8" />
+    </filter>
+  </defs>
+
+  <rect width="180" height="180" rx="42" fill="url(#apple-bg)" />
+  <rect width="180" height="180" rx="42" fill="none" stroke="#DDD6FE" stroke-width="2.5" stroke-opacity="0.25" />
+
+  <!-- Couche 1 : Base inférieure isométrique -->
+  <path
+    d="M 45 108 L 90 130 L 135 108 L 90 85 Z"
+    fill="#31135E"
+    fill-opacity="0.65"
+  />
+
+  <!-- Couche 2 : Verre intermédiaire -->
+  <g filter="url(#apple-shadow)">
+    <path
+      d="M 45 90 L 90 112 L 135 90 L 90 68 Z"
+      fill="url(#apple-glass-mid)"
+      stroke="#DDD6FE"
+      stroke-width="2.5"
+      stroke-opacity="0.6"
+    />
+  </g>
+
+  <!-- Couche 3 : Écran principal surélevé -->
+  <g filter="url(#apple-shadow)">
+    <path
+      d="M 45 72 L 90 94 L 135 72 L 90 50 Z"
+      fill="url(#apple-glass-top)"
+      stroke="#FFFFFF"
+      stroke-width="1.5"
+    />
+
+    <!-- Header mockup line -->
+    <path
+      d="M 60 68 L 90 83 L 120 68"
+      stroke="#7C3AED"
+      stroke-width="4"
+      stroke-linecap="round"
+      stroke-opacity="0.9"
+    />
+
+    <circle cx="70" cy="65" r="2.5" fill="#8B5CF6" />
+    <circle cx="78" cy="69" r="2.5" fill="#8B5CF6" />
+  </g>
+
+  <!-- Étoile d'IA Gemini -->
+  <g filter="url(#apple-glow)">
+    <path
+      d="M 132 28 Q 132 42 146 42 Q 132 42 132 56 Q 132 42 118 42 Q 132 42 132 28 Z"
+      fill="url(#apple-spark)"
+    />
+    <circle cx="132" cy="42" r="2.5" fill="#FFFFFF" />
+  </g>
+
+  <!-- Particule brillante -->
+  <circle cx="42" cy="48" r="3.5" fill="#DDD6FE" fill-opacity="0.9" />
+</svg>

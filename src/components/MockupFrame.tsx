@@ -9,6 +9,8 @@ interface MockupFrameProps {
   screenshotBase64: string;
   url: string;
   title?: string;
+  domainName?: string;
+  faviconUrl?: string;
   theme?: DeviceTheme;
   styleVariant?: DeviceStyle;
   cornerRadius?: CornerRadius;
@@ -20,11 +22,29 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
   screenshotBase64,
   url,
   title,
+  domainName,
+  faviconUrl,
   theme = 'light',
   styleVariant = 'default',
   cornerRadius = 'curved',
   onClickImage,
 }) => {
+  // Extraction dynamique du domaine si non fourni
+  const cleanDomain = React.useMemo(() => {
+    if (domainName) return domainName;
+    if (!url) return 'example.com';
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return url;
+    }
+  }, [domainName, url]);
+
+  const faviconSrc = React.useMemo(() => {
+    if (faviconUrl) return faviconUrl;
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(cleanDomain)}&sz=64`;
+  }, [faviconUrl, cleanDomain]);
+
   // Détermination du rayon d'angle
   const radiusClass =
     cornerRadius === 'sharp'
@@ -76,7 +96,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
             <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f] shadow-xs" />
           </div>
 
-          {/* Barre d'adresse URL */}
+          {/* Barre d'adresse URL avec Favicon */}
           <div className="flex-1 max-w-sm mx-3">
             <div
               className={`flex items-center justify-between px-3 py-1 rounded-md text-[11px] font-mono shadow-2xs border transition-colors ${
@@ -87,7 +107,16 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
             >
               <span className="flex items-center gap-1.5 truncate">
                 <Lock className="w-3 h-3 text-emerald-500 shrink-0" />
-                <span className="truncate">{url || 'https://example.com'}</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={faviconSrc}
+                  alt="Favicon"
+                  className="w-3.5 h-3.5 rounded-xs shrink-0 object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+                <span className="truncate font-medium">{cleanDomain}</span>
               </span>
               {url && (
                 <a

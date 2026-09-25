@@ -9,14 +9,16 @@ export type VideoAnimPreset = 'zoomIn' | 'zoomOut' | 'panHorizontal';
 
 export interface SceneConfig {
   aspectRatio: SceneAspectRatio;
-  bgType: 'solid' | 'gradient';
+  bgType: 'solid' | 'gradient' | 'blurred-image';
   bgValue: string;
+  bgPattern?: 'none' | 'grid' | 'dots' | 'mesh' | 'noise';
   bgTransparent?: boolean;
   bgNoise?: boolean;
   mockupType: MockupType;
   deviceTheme?: DeviceTheme;
   deviceStyle?: DeviceStyle;
   cornerRadius?: CornerRadius;
+  layoutMode?: 'single' | 'dual-stacked';
   mockupX: number; // percentage offset -50 to 50
   mockupY: number; // percentage offset -50 to 50
   mockupScale: number; // 40 - 150
@@ -109,6 +111,8 @@ export interface CaptureTargetItem {
 export interface CaptureItemResult {
   url: string;
   title?: string;
+  domainName?: string;
+  faviconUrl?: string;
   success: boolean;
   screenshotBase64?: string;
   error?: string;

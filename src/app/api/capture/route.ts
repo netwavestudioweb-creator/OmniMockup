@@ -91,6 +91,8 @@ export async function POST(req: NextRequest) {
       results.push({
         url: target.url,
         title: target.label || captureRes.pageTitle || target.url,
+        domainName: captureRes.domainName,
+        faviconUrl: captureRes.faviconUrl,
         success: true,
         screenshotBase64: captureRes.screenshotBase64,
         capturedAt: new Date().toISOString(),

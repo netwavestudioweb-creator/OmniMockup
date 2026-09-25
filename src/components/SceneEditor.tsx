@@ -777,6 +777,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             style={{
               background: config.bgTransparent
                 ? 'transparent'
+                : config.bgType === 'blurred-image'
+                ? '#121214'
                 : config.bgValue,
               backgroundImage: config.bgTransparent
                 ? `linear-gradient(45deg, #e4e4e7 25%, transparent 25%), linear-gradient(-45deg, #e4e4e7 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e4e4e7 75%), linear-gradient(-45deg, transparent 75%, #e4e4e7 75%)`
@@ -789,10 +791,44 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               setSelectedLogoId(null);
             }}
           >
-            {/* Grain studio basique */}
-            {config.bgNoise && !config.bgTransparent && (
+            {/* FOND WALLPAPER FLOUTÉ (Style Shots.so / Pika) */}
+            {config.bgType === 'blurred-image' && captureItem.screenshotBase64 && !config.bgTransparent && (
+              <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={captureItem.screenshotBase64}
+                  alt="Blurred Background Wallpaper"
+                  className="w-full h-full object-cover filter blur-3xl brightness-75 saturate-150 scale-125 transition-all duration-500"
+                />
+                <div className="absolute inset-0 bg-black/25" />
+              </div>
+            )}
+
+            {/* OVERLAY MOTIF DE FOND (Grille / Points / Noise / Mesh) */}
+            {config.bgPattern === 'grid' && !config.bgTransparent && (
               <div
-                className="absolute inset-0 pointer-events-none opacity-[0.07] mix-blend-overlay z-10"
+                className="absolute inset-0 pointer-events-none opacity-20 z-5"
+                style={{
+                  backgroundImage: `linear-gradient(to right, rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.4) 1px, transparent 1px)`,
+                  backgroundSize: '28px 28px',
+                }}
+              />
+            )}
+
+            {config.bgPattern === 'dots' && !config.bgTransparent && (
+              <div
+                className="absolute inset-0 pointer-events-none opacity-25 z-5"
+                style={{
+                  backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.5) 1.5px, transparent 1.5px)`,
+                  backgroundSize: '24px 24px',
+                }}
+              />
+            )}
+
+            {/* Grain studio basique */}
+            {(config.bgNoise || config.bgPattern === 'noise') && !config.bgTransparent && (
+              <div
+                className="absolute inset-0 pointer-events-none opacity-[0.08] mix-blend-overlay z-10"
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
                 }}
@@ -861,6 +897,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   screenshotBase64={captureItem.screenshotBase64}
                   url={captureItem.url}
                   title={captureItem.title}
+                  domainName={captureItem.domainName}
+                  faviconUrl={captureItem.faviconUrl}
                   theme={config.deviceTheme}
                   styleVariant={config.deviceStyle}
                   cornerRadius={config.cornerRadius}
@@ -1284,12 +1322,78 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
                   )}
 
-                  {/* Dégradés prédéfinis Apple & Mesh */}
+                  {/* MODE DE FOND : WALLPAPER FLOUTÉ OU DÉGRADÉS */}
+                  <div className="space-y-2 p-3 rounded-2xl bg-sand-50 border border-sand-200">
+                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
+                      Type de Fond
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setConfig((p) => ({ ...p, bgType: 'gradient', bgTransparent: false }))}
+                        className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                          config.bgType === 'gradient' && !config.bgTransparent
+                            ? 'bg-violet-600 text-white border-violet-600 shadow-xs font-bold'
+                            : 'bg-white border-sand-200 text-stone-700 hover:bg-sand-100'
+                        }`}
+                      >
+                        <Palette className="w-3.5 h-3.5" />
+                        <span>Dégradé</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfig((p) => ({ ...p, bgType: 'blurred-image', bgTransparent: false }))}
+                        className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                          config.bgType === 'blurred-image' && !config.bgTransparent
+                            ? 'bg-violet-600 text-white border-violet-600 shadow-xs font-bold'
+                            : 'bg-white border-sand-200 text-stone-700 hover:bg-sand-100'
+                        }`}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Wallpaper Flouté</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* MOTIF D'ARRIÈRE-PLAN (Style Shots.so / Screely) */}
                   {!config.bgTransparent && (
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                          Fonds Apple & Mesh
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
+                        Motifs de Fond Overlay
+                      </label>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[
+                          { id: 'none', label: 'Aucun' },
+                          { id: 'grid', label: 'Grille' },
+                          { id: 'dots', label: 'Points' },
+                          { id: 'noise', label: 'Bruit' },
+                        ].map((pat) => (
+                          <button
+                            key={pat.id}
+                            type="button"
+                            onClick={() =>
+                              setConfig((p) => ({ ...p, bgPattern: pat.id as 'none' | 'grid' | 'dots' | 'noise' }))
+                            }
+                            className={`py-1.5 px-2 rounded-xl border text-[11px] font-semibold text-center transition-all ${
+                              (config.bgPattern || 'none') === pat.id
+                                ? 'bg-violet-600 text-white border-violet-600 font-bold shadow-xs'
+                                : 'bg-sand-50 border-sand-200 text-stone-600 hover:text-stone-900'
+                            }`}
+                          >
+                            {pat.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* FONDS MAGIQUES AUTOMATIQUES EXTRAITS DE LA CAPTURE */}
+                  {autoGradients.length > 0 && !config.bgTransparent && config.bgType === 'gradient' && (
+                    <div className="space-y-2 p-3 rounded-2xl bg-violet-50/50 border border-violet-200">
+                      <div className="flex items-center gap-1.5">
+                        <Wand2 className="w-3.5 h-3.5 text-violet-600" />
+                        <label className="text-xs font-bold text-violet-900 uppercase tracking-wider font-mono">
+                          Fonds Magiques Auto
                         </label>
                       </div>
                       <div className="grid grid-cols-3 gap-2">

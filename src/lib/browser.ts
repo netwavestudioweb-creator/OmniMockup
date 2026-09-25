@@ -15,7 +15,23 @@ export interface WebPageCaptureResult {
   pageSize: { width: number; height: number };
   candidates: ExtractedSectionCandidate[];
   pageTitle: string;
+  domainName: string;
+  faviconUrl: string;
   source: 'playwright' | 'puppeteer' | 'cloud-fallback';
+}
+
+export function extractDomainName(urlStr: string): string {
+  try {
+    const parsed = new URL(urlStr);
+    return parsed.hostname.replace(/^www\./, '');
+  } catch {
+    return urlStr;
+  }
+}
+
+export function getFaviconUrl(urlStr: string): string {
+  const domain = extractDomainName(urlStr);
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
 }
 
 /**
@@ -25,6 +41,9 @@ export interface WebPageCaptureResult {
  * Tier 3 : Microlink Cloud API + HTML Parser (Fallback ultime garanti pour Vercel Serverless)
  */
 export async function captureWebPage(targetUrl: string): Promise<WebPageCaptureResult> {
+  const domainName = extractDomainName(targetUrl);
+  const faviconUrl = getFaviconUrl(targetUrl);
+
   // -------------------------------------------------------------
   // TIER 1 : Playwright (Local / Docker)
   // -------------------------------------------------------------
@@ -53,14 +72,14 @@ export async function captureWebPage(targetUrl: string): Promise<WebPageCaptureR
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
       await page.waitForTimeout(500);
 
-      const pageTitle = (await page.title()) || targetUrl;
+      const pageTitle = (await page.title()) || domainName;
       const screenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 65, fullPage: true });
       const screenshotBase64 = `data:image/jpeg;base64,${screenshotBuffer.toString('base64')}`;
 
       const { candidates, pageSize } = await extractDomSectionsPlaywright(page);
 
       await browser.close();
-      return { screenshotBase64, pageSize, candidates, pageTitle, source: 'playwright' };
+      return { screenshotBase64, pageSize, candidates, pageTitle, domainName, faviconUrl, source: 'playwright' };
     } catch (err) {
       await browser.close().catch(() => {});
       throw err;
@@ -94,7 +113,7 @@ export async function captureWebPage(targetUrl: string): Promise<WebPageCaptureR
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
       await new Promise((r) => setTimeout(r, 500));
 
-      const pageTitle = (await page.title()) || targetUrl;
+      const pageTitle = (await page.title()) || domainName;
       const screenshotBuffer = (await page.screenshot({
         type: 'jpeg',
         quality: 65,
@@ -105,7 +124,7 @@ export async function captureWebPage(targetUrl: string): Promise<WebPageCaptureR
       const { candidates, pageSize } = await extractDomSectionsPuppeteer(page);
 
       await browser.close();
-      return { screenshotBase64, pageSize, candidates, pageTitle, source: 'puppeteer' };
+      return { screenshotBase64, pageSize, candidates, pageTitle, domainName, faviconUrl, source: 'puppeteer' };
     } catch (err) {
       await browser.close().catch(() => {});
       throw err;
@@ -129,8 +148,11 @@ export async function captureWebPage(targetUrl: string): Promise<WebPageCaptureR
 async function captureWebPageCloudFallback(targetUrl: string): Promise<WebPageCaptureResult> {
   console.log('[Capture Engine] Exécution du secours Cloud API pour :', targetUrl);
 
+  const domainName = extractDomainName(targetUrl);
+  const faviconUrl = getFaviconUrl(targetUrl);
+
   let screenshotBase64 = '';
-  let pageTitle = targetUrl;
+  let pageTitle = domainName;
 
   try {
     const microlinkUrl = `https://api.microlink.io/?url=${encodeURIComponent(
@@ -144,7 +166,7 @@ async function captureWebPageCloudFallback(targetUrl: string): Promise<WebPageCa
     if (response.ok) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data: any = await response.json();
-      pageTitle = data?.data?.title || targetUrl;
+      pageTitle = data?.data?.title || domainName;
       const screenshotUrl = data?.data?.screenshot?.url;
 
       if (screenshotUrl) {
@@ -193,6 +215,8 @@ async function captureWebPageCloudFallback(targetUrl: string): Promise<WebPageCa
     pageSize: { width: 1440, height: Math.max(2400, candidates.length * 600) },
     candidates,
     pageTitle,
+    domainName,
+    faviconUrl,
     source: 'cloud-fallback',
   };
 }

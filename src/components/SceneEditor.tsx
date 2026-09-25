@@ -636,7 +636,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               </h3>
               <span className="hidden xs:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 border border-violet-200 text-[10px] sm:text-xs font-semibold">
                 <Sparkle className="w-3 h-3 text-violet-600" />
-                <span>3D Shots Engine</span>
+                <span>OmniMockup 3D Studio</span>
               </span>
             </div>
             <p className="text-[11px] sm:text-xs text-stone-500 hidden sm:block">
@@ -1187,8 +1187,43 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         onClick={() => setConfig((p) => ({ ...p, mockupTiltX: 0, mockupTiltY: 0, mockupRotation: 0 }))}
                         className="text-[10px] font-mono text-violet-600 hover:text-violet-800 font-bold"
                       >
-                        Remettre à plat (0°)
+                        Reset (0°)
                       </button>
+                    </div>
+
+                    {/* RACCOURCIS DE POSES 3D PRÉDÉFINIES */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-mono text-stone-500 font-semibold uppercase">Poses 3D Rapides</span>
+                      <div className="grid grid-cols-4 gap-1">
+                        {[
+                          { label: 'Plat', tx: 0, ty: 0, rot: 0 },
+                          { label: 'Iso G.', tx: 14, ty: -18, rot: -6 },
+                          { label: 'Iso D.', tx: 14, ty: 18, rot: 6 },
+                          { label: 'Hero', tx: -12, ty: 0, rot: 4 },
+                        ].map((pose, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() =>
+                              setConfig((p) => ({
+                                ...p,
+                                mockupTiltX: pose.tx,
+                                mockupTiltY: pose.ty,
+                                mockupRotation: pose.rot,
+                              }))
+                            }
+                            className={`py-1 px-1 rounded-lg border text-[10px] font-semibold text-center transition-all ${
+                              config.mockupTiltX === pose.tx &&
+                              config.mockupTiltY === pose.ty &&
+                              config.mockupRotation === pose.rot
+                                ? 'bg-violet-600 text-white border-violet-600 shadow-xs font-bold'
+                                : 'bg-white border-sand-200 text-stone-600 hover:text-stone-900'
+                            }`}
+                          >
+                            {pose.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="space-y-1.5">

@@ -78,6 +78,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     async function initSession() {
       try {
+        // Vérification d'une session de test locale (mode démo/test)
+        const localTestSession = typeof window !== 'undefined' ? localStorage.getItem('omnimockup_test_session') : null;
+        if (localTestSession) {
+          try {
+            const parsed = JSON.parse(localTestSession);
+            if (mounted && parsed?.user && parsed?.profile) {
+              setUser(parsed.user as User);
+              setProfile(parsed.profile as Profile);
+              setIsLoading(false);
+              return;
+            }
+          } catch {
+            // Ignorer si JSON invalide
+          }
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
         if (mounted) {
           const currentUser = session?.user ?? null;
@@ -98,13 +114,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
+      const localTestSession = typeof window !== 'undefined' ? localStorage.getItem('omnimockup_test_session') : null;
+      if (localTestSession && event === 'SIGNED_OUT') {
+        localStorage.removeItem('omnimockup_test_session');
+      }
 
-      if (currentUser) {
-        await fetchProfile(currentUser.id);
-      } else {
-        setProfile(null);
+      const currentUser = session?.user ?? null;
+      if (!localTestSession) {
+        setUser(currentUser);
+        if (currentUser) {
+          await fetchProfile(currentUser.id);
+        } else {
+          setProfile(null);
+        }
       }
       setIsLoading(false);
     });
@@ -117,6 +139,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('omnimockup_test_session');
+      }
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);

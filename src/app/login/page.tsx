@@ -29,6 +29,39 @@ function LoginForm() {
     setIsLoading(true);
     setErrorMessage(null);
 
+    // Bypass de test pour validation sans configuration Supabase Auth
+    if (email === 'test@omnimockup.com' && password === 'OmniMockup2026!') {
+      const mockTestSession = {
+        user: {
+          id: 'test-user-id-999',
+          email: 'test@omnimockup.com',
+          created_at: new Date().toISOString(),
+          app_metadata: {},
+          user_metadata: { full_name: 'Utilisateur Test (Pro)' },
+          aud: 'authenticated',
+          role: 'authenticated',
+        },
+        profile: {
+          id: 'test-user-id-999',
+          email: 'test@omnimockup.com',
+          plan: 'pro',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      };
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('omnimockup_test_session', JSON.stringify(mockTestSession));
+      }
+      
+      setTimeout(() => {
+        setIsLoading(false);
+        router.push(redirectPath);
+        window.location.href = redirectPath;
+      }, 500);
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -106,6 +139,27 @@ function LoginForm() {
               <span>{errorMessage}</span>
             </div>
           )}
+
+          {/* Bannière de test rapide */}
+          <div className="mb-6 p-4 rounded-2xl bg-violet-50 border border-violet-200 text-violet-900 text-xs flex flex-col gap-2">
+            <div className="flex items-center justify-between font-bold">
+              <span>🔑 Identifiants de Test (Démo Vercel)</span>
+              <span className="px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px]">Actif</span>
+            </div>
+            <p className="text-violet-700">
+              Cliquez ci-dessous pour remplir automatiquement les identifiants et tester le studio sans Supabase Auth :
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('test@omnimockup.com');
+                setPassword('OmniMockup2026!');
+              }}
+              className="mt-1 w-full py-2 px-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 shadow-xs"
+            >
+              <span>Remplir les identifiants de test</span>
+            </button>
+          </div>
 
           {/* Bouton Google OAuth */}
           <button

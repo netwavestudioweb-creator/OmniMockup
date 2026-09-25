@@ -27,16 +27,9 @@ export async function getBrowser(): Promise<Browser> {
 
     // 2. Repli automatique sur @sparticuz/chromium (environnement Linux Serverless / Sandbox)
     try {
+      const sparticuz = await import('@sparticuz/chromium');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let mod: any;
-      try {
-        // @ts-ignore dynamic import
-        const sparticuz = await import('@sparticuz/chromium');
-        mod = sparticuz.default || sparticuz;
-      } catch {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        mod = require('@sparticuz/chromium');
-      }
+      const mod: any = sparticuz.default || sparticuz;
 
       const executablePath = await mod.executablePath();
 

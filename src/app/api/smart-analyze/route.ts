@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { Browser } from 'playwright-core';
-import { getBrowser } from '@/lib/browser';
+import { captureWebPage } from '@/lib/browser';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   DetectedSection,
@@ -133,439 +132,27 @@ export async function POST(req: NextRequest) {
 
   const targetUrl = validation.parsedUrl.href;
 
-  let browser: Browser | null = null;
-
   try {
-    browser = await getBrowser();
-
-    const context = await browser.newContext({
-      viewport: { width: 1440, height: 900 },
-      deviceScaleFactor: 1,
-      userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    });
-
-    const page = await context.newPage();
-    page.setDefaultTimeout(15000);
-    page.setDefaultNavigationTimeout(15000);
-
-    // 1. Navigation vers la page cible avec stabilisation réseau, polices et images
-    await page.goto(targetUrl, {
-      waitUntil: 'domcontentloaded',
-      timeout: 20000,
-    });
+    let fullPageBase64 = '';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let candidateSections: any[] = [];
+    let pageSize = { width: 1440, height: 2400 };
 
     try {
-      await page.waitForLoadState('networkidle', { timeout: 6000 });
-    } catch {
-      // Poursuivre si des flux résiduels restent actifs
-    }
-
-    // Stabilisation complète du layout : polices et images chargées
-    await page.evaluate(async () => {
-      if (document.fonts) {
-        try {
-          await document.fonts.ready;
-        } catch {}
-      }
-      const imgs = Array.from(document.querySelectorAll('img'));
-      await Promise.all(
-        imgs.filter((img) => !img.complete).map(
-          (img) =>
-            new Promise((res) => {
-              img.onload = res;
-              img.onerror = res;
-              setTimeout(res, 2000);
-            })
-        )
-      );
-    });
-
-    await page.waitForTimeout(800); // Laisser le temps aux animations CSS et recalculs flex/grid
-
-    // 2. Extraction multi-signaux universelle des sections DOM
-    const { candidates: candidateSections, debugStats } = await page.evaluate(() => {
-      const scrollY = window.scrollY || window.pageYOffset || 0;
-      const docWidth = Math.max(
-        document.documentElement.clientWidth,
-        window.innerWidth,
-        1440
-      );
-      const minWidth = docWidth * 0.7;
-      const minHeight = 180;
-
-      // 1. FILTRAGE DE VISIBILITÉ RÉELLE STRICTE (élimine les versions mobiles masquées)
-      function isElementTrulyVisible(el: HTMLElement): boolean {
-        if (!(el instanceof HTMLElement)) return false;
-        if (el.offsetWidth === 0 || el.offsetHeight === 0) return false;
-
-        const style = window.getComputedStyle(el);
-        if (
-          style.display === 'none' ||
-          style.visibility === 'hidden' ||
-          parseFloat(style.opacity || '1') === 0
-        ) {
-          return false;
-        }
-
-        // Vérification de la chaîne d'ancêtres complète
-        if (typeof (el as unknown as { checkVisibility?: (opt: object) => boolean }).checkVisibility === 'function') {
-          if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) {
-            return false;
-          }
-        } else {
-          let curr: HTMLElement | null = el.parentElement;
-          while (curr && curr !== document.body) {
-            const pStyle = window.getComputedStyle(curr);
-            if (
-              pStyle.display === 'none' ||
-              pStyle.visibility === 'hidden' ||
-              parseFloat(pStyle.opacity || '1') === 0 ||
-              curr.offsetWidth === 0 ||
-              curr.offsetHeight === 0
-            ) {
-              return false;
-            }
-            curr = curr.parentElement;
-          }
-        }
-
-        const rect = el.getBoundingClientRect();
-        if (rect.width <= 0 || rect.height <= 0) return false;
-
-        return true;
-      }
-
-      // 4. CONCATÉNATION DE TEXTE PROPRE AVEC ESPACES EXPLICITES ENTRE NŒUDS
-      function extractCleanVisibleText(rootEl: HTMLElement): string {
-        const textPieces: string[] = [];
-        const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT, {
-          acceptNode: (node) => {
-            const parent = node.parentElement;
-            if (!parent) return NodeFilter.FILTER_REJECT;
-            const style = window.getComputedStyle(parent);
-            if (
-              style.display === 'none' ||
-              style.visibility === 'hidden' ||
-              parseFloat(style.opacity || '1') === 0 ||
-              parent.offsetWidth === 0 ||
-              parent.offsetHeight === 0 ||
-              ['SCRIPT', 'STYLE', 'NOSCRIPT', 'SVG'].includes(parent.tagName)
-            ) {
-              return NodeFilter.FILTER_REJECT;
-            }
-            return NodeFilter.FILTER_ACCEPT;
-          },
-        });
-
-        let currentNode: Node | null = walker.nextNode();
-        while (currentNode) {
-          const val = currentNode.nodeValue?.trim();
-          if (val && val.length > 0) {
-            textPieces.push(val);
-          }
-          currentNode = walker.nextNode();
-        }
-
-        return textPieces.join(' ').replace(/\s+/g, ' ').trim();
-      }
-
-      const allElements = Array.from(document.body.querySelectorAll('*')) as HTMLElement[];
-
-      interface RawCandidate {
-        element: HTMLElement;
-        rect: DOMRect;
-        tag: string;
-        text: string;
-        hasImages: boolean;
-        hasInteractives: boolean;
-        bgColor: string;
-        contentScore: number;
-        depth: number;
-        calculatedHeight: number;
-      }
-
-      const rawCandidates: RawCandidate[] = [];
-
-      function getDepth(el: HTMLElement): number {
-        let d = 0;
-        let curr: HTMLElement | null = el;
-        while (curr && curr !== document.body) {
-          d++;
-          curr = curr.parentElement;
-        }
-        return d;
-      }
-
-      function getEffectiveBgColor(el: HTMLElement): string {
-        let curr: HTMLElement | null = el;
-        while (curr && curr !== document.body) {
-          const style = window.getComputedStyle(curr);
-          const bg = style.backgroundColor;
-          if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
-            return bg;
-          }
-          curr = curr.parentElement;
-        }
-        return 'rgba(255, 255, 255, 1)';
-      }
-
-      for (const el of allElements) {
-        // Filtrage de visibilité réelle stricte
-        if (!isElementTrulyVisible(el)) {
-          continue;
-        }
-
-        const rect = el.getBoundingClientRect();
-        if (rect.width < minWidth || rect.height < minHeight) {
-          continue;
-        }
-
-        // 3. RECALCUL DE LA HAUTEUR RÉELLE COMPLÈTE (englobe toutes les rangées de grilles/colonnes)
-        let realBottom = rect.bottom;
-        const descendants = el.querySelectorAll('*');
-        for (let di = 0; di < descendants.length; di++) {
-          const d = descendants[di];
-          if (d instanceof HTMLElement && d.offsetWidth > 0 && d.offsetHeight > 0) {
-            const dr = d.getBoundingClientRect();
-            if (dr.bottom > realBottom) {
-              realBottom = dr.bottom;
-            }
-          }
-        }
-        const calculatedHeight = Math.max(rect.height, realBottom - rect.top, el.scrollHeight);
-
-        // 4. Extraction du texte propre avec espaces explicites
-        const visibleText = extractCleanVisibleText(el);
-        const hasImages =
-          el.querySelectorAll('img, svg, video, canvas, picture').length > 0 ||
-          (window.getComputedStyle(el).backgroundImage && window.getComputedStyle(el).backgroundImage !== 'none');
-        const hasInteractives =
-          el.querySelectorAll('button, a[href], input, select, textarea, form').length > 0;
-
-        if (visibleText.length < 25 && !hasImages && !hasInteractives) {
-          continue;
-        }
-
-        let contentScore = 0;
-        if (visibleText.length >= 25) contentScore += 1;
-        if (visibleText.length >= 80) contentScore += 1;
-        if (hasImages) contentScore += 2;
-        if (hasInteractives) contentScore += 1;
-
-        rawCandidates.push({
-          element: el,
-          rect,
-          tag: el.tagName.toLowerCase(),
-          text: visibleText,
-          hasImages: Boolean(hasImages),
-          hasInteractives,
-          bgColor: getEffectiveBgColor(el),
-          contentScore,
-          depth: getDepth(el),
-          calculatedHeight,
-        });
-      }
-
-      const rawCount = rawCandidates.length;
-
-      // Règle 3 : Élimine les doublons par imbrication (on garde la section parente complète)
-      const toRemove = new Set<HTMLElement>();
-
-      for (let i = 0; i < rawCandidates.length; i++) {
-        for (let j = 0; j < rawCandidates.length; j++) {
-          if (i === j) continue;
-          const parent = rawCandidates[i];
-          const child = rawCandidates[j];
-
-          if (parent.element.contains(child.element)) {
-            const heightRatio = child.rect.height / (parent.rect.height || 1);
-            if (heightRatio >= 0.85) {
-              toRemove.add(child.element);
-            }
-          }
-        }
-      }
-
-      // Élimination des conteneurs racines englobant toute la page
-      const docTotalHeight = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight,
-        900
-      );
-      for (const cand of rawCandidates) {
-        if (cand.rect.height >= 0.75 * docTotalHeight) {
-          const containedChildren = rawCandidates.filter(
-            (other) => other !== cand && cand.element.contains(other.element)
-          );
-          if (containedChildren.length >= 2) {
-            toRemove.add(cand.element);
-          }
-        }
-      }
-
-      const filtered = rawCandidates.filter((c) => !toRemove.has(c.element));
-
-      // Déduplication par coordonnées verticales
-      filtered.sort(
-        (a, b) => a.rect.top + scrollY - (b.rect.top + scrollY) || b.depth - a.depth
-      );
-
-      const deduplicated: RawCandidate[] = [];
-      for (const c of filtered) {
-        const y = Math.round(c.rect.top + scrollY);
-        const h = Math.round(c.calculatedHeight);
-
-        const isOverlapping = deduplicated.some((existing) => {
-          const ey = Math.round(existing.rect.top + scrollY);
-          const eh = Math.round(existing.calculatedHeight);
-          const yDiff = Math.abs(y - ey);
-          const hDiff = Math.abs(h - eh);
-          return (
-            (yDiff < 90 && hDiff < 100) ||
-            existing.element.contains(c.element) ||
-            c.element.contains(existing.element)
-          );
-        });
-
-        if (!isOverlapping) {
-          deduplicated.push(c);
-        }
-      }
-
-      // Règle 5 : 2. GÉNÉRALISE LE CADRAGE PLEINE LARGEUR (x = 0, width = docWidth) À TOUTES LES SECTIONS
-      let candidatesResult = deduplicated.map((c, idx) => {
-        const x = 0;
-        const width = docWidth;
-
-        // Marge de sécurité verticale (Padding Y de 30px pour préserver les en-têtes et bas de grille)
-        const paddingY = 30;
-        const rawY = Math.round(c.rect.top + scrollY);
-        const y = Math.max(0, rawY - paddingY);
-        const height = Math.min(docTotalHeight - y, Math.round(c.calculatedHeight + paddingY * 2));
-
-        const headingEl = c.element.querySelector('h1, h2, h3, h4');
-        const headingText = headingEl ? extractCleanVisibleText(headingEl as HTMLElement).slice(0, 80) : undefined;
-        const textSnippet = c.text.slice(0, 160);
-
-        return {
-          id: `sec-${idx + 1}`,
-          tag: c.tag,
-          coordinates: { x, y, width, height },
-          headingText,
-          textSnippet,
-          contentScore: c.contentScore,
-          bgColor: c.bgColor,
-        };
-      });
-
-      // Si plus de 12 sections : prioriser par score de contenu et hauteur
-      if (candidatesResult.length > 12) {
-        candidatesResult.sort(
-          (a, b) =>
-            b.contentScore - a.contentScore || b.coordinates.height - a.coordinates.height
-        );
-        candidatesResult = candidatesResult.slice(0, 12);
-        candidatesResult.sort((a, b) => a.coordinates.y - b.coordinates.y);
-        candidatesResult = candidatesResult.map((sec, i) => ({
-          ...sec,
-          id: `sec-${i + 1}`,
-        }));
-      }
-
-      // Si moins de 5 sections et présence de très grands blocs (> 1200px) : division raisonnée
-      if (candidatesResult.length < 5) {
-        const expanded: typeof candidatesResult = [];
-        let count = 1;
-        for (const sec of candidatesResult) {
-          if (sec.coordinates.height > 1200 && candidatesResult.length + expanded.length < 10) {
-            const halfH = Math.round(sec.coordinates.height / 2);
-            expanded.push({
-              ...sec,
-              id: `sec-${count++}`,
-              coordinates: { ...sec.coordinates, height: halfH },
-              headingText: sec.headingText ? `${sec.headingText} (Partie 1)` : undefined,
-            });
-            expanded.push({
-              ...sec,
-              id: `sec-${count++}`,
-              coordinates: {
-                ...sec.coordinates,
-                y: sec.coordinates.y + halfH,
-                height: sec.coordinates.height - halfH,
-              },
-              headingText: sec.headingText ? `${sec.headingText} (Partie 2)` : undefined,
-            });
-          } else {
-            expanded.push({ ...sec, id: `sec-${count++}` });
-          }
-        }
-        if (expanded.length >= 5) {
-          candidatesResult = expanded.slice(0, 12);
-        }
-      }
-
-      // Fallback si la page est atypique ou vide
-      if (candidatesResult.length === 0) {
-        const docHeight = Math.max(
-          document.body.scrollHeight,
-          document.documentElement.scrollHeight,
-          900
-        );
-        const step = Math.min(800, Math.round(docHeight / 6));
-        let c = 1;
-        for (let currY = 0; currY < docHeight; currY += step) {
-          candidatesResult.push({
-            id: `sec-${c++}`,
-            tag: 'section',
-            coordinates: {
-              x: 0,
-              y: currY,
-              width: 1440,
-              height: Math.min(step, docHeight - currY),
-            },
-            headingText: `Volet ${c - 1}`,
-            textSnippet: '',
-            contentScore: 1,
-            bgColor: '#ffffff',
-          });
-          if (candidatesResult.length >= 8) break;
-        }
-      }
-
-      return {
-        candidates: candidatesResult,
-        debugStats: {
-          rawCandidatesCount: rawCount,
-          deduplicatedCount: deduplicated.length,
-          finalCount: candidatesResult.length,
+      const captureResult = await captureWebPage(targetUrl);
+      fullPageBase64 = captureResult.screenshotBase64;
+      candidateSections = captureResult.candidates;
+      pageSize = captureResult.pageSize;
+    } catch (captureErr) {
+      console.error('[smart-analyze] Échec critique de capture :', captureErr);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Impossible d’accéder au site web pour la capture d’écran.',
         },
-      };
-    });
-
-    // Logging en développement du ratio de détection multi-signaux
-    console.log(
-      `[smart-analyze] Candidats bruts détectés : ${debugStats.rawCandidatesCount} | Dédupliqués : ${debugStats.deduplicatedCount} ➔ Sections finales retenues : ${debugStats.finalCount}`
-    );
-
-    // 3. Capture full page pour l'analyse visuelle et le recadrage client (JPEG 60% pour rapidité token)
-    const screenshotBuffer = await page.screenshot({
-      type: 'jpeg',
-      quality: 60,
-      fullPage: true,
-      timeout: 10000,
-    });
-
-    const fullPageBase64 = `data:image/jpeg;base64,${screenshotBuffer.toString('base64')}`;
-
-    // Dimensions réelles du document
-    const pageSize = await page.evaluate(() => ({
-      width: Math.max(document.body.scrollWidth, 1440),
-      height: Math.max(document.body.scrollHeight, 900),
-    }));
-
-    await browser.close();
-    browser = null;
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     // 4. Analyse intelligente via Gemini Vision avec rôle de Directeur Artistique
     const apiKey = process.env.GEMINI_API_KEY;
@@ -596,9 +183,10 @@ export async function POST(req: NextRequest) {
           },
         });
 
+        const cleanBase64 = fullPageBase64.replace(/^data:image\/\w+;base64,/, '');
         const imagePart = {
           inlineData: {
-            data: screenshotBuffer.toString('base64'),
+            data: cleanBase64,
             mimeType: 'image/jpeg',
           },
         };
@@ -826,13 +414,5 @@ Réponds STRICTEMENT au format JSON avec ce schéma :
         headers: { 'Content-Type': 'application/json' },
       }
     );
-  } finally {
-    if (browser) {
-      try {
-        await browser.close();
-      } catch {
-        // Ignorer
-      }
-    }
   }
 }

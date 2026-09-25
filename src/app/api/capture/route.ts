@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { Browser } from 'playwright-core';
-import { getBrowser } from '@/lib/browser';
+import { captureWebPage } from '@/lib/browser';
 import { CaptureItemResult, CaptureResponse, SectionCoordinates } from '@/types/analyzer';
 import { checkRateLimit, createRateLimitResponse, validateSafeUrl } from '@/lib/security';
 
@@ -84,131 +83,30 @@ export async function POST(req: NextRequest) {
   }
 
   const results: CaptureItemResult[] = [];
-  let browser: Browser | null = null;
 
-  try {
-    browser = await getBrowser();
-
-    const context = await browser.newContext({
-      viewport: { width: 1440, height: 900 },
-      deviceScaleFactor: 1,
-      userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    });
-
-    for (const target of targetsToProcess) {
-      const itemStartTime = Date.now();
-      let page = null;
-
-      try {
-        page = await context.newPage();
-        page.setDefaultTimeout(15000); // 15s max par page
-        page.setDefaultNavigationTimeout(15000);
-
-        // Navigation avec timeout strict de 15s
-        await page.goto(target.url, {
-          waitUntil: 'domcontentloaded',
-          timeout: 15000,
-        });
-
-        // Légère pause pour le rendu des polices et images (500ms)
-        await page.waitForTimeout(500);
-
-        let pageTitle = '';
-        try {
-          pageTitle = await page.title();
-        } catch {
-          pageTitle = target.url;
-        }
-
-        // Configuration de la capture : découpe par clip si fournie, sinon viewport standard
-        let buffer: Buffer;
-
-        if (target.clip && target.clip.width > 10 && target.clip.height > 10) {
-          // Règle générale pour les mockups de site web : pleine largeur 1440px
-          // pour conserver l'arrière-plan complet et éviter tout texte ou colonne coupé sur les bords
-          const clipX = 0;
-          const clipWidth = 1440;
-          const clipY = Math.max(0, Math.round(target.clip.y));
-          const clipHeight = Math.max(50, Math.round(target.clip.height));
-
-          // 1. Adapter la hauteur du viewport pour englober la totalité de la section
-          await page.setViewportSize({ width: 1440, height: Math.max(900, clipHeight + 100) });
-
-          // 2. Défilement précis jusqu'au point de départ Y de la section
-          await page.evaluate((targetY) => window.scrollTo(0, targetY), clipY);
-          await page.waitForTimeout(300); // Laisser le temps au rendu des sticky/lazy elements
-
-          // 3. Prise de vue du clip depuis le haut du viewport scrollé (y: 0)
-          buffer = await page.screenshot({
-            type: 'png',
-            timeout: 8000,
-            clip: {
-              x: clipX,
-              y: 0,
-              width: clipWidth,
-              height: clipHeight,
-            },
-          });
-        } else {
-          buffer = await page.screenshot({
-            type: 'png',
-            timeout: 8000,
-            fullPage: false,
-          });
-        }
-        const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
-
-        results.push({
-          url: target.url,
-          title: target.label || pageTitle || target.url,
-          success: true,
-          screenshotBase64: base64,
-          capturedAt: new Date().toISOString(),
-          durationMs: Date.now() - itemStartTime,
-          clip: target.clip,
-        });
-      } catch (err: unknown) {
-        const errorObj = err as { message?: string; name?: string };
-        const errorMessage =
-          errorObj?.name === 'TimeoutError'
-            ? 'Délai d’attente dépassé (timeout 15s) pour cette page.'
-            : errorObj?.message || 'Erreur lors de la capture de la page.';
-
-        results.push({
-          url: target.url,
-          title: target.label || target.url,
-          success: false,
-          error: errorMessage,
-          capturedAt: new Date().toISOString(),
-          durationMs: Date.now() - itemStartTime,
-        });
-      } finally {
-        if (page) {
-          try {
-            await page.close();
-          } catch {
-            // Ignorer
-          }
-        }
-      }
-    }
-  } catch (browserErr: unknown) {
-    const bErr = browserErr as { message?: string };
-    return NextResponse.json(
-      {
+  for (const target of targetsToProcess) {
+    const itemStartTime = Date.now();
+    try {
+      const captureRes = await captureWebPage(target.url);
+      results.push({
+        url: target.url,
+        title: target.label || captureRes.pageTitle || target.url,
+        success: true,
+        screenshotBase64: captureRes.screenshotBase64,
+        capturedAt: new Date().toISOString(),
+        durationMs: Date.now() - itemStartTime,
+        clip: target.clip,
+      });
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string };
+      results.push({
+        url: target.url,
+        title: target.label || target.url,
         success: false,
-        error: `Impossible d’initialiser Chromium pour la capture : ${bErr?.message || 'Erreur interne'}`,
-      },
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
-  } finally {
-    if (browser) {
-      try {
-        await browser.close();
-      } catch {
-        // Ignorer
-      }
+        error: errorObj?.message || 'Erreur lors de la capture de la page.',
+        capturedAt: new Date().toISOString(),
+        durationMs: Date.now() - itemStartTime,
+      });
     }
   }
 

@@ -43,10 +43,15 @@ export async function getBrowser(): Promise<Browser> {
         executablePath,
         headless: mod.headless === 'new' ? true : Boolean(mod.headless),
       });
-    } catch (sparticuzErr) {
-      console.error('[Browser Helper] Échec du lancement avec le gestionnaire de secours :', sparticuzErr);
+    } catch (sparticuzErr: unknown) {
+      const sparticuzMsg =
+        (sparticuzErr as { message?: string })?.message || String(sparticuzErr);
+      console.error(
+        '[Browser Helper] Échec du lancement avec le gestionnaire de secours :',
+        sparticuzMsg
+      );
       throw new Error(
-        `Impossible d'initialiser Chromium sur le serveur (${errorMsg}).`
+        `Impossible d'initialiser Chromium sur le serveur (${sparticuzMsg}).`
       );
     }
   }

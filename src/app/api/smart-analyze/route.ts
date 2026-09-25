@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { chromium, Browser } from 'playwright';
+import type { Browser } from 'playwright-core';
+import { getBrowser } from '@/lib/browser';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   DetectedSection,
@@ -135,16 +136,7 @@ export async function POST(req: NextRequest) {
   let browser: Browser | null = null;
 
   try {
-    browser = await chromium.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--single-process',
-      ],
-    });
+    browser = await getBrowser();
 
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },

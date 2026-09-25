@@ -9,8 +9,11 @@ import {
   SceneTextLayer,
   SceneLogoLayer,
   SceneConfig,
+  SceneFilterType,
+  VideoAnimPreset,
 } from '@/types/analyzer';
 import { MockupFrame } from './MockupFrame';
+import { useUser } from '@/context/UserContext';
 import {
   Download,
   Sparkles,
@@ -27,14 +30,8 @@ import {
   Laptop,
   Smartphone,
   Tablet,
-  Layers,
   Check,
   X,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Bold,
-  SunMedium,
   Moon,
   Sun,
   Copy,
@@ -42,12 +39,78 @@ import {
   Sparkle,
   ChevronUp,
   ChevronDown,
+  Wand2,
+  Film,
+  Video,
+  Watch,
+  Tv,
+  ShieldCheck,
+  Upload,
+  Layers,
 } from 'lucide-react';
 
 interface SceneEditorProps {
   captureItem: CaptureItemResult;
   initialMockup?: MockupType;
   onClose?: () => void;
+}
+
+// Fonction d'extraction automatique des couleurs dominantes de la capture (Fonds Magiques)
+function extractMagicGradients(base64Image: string): Promise<{ name: string; value: string }[]> {
+  return new Promise((resolve) => {
+    if (!base64Image) return resolve([]);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve([]);
+
+        canvas.width = 40;
+        canvas.height = 40;
+        ctx.drawImage(img, 0, 0, 40, 40);
+
+        const imgData = ctx.getImageData(0, 0, 40, 40).data;
+        const colorCounts: { [key: string]: number } = {};
+
+        for (let i = 0; i < imgData.length; i += 16) {
+          const r = Math.floor(imgData[i] / 32) * 32;
+          const g = Math.floor(imgData[i + 1] / 32) * 32;
+          const b = Math.floor(imgData[i + 2] / 32) * 32;
+          const a = imgData[i + 3];
+          if (a < 128) continue;
+
+          const max = Math.max(r, g, b);
+          const min = Math.min(r, g, b);
+          if (max - min < 15 && (max > 220 || max < 35)) continue;
+
+          const rgbKey = `${r},${g},${b}`;
+          colorCounts[rgbKey] = (colorCounts[rgbKey] || 0) + 1;
+        }
+
+        const sortedColors = Object.keys(colorCounts).sort((a, b) => colorCounts[b] - colorCounts[a]);
+
+        const primaryRgb = sortedColors[0] || '124,58,237';
+        const secondaryRgb = sortedColors[1] || '79,70,229';
+        const tertiaryRgb = sortedColors[2] || '219,39,119';
+
+        const c1 = `rgb(${primaryRgb})`;
+        const c2 = `rgb(${secondaryRgb})`;
+        const c3 = `rgb(${tertiaryRgb})`;
+
+        resolve([
+          { name: '✨ Magique : Harmonieux', value: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)` },
+          { name: '✨ Magique : Éclatant', value: `linear-gradient(135deg, ${c2} 0%, ${c3} 50%, ${c1} 100%)` },
+          { name: '✨ Magique : Ambiance', value: `radial-gradient(circle, ${c1} 0%, ${c3} 100%)` },
+        ]);
+      } catch {
+        resolve([]);
+      }
+    };
+    img.onerror = () => resolve([]);
+    img.src = base64Image;
+  });
 }
 
 // Palettes prédéfinies luxueuses style macOS / Apple Wallpapers / Shots.so
@@ -90,24 +153,14 @@ const GRADIENT_PRESETS = [
   },
 ];
 
-const SOLID_PRESETS = [
-  { name: 'Terracotta Riche', value: '#b85433' },
-  { name: 'Brun Chaud', value: '#693121' },
-  { name: 'Sable Clair', value: '#f5f3ee' },
-  { name: 'Lin Épuré', value: '#eae6de' },
-  { name: 'Blanc Pur', value: '#ffffff' },
-  { name: 'Noir Studio', value: '#09090b' },
-  { name: 'Charbon Pierre', value: '#1c1917' },
-  { name: 'Vert Forêt', value: '#064e3b' },
-  { name: 'Bleu Minéral', value: '#0f172a' },
-];
-
 const RATIO_PRESETS: { id: SceneAspectRatio; label: string; ratioClass: string; desc: string }[] = [
+  { id: '1:1', label: 'Instagram Post', ratioClass: 'aspect-square', desc: '1:1 Carré' },
+  { id: '9:16', label: 'Instagram Story', ratioClass: 'aspect-[9/16]', desc: '9:16 Mobile Vertical' },
   { id: '16:9', label: 'Twitter / X', ratioClass: 'aspect-[16/9]', desc: '16:9 Bannière' },
-  { id: '1:1', label: 'Instagram', ratioClass: 'aspect-square', desc: '1:1 Post carré' },
+  { id: '2:3', label: 'Pinterest', ratioClass: 'aspect-[2/3]', desc: '2:3 Vertical Pinterest' },
+  { id: '1.91:1', label: 'LinkedIn', ratioClass: 'aspect-[191/100]', desc: '1.91:1 Post pro' },
   { id: 'libre', label: 'Web Libre', ratioClass: 'aspect-[16/10]', desc: '16:10 Format web' },
   { id: '4:3', label: 'Dribbble', ratioClass: 'aspect-[4/3]', desc: '4:3 Showcase' },
-  { id: '9:16', label: 'Story / Reel', ratioClass: 'aspect-[9/16]', desc: '9:16 Mobile' },
 ];
 
 export const SceneEditor: React.FC<SceneEditorProps> = ({
@@ -115,7 +168,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   initialMockup = 'browser',
   onClose,
 }) => {
-  // Configuration d'état de la scène avec paramètres 3D Shots.so
+  const { profile } = useUser();
+  const userPlan = profile?.plan || 'free';
+  const isFreePlan = userPlan === 'free';
+  const isAgencePlan = userPlan === 'agence';
+
+  // Configuration d'état de la scène
   const [config, setConfig] = useState<SceneConfig>({
     aspectRatio: '16:9',
     bgType: 'gradient',
@@ -136,26 +194,43 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     shadowEnabled: true,
     shadowIntensity: 65,
     exportScale: 2,
+    filterType: 'none',
+    filterIntensity: 40,
+    customWatermarkUrl: undefined,
     texts: [],
     logos: [],
   });
 
-  // Navigation dans les onglets du studio
-  const [activeTab, setActiveTab] = useState<'mockup' | 'frame' | 'text' | 'logo'>('mockup');
+  // Fonds magiques auto-générés à partir de l'image
+  const [autoGradients, setAutoGradients] = useState<{ name: string; value: string }[]>([]);
+  useEffect(() => {
+    if (captureItem.screenshotBase64) {
+      extractMagicGradients(captureItem.screenshotBase64).then((grads) => {
+        setAutoGradients(grads);
+      });
+    }
+  }, [captureItem.screenshotBase64]);
+
+  // Navigation dans les onglets du studio (Mockup, Cadre, Filtres, Texte, Logo)
+  const [activeTab, setActiveTab] = useState<'mockup' | 'frame' | 'filter' | 'text' | 'logo'>('mockup');
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [selectedLogoId, setSelectedLogoId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  const [customColor, setCustomColor] = useState('#f5f3ee');
   const [mobileSheetOpen, setMobileSheetOpen] = useState(true);
 
-  // Référence DOM de la scène pour capture html-to-image
+  // État de l'exportation vidéo animée
+  const [videoPreset, setVideoPreset] = useState<VideoAnimPreset>('zoomIn');
+  const [isExportingVideo, setIsExportingVideo] = useState(false);
+
+  // Références DOM
   const sceneRef = useRef<HTMLDivElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const watermarkInputRef = useRef<HTMLInputElement>(null);
 
-  // Gestion du Drag and drop tactile & souris
+  // Drag and drop tactile & souris
   const [draggingTarget, setDraggingTarget] = useState<'mockup' | { type: 'text'; id: string } | { type: 'logo'; id: string } | null>(null);
   const dragStartRef = useRef<{ clientX: number; clientY: number; initialX: number; initialY: number }>({
     clientX: 0,
@@ -265,7 +340,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }));
   };
 
-  // Copie dans le presse-papier (Clipboard API instantané)
+  // Copie dans le presse-papier
   const handleCopyToClipboard = async () => {
     if (!sceneRef.current || isCopying) return;
     setIsCopying(true);
@@ -282,7 +357,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       const blob = await toBlob(sceneRef.current, {
         pixelRatio: config.exportScale || 2,
         cacheBust: true,
-        backgroundColor: config.bgTransparent ? undefined : undefined,
       });
 
       if (!blob) throw new Error("Impossible de générer l'image");
@@ -300,13 +374,13 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       setSelectedLogoId(prevLogo);
     } catch (err) {
       console.error('Erreur copie presse-papier:', err);
-      alert("Votre navigateur requiert l'autorisation pour copier l'image. Utilisez le bouton Télécharger si nécessaire.");
+      alert("Votre navigateur requiert l'autorisation pour copier l'image.");
     } finally {
       setIsCopying(false);
     }
   };
 
-  // Exportation complète de la composition
+  // Exportation PNG
   const handleExportPng = async () => {
     if (!sceneRef.current || isExporting) return;
     setIsExporting(true);
@@ -323,7 +397,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       const dataUrl = await toPng(sceneRef.current, {
         pixelRatio: config.exportScale || 2,
         cacheBust: true,
-        backgroundColor: config.bgTransparent ? undefined : undefined,
       });
 
       const link = document.createElement('a');
@@ -341,9 +414,109 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       setSelectedLogoId(prevLogo);
     } catch (err) {
       console.error('Erreur export PNG:', err);
-      alert("Une erreur est survenue lors de l'export PNG. Veuillez réessayer.");
+      alert("Une erreur est survenue lors de l'export PNG.");
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  // EXPORT VIDÉO ANIMÉ AVEC ZOOM (MediaRecorder API)
+  const handleExportVideo = async () => {
+    if (!sceneRef.current || isExportingVideo) return;
+    setIsExportingVideo(true);
+
+    try {
+      const prevText = selectedTextId;
+      const prevLogo = selectedLogoId;
+      setSelectedTextId(null);
+      setSelectedLogoId(null);
+
+      await new Promise((r) => setTimeout(r, 100));
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error("Canvas 2D non disponible.");
+
+      const rect = sceneRef.current.getBoundingClientRect();
+      canvas.width = Math.round(rect.width * 2);
+      canvas.height = Math.round(rect.height * 2);
+
+      const dataUrl = await toPng(sceneRef.current, {
+        pixelRatio: 2,
+        cacheBust: true,
+      });
+
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((r) => (img.onload = r));
+
+      const stream = canvas.captureStream(30);
+      let recorder: MediaRecorder;
+      try {
+        recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      } catch {
+        recorder = new MediaRecorder(stream);
+      }
+
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: recorder.mimeType || 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.download = `mockup_anim_${videoPreset}_${Date.now()}.webm`;
+        a.href = url;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        setSelectedTextId(prevText);
+        setSelectedLogoId(prevLogo);
+        setIsExportingVideo(false);
+      };
+
+      recorder.start();
+
+      const durationMs = 3000;
+      const fps = 30;
+      const totalFrames = (durationMs / 1000) * fps;
+      let currentFrame = 0;
+
+      const interval = setInterval(() => {
+        currentFrame++;
+        const progress = currentFrame / totalFrames; // 0 à 1
+
+        let scale = 1;
+        let translateX = 0;
+
+        if (videoPreset === 'zoomIn') {
+          scale = 1 + progress * 0.12; // Zoom avant 100% -> 112%
+        } else if (videoPreset === 'zoomOut') {
+          scale = 1.12 - progress * 0.12; // Zoom arrière 112% -> 100%
+        } else if (videoPreset === 'panHorizontal') {
+          translateX = (progress - 0.5) * 0.08 * canvas.width; // Pan horizontal
+        }
+
+        ctx.save();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.translate(canvas.width / 2 + translateX, canvas.height / 2);
+        ctx.scale(scale, scale);
+        ctx.drawImage(img, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+        ctx.restore();
+
+        if (currentFrame >= totalFrames) {
+          clearInterval(interval);
+          recorder.stop();
+        }
+      }, 1000 / fps);
+    } catch (err) {
+      console.error('Erreur export vidéo:', err);
+      alert("L'exportation vidéo nécessite un navigateur supportant MediaRecorder.");
+      setIsExportingVideo(false);
     }
   };
 
@@ -419,11 +592,25 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     if (selectedLogoId === id) setSelectedLogoId(null);
   };
 
+  // Watermark personnalisé (Plan Agence)
+  const handleWatermarkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setConfig((prev) => ({ ...prev, customWatermarkUrl: base64 }));
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   const activeRatioConfig = RATIO_PRESETS.find((r) => r.id === config.aspectRatio) || RATIO_PRESETS[0];
   const activeText = config.texts.find((t) => t.id === selectedTextId);
   const activeLogo = config.logos.find((l) => l.id === selectedLogoId);
 
-  // Calcul du drop shadow multi-couche réaliste
+  // Calcul du drop shadow 3D
   const dynamicShadow = config.shadowEnabled
     ? `0px ${Math.round(config.shadowIntensity * 0.35)}px ${Math.round(
         config.shadowIntensity * 0.7
@@ -436,7 +623,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   return (
     <div className="w-full rounded-3xl bg-white border border-sand-200 shadow-md overflow-hidden animate-fade-in" id="scene-editor">
-      {/* 1. BARRE DE COMMANDE SUPÉRIEURE PRO (Shots.so Style) */}
+      {/* 1. BARRE DE COMMANDE SUPÉRIEURE PRO */}
       <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-sand-200 bg-sand-50/90 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div className="p-2 rounded-xl bg-violet-600 text-white shadow-xs">
@@ -453,19 +640,19 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               </span>
             </div>
             <p className="text-[11px] sm:text-xs text-stone-500 hidden sm:block">
-              Ajustez l&apos;angle 3D, le cadre, les fonds Apple et exportez en Ultra-HD ou copiez directement.
+              Cadres Apple, fonds magiques, filtres cinématiques & exports vidéo animés.
             </p>
           </div>
         </div>
 
         {/* Boutons d'actions rapides et export */}
         <div className="flex items-center gap-2 sm:gap-2.5">
-          {/* Bouton Réinitialiser 3D */}
+          {/* Bouton Recentrer 3D */}
           <button
             type="button"
             onClick={handleReset3D}
             className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-sand-100 text-stone-600 hover:text-stone-900 border border-sand-200 text-xs font-semibold transition-all shadow-2xs"
-            title="Recentrer et réinitialiser les angles 3D à plat"
+            title="Recentrer les angles 3D"
           >
             <RotateCcw className="w-3.5 h-3.5 text-stone-500" />
             <span>Recentrer</span>
@@ -490,13 +677,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             ))}
           </div>
 
-          {/* Bouton Copier dans le presse-papier */}
+          {/* Bouton Copier */}
           <button
             type="button"
             onClick={handleCopyToClipboard}
             disabled={isCopying}
             className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-white hover:bg-sand-100 text-stone-700 hover:text-stone-900 border border-sand-200 text-xs font-semibold transition-all shadow-2xs disabled:opacity-50"
-            title="Copier directement l'image dans le presse-papier pour la coller n'importe où"
           >
             {isCopying ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-600" />
@@ -509,6 +695,27 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               <>
                 <Copy className="w-3.5 h-3.5 text-stone-600" />
                 <span className="hidden sm:inline">Copier</span>
+              </>
+            )}
+          </button>
+
+          {/* Bouton Export Vidéo Animé */}
+          <button
+            type="button"
+            onClick={handleExportVideo}
+            disabled={isExportingVideo}
+            className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs shadow-sm transition-all disabled:opacity-50"
+            title="Enregistrer un zoom animé en vidéo 3s (.webm)"
+          >
+            {isExportingVideo ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Animation...</span>
+              </>
+            ) : (
+              <>
+                <Video className="w-3.5 h-3.5" />
+                <span>Vidéo 3s</span>
               </>
             )}
           </button>
@@ -543,7 +750,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               type="button"
               onClick={onClose}
               className="p-1.5 sm:p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-sand-100 transition-colors"
-              title="Fermer le studio"
             >
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
@@ -553,7 +759,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
       {/* 2. DISPOSITION PRINCIPALE DU STUDIO */}
       <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[520px] lg:min-h-[660px]">
-        {/* ZONE DE PRÉVISUALISATION CENTRALE (8 colonnes sur grand écran) */}
+        {/* ZONE DE PRÉVISUALISATION CENTRALE */}
         <div className="lg:col-span-8 p-4 sm:p-6 lg:p-8 bg-[#ebe7e0] flex flex-col items-center justify-center relative overflow-hidden border-b lg:border-b-0 lg:border-r border-sand-200 select-none min-h-[360px] sm:min-h-[460px]">
           {/* Grille d'établi design */}
           <div
@@ -564,7 +770,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             }}
           />
 
-          {/* CANVAS DE LA SCÈNE RENDU (Élément capturé par html-to-image) */}
+          {/* CANVAS DE LA SCÈNE RENDU */}
           <div
             ref={sceneRef}
             className={`w-full max-w-2xl relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl transition-all duration-300 flex items-center justify-center touch-none ${activeRatioConfig.ratioClass}`}
@@ -583,7 +789,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               setSelectedLogoId(null);
             }}
           >
-            {/* Texture de grain de studio photo optionnelle */}
+            {/* Grain studio basique */}
             {config.bgNoise && !config.bgTransparent && (
               <div
                 className="absolute inset-0 pointer-events-none opacity-[0.07] mix-blend-overlay z-10"
@@ -593,11 +799,44 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               />
             )}
 
-            {/* MOCKUP 3D DANS LA SCÈNE (avec Tilt X/Y, Rotation Z, Padding, Drag & Drop) */}
+            {/* FILTRES CINÉMATIQUES EN OVERLAY (Bruit, VHS, Glitch) */}
+            {config.filterType === 'grain' && (
+              <div
+                className="absolute inset-0 pointer-events-none mix-blend-overlay z-15"
+                style={{
+                  opacity: ((config.filterIntensity || 40) / 100) * 0.5,
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                }}
+              />
+            )}
+
+            {config.filterType === 'vhs' && (
+              <div
+                className="absolute inset-0 pointer-events-none z-15"
+                style={{
+                  opacity: ((config.filterIntensity || 40) / 100) * 0.6,
+                  background: `repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px), linear-gradient(90deg, rgba(255,0,0,0.04), rgba(0,255,0,0.02), rgba(0,0,255,0.04))`,
+                }}
+              />
+            )}
+
+            {config.filterType === 'glitch' && (
+              <div
+                className="absolute inset-0 pointer-events-none mix-blend-screen z-15 overflow-hidden"
+                style={{
+                  opacity: ((config.filterIntensity || 40) / 100) * 0.5,
+                  backgroundImage: `repeating-linear-gradient(90deg, rgba(255,0,80,0.1) 0px, rgba(0,255,255,0.1) 4px, transparent 4px, transparent 12px)`,
+                }}
+              />
+            )}
+
+            {/* MOCKUP 3D DANS LA SCÈNE */}
             <div
               className={`absolute cursor-move transition-all duration-150 touch-none z-20 ${
                 config.mockupType === 'iphone'
                   ? 'w-[45%]'
+                  : config.mockupType === 'watch'
+                  ? 'w-[36%]'
                   : config.mockupType === 'ipad'
                   ? 'w-[68%]'
                   : 'w-[80%]'
@@ -629,7 +868,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               )}
             </div>
 
-            {/* CALQUES DE TEXTES AJOUTÉS */}
+            {/* CALQUES DE TEXTES */}
             {config.texts.map((txt) => {
               const isSelected = selectedTextId === txt.id;
               return (
@@ -658,7 +897,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         handleDeleteText(txt.id);
                       }}
                       className="absolute -top-3 -right-3 p-1 rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-500"
-                      title="Supprimer ce texte"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -667,7 +905,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               );
             })}
 
-            {/* CALQUES DE LOGOS / FILIGRANES */}
+            {/* CALQUES DE LOGOS */}
             {config.logos.map((lg) => {
               const isSelected = selectedLogoId === lg.id;
               return (
@@ -686,7 +924,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={lg.src} alt="Logo de scène" className="w-full h-auto object-contain pointer-events-none drop-shadow-xs" />
+                  <img src={lg.src} alt="Logo" className="w-full h-auto object-contain pointer-events-none drop-shadow-xs" />
                   {isSelected && (
                     <button
                       type="button"
@@ -695,7 +933,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         handleDeleteLogo(lg.id);
                       }}
                       className="absolute -top-3 -right-3 p-1 rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-500"
-                      title="Supprimer ce logo"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -703,9 +940,22 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 </div>
               );
             })}
+
+            {/* WATERMARK : FREE vs PRO vs AGENCE (Marque blanche) */}
+            {isFreePlan ? (
+              <div className="absolute bottom-3 right-3 z-40 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md text-white/90 text-[10px] font-mono font-semibold flex items-center gap-1.5 shadow-sm border border-white/20 select-none">
+                <Layers className="w-3 h-3 text-violet-400" />
+                <span>Fait avec OmniMockup</span>
+              </div>
+            ) : config.customWatermarkUrl ? (
+              <div className="absolute bottom-3 right-3 z-40 max-w-[120px] max-h-[40px] opacity-90 select-none pointer-events-none">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={config.customWatermarkUrl} alt="Marque Blanche" className="h-7 object-contain drop-shadow-sm" />
+              </div>
+            ) : null}
           </div>
 
-          {/* Indication d'interaction en bas de la zone de scène */}
+          {/* Indication d'interaction */}
           <div className="mt-3.5 flex items-center gap-3 text-[11px] sm:text-xs text-stone-500 font-mono">
             <span className="flex items-center gap-1.5">
               <Move className="w-3.5 h-3.5 text-violet-600 shrink-0" />
@@ -716,7 +966,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           </div>
         </div>
 
-        {/* 3. PANNEAU LATÉRAL DE CONTRÔLES (ONGLETS STYLE SHOTS.SO) */}
+        {/* 3. PANNEAU LATÉRAL DE CONTRÔLES (5 ONGLETS) */}
         <div className="lg:col-span-4 bg-white border-t lg:border-t-0 flex flex-col justify-between overflow-hidden">
           {/* Header Mobile plier/déplier */}
           <button
@@ -727,7 +977,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             <div className="flex items-center gap-2">
               <Sliders className="w-4 h-4 text-violet-600" />
               <span className="text-xs font-bold font-mono">
-                {mobileSheetOpen ? 'Réduire les réglages' : 'Ouvrir les réglages (Mockup, Cadre, 3D, Textes)'}
+                {mobileSheetOpen ? 'Réduire les réglages' : 'Ouvrir les réglages du studio'}
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-stone-500 text-xs font-medium">
@@ -739,12 +989,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           {/* Contenu des réglages */}
           <div className={`${mobileSheetOpen ? 'flex' : 'hidden lg:flex'} flex-col justify-between p-4 sm:p-6 space-y-6 overflow-y-auto max-h-[72vh] lg:max-h-[750px]`}>
             <div className="space-y-6">
-              {/* Sélecteur des 4 onglets */}
-              <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-sand-100 border border-sand-200 text-xs font-semibold">
+              {/* Sélecteur des 5 onglets */}
+              <div className="grid grid-cols-5 gap-1 p-1 rounded-xl bg-sand-100 border border-sand-200 text-[11px] font-semibold">
                 <button
                   type="button"
                   onClick={() => setActiveTab('mockup')}
-                  className={`py-2 px-1 rounded-lg flex flex-col items-center gap-1 transition-all ${
+                  className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition-all ${
                     activeTab === 'mockup' ? 'bg-violet-600 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
@@ -754,7 +1004,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('frame')}
-                  className={`py-2 px-1 rounded-lg flex flex-col items-center gap-1 transition-all ${
+                  className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition-all ${
                     activeTab === 'frame' ? 'bg-violet-600 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
@@ -763,8 +1013,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 </button>
                 <button
                   type="button"
+                  onClick={() => setActiveTab('filter')}
+                  className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition-all ${
+                    activeTab === 'filter' ? 'bg-violet-600 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <Film className="w-3.5 h-3.5" />
+                  <span>Filtres</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setActiveTab('text')}
-                  className={`py-2 px-1 rounded-lg flex flex-col items-center gap-1 transition-all ${
+                  className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition-all ${
                     activeTab === 'text' ? 'bg-violet-600 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
@@ -774,7 +1034,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('logo')}
-                  className={`py-2 px-1 rounded-lg flex flex-col items-center gap-1 transition-all ${
+                  className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition-all ${
                     activeTab === 'logo' ? 'bg-violet-600 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
@@ -786,17 +1046,19 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               {/* ONGLET 1 : MOCKUP & CONTRÔLES 3D */}
               {activeTab === 'mockup' && (
                 <div className="space-y-5 animate-fade-in">
-                  {/* Modèle d'appareil (5 options) */}
+                  {/* Modèle d'appareil (7 options) */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                      Appareil & Modèle
+                      Appareil & Modèle ({['Web', 'MacBook', 'iMac', 'iPad', 'iPhone', 'Watch', 'Flat'].length})
                     </label>
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
                       {[
                         { type: 'browser' as MockupType, label: 'Web', icon: Monitor },
                         { type: 'macbook' as MockupType, label: 'MacBook', icon: Laptop },
+                        { type: 'imac' as MockupType, label: 'iMac', icon: Tv },
                         { type: 'ipad' as MockupType, label: 'iPad', icon: Tablet },
                         { type: 'iphone' as MockupType, label: 'iPhone', icon: Smartphone },
+                        { type: 'watch' as MockupType, label: 'Watch', icon: Watch },
                         { type: 'flat' as MockupType, label: 'Flat', icon: Layers },
                       ].map((item) => {
                         const Icon = item.icon;
@@ -806,7 +1068,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             key={item.type}
                             type="button"
                             onClick={() => setConfig((p) => ({ ...p, mockupType: item.type }))}
-                            className={`py-2 px-1 rounded-xl border text-[11px] font-semibold flex flex-col items-center gap-1 transition-all ${
+                            className={`py-1.5 px-1 rounded-xl border text-[10px] font-semibold flex flex-col items-center gap-1 transition-all ${
                               isSelected
                                 ? 'bg-violet-600 text-white border-violet-600 shadow-xs'
                                 : 'bg-sand-50 border-sand-200 text-stone-600 hover:text-stone-900'
@@ -820,9 +1082,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
                   </div>
 
-                  {/* Thème clair / sombre pour Navigateur & Rayon des coins */}
+                  {/* Thème clair / sombre */}
                   <div className="grid grid-cols-2 gap-3 p-3 rounded-2xl bg-sand-50 border border-sand-200">
-                    {/* Thème */}
                     <div className="space-y-1.5">
                       <span className="text-[10px] font-mono font-bold text-stone-600 uppercase">Thème Cadre</span>
                       <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-sand-200">
@@ -853,7 +1114,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       </div>
                     </div>
 
-                    {/* Finition de cadre */}
                     <div className="space-y-1.5">
                       <span className="text-[10px] font-mono font-bold text-stone-600 uppercase">Finition</span>
                       <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-sand-200">
@@ -875,35 +1135,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
                   </div>
 
-                  {/* Rayon d'angles (Sharp / Curved / Round) */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="font-bold text-stone-700 uppercase">Rayon des angles</span>
-                      <span className="text-violet-600 font-bold capitalize">{config.cornerRadius}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1.5 bg-sand-50 p-1 rounded-xl border border-sand-200">
-                      {[
-                        { id: 'sharp' as const, label: 'Sharp (0px)' },
-                        { id: 'curved' as const, label: 'Curved (16px)' },
-                        { id: 'round' as const, label: 'Round (28px)' },
-                      ].map((cr) => (
-                        <button
-                          key={cr.id}
-                          type="button"
-                          onClick={() => setConfig((p) => ({ ...p, cornerRadius: cr.id }))}
-                          className={`py-1.5 px-2 rounded-lg text-xs transition-all ${
-                            config.cornerRadius === cr.id
-                              ? 'bg-violet-600 text-white font-bold shadow-xs'
-                              : 'text-stone-600 hover:text-stone-900'
-                          }`}
-                        >
-                          {cr.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* SECTION 3D PERSPECTIVE (SIGNATURE SHOTS.SO) */}
+                  {/* SECTION 3D PERSPECTIVE */}
                   <div className="space-y-3.5 p-3.5 rounded-2xl bg-gradient-to-b from-sand-50 to-sand-100/60 border border-sand-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
@@ -921,7 +1153,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       </button>
                     </div>
 
-                    {/* Inclinaison X (Pitch) */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-[11px] font-mono text-stone-600">
                         <span>Tilt Vertical (Haut / Bas)</span>
@@ -937,7 +1168,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       />
                     </div>
 
-                    {/* Inclinaison Y (Yaw) */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-[11px] font-mono text-stone-600">
                         <span>Tilt Horizontal (Gauche / Droite)</span>
@@ -953,7 +1183,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       />
                     </div>
 
-                    {/* Rotation Z (Roll) */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-[11px] font-mono text-stone-600">
                         <span className="flex items-center gap-1">
@@ -988,79 +1217,108 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       className="w-full accent-violet-600 cursor-pointer h-1.5 bg-sand-200 rounded-lg"
                     />
                   </div>
-
-                  {/* Ombres portées 3D */}
-                  <div className="space-y-3 p-3.5 rounded-2xl bg-sand-50 border border-sand-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <SunMedium className="w-4 h-4 text-amber-500" />
-                        <span className="text-xs font-bold text-stone-800">Ombre Portée Studio</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setConfig((p) => ({ ...p, shadowEnabled: !p.shadowEnabled }))}
-                        className={`w-10 h-5 rounded-full transition-colors relative ${
-                          config.shadowEnabled ? 'bg-violet-600' : 'bg-sand-300'
-                        }`}
-                      >
-                        <div
-                          className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                            config.shadowEnabled ? 'translate-x-5' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    {config.shadowEnabled && (
-                      <div className="space-y-2 pt-2 border-t border-sand-200">
-                        <div className="flex items-center justify-between text-[11px] text-stone-500 font-mono">
-                          <span>Diffusion & Intensité</span>
-                          <span className="text-violet-600 font-bold">{config.shadowIntensity}%</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="10"
-                          max="100"
-                          value={config.shadowIntensity}
-                          onChange={(e) => setConfig((p) => ({ ...p, shadowIntensity: Number(e.target.value) }))}
-                          className="w-full accent-violet-600 cursor-pointer h-1.5 bg-sand-200 rounded-lg"
-                        />
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
 
               {/* ONGLET 2 : CADRE GLOBAL, RATIOS & FONDS MAGIQUES */}
               {activeTab === 'frame' && (
                 <div className="space-y-5 animate-fade-in">
-                  {/* Ratios d'aspect */}
+                  {/* Ratios d'aspect sociaux rapides en 1 clic */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                      Format de Cadre (Ratios)
+                      Ratios Sociaux Prédéfinis (1 Clic)
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {RATIO_PRESETS.map((rp) => (
                         <button
                           key={rp.id}
                           type="button"
                           onClick={() => setConfig((p) => ({ ...p, aspectRatio: rp.id }))}
-                          className={`p-2.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                          className={`p-2 rounded-xl border text-left transition-all flex flex-col justify-between ${
                             config.aspectRatio === rp.id
-                              ? 'bg-violet-50/90 border-violet-500 text-violet-900 shadow-xs ring-1 ring-violet-200'
+                              ? 'bg-violet-50/90 border-violet-500 text-violet-900 shadow-xs ring-1 ring-violet-200 font-bold'
                               : 'bg-sand-50 border-sand-200 text-stone-600 hover:border-sand-300 hover:text-stone-900'
                           }`}
                         >
-                          <span className="text-xs font-bold">{rp.label}</span>
+                          <span className="text-xs">{rp.label}</span>
                           <span className="text-[10px] text-stone-500 font-mono mt-0.5">{rp.desc}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Options rapides de rendu : Fond transparent & Bruit de studio */}
+                  {/* FONDS MAGIQUES AUTOMATIQUES EXTRAITS DE LA CAPTURE */}
+                  {autoGradients.length > 0 && !config.bgTransparent && (
+                    <div className="space-y-2 p-3 rounded-2xl bg-violet-50/50 border border-violet-200">
+                      <div className="flex items-center gap-1.5">
+                        <Wand2 className="w-3.5 h-3.5 text-violet-600" />
+                        <label className="text-xs font-bold text-violet-900 uppercase tracking-wider font-mono">
+                          Fonds Magiques Auto
+                        </label>
+                      </div>
+                      <p className="text-[11px] text-violet-700">
+                        Dégradés générés automatiquement à partir des couleurs de votre capture :
+                      </p>
+                      <div className="grid grid-cols-3 gap-2 pt-1">
+                        {autoGradients.map((grad, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setConfig((p) => ({ ...p, bgType: 'gradient', bgValue: grad.value, bgTransparent: false }))}
+                            className={`h-11 rounded-xl relative transition-all group overflow-hidden border ${
+                              !config.bgTransparent && config.bgValue === grad.value
+                                ? 'ring-2 ring-violet-600 border-white shadow-md scale-105'
+                                : 'border-violet-200 hover:border-violet-300'
+                            }`}
+                            style={{ background: grad.value }}
+                            title={grad.name}
+                          >
+                            {!config.bgTransparent && config.bgValue === grad.value && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <Check className="w-4 h-4 text-white drop-shadow-sm stroke-[3]" />
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dégradés prédéfinis Apple & Mesh */}
+                  {!config.bgTransparent && (
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
+                          Fonds Apple & Mesh
+                        </label>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {GRADIENT_PRESETS.map((grad, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setConfig((p) => ({ ...p, bgType: 'gradient', bgValue: grad.value, bgTransparent: false }))}
+                            className={`h-10 rounded-xl relative transition-all group overflow-hidden border ${
+                              !config.bgTransparent && config.bgValue === grad.value
+                                ? 'ring-2 ring-violet-600 border-white shadow-md scale-105'
+                                : 'border-sand-300 hover:border-sand-400'
+                            }`}
+                            style={{ background: grad.value }}
+                            title={grad.name}
+                          >
+                            {!config.bgTransparent && config.bgValue === grad.value && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <Check className="w-3.5 h-3.5 text-white drop-shadow-sm stroke-[3]" />
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Options rapides de rendu */}
                   <div className="grid grid-cols-2 gap-2.5 p-3 rounded-2xl bg-sand-50 border border-sand-200">
-                    {/* Toggle Transparent */}
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-stone-800">Détouré</span>
@@ -1081,7 +1339,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       </button>
                     </div>
 
-                    {/* Toggle Texture Bruit / Grain */}
                     <div className="flex items-center justify-between border-l border-sand-200 pl-3">
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-stone-800">Grain Studio</span>
@@ -1102,114 +1359,107 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       </button>
                     </div>
                   </div>
-
-                  {/* Dégradés prédéfinis Apple & Mesh Wallpapers */}
-                  {!config.bgTransparent && (
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                          Fonds Magiques (Apple / Mesh)
-                        </label>
-                        <span className="text-[10px] text-violet-600 font-bold font-mono">9 Présélections</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {GRADIENT_PRESETS.map((grad, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => setConfig((p) => ({ ...p, bgType: 'gradient', bgValue: grad.value, bgTransparent: false }))}
-                            className={`h-12 rounded-xl relative transition-all group overflow-hidden border ${
-                              !config.bgTransparent && config.bgValue === grad.value
-                                ? 'ring-2 ring-violet-600 border-white shadow-md scale-[1.03]'
-                                : 'border-sand-300 hover:border-sand-400'
-                            }`}
-                            style={{ background: grad.value }}
-                            title={grad.name}
-                          >
-                            {!config.bgTransparent && config.bgValue === grad.value && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                <Check className="w-4 h-4 text-white drop-shadow-sm stroke-[3]" />
-                              </div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Couleurs unies */}
-                  {!config.bgTransparent && (
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                        Couleurs Minimalistes
-                      </label>
-                      <div className="grid grid-cols-5 gap-2">
-                        {SOLID_PRESETS.map((col, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => setConfig((p) => ({ ...p, bgType: 'solid', bgValue: col.value, bgTransparent: false }))}
-                            className={`h-9 rounded-xl relative transition-all border ${
-                              !config.bgTransparent && config.bgValue === col.value
-                                ? 'ring-2 ring-violet-600 border-white shadow-md scale-105'
-                                : 'border-sand-300 hover:border-sand-400'
-                            }`}
-                            style={{ background: col.value }}
-                            title={col.name}
-                          >
-                            {!config.bgTransparent && config.bgValue === col.value && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <Check
-                                  className={`w-3.5 h-3.5 drop-shadow-sm ${
-                                    col.value === '#ffffff' || col.value === '#f5f3ee' || col.value === '#eae6de'
-                                      ? 'text-stone-900'
-                                      : 'text-white'
-                                  }`}
-                                />
-                              </div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Sélecteur de couleur personnalisée */}
-                  {!config.bgTransparent && (
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                        Couleur Hexadécimale Personnalisée
-                      </label>
-                      <div className="flex items-center gap-3 p-2 rounded-xl bg-sand-50 border border-sand-200">
-                        <input
-                          type="color"
-                          value={customColor}
-                          onChange={(e) => {
-                            setCustomColor(e.target.value);
-                            setConfig((p) => ({ ...p, bgType: 'solid', bgValue: e.target.value, bgTransparent: false }));
-                          }}
-                          className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-none"
-                        />
-                        <input
-                          type="text"
-                          value={config.bgValue.startsWith('#') ? config.bgValue : customColor}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setCustomColor(val);
-                            if (val.match(/^#[0-9A-Fa-f]{6}$/)) {
-                              setConfig((p) => ({ ...p, bgType: 'solid', bgValue: val, bgTransparent: false }));
-                            }
-                          }}
-                          placeholder="#7c3aed"
-                          className="flex-1 bg-transparent text-xs font-mono text-stone-800 outline-none"
-                        />
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 
-              {/* ONGLET 3 : GESTION DES TEXTES */}
+              {/* ONGLET 3 : FILTRES CINÉMATIQUES & EXPORT VIDÉO */}
+              {activeTab === 'filter' && (
+                <div className="space-y-5 animate-fade-in">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
+                      Filtres Cinématiques Overlay
+                    </label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[
+                        { id: 'none' as SceneFilterType, label: 'Aucun' },
+                        { id: 'grain' as SceneFilterType, label: 'Bruit Film' },
+                        { id: 'vhs' as SceneFilterType, label: 'VHS' },
+                        { id: 'glitch' as SceneFilterType, label: 'Glitch' },
+                      ].map((fl) => (
+                        <button
+                          key={fl.id}
+                          type="button"
+                          onClick={() => setConfig((p) => ({ ...p, filterType: fl.id }))}
+                          className={`py-2 px-1 rounded-xl border text-xs font-semibold transition-all ${
+                            (config.filterType || 'none') === fl.id
+                              ? 'bg-violet-600 text-white border-violet-600 shadow-xs'
+                              : 'bg-sand-50 border-sand-200 text-stone-600 hover:text-stone-900'
+                          }`}
+                        >
+                          {fl.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {config.filterType && config.filterType !== 'none' && (
+                    <div className="space-y-2 p-3.5 rounded-2xl bg-sand-50 border border-sand-200">
+                      <div className="flex items-center justify-between text-xs font-mono">
+                        <span className="font-bold text-stone-700">Intensité du filtre</span>
+                        <span className="text-violet-600 font-bold">{config.filterIntensity || 40}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="10"
+                        max="100"
+                        value={config.filterIntensity || 40}
+                        onChange={(e) => setConfig((p) => ({ ...p, filterIntensity: Number(e.target.value) }))}
+                        className="w-full accent-violet-600 cursor-pointer h-1.5 bg-sand-200 rounded-lg"
+                      />
+                    </div>
+                  )}
+
+                  {/* PRESETS D'ANIMATION VIDÉO */}
+                  <div className="space-y-3 p-4 rounded-2xl bg-amber-50/60 border border-amber-200">
+                    <div className="flex items-center gap-2">
+                      <Video className="w-4 h-4 text-amber-600" />
+                      <span className="text-xs font-bold text-amber-900">Animation Vidéo (3s MP4/WebM)</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { id: 'zoomIn' as VideoAnimPreset, label: 'Zoom Avant' },
+                        { id: 'zoomOut' as VideoAnimPreset, label: 'Zoom Arrière' },
+                        { id: 'panHorizontal' as VideoAnimPreset, label: 'Pan Horiz.' },
+                      ].map((vp) => (
+                        <button
+                          key={vp.id}
+                          type="button"
+                          onClick={() => setVideoPreset(vp.id)}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all ${
+                            videoPreset === vp.id
+                              ? 'bg-amber-600 text-white shadow-xs'
+                              : 'bg-white text-amber-900 border border-amber-200'
+                          }`}
+                        >
+                          {vp.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleExportVideo}
+                      disabled={isExportingVideo}
+                      className="w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all disabled:opacity-50"
+                    >
+                      {isExportingVideo ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Génération de la vidéo (3s)...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Video className="w-3.5 h-3.5" />
+                          <span>Générer la vidéo animée</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ONGLET 4 : GESTION DES TEXTES */}
               {activeTab === 'text' && (
                 <div className="space-y-6 animate-fade-in">
                   <button
@@ -1256,8 +1506,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
                   )}
 
-                  {/* Paramètres du texte sélectionné */}
-                  {activeText ? (
+                  {activeText && (
                     <div className="p-4 rounded-2xl bg-sand-50 border border-sand-200 space-y-4">
                       <div className="space-y-1.5">
                         <label className="text-[11px] font-mono text-stone-600">Contenu du texte</label>
@@ -1300,59 +1549,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           </div>
                         </div>
                       </div>
-
-                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-sand-200">
-                        <div className="flex items-center bg-white p-1 rounded-lg border border-sand-200">
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateText(activeText.id, { align: 'left' })}
-                            className={`p-1.5 rounded ${activeText.align === 'left' ? 'bg-violet-600 text-white' : 'text-stone-500'}`}
-                          >
-                            <AlignLeft className="w-3 h-3" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateText(activeText.id, { align: 'center' })}
-                            className={`p-1.5 rounded ${activeText.align === 'center' ? 'bg-violet-600 text-white' : 'text-stone-500'}`}
-                          >
-                            <AlignCenter className="w-3 h-3" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateText(activeText.id, { align: 'right' })}
-                            className={`p-1.5 rounded ${activeText.align === 'right' ? 'bg-violet-600 text-white' : 'text-stone-500'}`}
-                          >
-                            <AlignRight className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleUpdateText(activeText.id, {
-                              fontWeight: activeText.fontWeight === 'bold' ? 'normal' : 'bold',
-                            })
-                          }
-                          className={`px-3 py-1.5 rounded-lg border text-xs flex items-center gap-1 font-semibold ${
-                            activeText.fontWeight === 'bold'
-                              ? 'bg-violet-600 text-white border-violet-600'
-                              : 'bg-white text-stone-600 border-sand-200'
-                          }`}
-                        >
-                          <Bold className="w-3 h-3" />
-                          <span>Gras</span>
-                        </button>
-                      </div>
                     </div>
-                  ) : (
-                    <p className="text-xs text-stone-500 text-center py-4">
-                      Sélectionnez un texte sur la scène ou ajoutez-en un nouveau.
-                    </p>
                   )}
                 </div>
               )}
 
-              {/* ONGLET 4 : GESTION DES LOGOS & FILIGRANES */}
+              {/* ONGLET 5 : GESTION DES LOGOS & MARQUE BLANCHE WATERMARK */}
               {activeTab === 'logo' && (
                 <div className="space-y-6 animate-fade-in">
                   <input
@@ -1362,6 +1564,13 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     onChange={handleLogoUpload}
                     className="hidden"
                   />
+                  <input
+                    type="file"
+                    accept="image/png,image/svg+xml,image/jpeg,image/webp"
+                    ref={watermarkInputRef}
+                    onChange={handleWatermarkUpload}
+                    className="hidden"
+                  />
 
                   <button
                     type="button"
@@ -1369,8 +1578,45 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     className="w-full py-2.5 px-4 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs"
                   >
                     <Plus className="w-4 h-4 text-violet-600" />
-                    <span>Uploader un Logo (PNG / SVG)</span>
+                    <span>Uploader un Logo sur la scène</span>
                   </button>
+
+                  {/* CONFIGURATION WATERMARK / MARQUE BLANCHE */}
+                  <div className="p-3.5 rounded-2xl bg-sand-50 border border-sand-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-violet-600" />
+                        <span className="text-xs font-bold text-stone-900">Filigrane & Marque</span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-violet-700 uppercase font-mono">
+                        Plan {userPlan}
+                      </span>
+                    </div>
+
+                    {isFreePlan ? (
+                      <p className="text-[11px] text-stone-500 leading-relaxed">
+                        Formule Free : Le filigrane discret &quot;Fait avec OmniMockup&quot; est inclus automatiquement. Passez Pro pour le retirer !
+                      </p>
+                    ) : isAgencePlan ? (
+                      <div className="space-y-2 pt-1 border-t border-sand-200">
+                        <p className="text-[11px] text-stone-600">
+                          Formule Agence : Uploadez votre propre logo en filigrane (marque blanche) :
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => watermarkInputRef.current?.click()}
+                          className="w-full py-2 px-3 rounded-xl bg-white hover:bg-sand-100 text-stone-700 border border-sand-200 font-semibold text-xs flex items-center justify-center gap-1.5"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-violet-600" />
+                          <span>{config.customWatermarkUrl ? 'Modifier le filigrane' : 'Uploader mon logo de marque'}</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-emerald-700 font-semibold">
+                        Formule Pro : Filigrane automatique supprimé ! Vos exports sont 100% propres sans filigrane.
+                      </p>
+                    )}
+                  </div>
 
                   {config.logos.length > 0 && (
                     <div className="space-y-3">
@@ -1409,7 +1655,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
                   )}
 
-                  {activeLogo ? (
+                  {activeLogo && (
                     <div className="p-4 rounded-2xl bg-sand-50 border border-sand-200 space-y-4">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
@@ -1441,10 +1687,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         />
                       </div>
                     </div>
-                  ) : (
-                    <p className="text-xs text-stone-500 text-center py-4">
-                      Importez un logo ou sélectionnez-en un pour ajuster sa taille.
-                    </p>
                   )}
                 </div>
               )}

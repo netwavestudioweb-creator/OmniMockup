@@ -243,7 +243,85 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
     );
   }
 
-  // 5. Cadre Flat / Borderless (Très populaire sur Shots.so pour un look épuré)
+  // 5. Cadre iMac 24" (Desktop tout-en-un avec menton aluminium et pied)
+  if (type === 'imac') {
+    return (
+      <div className="w-full flex flex-col items-center select-none py-1">
+        {/* Écran iMac & Menton aluminium */}
+        <div className="w-full bg-stone-900 border-[8px] border-stone-800 rounded-t-2xl sm:rounded-t-3xl shadow-2xl relative overflow-hidden flex flex-col">
+          {/* Caméra FaceTime en haut */}
+          <div className="absolute top-1.5 left-1/2 -translate-x-1/2 z-20 w-1.5 h-1.5 rounded-full bg-stone-950 border border-stone-700 flex items-center justify-center">
+            <div className="w-0.5 h-0.5 rounded-full bg-emerald-500/80" />
+          </div>
+
+          {/* Dalle de l'écran 16:9 */}
+          <div
+            className="relative aspect-[16/9] bg-black overflow-hidden cursor-pointer group"
+            onClick={onClickImage}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={screenshotBase64}
+              alt={title || url}
+              className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.01]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-transparent pointer-events-none" />
+          </div>
+
+          {/* Menton Aluminium iMac bas de dalle */}
+          <div className="h-6 sm:h-8 bg-gradient-to-r from-stone-200 via-stone-300 to-stone-200 border-t border-stone-400 flex items-center justify-center shadow-inner">
+            <div className="w-2.5 h-2.5 rounded-full bg-stone-400/80 border border-stone-500/50 shadow-2xs" />
+          </div>
+        </div>
+
+        {/* Pied et socle iMac */}
+        <div className="w-28 sm:w-36 h-10 sm:h-12 bg-gradient-to-b from-stone-300 via-stone-400 to-stone-300 rounded-b-xl border-t border-stone-400 shadow-xl flex items-end justify-center">
+          <div className="w-full h-1 bg-stone-400 rounded-b-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  // 6. Cadre Apple Watch Ultra / Series
+  if (type === 'watch') {
+    return (
+      <div className="w-full flex justify-center select-none py-2">
+        <div className="w-full max-w-[230px] sm:max-w-[250px] flex flex-col items-center">
+          {/* Attache bracelet haut */}
+          <div className="w-28 sm:w-32 h-3 sm:h-4 bg-gradient-to-b from-stone-800 to-stone-700 rounded-t-lg shadow-sm border-t border-stone-600" />
+
+          {/* Boîtier principal Apple Watch */}
+          <div className="w-full relative rounded-[38px] sm:rounded-[44px] p-[8px] sm:p-[10px] bg-gradient-to-b from-stone-700 via-stone-800 to-stone-900 shadow-2xl border-2 border-stone-600">
+            {/* Couronne numérique à droite */}
+            <div className="absolute -right-[7px] top-10 w-[7px] h-9 bg-gradient-to-b from-stone-500 via-stone-600 to-stone-500 rounded-r-md border border-stone-400 shadow-sm flex items-center justify-center">
+              <div className="w-1 h-7 bg-stone-800/80 rounded-full" />
+            </div>
+
+            {/* Bouton latéral droit */}
+            <div className="absolute -right-[5px] top-24 w-[5px] h-8 bg-stone-600 rounded-r-xs border border-stone-500" />
+
+            {/* Écran montre tactile */}
+            <div
+              className="relative rounded-[30px] sm:rounded-[34px] overflow-hidden aspect-[4/5] bg-black cursor-pointer group shadow-inner"
+              onClick={onClickImage}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={screenshotBase64}
+                alt={title || url}
+                className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
+              />
+            </div>
+          </div>
+
+          {/* Attache bracelet bas */}
+          <div className="w-28 sm:w-32 h-3 sm:h-4 bg-gradient-to-b from-stone-700 to-stone-800 rounded-b-lg shadow-sm border-b border-stone-600" />
+        </div>
+      </div>
+    );
+  }
+
+  // 7. Cadre Flat / Borderless (Très populaire sur Shots.so pour un look épuré)
   return (
     <div
       className={`w-full overflow-hidden transition-all select-none border border-black/10 dark:border-white/10 ${radiusClass} ${

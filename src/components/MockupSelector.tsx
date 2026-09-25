@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { MockupType } from '@/types/analyzer';
-import { Monitor, Laptop, Smartphone, Tablet, Layers, Check, X, Sparkles } from 'lucide-react';
+import { Monitor, Laptop, Smartphone, Tablet, Layers, Watch, Tv, Check, X, Sparkles } from 'lucide-react';
 
 interface MockupOption {
   type: MockupType;
@@ -28,6 +28,13 @@ const MOCKUP_OPTIONS: MockupOption[] = [
     icon: Laptop,
   },
   {
+    type: 'imac',
+    title: 'iMac 24"',
+    subtitle: 'Écran de bureau tout-en-un avec pied',
+    badge: 'Studio',
+    icon: Tv,
+  },
+  {
     type: 'ipad',
     title: 'iPad Pro',
     subtitle: 'Tablette tactile 4:3 à bordures fines',
@@ -40,6 +47,13 @@ const MOCKUP_OPTIONS: MockupOption[] = [
     subtitle: 'Smartphone vertical avec Dynamic Island',
     badge: 'Mobile',
     icon: Smartphone,
+  },
+  {
+    type: 'watch',
+    title: 'Apple Watch',
+    subtitle: 'Montre connectée avec couronne numérique',
+    badge: 'Wearable',
+    icon: Watch,
   },
   {
     type: 'flat',
@@ -142,7 +156,20 @@ export const MockupSelector: React.FC<MockupSelectorProps> = ({
                   </div>
                 )}
 
-                {/* 3. Miniature iPad */}
+                {/* 3. Miniature iMac */}
+                {opt.type === 'imac' && (
+                  <div className="w-[90%] flex flex-col items-center">
+                    <div className="w-full h-16 rounded-t-lg bg-stone-900 border border-stone-800 flex flex-col items-center justify-between p-1 relative shadow-xs">
+                      <div className="w-full flex-1 rounded bg-stone-950 flex items-center justify-center">
+                        <Tv className="w-3 h-3 text-stone-600" />
+                      </div>
+                      <div className="w-full h-2 bg-stone-300 rounded-b-sm border-t border-stone-400 mt-0.5" />
+                    </div>
+                    <div className="w-6 h-3 bg-stone-300 rounded-b flex items-center justify-center border-t border-stone-400 shadow-xs" />
+                  </div>
+                )}
+
+                {/* 4. Miniature iPad */}
                 {opt.type === 'ipad' && (
                   <div className="w-20 h-22 rounded-xl bg-stone-900 p-1 border border-stone-700 flex flex-col items-center justify-between relative shadow-xs">
                     <div className="w-1 h-1 rounded-full bg-stone-700 mt-0.5" />
@@ -153,7 +180,7 @@ export const MockupSelector: React.FC<MockupSelectorProps> = ({
                   </div>
                 )}
 
-                {/* 4. Miniature iPhone */}
+                {/* 5. Miniature iPhone */}
                 {opt.type === 'iphone' && (
                   <div className="w-14 h-22 rounded-2xl bg-stone-900 p-1 border border-stone-700 flex flex-col items-center justify-between relative shadow-xs">
                     <div className="w-6 h-1.5 bg-black rounded-full mt-0.5" />
@@ -161,6 +188,20 @@ export const MockupSelector: React.FC<MockupSelectorProps> = ({
                       <Smartphone className="w-3 h-3 text-stone-600" />
                     </div>
                     <div className="w-6 h-0.5 bg-white/40 rounded-full mb-0.5" />
+                  </div>
+                )}
+
+                {/* 6. Miniature Apple Watch */}
+                {opt.type === 'watch' && (
+                  <div className="w-14 h-22 flex flex-col items-center justify-center relative">
+                    <div className="w-8 h-2 bg-stone-700 rounded-t-sm" />
+                    <div className="w-12 h-16 rounded-[14px] bg-stone-900 border border-stone-700 p-1 flex flex-col items-center justify-center relative shadow-xs">
+                      <div className="absolute -right-1 top-4 w-1 h-3 bg-stone-500 rounded-r-xs" />
+                      <div className="w-full h-full rounded-[10px] bg-stone-950 flex items-center justify-center">
+                        <Watch className="w-3 h-3 text-stone-600" />
+                      </div>
+                    </div>
+                    <div className="w-8 h-2 bg-stone-700 rounded-b-sm" />
                   </div>
                 )}
 

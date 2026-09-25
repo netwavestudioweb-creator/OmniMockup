@@ -1,9 +1,11 @@
-export type MockupType = 'browser' | 'macbook' | 'iphone' | 'ipad' | 'flat';
+export type MockupType = 'browser' | 'macbook' | 'iphone' | 'ipad' | 'flat' | 'watch' | 'imac';
 
 export type DeviceTheme = 'light' | 'dark';
 export type DeviceStyle = 'default' | 'glass' | 'inset';
 export type CornerRadius = 'sharp' | 'curved' | 'round';
 export type ExportScale = 1 | 2 | 4;
+export type SceneFilterType = 'none' | 'grain' | 'vhs' | 'glitch';
+export type VideoAnimPreset = 'zoomIn' | 'zoomOut' | 'panHorizontal';
 
 export interface SceneConfig {
   aspectRatio: SceneAspectRatio;
@@ -25,6 +27,9 @@ export interface SceneConfig {
   shadowEnabled: boolean;
   shadowIntensity: number; // 0 - 100
   exportScale?: ExportScale;
+  filterType?: SceneFilterType;
+  filterIntensity?: number; // 0 to 100
+  customWatermarkUrl?: string; // Pour le plan Agence (marque blanche)
   texts: SceneTextLayer[];
   logos: SceneLogoLayer[];
 }
@@ -122,7 +127,7 @@ export interface CaptureResponse {
   totalExecutionTimeMs: number;
 }
 
-export type SceneAspectRatio = '1:1' | '16:9' | 'libre' | '9:16' | '4:3';
+export type SceneAspectRatio = '1:1' | '16:9' | 'libre' | '9:16' | '4:3' | '2:3' | '1.91:1';
 
 export interface SceneTextLayer {
   id: string;

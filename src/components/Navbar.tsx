@@ -44,6 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
   return (
     <header className="sticky top-0 z-50 border-b border-sand-200 bg-sand-50/95 backdrop-blur-md w-full max-w-full">
       <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between w-full">
+        {/* Logo & Titre */}
         <Link
           href="/"
           onClick={() => {
@@ -65,23 +66,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
               </span>
             </div>
             <p className="text-[10px] sm:text-[11px] text-stone-500 font-sans hidden sm:block truncate">
-              Analyse de site, vision IA & mockups haute fidélité
+              Studio de mockups &amp; capture instantanée
             </p>
           </div>
         </Link>
 
         {/* Navigation Desktop & Tablette */}
         <div className="hidden sm:flex items-center space-x-3">
-          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white border border-sand-200 text-xs text-stone-700 shadow-sm">
+          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white border border-sand-200 text-xs text-stone-700 shadow-2xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span className="text-stone-500">Moteur IA :</span>
+            <span className="text-stone-500">Moteur :</span>
             <span className="font-mono text-violet-700 font-semibold flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-violet-600" />
-              Gemini Vision
+              AI 3-Tiers
             </span>
           </div>
 
-          {showPricingLink && (
+          {/* Afficher les Tarifs uniquement si l'utilisateur N'EST PAS connecté */}
+          {!user && showPricingLink && (
             <Link
               href="/pricing"
               className="flex items-center gap-1.5 text-xs font-semibold text-stone-700 hover:text-violet-700 px-3.5 py-1.5 rounded-lg border border-sand-200 bg-white hover:bg-sand-100 transition-all shadow-2xs"
@@ -97,7 +99,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
               onClick={onReset}
               className="text-xs font-medium text-stone-600 hover:text-stone-900 px-3 py-1.5 rounded-lg border border-sand-200 bg-white hover:bg-sand-100 transition-colors"
             >
-              Nouvelle analyse
+              Nouvelle capture
             </button>
           )}
 
@@ -153,17 +155,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
                           className="flex items-center gap-2.5 px-3.5 py-2 text-stone-700 hover:bg-sand-50 hover:text-violet-700 transition-colors font-medium"
                         >
                           <UserIcon className="w-4 h-4 text-violet-600" />
-                          <span>Mon compte</span>
+                          <span>Mon Compte &amp; Quotas</span>
                         </Link>
 
-                        <Link
-                          href="/pricing"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3.5 py-2 text-stone-700 hover:bg-sand-50 hover:text-violet-700 transition-colors font-medium"
-                        >
-                          <CreditCard className="w-4 h-4 text-stone-400" />
-                          <span>Formules & Tarifs</span>
-                        </Link>
+                        {!isPremium && (
+                          <Link
+                            href="/account"
+                            onClick={() => setUserDropdownOpen(false)}
+                            className="flex items-center gap-2.5 px-3.5 py-2 text-violet-700 hover:bg-violet-50 transition-colors font-semibold"
+                          >
+                            <Zap className="w-4 h-4 text-violet-600" />
+                            <span>Passer Pro ✨</span>
+                          </Link>
+                        )}
                       </div>
 
                       <div className="pt-1 border-t border-sand-100">
@@ -209,7 +213,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
               href="/account"
               className="px-2.5 py-1 text-xs font-semibold text-violet-700 bg-violet-50 rounded-lg border border-violet-200"
             >
-              Compte
+              Mon Compte
             </Link>
           ) : (
             <Link
@@ -280,42 +284,29 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
               className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium text-stone-800 hover:bg-sand-100 transition-colors"
             >
               <Layers className="w-4 h-4 text-violet-600" />
-              <span>Studio & Analyse</span>
+              <span>Studio de Mockups</span>
             </Link>
 
-            {user && (
+            {user ? (
               <Link
                 href="/account"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium text-stone-800 hover:bg-sand-100 transition-colors"
               >
                 <UserIcon className="w-4 h-4 text-violet-600" />
-                <span>Mon compte & Quotas</span>
+                <span>Mon compte &amp; Quotas</span>
               </Link>
-            )}
-
-            {showPricingLink && (
-              <Link
-                href="/pricing"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium text-stone-800 hover:bg-sand-100 transition-colors"
-              >
-                <CreditCard className="w-4 h-4 text-violet-600" />
-                <span>Grille des Tarifs (Free, Pro, Agence)</span>
-              </Link>
-            )}
-
-            {onReset && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onReset();
-                }}
-                className="w-full text-left flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors border border-violet-200"
-              >
-                <span>Lancer une nouvelle analyse</span>
-              </button>
+            ) : (
+              showPricingLink && (
+                <Link
+                  href="/pricing"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium text-stone-800 hover:bg-sand-100 transition-colors"
+                >
+                  <CreditCard className="w-4 h-4 text-violet-600" />
+                  <span>Tarifs &amp; Formules</span>
+                </Link>
+              )
             )}
 
             {user && (

@@ -82,12 +82,16 @@ export async function POST(req: NextRequest) {
     target.url = validation.parsedUrl.href;
   }
 
+  const fullPage = typeof body?.fullPage === 'boolean' ? body.fullPage : true;
+  const hideBanners = typeof body?.hideBanners === 'boolean' ? body.hideBanners : true;
+  const viewport = body?.viewport as { width: number; height: number } | undefined;
+
   const results: CaptureItemResult[] = [];
 
   for (const target of targetsToProcess) {
     const itemStartTime = Date.now();
     try {
-      const captureRes = await captureWebPage(target.url);
+      const captureRes = await captureWebPage(target.url, { fullPage, hideBanners, viewport });
       results.push({
         url: target.url,
         title: target.label || captureRes.pageTitle || target.url,

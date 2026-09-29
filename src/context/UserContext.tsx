@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { User } from '@supabase/supabase-js';
+import { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
 
@@ -94,7 +94,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
+        // Timeout rapide (1200ms) pour éviter les blocages de rendu si Supabase est indisponible
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) =>
+          setTimeout(() => resolve({ data: { session: null } }), 1200)
+        );
+
+        const res = await Promise.race([sessionPromise, timeoutPromise]);
+        const session = res?.data?.session ?? null;
+
         if (mounted) {
           const currentUser = session?.user ?? null;
           setUser(currentUser);
@@ -113,7 +121,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       const localTestSession = typeof window !== 'undefined' ? localStorage.getItem('omnimockup_test_session') : null;
       if (localTestSession && event === 'SIGNED_OUT') {
         localStorage.removeItem('omnimockup_test_session');

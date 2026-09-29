@@ -18,25 +18,24 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const plan = body?.plan as 'pro' | 'agence';
+    const plan = (body?.plan || 'pro') as 'starter' | 'creator' | 'pro' | 'agence';
 
-    if (plan !== 'pro' && plan !== 'agence') {
-      return NextResponse.json(
-        { success: false, error: 'Formule d’abonnement invalide (choisir "pro" ou "agence").' },
-        { status: 400 }
-      );
+    let priceId = '';
+    if (plan === 'starter') {
+      priceId = process.env.STRIPE_STARTER_PRICE_ID || process.env.STRIPE_PRO_PRICE_ID || '';
+    } else if (plan === 'creator') {
+      priceId = process.env.STRIPE_CREATOR_PRICE_ID || process.env.STRIPE_PRO_PRICE_ID || '';
+    } else if (plan === 'pro') {
+      priceId = process.env.STRIPE_PRO_PRICE_ID || '';
+    } else if (plan === 'agence') {
+      priceId = process.env.STRIPE_AGENCE_PRICE_ID || '';
     }
-
-    const priceId =
-      plan === 'pro'
-        ? process.env.STRIPE_PRO_PRICE_ID
-        : process.env.STRIPE_AGENCE_PRICE_ID;
 
     if (!priceId) {
       return NextResponse.json(
         {
           success: false,
-          error: `Identifiant de tarif Stripe manquant pour le plan "${plan}". Veuillez exécuter setup-stripe-products.ts.`,
+          error: `Identifiant de tarif Stripe non configuré pour le plan "${plan}". Veuillez paramétrer les clés Stripe dans le fichier .env.local.`,
         },
         { status: 500 }
       );

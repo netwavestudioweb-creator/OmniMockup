@@ -14,6 +14,7 @@ interface MockupFrameProps {
   theme?: DeviceTheme;
   styleVariant?: DeviceStyle;
   cornerRadius?: CornerRadius;
+  cropOffsetY?: number;
   onClickImage?: () => void;
 }
 
@@ -27,6 +28,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
   theme = 'light',
   styleVariant = 'default',
   cornerRadius = 'curved',
+  cropOffsetY = 0,
   onClickImage,
 }) => {
   // Extraction dynamique du domaine si non fourni
@@ -157,7 +159,8 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
           <img
             src={screenshotBase64}
             alt={title || url}
-            className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.01]"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
+            style={{ objectPosition: `center ${cropOffsetY}%` }}
           />
         </div>
       </div>
@@ -187,7 +190,8 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
             <img
               src={screenshotBase64}
               alt={title || url}
-              className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.01]"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
+              style={{ objectPosition: `center ${cropOffsetY}%` }}
             />
             {/* Reflet vitré Apple */}
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none" />
@@ -223,7 +227,8 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
             <img
               src={screenshotBase64}
               alt={title || url}
-              className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.01]"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
+              style={{ objectPosition: `center ${cropOffsetY}%` }}
             />
             {/* Barre de retour iPad */}
             <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 z-20 w-32 h-1 bg-white/40 rounded-full backdrop-blur-md" />
@@ -261,7 +266,8 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
             <img
               src={screenshotBase64}
               alt={title || url}
-              className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+              style={{ objectPosition: `center ${cropOffsetY}%` }}
             />
 
             {/* Barre d'accueil tactile */}
@@ -292,7 +298,8 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
             <img
               src={screenshotBase64}
               alt={title || url}
-              className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.01]"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
+              style={{ objectPosition: `center ${cropOffsetY}%` }}
             />
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-transparent pointer-events-none" />
           </div>
@@ -338,7 +345,8 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
               <img
                 src={screenshotBase64}
                 alt={title || url}
-                className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                style={{ objectPosition: `center ${cropOffsetY}%` }}
               />
             </div>
           </div>
@@ -367,7 +375,8 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
         <img
           src={screenshotBase64}
           alt={title || url}
-          className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.01]"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
+          style={{ objectPosition: `center ${cropOffsetY}%` }}
         />
       </div>
     </div>

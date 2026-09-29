@@ -34,18 +34,38 @@ export function getFaviconUrl(urlStr: string): string {
   return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
 }
 
+export interface CaptureOptions {
+  fullPage?: boolean;
+  viewport?: { width: number; height: number };
+  hideBanners?: boolean;
+}
+
 /**
- * Moteur universel de capture web 3-Tiers :
+ * Moteur universel de capture web 3-Tiers Haute Performance :
  * Tier 1 : Playwright (Local / Docker)
- * Tier 2 : Puppeteer + @sparticuz/chromium (Linux Serverless avec dépendances C++)
- * Tier 3 : Microlink Cloud API + HTML Parser (Fallback ultime garanti pour Vercel Serverless)
+ * Tier 2 : Puppeteer + @sparticuz/chromium (Linux Serverless)
+ * Tier 3 : Microlink Cloud API + HTML Parser (Fallback rapide Vercel Serverless)
  */
-export async function captureWebPage(targetUrl: string): Promise<WebPageCaptureResult> {
+export async function captureWebPage(
+  targetUrl: string,
+  options: CaptureOptions = {}
+): Promise<WebPageCaptureResult> {
   const domainName = extractDomainName(targetUrl);
   const faviconUrl = getFaviconUrl(targetUrl);
 
+  const fullPage = options.fullPage ?? true;
+  const viewportWidth = options.viewport?.width || 1440;
+  const viewportHeight = options.viewport?.height || 900;
+  const hideBanners = options.hideBanners ?? true;
+
+  const cookieBannerCSS = `
+    [id*="cookie" i], [class*="cookie" i], [id*="consent" i], [class*="consent" i],
+    [id*="gdpr" i], [class*="gdpr" i], [id*="banner" i], #onetrust-banner-sdk,
+    .cookie-banner, .cookie-notice, .modal-backdrop, .overlay { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+  `;
+
   // -------------------------------------------------------------
-  // TIER 1 : Playwright (Local / Docker)
+  // TIER 1 : Playwright (Ultra-rapide avec arguments optimisés)
   // -------------------------------------------------------------
   try {
     const { chromium } = await import('playwright');
@@ -56,24 +76,36 @@ export async function captureWebPage(targetUrl: string): Promise<WebPageCaptureR
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        '--single-process',
+        '--disable-background-networking',
+        '--disable-default-apps',
+        '--disable-extensions',
+        '--disable-sync',
+        '--disable-translate',
+        '--metrics-recording-only',
+        '--no-first-run',
+        '--safebrowsing-disable-auto-update',
       ],
     });
 
     try {
       const context = await browser.newContext({
-        viewport: { width: 1440, height: 900 },
+        viewport: { width: viewportWidth, height: viewportHeight },
         userAgent:
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        deviceScaleFactor: 1,
       });
       const page = await context.newPage();
-      page.setDefaultTimeout(15000);
+      page.setDefaultTimeout(10000);
 
-      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-      await page.waitForTimeout(500);
+      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
+      await page.waitForTimeout(200);
+
+      if (hideBanners) {
+        await page.addStyleTag({ content: cookieBannerCSS }).catch(() => {});
+      }
 
       const pageTitle = (await page.title()) || domainName;
-      const screenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 65, fullPage: true });
+      const screenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 80, fullPage });
       const screenshotBase64 = `data:image/jpeg;base64,${screenshotBuffer.toString('base64')}`;
 
       const { candidates, pageSize } = await extractDomSectionsPlaywright(page);
@@ -109,15 +141,19 @@ export async function captureWebPage(targetUrl: string): Promise<WebPageCaptureR
 
     try {
       const page = await browser.newPage();
-      await page.setViewport({ width: 1440, height: 900 });
-      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-      await new Promise((r) => setTimeout(r, 500));
+      await page.setViewport({ width: viewportWidth, height: viewportHeight });
+      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
+      await new Promise((r) => setTimeout(r, 200));
+
+      if (hideBanners) {
+        await page.addStyleTag({ content: cookieBannerCSS }).catch(() => {});
+      }
 
       const pageTitle = (await page.title()) || domainName;
       const screenshotBuffer = (await page.screenshot({
         type: 'jpeg',
-        quality: 65,
-        fullPage: true,
+        quality: 80,
+        fullPage,
       })) as Buffer;
       const screenshotBase64 = `data:image/jpeg;base64,${screenshotBuffer.toString('base64')}`;
 
@@ -139,17 +175,23 @@ export async function captureWebPage(targetUrl: string): Promise<WebPageCaptureR
   // -------------------------------------------------------------
   // TIER 3 : Microlink Cloud API Fallback (Pour Vercel Serverless sans libnss3.so)
   // -------------------------------------------------------------
-  return await captureWebPageCloudFallback(targetUrl);
+  return await captureWebPageCloudFallback(targetUrl, options);
 }
 
 /**
  * Tier 3 : Capture Cloud via l'API publique Microlink + parsing HTML direct
  */
-async function captureWebPageCloudFallback(targetUrl: string): Promise<WebPageCaptureResult> {
+async function captureWebPageCloudFallback(
+  targetUrl: string,
+  options: CaptureOptions = {}
+): Promise<WebPageCaptureResult> {
   console.log('[Capture Engine] Exécution du secours Cloud API pour :', targetUrl);
 
   const domainName = extractDomainName(targetUrl);
   const faviconUrl = getFaviconUrl(targetUrl);
+  const width = options.viewport?.width || 1440;
+  const height = options.viewport?.height || 900;
+  const fullPage = options.fullPage ?? true;
 
   let screenshotBase64 = '';
   let pageTitle = domainName;
@@ -157,7 +199,9 @@ async function captureWebPageCloudFallback(targetUrl: string): Promise<WebPageCa
   try {
     const microlinkUrl = `https://api.microlink.io/?url=${encodeURIComponent(
       targetUrl
-    )}&screenshot=true&meta=true&viewport.width=1440&viewport.height=900&viewport.deviceScaleFactor=1`;
+    )}&screenshot=true&meta=true&viewport.width=${width}&viewport.height=${height}&embed=screenshot.url${
+      fullPage ? '&screenshot.fullPage=true' : ''
+    }`;
 
     const response = await fetch(microlinkUrl, {
       headers: { Accept: 'application/json' },

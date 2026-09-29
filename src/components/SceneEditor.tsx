@@ -55,7 +55,7 @@ interface SceneEditorProps {
   onClose?: () => void;
 }
 
-// Fonction d'extraction automatique des couleurs dominantes de la capture (Fonds Magiques)
+// Fonction d'extraction automatique des couleurs dominantes de la capture (Fonds Magiques - ultra rapide <1ms)
 function extractMagicGradients(base64Image: string): Promise<{ name: string; value: string }[]> {
   return new Promise((resolve) => {
     if (!base64Image) return resolve([]);
@@ -67,14 +67,14 @@ function extractMagicGradients(base64Image: string): Promise<{ name: string; val
         const ctx = canvas.getContext('2d');
         if (!ctx) return resolve([]);
 
-        canvas.width = 40;
-        canvas.height = 40;
-        ctx.drawImage(img, 0, 0, 40, 40);
+        canvas.width = 16;
+        canvas.height = 16;
+        ctx.drawImage(img, 0, 0, 16, 16);
 
-        const imgData = ctx.getImageData(0, 0, 40, 40).data;
+        const imgData = ctx.getImageData(0, 0, 16, 16).data;
         const colorCounts: { [key: string]: number } = {};
 
-        for (let i = 0; i < imgData.length; i += 16) {
+        for (let i = 0; i < imgData.length; i += 12) {
           const r = Math.floor(imgData[i] / 32) * 32;
           const g = Math.floor(imgData[i + 1] / 32) * 32;
           const b = Math.floor(imgData[i + 2] / 32) * 32;
@@ -281,44 +281,53 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }
   };
 
+  const rafMoveRef = useRef<number | null>(null);
+
   const handlePointerMove = useCallback((e: PointerEvent) => {
     if (!draggingTarget || !sceneRef.current) return;
 
-    const sceneRect = sceneRef.current.getBoundingClientRect();
-    const deltaXPercent = ((e.clientX - dragStartRef.current.clientX) / sceneRect.width) * 100;
-    const deltaYPercent = ((e.clientY - dragStartRef.current.clientY) / sceneRect.height) * 100;
+    if (rafMoveRef.current) cancelAnimationFrame(rafMoveRef.current);
 
-    if (draggingTarget === 'mockup') {
-      const newX = Math.max(-50, Math.min(50, dragStartRef.current.initialX + deltaXPercent));
-      const newY = Math.max(-50, Math.min(50, dragStartRef.current.initialY + deltaYPercent));
-      setConfig((prev) => ({ ...prev, mockupX: Math.round(newX), mockupY: Math.round(newY) }));
-    } else if (typeof draggingTarget === 'object' && draggingTarget.type === 'text') {
-      const targetId = draggingTarget.id;
-      const newX = Math.max(0, Math.min(95, dragStartRef.current.initialX + deltaXPercent));
-      const newY = Math.max(0, Math.min(95, dragStartRef.current.initialY + deltaYPercent));
-      setConfig((prev) => ({
-        ...prev,
-        texts: prev.texts.map((t) => (t.id === targetId ? { ...t, x: Math.round(newX), y: Math.round(newY) } : t)),
-      }));
-    } else if (typeof draggingTarget === 'object' && draggingTarget.type === 'logo') {
-      const targetId = draggingTarget.id;
-      const newX = Math.max(0, Math.min(95, dragStartRef.current.initialX + deltaXPercent));
-      const newY = Math.max(0, Math.min(95, dragStartRef.current.initialY + deltaYPercent));
-      setConfig((prev) => ({
-        ...prev,
-        logos: prev.logos.map((l) => (l.id === targetId ? { ...l, x: Math.round(newX), y: Math.round(newY) } : l)),
-      }));
-    }
+    rafMoveRef.current = requestAnimationFrame(() => {
+      const sceneRect = sceneRef.current?.getBoundingClientRect();
+      if (!sceneRect) return;
+
+      const deltaXPercent = ((e.clientX - dragStartRef.current.clientX) / sceneRect.width) * 100;
+      const deltaYPercent = ((e.clientY - dragStartRef.current.clientY) / sceneRect.height) * 100;
+
+      if (draggingTarget === 'mockup') {
+        const newX = Math.max(-50, Math.min(50, dragStartRef.current.initialX + deltaXPercent));
+        const newY = Math.max(-50, Math.min(50, dragStartRef.current.initialY + deltaYPercent));
+        setConfig((prev) => ({ ...prev, mockupX: Math.round(newX), mockupY: Math.round(newY) }));
+      } else if (typeof draggingTarget === 'object' && draggingTarget.type === 'text') {
+        const targetId = draggingTarget.id;
+        const newX = Math.max(0, Math.min(95, dragStartRef.current.initialX + deltaXPercent));
+        const newY = Math.max(0, Math.min(95, dragStartRef.current.initialY + deltaYPercent));
+        setConfig((prev) => ({
+          ...prev,
+          texts: prev.texts.map((t) => (t.id === targetId ? { ...t, x: Math.round(newX), y: Math.round(newY) } : t)),
+        }));
+      } else if (typeof draggingTarget === 'object' && draggingTarget.type === 'logo') {
+        const targetId = draggingTarget.id;
+        const newX = Math.max(0, Math.min(95, dragStartRef.current.initialX + deltaXPercent));
+        const newY = Math.max(0, Math.min(95, dragStartRef.current.initialY + deltaYPercent));
+        setConfig((prev) => ({
+          ...prev,
+          logos: prev.logos.map((l) => (l.id === targetId ? { ...l, x: Math.round(newX), y: Math.round(newY) } : l)),
+        }));
+      }
+    });
   }, [draggingTarget]);
 
   const handlePointerUp = useCallback(() => {
+    if (rafMoveRef.current) cancelAnimationFrame(rafMoveRef.current);
     setDraggingTarget(null);
   }, []);
 
   useEffect(() => {
     if (draggingTarget) {
-      window.addEventListener('pointermove', handlePointerMove);
-      window.addEventListener('pointerup', handlePointerUp);
+      window.addEventListener('pointermove', handlePointerMove, { passive: true });
+      window.addEventListener('pointerup', handlePointerUp, { passive: true });
       return () => {
         window.removeEventListener('pointermove', handlePointerMove);
         window.removeEventListener('pointerup', handlePointerUp);
@@ -902,6 +911,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   theme={config.deviceTheme}
                   styleVariant={config.deviceStyle}
                   cornerRadius={config.cornerRadius}
+                  cropOffsetY={config.cropOffsetY}
                 />
               )}
             </div>
@@ -1289,6 +1299,29 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       onChange={(e) => setConfig((p) => ({ ...p, mockupScale: Number(e.target.value) }))}
                       className="w-full accent-violet-600 cursor-pointer h-1.5 bg-sand-200 rounded-lg"
                     />
+                  </div>
+
+                  {/* Défilement vertical de la capture (Du haut vers le bas) */}
+                  <div className="space-y-2 p-3.5 rounded-2xl bg-violet-50/70 border border-violet-200">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="font-bold text-stone-800 uppercase flex items-center gap-1.5">
+                        <Move className="w-3.5 h-3.5 text-violet-600" />
+                        <span>Défilement Capture (Haut ↕ Bas)</span>
+                      </span>
+                      <span className="text-violet-700 font-bold">{config.cropOffsetY || 0}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={config.cropOffsetY || 0}
+                      onChange={(e) => setConfig((p) => ({ ...p, cropOffsetY: Number(e.target.value) }))}
+                      className="w-full accent-violet-600 cursor-pointer h-1.5 bg-sand-200 rounded-lg"
+                    />
+                    <div className="flex justify-between text-[10px] text-stone-500 font-mono">
+                      <span>▲ Haut de page</span>
+                      <span>Bas de page ▼</span>
+                    </div>
                   </div>
                 </div>
               )}

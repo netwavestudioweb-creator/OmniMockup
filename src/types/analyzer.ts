@@ -18,6 +18,7 @@ export interface SceneConfig {
   deviceTheme?: DeviceTheme;
   deviceStyle?: DeviceStyle;
   cornerRadius?: CornerRadius;
+  cropOffsetY?: number; // Défilement vertical de la capture (0% = Haut, 100% = Bas)
   layoutMode?: 'single' | 'dual-stacked';
   mockupX: number; // percentage offset -50 to 50
   mockupY: number; // percentage offset -50 to 50
@@ -120,6 +121,14 @@ export interface CaptureItemResult {
   durationMs: number;
   mockup?: MockupType;
   clip?: SectionCoordinates;
+}
+
+export interface CaptureSettings {
+  fullPage: boolean;
+  hideBanners: boolean;
+  viewportWidth: number;
+  viewportHeight: number;
+  deviceScaleFactor?: number;
 }
 
 export interface CaptureResponse {

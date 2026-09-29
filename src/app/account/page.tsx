@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 import { useUser } from '@/context/UserContext';
 import {
   User as UserIcon,
@@ -311,6 +312,8 @@ function AccountContent() {
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }

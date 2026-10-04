@@ -25,7 +25,6 @@ import {
   Link2,
   ImagePlus,
   Aperture,
-  Package,
   Palette,
   ScanLine,
   CheckCircle2,
@@ -57,7 +56,6 @@ export default function HomePage() {
   const [activePricingPlan, setActivePricingPlan] = useState<number>(1); // 0=Gratuit, 1=Pro (recommandé par défaut), 2=Agence
   const [activeStep, setActiveStep] = useState<number>(0); // 0=01 Collez, 1=02 Personnalisez, 2=03 Exportez
   const [activeUseCase, setActiveUseCase] = useState<number>(0); // 0=Agences, 1=SaaS, 2=Designers, 3=Ecommerce
-  const [activeTestimonial, setActiveTestimonial] = useState<number>(0); // 0=TR, 1=SM, 2=AB
   const [heroMobileDevice, setHeroMobileDevice] = useState<'iphone' | 'watch'>('iphone');
 
   const handleAnalyzeUrl = async (urlToCapture: string, settings?: import('@/types/analyzer').CaptureSettings) => {

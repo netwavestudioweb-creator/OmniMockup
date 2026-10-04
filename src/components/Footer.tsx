@@ -20,7 +20,7 @@ export const Footer: React.FC = () => {
               </span>
             </div>
             <p className="text-[11px] text-stone-500 font-sans mt-0.5">
-              Analyse Web multi-signaux, Vision IA & Mockups Haute Fidélité.
+              Studio de mockups 3D, cadres Apple &amp; exports 4K instantanés.
             </p>
           </div>
         </div>

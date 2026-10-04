@@ -1,11 +1,13 @@
 export type MockupType = 'browser' | 'macbook' | 'iphone' | 'ipad' | 'flat' | 'watch' | 'imac';
-
 export type DeviceTheme = 'light' | 'dark';
 export type DeviceStyle = 'default' | 'glass' | 'inset';
 export type CornerRadius = 'sharp' | 'curved' | 'round';
 export type ExportScale = 1 | 2 | 4;
 export type SceneFilterType = 'none' | 'grain' | 'vhs' | 'glitch';
 export type VideoAnimPreset = 'zoomIn' | 'zoomOut' | 'panHorizontal';
+
+export type BrowserStylePreset = 'safari-light' | 'safari-dark' | 'chrome-light' | 'chrome-dark' | 'arc-light' | 'arc-dark';
+export type ShadowPreset = 'none' | 'spread' | 'realistic' | 'adaptive';
 
 export interface SceneConfig {
   aspectRatio: SceneAspectRatio;
@@ -17,6 +19,7 @@ export interface SceneConfig {
   mockupType: MockupType;
   deviceTheme?: DeviceTheme;
   deviceStyle?: DeviceStyle;
+  browserStyle?: BrowserStylePreset;
   cornerRadius?: CornerRadius;
   cropOffsetY?: number; // Défilement vertical de la capture (0% = Haut, 100% = Bas)
   layoutMode?: 'single' | 'dual-stacked';
@@ -28,7 +31,9 @@ export interface SceneConfig {
   mockupTiltY: number; // Y-axis yaw -35 to +35
   framePadding: number; // Padding percentage 0 to 60
   shadowEnabled: boolean;
+  shadowType?: ShadowPreset;
   shadowIntensity: number; // 0 - 100
+  lightAngle?: number; // 0 to 360 degrees
   exportScale?: ExportScale;
   filterType?: SceneFilterType;
   filterIntensity?: number; // 0 to 100

@@ -120,57 +120,61 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-1 sm:px-0">
-      {/* Selector Onglets : URL vs Téléverser Image */}
-      <div className="flex items-center justify-center gap-2 mb-4">
+    <div className="w-full max-w-3xl mx-auto px-2 sm:px-4">
+      {/* Selector Onglets : URL vs Téléverser Image — Centré et épuré */}
+      <div className="flex items-center justify-center p-1 bg-zinc-900/90 rounded-2xl max-w-xs sm:max-w-sm mx-auto mb-6 border border-zinc-700/80 shadow-lg">
         <button
           type="button"
           onClick={() => setActiveTab('url')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all active:scale-95 ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2 sm:py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
             activeTab === 'url'
-              ? 'bg-violet-600 text-white shadow-sm'
-              : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              ? 'bg-zinc-800 text-white shadow-md border border-zinc-650'
+              : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
-          <Globe className="w-4 h-4" />
+          <Globe className="w-4 h-4 text-violet-400" />
           <span>Capturer une URL</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('upload')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all active:scale-95 ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2 sm:py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
             activeTab === 'upload'
-              ? 'bg-violet-600 text-white shadow-sm'
-              : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              ? 'bg-zinc-800 text-white shadow-md border border-zinc-650'
+              : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
-          <Upload className="w-4 h-4" />
-          <span>Déposer une Image</span>
+          <Upload className="w-4 h-4 text-violet-400" />
+          <span>Déposer une image</span>
         </button>
       </div>
 
       {activeTab === 'url' ? (
-        <div className="space-y-3">
-          <form onSubmit={handleSubmit} className="relative group w-full max-w-full">
-            <div className="relative flex flex-col sm:flex-row items-center gap-2 p-2 rounded-2xl bg-white border border-sand-200 shadow-md shadow-stone-900/5 focus-within:border-violet-500 focus-within:ring-4 focus-within:ring-violet-100 transition-all duration-300 w-full max-w-full box-border">
-              <div className="flex items-center w-full min-w-0 px-2.5 sm:px-3 py-2 sm:py-0">
-                <Globe className="w-5 h-5 text-stone-400 mr-2.5 sm:mr-3 flex-shrink-0 group-focus-within:text-violet-600 transition-colors" />
+        <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="relative group w-full">
+            {/* Grand champ d'entrée ergonomique et élégant sur PC et mobile */}
+            <div className="relative flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-2 p-2 sm:p-2.5 rounded-2xl sm:rounded-full bg-zinc-900/95 border-2 border-zinc-700/80 hover:border-zinc-600 focus-within:border-violet-500/80 focus-within:ring-4 focus-within:ring-violet-500/20 shadow-2xl shadow-black/50 transition-all duration-300">
+              {/* Icône + Saisie URL */}
+              <div className="flex items-center flex-1 min-w-0 px-3 sm:px-4 py-2 sm:py-0">
+                <div className="w-9 h-9 rounded-full bg-violet-600/15 border border-violet-500/30 flex items-center justify-center shrink-0 mr-3">
+                  <Globe className="w-4.5 h-4.5 text-violet-400" />
+                </div>
                 <input
                   type="text"
                   id="url-input"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="Entrez l'URL d'un site web (ex: https://nextjs.org)..."
+                  placeholder="https://votre-site.com..."
                   disabled={isLoading}
-                  className="w-full min-w-0 flex-1 bg-transparent border-none text-stone-900 placeholder-stone-400 focus:outline-none text-xs sm:text-base font-sans tracking-normal"
+                  className="w-full min-w-0 flex-1 bg-transparent border-none text-white placeholder-zinc-500 focus:outline-none text-base sm:text-lg font-medium tracking-normal"
                   autoComplete="off"
                 />
                 {url && !isLoading && (
                   <button
                     type="button"
                     onClick={() => setUrl('')}
-                    className="p-1 rounded-full text-stone-400 hover:text-stone-700 hover:bg-sand-100 transition-colors ml-1 flex-shrink-0"
+                    className="p-1.5 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors ml-1 shrink-0"
                     title="Effacer"
                   >
                     <X className="w-4 h-4" />
@@ -178,68 +182,70 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
                 )}
               </div>
 
-              {/* Bouton Paramètres de Capture (Permet de changer la hauteur/taille de capture) */}
-              <button
-                type="button"
-                onClick={() => setShowOptions(!showOptions)}
-                className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 active:scale-95 ${
-                  showOptions
-                    ? 'bg-violet-100 border-violet-300 text-violet-800'
-                    : 'bg-sand-50 border-sand-200 text-stone-600 hover:text-stone-900 hover:bg-sand-100'
-                }`}
-                title="Ajuster la taille de capture et la résolution"
-              >
-                <SlidersHorizontal className="w-4 h-4 text-violet-600" />
-                <span className="hidden xs:inline">Réglages</span>
-                {showOptions ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
+              {/* Boutons d'action responsive : Réglages + Soumission */}
+              <div className="flex items-center gap-2 w-full sm:w-auto px-1 sm:px-0">
+                <button
+                  type="button"
+                  onClick={() => setShowOptions(!showOptions)}
+                  className={`py-3 px-4 rounded-xl sm:rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shrink-0 active:scale-95 border ${
+                    showOptions
+                      ? 'bg-violet-600/25 border-violet-500/50 text-violet-200'
+                      : 'bg-zinc-800 hover:bg-zinc-750 border-zinc-700 text-zinc-300 hover:text-white'
+                  }`}
+                  title="Ajuster la résolution et les dimensions de capture"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-violet-400" />
+                  <span>Réglages</span>
+                  {showOptions ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
 
-              <button
-                type="submit"
-                id="analyze-button"
-                disabled={!url.trim() || isLoading}
-                className="w-full sm:w-auto px-6 sm:px-7 py-2.5 sm:py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0 active:scale-[0.98]"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Capture rapide...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Ouvrir dans le Studio</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                  </>
-                )}
-              </button>
+                <button
+                  type="submit"
+                  id="analyze-button"
+                  disabled={!url.trim() || isLoading}
+                  className="flex-1 sm:flex-initial px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl sm:rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-violet-600/35 hover:shadow-violet-500/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0 active:scale-[0.98]"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4.5 h-4.5 animate-spin" />
+                      <span>Capture en cours...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Créer mon Mockup</span>
+                      <ArrowRight className="w-4.5 h-4.5" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
 
-          {/* PANNEAU DE PARAMÈTRES DE CAPTURE RÉGLABLE (Demande utilisateur) */}
+          {/* PANNEAU DE PARAMÈTRES DE CAPTURE RÉGLABLE (Thème sombre harmonieux) */}
           {showOptions && (
-            <div className="p-4 rounded-2xl bg-white border border-violet-200 shadow-md animate-fade-in space-y-4 text-left">
-              <div className="flex items-center justify-between border-b border-sand-200 pb-2.5">
+            <div className="p-5 sm:p-6 rounded-2xl bg-zinc-900 border border-zinc-700/80 shadow-2xl animate-fade-in space-y-5 text-left">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4 text-violet-600" />
-                  <h4 className="text-xs sm:text-sm font-bold text-stone-900">
+                  <SlidersHorizontal className="w-4 h-4 text-violet-400" />
+                  <h4 className="text-sm font-bold text-white">
                     Paramètres de Capture & Dimension d&apos;Écran
                   </h4>
                 </div>
-                <span className="text-[10px] text-stone-500 font-mono">Capture Engine 3-Tiers</span>
+                <span className="text-[11px] text-zinc-400 font-mono">Moteur HD 3-Tiers</span>
               </div>
 
               {/* Mode Capture : Page Entière vs Vue Écran */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 space-y-2">
-                  <span className="text-xs font-bold text-stone-800 block">Mode de Longueur</span>
-                  <div className="grid grid-cols-2 gap-1.5">
+                <div className="p-3.5 rounded-xl bg-zinc-800/60 border border-zinc-700/60 space-y-2">
+                  <span className="text-xs font-bold text-zinc-200 block">Mode de Longueur</span>
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setFullPage(true)}
-                      className={`py-2 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                      className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                         fullPage
-                          ? 'bg-violet-600 text-white shadow-xs'
-                          : 'bg-white border border-sand-200 text-stone-600 hover:text-stone-900'
+                          ? 'bg-violet-600 text-white shadow-md'
+                          : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white'
                       }`}
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
@@ -248,10 +254,10 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
                     <button
                       type="button"
                       onClick={() => setFullPage(false)}
-                      className={`py-2 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                      className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                         !fullPage
-                          ? 'bg-violet-600 text-white shadow-xs'
-                          : 'bg-white border border-sand-200 text-stone-600 hover:text-stone-900'
+                          ? 'bg-violet-600 text-white shadow-md'
+                          : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white'
                       }`}
                     >
                       <Eye className="w-3.5 h-3.5" />
@@ -260,29 +266,29 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 space-y-2">
-                  <span className="text-xs font-bold text-stone-800 block">Nettoyage Automatique</span>
+                <div className="p-3.5 rounded-xl bg-zinc-800/60 border border-zinc-700/60 space-y-2">
+                  <span className="text-xs font-bold text-zinc-200 block">Nettoyage Automatique</span>
                   <button
                     type="button"
                     onClick={() => setHideBanners(!hideBanners)}
-                    className={`w-full py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-between transition-all ${
+                    className={`w-full py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-between transition-all ${
                       hideBanners
-                        ? 'bg-violet-100 text-violet-800 border border-violet-200'
-                        : 'bg-white border border-sand-200 text-stone-600'
+                        ? 'bg-violet-600/20 text-violet-300 border border-violet-500/40 shadow-sm'
+                        : 'bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200'
                     }`}
                   >
                     <span>Masquer Bannières &amp; Cookies</span>
-                    {hideBanners && <Check className="w-4 h-4 text-violet-600 stroke-[3]" />}
+                    {hideBanners && <Check className="w-4 h-4 text-violet-400 stroke-[3]" />}
                   </button>
                 </div>
               </div>
 
               {/* Résolution / Taille du Viewport */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-stone-800 block">
-                  Taille d&apos;Écran &amp; Résolution de la Capture (Largeur × Hauteur)
+                <label className="text-xs font-bold text-zinc-200 block">
+                  Résolution de Capture (Largeur × Hauteur)
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                   {VIEWPORT_PRESETS.map((vp) => {
                     const IconComp = vp.icon;
                     const isSelected = selectedPresetId === vp.id;
@@ -291,10 +297,10 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
                         key={vp.id}
                         type="button"
                         onClick={() => setSelectedPresetId(vp.id)}
-                        className={`p-2 rounded-xl border text-xs font-semibold flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
+                        className={`p-2.5 rounded-xl border text-xs font-semibold flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 ${
                           isSelected
-                            ? 'bg-violet-600 text-white border-violet-600 shadow-xs'
-                            : 'bg-sand-50 border-sand-200 text-stone-700 hover:bg-sand-100'
+                            ? 'bg-violet-600 text-white border-violet-500 shadow-md'
+                            : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-750 hover:text-white'
                         }`}
                       >
                         <IconComp className="w-4 h-4" />
@@ -307,27 +313,27 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
 
               {/* Champs personnalisés si 'custom' est sélectionné */}
               {selectedPresetId === 'custom' && (
-                <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-violet-50/50 border border-violet-200 animate-fade-in">
+                <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-violet-600/10 border border-violet-500/30 animate-fade-in">
                   <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">Largeur (px)</label>
+                    <label className="text-[11px] font-bold text-zinc-300 block mb-1">Largeur (px)</label>
                     <input
                       type="number"
                       min="320"
                       max="3840"
                       value={customWidth}
                       onChange={(e) => setCustomWidth(Number(e.target.value))}
-                      className="w-full px-3 py-1.5 rounded-lg border border-sand-300 text-xs font-mono bg-white"
+                      className="w-full px-3 py-2 rounded-lg border border-zinc-700 text-xs font-mono bg-zinc-800 text-white focus:outline-none focus:border-violet-500"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-stone-700 block mb-1">Hauteur (px)</label>
+                    <label className="text-[11px] font-bold text-zinc-300 block mb-1">Hauteur (px)</label>
                     <input
                       type="number"
                       min="400"
                       max="6000"
                       value={customHeight}
                       onChange={(e) => setCustomHeight(Number(e.target.value))}
-                      className="w-full px-3 py-1.5 rounded-lg border border-sand-300 text-xs font-mono bg-white"
+                      className="w-full px-3 py-2 rounded-lg border border-zinc-700 text-xs font-mono bg-zinc-800 text-white focus:outline-none focus:border-violet-500"
                     />
                   </div>
                 </div>
@@ -344,10 +350,10 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
           onDragLeave={() => setDragActive(false)}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all bg-white active:scale-[0.99] ${
+          className={`relative border-2 border-dashed rounded-3xl p-10 text-center cursor-pointer transition-all active:scale-[0.99] ${
             dragActive
-              ? 'border-violet-600 bg-violet-50/50 scale-[1.01]'
-              : 'border-stone-300 hover:border-violet-400 hover:bg-stone-50/50'
+              ? 'border-violet-500 bg-violet-500/15 scale-[1.01]'
+              : 'border-zinc-700 bg-zinc-900/60 hover:border-violet-500/60 hover:bg-zinc-850'
           }`}
         >
           <input
@@ -357,31 +363,31 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
             className="hidden"
             onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
           />
-          <div className="w-12 h-12 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center mx-auto mb-3">
-            <ImageIcon className="w-6 h-6" />
+          <div className="w-14 h-14 rounded-2xl bg-violet-600/20 text-violet-400 border border-violet-500/30 flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <ImageIcon className="w-7 h-7" />
           </div>
-          <p className="text-sm font-semibold text-stone-800">
+          <p className="text-base font-bold text-white">
             Cliquez ou glissez une capture d&apos;écran ici
           </p>
-          <p className="text-xs text-stone-500 mt-1">PNG, JPG, WebP jusqu&apos;à 15MB</p>
+          <p className="text-xs text-zinc-400 mt-1.5">PNG, JPG, WebP jusqu&apos;à 15MB</p>
         </div>
       )}
 
-      {/* Raccourcis d'exemples rapides */}
+      {/* Raccourcis d'exemples rapides — Centrés pour éliminer tout trou de côté */}
       {activeTab === 'url' && (
-        <div className="mt-4 flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs w-full max-w-full">
-          <span className="text-stone-500 flex items-center gap-1 font-medium shrink-0">
-            <Sparkles className="w-3.5 h-3.5 text-violet-600 shrink-0" />
-            Exemples 1-clic :
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs w-full text-center">
+          <span className="text-zinc-400 flex items-center gap-1.5 font-medium shrink-0">
+            <Sparkles className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+            Exemples rapides :
           </span>
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 sm:gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
             {PRESET_URLS.map((preset) => (
               <button
                 key={preset.url}
                 type="button"
                 onClick={() => handleSelectPreset(preset.url)}
                 disabled={isLoading}
-                className="px-2.5 sm:px-3 py-1 rounded-lg bg-white hover:bg-sand-100 text-stone-700 hover:text-violet-700 border border-sand-200 transition-all active:scale-95 text-xs font-medium shadow-2xs shrink-0 whitespace-nowrap"
+                className="px-3 py-1 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700/60 hover:border-violet-500/50 transition-all active:scale-95 text-xs font-medium shrink-0 shadow-sm"
               >
                 {preset.label}
               </button>
@@ -392,11 +398,11 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
 
       {/* Alerte d'erreur */}
       {errorMessage && (
-        <div className="mt-5 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-start gap-3 animate-fade-in shadow-xs">
-          <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+        <div className="mt-5 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-start gap-3 animate-fade-in text-left">
+          <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-semibold text-rose-900">Échec de la capture</p>
-            <p className="mt-0.5 text-rose-700 text-xs leading-relaxed">{errorMessage}</p>
+            <p className="font-semibold text-rose-200">Échec de la capture</p>
+            <p className="mt-0.5 text-rose-400 text-xs leading-relaxed">{errorMessage}</p>
           </div>
         </div>
       )}

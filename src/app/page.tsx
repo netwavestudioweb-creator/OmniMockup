@@ -372,7 +372,7 @@ export default function HomePage() {
                         }`}
                       >
                         <Smartphone className="w-3.5 h-3.5" />
-                        iPhone 16 Pro
+                        iPhone 16 Pro Max
                       </button>
                       <button
                         type="button"
@@ -388,73 +388,37 @@ export default function HomePage() {
                       </button>
                     </div>
 
-                    {/* VUE 1 : iPhone 16 Pro tactile */}
+                    {/* VUE 1 : iPhone 16 Pro Max — Image photoréaliste authentique */}
                     {heroMobileDevice === 'iphone' ? (
-                      <div className="w-full max-w-[290px] mx-auto relative rounded-[44px] p-2.5 bg-gradient-to-b from-zinc-700 via-zinc-800 to-zinc-950 shadow-2xl border-2 border-zinc-600 animate-fade-in">
-                        {/* Dynamic Island Apple */}
-                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 w-24 h-5 bg-black rounded-full flex items-center justify-between px-2.5 shadow-md border border-white/10">
-                          <div className="w-2 h-2 rounded-full bg-zinc-950 border border-zinc-800" />
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/90 animate-pulse" />
+                      <div className="w-full max-w-[300px] mx-auto relative animate-fade-in">
+                        {/* Halo lumineux violet derrière le téléphone */}
+                        <div className="absolute inset-0 -z-10 rounded-[40px] blur-3xl opacity-50 bg-gradient-to-b from-violet-600/40 via-indigo-600/20 to-transparent scale-110" />
+
+                        {/* Vraie image photoréaliste iPhone 16 Pro Max */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src="/images/iphone16-promax-netwave.jpg"
+                          alt="iPhone 16 Pro Max affichant le site Netwave Studio"
+                          className="w-full h-auto object-contain drop-shadow-[0_30px_60px_rgba(124,58,237,0.5)] animate-float"
+                          loading="eager"
+                        />
+
+                        {/* Badge flottant Dynamic Island */}
+                        <div className="absolute top-[18%] right-[-8px] flex flex-col items-end gap-1.5">
+                          <div className="bg-black/80 backdrop-blur-sm border border-violet-500/40 text-[9px] font-bold text-violet-300 px-2 py-1 rounded-lg shadow-lg flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Dynamic Island
+                          </div>
+                          <div className="bg-black/80 backdrop-blur-sm border border-zinc-700/60 text-[9px] font-mono text-emerald-400 px-2 py-1 rounded-lg shadow-lg">
+                            Super Retina XDR 6.9"
+                          </div>
                         </div>
 
-                        {/* Écran tactile iPhone avec capture réelle du site mobile */}
-                        <div className="relative rounded-[36px] overflow-hidden bg-black text-left border border-white/5">
-                          {/* Barre d'état iOS */}
-                          <div className="pt-3 px-6 pb-1 flex justify-between items-center text-[10px] font-semibold text-zinc-300">
-                            <span>9:41</span>
-                            <div className="flex items-center gap-1 text-[9px]">
-                              <span>5G</span>
-                              <span>100%</span>
-                            </div>
-                          </div>
-
-                          {/* Barre d'adresse Safari Mobile */}
-                          <div className="px-4 py-2">
-                            <div className="px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300 flex items-center justify-center gap-1.5 shadow-inner">
-                              <Shield className="w-3 h-3 text-emerald-400" />
-                              <span className="font-semibold">netwavestudio.com</span>
-                            </div>
-                          </div>
-
-                          {/* Contenu mobile traité de Netwave Studio */}
-                          <div className="p-4 pt-2 space-y-3.5 bg-gradient-to-b from-zinc-950 to-zinc-900">
-                            {/* Header mobile */}
-                            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-md bg-violet-600 flex items-center justify-center font-bold text-white text-[10px]">
-                                  NW
-                                </div>
-                                <span className="font-extrabold text-white text-xs tracking-tight">NETWAVE</span>
-                              </div>
-                              <span className="px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-300 text-[9px] font-bold">
-                                STUDIO
-                              </span>
-                            </div>
-
-                            {/* Hero mobile */}
-                            <div className="space-y-2">
-                              <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">Site Mobile Haute Fidélité</p>
-                              <h3 className="text-base font-black text-white leading-tight">
-                                Des expériences web qui <span className="shimmer-text">marquent</span>.
-                              </h3>
-                              <p className="text-[11px] text-zinc-400 leading-relaxed">
-                                Création de sites modernes et mockups 3D instantanés pour booster vos conversions.
-                              </p>
-                            </div>
-
-                            {/* Bouton mobile */}
-                            <button
-                              type="button"
-                              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                              className="w-full py-2.5 px-4 rounded-xl bg-violet-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-violet-600/30"
-                            >
-                              Lancer mon mockup <ArrowRight className="w-3 h-3" />
-                            </button>
-                          </div>
-
-                          {/* Barre d'accueil tactile iOS */}
-                          <div className="py-2 flex justify-center bg-zinc-900">
-                            <div className="w-28 h-1 bg-white/40 rounded-full" />
+                        {/* Badge Titane Natural en bas */}
+                        <div className="absolute bottom-[12%] left-1/2 -translate-x-1/2">
+                          <div className="bg-black/80 backdrop-blur-sm border border-zinc-700/60 text-[9px] font-bold text-zinc-300 px-3 py-1 rounded-full shadow-xl whitespace-nowrap flex items-center gap-1.5">
+                            <Sparkles className="w-2.5 h-2.5 text-violet-400" />
+                            iPhone 16 Pro Max · Titane Naturel
                           </div>
                         </div>
                       </div>
@@ -529,7 +493,7 @@ export default function HomePage() {
                           className={`h-1.5 rounded-full transition-all ${
                             heroMobileDevice === 'iphone' ? 'w-5 bg-violet-500' : 'w-2 bg-zinc-700'
                           }`}
-                          aria-label="iPhone 16 Pro"
+                          aria-label="iPhone 16 Pro Max"
                         />
                         <button
                           type="button"
@@ -552,7 +516,7 @@ export default function HomePage() {
 
                     <p className="text-[11px] text-zinc-400 font-medium">
                       {heroMobileDevice === 'iphone'
-                        ? '📱 iPhone 16 Pro · Dalle Super Retina tactile'
+                        ? '📱 iPhone 16 Pro Max · Écran Super Retina XDR 6.9"'
                         : '⌚ Apple Watch Ultra · Cadran Titane 4K'}
                     </p>
                   </div>

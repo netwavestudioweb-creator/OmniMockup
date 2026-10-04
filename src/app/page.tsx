@@ -408,7 +408,7 @@ export default function HomePage() {
                             Dynamic Island
                           </div>
                           <div className="bg-black/80 backdrop-blur-sm border border-zinc-700/60 text-[9px] font-mono text-emerald-400 px-2 py-1 rounded-lg shadow-lg">
-                            Super Retina XDR 6.9"
+                            Super Retina XDR 6.9&quot;
                           </div>
                         </div>
 

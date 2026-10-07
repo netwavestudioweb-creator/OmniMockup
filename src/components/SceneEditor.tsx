@@ -12,6 +12,9 @@ import {
   SceneConfig,
   CornerRadius,
   VideoAnimPreset,
+  FeatureCallout,
+  SocialProofBadgeType,
+  SceneSocialBadge,
 } from '@/types/analyzer';
 import { MockupFrame } from './MockupFrame';
 import { useUser } from '@/context/UserContext';
@@ -59,6 +62,16 @@ import {
   ImageUp,
   Flame,
   ChevronLeft,
+  Maximize2,
+  Minimize2,
+  PanelRightClose,
+  PanelRightOpen,
+  Box,
+  Type,
+  Tag,
+  ShieldCheck,
+  Star,
+  BadgeCheck,
 } from 'lucide-react';
 import { TechStackPicker, AVAILABLE_TECHS } from './TechStackPicker';
 import { DeveloperSalesKitModal } from './DeveloperSalesKitModal';
@@ -223,6 +236,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     customWatermarkUrl: undefined,
     texts: [],
     logos: [],
+    callouts: [],
+    socialBadges: [],
   });
 
   // Zoom du canvas central
@@ -239,11 +254,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   }, [captureItem.screenshotBase64]);
 
   // Navigation dans les onglets du studio
-  const [activeTab, setActiveTab] = useState<'mockup' | 'frame' | '3d' | 'content' | 'branding'>('mockup');
+  const [activeTab, setActiveTab] = useState<'mockup' | 'frame' | '3d' | 'content' | 'branding' | 'callouts'>('mockup');
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [selectedLogoId, setSelectedLogoId] = useState<string | null>(null);
+  const [selectedCalloutId, setSelectedCalloutId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [isExportingPack, setIsExportingPack] = useState(false);
+  const [packProgress, setPackProgress] = useState<string>('');
   const [isCopying, setIsCopying] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(true);
@@ -285,6 +303,21 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const [vfxGlow, setVfxGlow] = useState<boolean>(false);
   const [uiScale, setUiScale] = useState<number>(100);
   const [magicPresetIdx, setMagicPresetIdx] = useState<number>(0);
+
+  // ══ MODE PRÉSENTATION & PANNEAU INSPECTEUR (STUDIO FIGMA/DAVINCI) ══
+  const [presentationMode, setPresentationMode] = useState<boolean>(false);
+  const [showRightPanel, setShowRightPanel] = useState<boolean>(true);
+
+  // Raccourci clavier Échap pour sortir du mode Présentation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && presentationMode) {
+        setPresentationMode(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [presentationMode]);
 
   // Application d'un template complet Shots.so
   const handleApplyTemplate = (tmpl: StudioTemplate) => {
@@ -359,7 +392,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   }, [captureItem.screenshotBase64]);
 
   // Drag and drop tactile & souris
-  const [draggingTarget, setDraggingTarget] = useState<'mockup' | { type: 'text'; id: string } | { type: 'logo'; id: string } | null>(null);
+  const [draggingTarget, setDraggingTarget] = useState<
+    | 'mockup'
+    | { type: 'text'; id: string }
+    | { type: 'logo'; id: string }
+    | { type: 'callout'; id: string }
+    | { type: 'socialBadge'; id: string }
+    | null
+  >(null);
   const dragStartRef = useRef<{ clientX: number; clientY: number; initialX: number; initialY: number }>({
     clientX: 0,
     clientY: 0,
@@ -369,7 +409,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   const handlePointerDown = (
     e: React.PointerEvent,
-    target: 'mockup' | { type: 'text'; id: string } | { type: 'logo'; id: string }
+    target:
+      | 'mockup'
+      | { type: 'text'; id: string }
+      | { type: 'logo'; id: string }
+      | { type: 'callout'; id: string }
+      | { type: 'socialBadge'; id: string }
   ) => {
     e.stopPropagation();
     setDraggingTarget(target);
@@ -405,6 +450,28 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         };
         setSelectedLogoId(target.id);
         setActiveTab('branding');
+      }
+    } else if (typeof target === 'object' && target.type === 'callout') {
+      const c = (config.callouts || []).find((item) => item.id === target.id);
+      if (c) {
+        dragStartRef.current = {
+          clientX: e.clientX,
+          clientY: e.clientY,
+          initialX: c.x,
+          initialY: c.y,
+        };
+        setSelectedCalloutId(target.id);
+        setActiveTab('callouts');
+      }
+    } else if (typeof target === 'object' && target.type === 'socialBadge') {
+      const b = (config.socialBadges || []).find((item) => item.id === target.id);
+      if (b) {
+        dragStartRef.current = {
+          clientX: e.clientX,
+          clientY: e.clientY,
+          initialX: b.x,
+          initialY: b.y,
+        };
       }
     }
   };
@@ -442,6 +509,22 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         setConfig((prev) => ({
           ...prev,
           logos: prev.logos.map((l) => (l.id === targetId ? { ...l, x: Math.round(newX), y: Math.round(newY) } : l)),
+        }));
+      } else if (typeof draggingTarget === 'object' && draggingTarget.type === 'callout') {
+        const targetId = draggingTarget.id;
+        const newX = Math.max(0, Math.min(100, dragStartRef.current.initialX + deltaXPercent));
+        const newY = Math.max(0, Math.min(100, dragStartRef.current.initialY + deltaYPercent));
+        setConfig((prev) => ({
+          ...prev,
+          callouts: (prev.callouts || []).map((c) => (c.id === targetId ? { ...c, x: Math.round(newX), y: Math.round(newY) } : c)),
+        }));
+      } else if (typeof draggingTarget === 'object' && draggingTarget.type === 'socialBadge') {
+        const targetId = draggingTarget.id;
+        const newX = Math.max(0, Math.min(100, dragStartRef.current.initialX + deltaXPercent));
+        const newY = Math.max(0, Math.min(100, dragStartRef.current.initialY + deltaYPercent));
+        setConfig((prev) => ({
+          ...prev,
+          socialBadges: (prev.socialBadges || []).map((b) => (b.id === targetId ? { ...b, x: Math.round(newX), y: Math.round(newY) } : b)),
         }));
       }
     });
@@ -643,6 +726,118 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       texts: prev.texts.filter((t) => t.id !== id),
     }));
     if (selectedTextId === id) setSelectedTextId(null);
+  };
+
+  // Ajout & gestion de Callouts de vente
+  const handleAddCallout = (
+    text = '✨ IA Intégrée',
+    badge = 'IA',
+    colorTheme: 'violet' | 'emerald' | 'amber' | 'rose' = 'violet'
+  ) => {
+    const newCallout: FeatureCallout = {
+      id: `callout_${Date.now()}`,
+      text,
+      badge,
+      x: 50,
+      y: 40,
+      colorTheme,
+      pointerDirection: 'bottom-left',
+    };
+    setConfig((prev) => ({
+      ...prev,
+      callouts: [...(prev.callouts || []), newCallout],
+    }));
+    setSelectedCalloutId(newCallout.id);
+  };
+
+  const handleUpdateCallout = (id: string, updates: Partial<FeatureCallout>) => {
+    setConfig((prev) => ({
+      ...prev,
+      callouts: (prev.callouts || []).map((c) => (c.id === id ? { ...c, ...updates } : c)),
+    }));
+  };
+
+  const handleDeleteCallout = (id: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      callouts: (prev.callouts || []).filter((c) => c.id !== id),
+    }));
+    if (selectedCalloutId === id) setSelectedCalloutId(null);
+  };
+
+  // Gestion des badges de preuve sociale
+  const handleToggleSocialBadge = (type: SocialProofBadgeType) => {
+    setConfig((prev) => {
+      const current = prev.socialBadges || [];
+      const exists = current.find((b) => b.type === type);
+      if (exists) {
+        return {
+          ...prev,
+          socialBadges: current.map((b) => (b.type === type ? { ...b, visible: !b.visible } : b)),
+        };
+      } else {
+        const newBadge: SceneSocialBadge = {
+          id: `badge_${Date.now()}`,
+          type,
+          x: type === 'product-hunt' ? 22 : type === 'stripe-mrr' ? 76 : 50,
+          y: type === 'product-hunt' ? 14 : type === 'stripe-mrr' ? 84 : 86,
+          visible: true,
+          customText: type === 'stripe-mrr' ? '$24,500 MRR' : undefined,
+        };
+        return {
+          ...prev,
+          socialBadges: [...current, newBadge],
+        };
+      }
+    });
+  };
+
+  // Export Pack Réseaux Sociaux 1-Click (5 formats consécutifs)
+  const handleExportPack = async () => {
+    if (!sceneRef.current || isExportingPack) return;
+    setIsExportingPack(true);
+    const originalRatio = config.aspectRatio;
+
+    try {
+      const PACK_FORMATS: { ratio: SceneAspectRatio; label: string }[] = [
+        { ratio: '16:9', label: 'Twitter_ProductHunt_16-9' },
+        { ratio: '1:1', label: 'Instagram_LinkedIn_1-1' },
+        { ratio: '9:16', label: 'Stories_Reels_9-16' },
+        { ratio: '1.91:1', label: 'LinkedIn_Banner_1.91-1' },
+        { ratio: '4:3', label: 'Dribbble_Portfolio_4-3' },
+      ];
+
+      for (let i = 0; i < PACK_FORMATS.length; i++) {
+        const item = PACK_FORMATS[i];
+        setPackProgress(`${i + 1}/${PACK_FORMATS.length}`);
+
+        setConfig((prev) => ({ ...prev, aspectRatio: item.ratio }));
+        await new Promise((r) => setTimeout(r, 450));
+
+        if (sceneRef.current) {
+          const dataUrl = await toPng(sceneRef.current, {
+            cacheBust: true,
+            pixelRatio: 2,
+          });
+          const link = document.createElement('a');
+          const cleanName = (captureItem.domainName || 'omnimockup').replace(/[^a-zA-Z0-9_-]/g, '_');
+          link.download = `${cleanName}-${item.label}.png`;
+          link.href = dataUrl;
+          link.click();
+          await new Promise((r) => setTimeout(r, 250));
+        }
+      }
+
+      setConfig((prev) => ({ ...prev, aspectRatio: originalRatio }));
+      setPackProgress('Fait !');
+      setTimeout(() => setPackProgress(''), 3000);
+    } catch (err) {
+      console.error('Erreur export pack:', err);
+      alert('Une erreur est survenue lors du téléchargement du pack.');
+      setConfig((prev) => ({ ...prev, aspectRatio: originalRatio }));
+    } finally {
+      setIsExportingPack(false);
+    }
   };
 
   // Ajout & gestion de logo
@@ -855,203 +1050,464 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         </div>
       )}
 
-      <header className="h-14 sm:h-16 px-4 sm:px-6 border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl flex items-center justify-between gap-3 z-30 shrink-0">
-        {/* Gauche : Retour, Marque et Site Cible */}
-        <div className="flex items-center gap-3">
-          {onClose && (
+      {!presentationMode && (
+        <header className="h-13 sm:h-14 px-4 sm:px-6 border-b border-zinc-850/80 bg-[#07080c]/95 backdrop-blur-xl flex items-center justify-between gap-3 z-30 shrink-0">
+          {/* Gauche : Retour, Marque et Site Cible */}
+          <div className="flex items-center gap-3">
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800 text-xs font-semibold transition-all active:scale-95"
+                title="Quitter le studio et revenir à l'accueil"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Quitter</span>
+              </button>
+            )}
+
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-xl bg-violet-600 text-white shadow-lg shadow-violet-600/30">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-white tracking-tight">OmniMockup Studio</span>
+                  <span className="px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/30 text-[10px] font-semibold">
+                    PRO 3D
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                  <span className="truncate max-w-[180px] sm:max-w-[260px]">{captureItem.domainName || captureItem.url}</span>
+                  {captureItem.url && (
+                    <a
+                      href={captureItem.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                      title="Ouvrir le site original"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Bouton Templates */}
             <button
               type="button"
-              onClick={onClose}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800 text-xs font-semibold transition-all active:scale-95"
-              title="Quitter le studio et revenir à l'accueil"
+              onClick={() => setShowTemplatesModal(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold transition-all active:scale-95"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Quitter</span>
+              <Layout className="w-3.5 h-3.5 text-violet-400" />
+              <span>Templates</span>
+              <ChevronRight className="w-3 h-3 text-zinc-500" />
             </button>
+          </div>
+
+          {/* Centre : Mode de disposition (Solo vs Duo vs Trio) & Résolution */}
+          <div className="hidden md:flex items-center gap-3">
+            {/* Toggle Solo / Duo / Trio */}
+            <div className="flex items-center bg-zinc-900 p-0.5 rounded-xl border border-zinc-800 text-xs">
+              <button
+                type="button"
+                onClick={() => setConfig((p) => ({ ...p, layoutMode: 'single' }))}
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                  (config.layoutMode || 'single') === 'single'
+                    ? 'bg-violet-600 text-white font-semibold shadow-xs'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                Solo
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfig((p) => ({ ...p, layoutMode: 'dual-stacked' }))}
+                className={`px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+                  config.layoutMode === 'dual-stacked'
+                    ? 'bg-violet-600 text-white font-semibold shadow-xs'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <span>Duo</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfig((p) => ({ ...p, layoutMode: 'trio-ecosystem' }))}
+                className={`px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+                  config.layoutMode === 'trio-ecosystem'
+                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold shadow-xs'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+                title="Trio Écosystème : MacBook + iPad + iPhone"
+              >
+                <span>Trio ✨</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              </button>
+            </div>
+
+            {/* Résolution 1x / 2x / 4x */}
+            <div className="flex items-center bg-zinc-900 p-0.5 rounded-xl border border-zinc-800 text-xs">
+              {([1, 2, 4] as const).map((scale) => (
+                <button
+                  key={scale}
+                  type="button"
+                  onClick={() => setConfig((p) => ({ ...p, exportScale: scale }))}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                    (config.exportScale || 2) === scale
+                      ? 'bg-zinc-850 text-violet-300 border border-violet-500/30'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                  title={`Résolution d'export ${scale}x`}
+                >
+                  {scale}x
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Droite : Actions Vente IA, Présentation, Pack OmniExport, Copier, Vidéo, Télécharger */}
+          <div className="flex items-center gap-2">
+            {/* Pitch & Vente IA */}
+            <button
+              type="button"
+              onClick={() => setSalesKitOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-violet-600/20 active:scale-95"
+              title="Générer des arguments de vente et pitch client avec l'IA"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span className="hidden sm:inline">Pitch & Vente IA</span>
+            </button>
+
+            {/* Mode Plein Écran / Présentation */}
+            <button
+              type="button"
+              onClick={() => setPresentationMode(true)}
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-semibold transition-all active:scale-95"
+              title="Passer en mode Présentation immersive (Échap pour quitter)"
+            >
+              <Maximize2 className="w-3.5 h-3.5 text-zinc-400" />
+              <span className="hidden xl:inline">Présentation</span>
+            </button>
+
+            {/* Pack OmniExport 5 Formats 1-Click */}
+            <button
+              type="button"
+              onClick={handleExportPack}
+              disabled={isExportingPack}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 active:scale-95 disabled:opacity-50"
+              title="Télécharger les 5 formats réseaux sociaux en 1 clic (Twitter, Insta, Story, LinkedIn, Dribbble)"
+            >
+              {isExportingPack ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Pack {packProgress}...</span>
+                </>
+              ) : packProgress === 'Fait !' ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+                  <span>Pack Prêt !</span>
+                </>
+              ) : (
+                <>
+                  <Layers className="w-3.5 h-3.5 text-emerald-200" />
+                  <span className="hidden sm:inline">Pack OmniExport (5)</span>
+                </>
+              )}
+            </button>
+
+            {/* Copier */}
+            <button
+              type="button"
+              onClick={handleCopyToClipboard}
+              disabled={isCopying}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
+              title="Copier l'image dans le presse-papier"
+            >
+              {isCopying ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-400" />
+              ) : copySuccess ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                  <span className="text-emerald-400 font-bold hidden sm:inline">Copié !</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                  <span className="hidden sm:inline">Copier</span>
+                </>
+              )}
+            </button>
+
+            {/* Vidéo 3s */}
+            <button
+              type="button"
+              onClick={handleExportVideo}
+              disabled={isExportingVideo}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-amber-300 hover:text-amber-200 border border-zinc-800 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
+              title="Enregistrer un zoom animé en vidéo 3s (.webm)"
+            >
+              {isExportingVideo ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
+              ) : (
+                <Video className="w-3.5 h-3.5 text-amber-400" />
+              )}
+              <span className="hidden sm:inline">Vidéo 3s</span>
+            </button>
+
+            {/* Bouton Télécharger PNG Principal */}
+            <button
+              type="button"
+              onClick={handleExportPng}
+              disabled={isExporting}
+              className="flex items-center gap-1.5 sm:gap-2 px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-violet-600/30 transition-all active:scale-95 disabled:opacity-50"
+            >
+              {isExporting ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Rendu {config.exportScale || 2}x...</span>
+                </>
+              ) : exportSuccess ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+                  <span>Téléchargé !</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span>Télécharger</span>
+                </>
+              )}
+            </button>
+
+            {/* Toggle Panneau Inspecteur */}
+            <button
+              type="button"
+              onClick={() => setShowRightPanel((p) => !p)}
+              className="hidden lg:flex items-center justify-center p-2 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-400 hover:text-white transition-all"
+              title={showRightPanel ? "Masquer le panneau d'inspection" : "Afficher le panneau d'inspection"}
+            >
+              {showRightPanel ? (
+                <PanelRightClose className="w-3.5 h-3.5 text-zinc-400" />
+              ) : (
+                <PanelRightOpen className="w-3.5 h-3.5 text-violet-400" />
+              )}
+            </button>
+          </div>
+        </header>
+      )}
+
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      {/* 2. ESPACE DE TRAVAIL PRINCIPAL (Toolbar Gauche + Canvas + Inspecteur)   */}
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      <div className="flex-1 w-full flex flex-row overflow-hidden relative">
+        {/* ── BARRE D'OUTILS VERTICALE GAUCHE (FIGMA / PHOTOSHOP STYLE) ── */}
+        {!presentationMode && (
+          <aside className="w-14 sm:w-16 h-full bg-[#07080c] border-r border-zinc-850/80 flex flex-col items-center justify-between py-3.5 px-1.5 shrink-0 z-30 select-none">
+            {/* Outils Supérieurs */}
+            <div className="flex flex-col items-center gap-2 w-full">
+              {/* Quitter */}
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-850/80 transition-all"
+                  title="Quitter le studio"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+              )}
+
+              <div className="w-6 h-px bg-zinc-850 my-0.5" />
+
+              {/* Templates */}
+              <button
+                type="button"
+                onClick={() => setShowTemplatesModal(true)}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-violet-300 hover:bg-zinc-850/80 transition-all group"
+                title="Templates de Scènes"
+              >
+                <Layout className="w-4 h-4" />
+              </button>
+
+              {/* Appareil & Modèle */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveMainTab('mockup');
+                  setActiveTab('mockup');
+                  setShowRightPanel(true);
+                }}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                  activeMainTab === 'mockup' && activeTab === 'mockup' && showRightPanel
+                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-850/80'
+                }`}
+                title="Choix de l'Appareil & Layout"
+              >
+                <Monitor className="w-4 h-4" />
+              </button>
+
+              {/* Studio 3D & Perspectives */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveMainTab('mockup');
+                  setActiveTab('3d');
+                  setShowRightPanel(true);
+                }}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                  activeMainTab === 'mockup' && activeTab === '3d' && showRightPanel
+                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-850/80'
+                }`}
+                title="3D Tilt & Orientation"
+              >
+                <Sliders className="w-4 h-4" />
+              </button>
+
+              {/* Canvas & Wallpapers */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveMainTab('frame');
+                  setShowRightPanel(true);
+                }}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                  activeMainTab === 'frame' && showRightPanel
+                    ? 'bg-gradient-to-tr from-pink-600 to-violet-600 text-white shadow-lg shadow-pink-600/30'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-850/80'
+                }`}
+                title="Fonds & Wallpapers de Scène"
+              >
+                <Palette className="w-4 h-4" />
+              </button>
+
+              {/* Callouts Vente & Preuve Sociale */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveMainTab('mockup');
+                  setActiveTab('callouts');
+                  setShowRightPanel(true);
+                }}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                  activeMainTab === 'mockup' && activeTab === 'callouts' && showRightPanel
+                    ? 'bg-gradient-to-tr from-amber-500 to-violet-600 text-white shadow-lg shadow-amber-500/30'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-850/80'
+                }`}
+                title="Callouts Vente & Preuve Sociale (Product Hunt, Stripe, Avis)"
+              >
+                <Tag className="w-4 h-4" />
+              </button>
+
+              {/* Textes & Logos */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveMainTab('mockup');
+                  setActiveTab('branding');
+                  setShowRightPanel(true);
+                }}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                  activeMainTab === 'mockup' && activeTab === 'branding' && showRightPanel
+                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-850/80'
+                }`}
+                title="Calques Textes & Logos"
+              >
+                <Layers className="w-4 h-4" />
+              </button>
+
+              {/* Stack Développeur */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveMainTab('mockup');
+                  setActiveTab('content');
+                  setShowRightPanel(true);
+                }}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                  activeMainTab === 'mockup' && activeTab === 'content' && showRightPanel
+                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-850/80'
+                }`}
+                title="Badges Stack Technique"
+              >
+                <Flame className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Outils Inférieurs */}
+            <div className="flex flex-col items-center gap-2 w-full">
+              {/* Pitch IA */}
+              <button
+                type="button"
+                onClick={() => setSalesKitOpen(true)}
+                className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-tr from-violet-600 to-indigo-600 text-amber-300 hover:scale-105 transition-all shadow-md shadow-violet-600/30"
+                title="Générateur de Pitch Vente IA"
+              >
+                <Sparkles className="w-4 h-4" />
+              </button>
+
+              {/* Plein Écran / Présentation */}
+              <button
+                type="button"
+                onClick={() => setPresentationMode(true)}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-emerald-400 hover:bg-zinc-850/80 transition-all"
+                title="Mode Plein Écran / Présentation"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+
+              {/* Toggle Panneau Droit */}
+              <button
+                type="button"
+                onClick={() => setShowRightPanel((p) => !p)}
+                className="hidden lg:flex w-10 h-10 rounded-xl items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-850/80 transition-all"
+                title={showRightPanel ? "Masquer l'inspecteur" : "Afficher l'inspecteur"}
+              >
+                {showRightPanel ? (
+                  <PanelRightClose className="w-4 h-4" />
+                ) : (
+                  <PanelRightOpen className="w-4 h-4 text-violet-400" />
+                )}
+              </button>
+            </div>
+          </aside>
+        )}
+
+        {/* ── ZONE DE PRÉVISUALISATION CENTRALE (CANVAS FLUIDE GÉANT) ── */}
+        <main className="flex-1 h-full relative flex flex-col items-center justify-center p-4 sm:p-8 bg-[#090a0f] overflow-hidden select-none">
+          {/* Mode Présentation: Flottant 'Quitter la présentation (Échap)' */}
+          {presentationMode && (
+            <div className="absolute top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2 rounded-full bg-[#07080c]/90 backdrop-blur-xl border border-zinc-800 text-white shadow-2xl animate-fade-in select-none">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-semibold text-zinc-200">Mode Présentation</span>
+              <button
+                type="button"
+                onClick={() => setPresentationMode(false)}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-[11px] font-mono transition-all active:scale-95 border border-zinc-700"
+              >
+                <Minimize2 className="w-3 h-3" />
+                <span>Quitter (Échap)</span>
+              </button>
+            </div>
           )}
 
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-violet-600 text-white shadow-lg shadow-violet-600/30">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-white tracking-tight">OmniMockup Studio</span>
-                <span className="px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/30 text-[10px] font-semibold">
-                  PRO 3D
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-                <span className="truncate max-w-[180px] sm:max-w-[260px]">{captureItem.domainName || captureItem.url}</span>
-                {captureItem.url && (
-                  <a
-                    href={captureItem.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-zinc-500 hover:text-zinc-300 transition-colors"
-                    title="Ouvrir le site original"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Bouton Templates */}
-          <button
-            type="button"
-            onClick={() => setShowTemplatesModal(true)}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold transition-all active:scale-95"
-          >
-            <Layout className="w-3.5 h-3.5 text-violet-400" />
-            <span>Templates</span>
-            <ChevronRight className="w-3 h-3 text-zinc-500" />
-          </button>
-        </div>
-
-        {/* Centre : Mode de disposition (Solo vs Duo) & Résolution */}
-        <div className="hidden md:flex items-center gap-3">
-          {/* Toggle Solo / Duo */}
-          <div className="flex items-center bg-zinc-900 p-0.5 rounded-xl border border-zinc-800 text-xs">
-            <button
-              type="button"
-              onClick={() => setConfig((p) => ({ ...p, layoutMode: 'single' }))}
-              className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                (config.layoutMode || 'single') === 'single'
-                  ? 'bg-violet-600 text-white font-semibold shadow-xs'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              Solo
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfig((p) => ({ ...p, layoutMode: 'dual-stacked' }))}
-              className={`px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
-                config.layoutMode === 'dual-stacked'
-                  ? 'bg-violet-600 text-white font-semibold shadow-xs'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <span>Duo (Mac + Phone)</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-            </button>
-          </div>
-
-          {/* Résolution 1x / 2x / 4x */}
-          <div className="flex items-center bg-zinc-900 p-0.5 rounded-xl border border-zinc-800 text-xs">
-            {([1, 2, 4] as const).map((scale) => (
-              <button
-                key={scale}
-                type="button"
-                onClick={() => setConfig((p) => ({ ...p, exportScale: scale }))}
-                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                  (config.exportScale || 2) === scale
-                    ? 'bg-zinc-800 text-violet-300 border border-violet-500/30'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-                title={`Résolution d'export ${scale}x`}
-              >
-                {scale}x
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Droite : Actions Vente IA, Copier, Vidéo et Télécharger */}
-        <div className="flex items-center gap-2">
-          {/* Pitch & Vente IA */}
-          <button
-            type="button"
-            onClick={() => setSalesKitOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-violet-600/20 active:scale-95"
-            title="Générer des arguments de vente et pitch client avec l'IA"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span className="hidden sm:inline">Pitch & Vente IA</span>
-          </button>
-
-          {/* Copier */}
-          <button
-            type="button"
-            onClick={handleCopyToClipboard}
-            disabled={isCopying}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
-            title="Copier l'image dans le presse-papier"
-          >
-            {isCopying ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-400" />
-            ) : copySuccess ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
-                <span className="text-emerald-400 font-bold hidden sm:inline">Copié !</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5 text-zinc-400" />
-                <span className="hidden sm:inline">Copier</span>
-              </>
-            )}
-          </button>
-
-          {/* Vidéo 3s */}
-          <button
-            type="button"
-            onClick={handleExportVideo}
-            disabled={isExportingVideo}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-amber-300 hover:text-amber-200 border border-zinc-800 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
-            title="Enregistrer un zoom animé en vidéo 3s (.webm)"
-          >
-            {isExportingVideo ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
-            ) : (
-              <Video className="w-3.5 h-3.5 text-amber-400" />
-            )}
-            <span className="hidden sm:inline">Vidéo 3s</span>
-          </button>
-
-          {/* Bouton Télécharger PNG Principal */}
-          <button
-            type="button"
-            onClick={handleExportPng}
-            disabled={isExporting}
-            className="flex items-center gap-1.5 sm:gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-violet-600/30 transition-all active:scale-95 disabled:opacity-50"
-          >
-            {isExporting ? (
-              <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>Rendu {config.exportScale || 2}x...</span>
-              </>
-            ) : exportSuccess ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
-                <span>Téléchargé !</span>
-              </>
-            ) : (
-              <>
-                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>Télécharger</span>
-              </>
-            )}
-          </button>
-        </div>
-      </header>
-
-      {/* ═════════════════════════════════════════════════════════════════════ */}
-      {/* 2. ESPACE DE TRAVAIL PRINCIPAL (Canvas Central + Panneau Droit)        */}
-      {/* ═════════════════════════════════════════════════════════════════════ */}
-      <div className="flex-1 w-full flex flex-col lg:flex-row overflow-hidden relative">
-        {/* ── ZONE DE PRÉVISUALISATION CENTRALE (CANVAS FLUIDE GÉANT) ── */}
-        <main className="flex-1 h-full relative flex flex-col items-center justify-center p-4 sm:p-8 bg-[#0d0d11] overflow-hidden select-none">
           {/* Grille d'établi design professionnelle (Dot Matrix) */}
           <div
-            className="absolute inset-0 opacity-[0.06] pointer-events-none"
+            className="absolute inset-0 opacity-[0.045] pointer-events-none"
             style={{
               backgroundImage: `radial-gradient(circle, #ffffff 1.2px, transparent 1.2px)`,
               backgroundSize: '24px 24px',
             }}
           />
+
+          {/* Halo d'ambiance lumineux d'arrière-plan */}
+          <div className="absolute w-[640px] h-[420px] rounded-full bg-violet-600/10 blur-[130px] pointer-events-none studio-ambient-glow" />
 
           {/* CONTENEUR DE ZOOM DU CANVAS */}
           <div
@@ -1246,6 +1702,100 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       />
                     </div>
                   </div>
+                ) : config.layoutMode === 'trio-ecosystem' ? (
+                  /* ── MODE TRIO ÉCOSYSTÈME (MACBOOK + IPAD + IPHONE) ── */
+                  <div
+                    className="absolute cursor-move transition-all duration-150 touch-none z-20"
+                    style={{
+                      left: '50%',
+                      top: '50%',
+                      width: '88%',
+                      height: '80%',
+                      perspective: '1200px',
+                      transform: `translate(-50%, -50%) translate(${config.mockupX}%, ${config.mockupY}%) scale(${
+                        config.mockupScale / 100
+                      }) rotateX(${config.mockupTiltX || 0}deg) rotateY(${config.mockupTiltY || 0}deg) rotateZ(${
+                        config.mockupRotation || 0
+                      }deg)`,
+                      transformStyle: 'preserve-3d',
+                    }}
+                    onPointerDown={(e) => handlePointerDown(e, 'mockup')}
+                  >
+                    {/* Appareil 1 : MacBook Pro (Centre / Arrière-plan) */}
+                    <div
+                      className="absolute z-10 transition-transform"
+                      style={{
+                        width: '58%',
+                        left: '21%',
+                        top: '4%',
+                        filter: config.shadowEnabled ? `drop-shadow(${dynamicShadow})` : undefined,
+                      }}
+                    >
+                      <MockupFrame
+                        type="macbook"
+                        screenshotBase64={currentScreenshot}
+                        url={customAddressBar.trim() ? (customAddressBar.startsWith('http') ? customAddressBar : 'https://' + customAddressBar) : captureItem.url}
+                        title={captureItem.title}
+                        domainName={customAddressBar.trim() || captureItem.domainName}
+                        faviconUrl={captureItem.faviconUrl}
+                        theme={config.deviceTheme}
+                        styleVariant={config.deviceStyle}
+                        browserStyle={config.browserStyle || browserStyle}
+                        cornerRadius={config.cornerRadius}
+                        cropOffsetY={config.cropOffsetY}
+                      />
+                    </div>
+
+                    {/* Appareil 2 : iPad Pro (Gauche / Premier plan intermédiaire) */}
+                    <div
+                      className="absolute z-20 transition-transform"
+                      style={{
+                        width: '32%',
+                        left: '2%',
+                        bottom: '2%',
+                        filter: config.shadowEnabled ? 'drop-shadow(0 20px 35px rgba(0,0,0,0.65))' : undefined,
+                        transform: 'rotateZ(-3deg)',
+                      }}
+                    >
+                      <MockupFrame
+                        type="ipad"
+                        screenshotBase64={currentScreenshot}
+                        url={captureItem.url}
+                        title={captureItem.title}
+                        domainName={captureItem.domainName}
+                        faviconUrl={captureItem.faviconUrl}
+                        theme={config.deviceTheme}
+                        styleVariant={config.deviceStyle}
+                        cornerRadius="round"
+                        cropOffsetY={config.cropOffsetY}
+                      />
+                    </div>
+
+                    {/* Appareil 3 : iPhone (Droite / Premier plan avant-garde) */}
+                    <div
+                      className="absolute z-30 transition-transform"
+                      style={{
+                        width: '24%',
+                        right: '3%',
+                        bottom: '0%',
+                        filter: config.shadowEnabled ? 'drop-shadow(0 25px 40px rgba(0,0,0,0.70))' : undefined,
+                        transform: 'rotateZ(3deg)',
+                      }}
+                    >
+                      <MockupFrame
+                        type="iphone"
+                        screenshotBase64={currentScreenshot}
+                        url={captureItem.url}
+                        title={captureItem.title}
+                        domainName={captureItem.domainName}
+                        faviconUrl={captureItem.faviconUrl}
+                        theme={config.deviceTheme}
+                        styleVariant={config.deviceStyle}
+                        cornerRadius="round"
+                        cropOffsetY={config.cropOffsetY}
+                      />
+                    </div>
+                  </div>
                 ) : (
                   /* ── MODE SOLO : APPAREIL UNIQUE CENTRÉ ── */
                   <div
@@ -1363,6 +1913,109 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   </div>
                 );
               })}
+
+              {/* BULLES D'ANNOTATIONS DE VENTE / FEATURE CALLOUTS */}
+              {(config.callouts || []).map((callout) => {
+                const isSelected = selectedCalloutId === callout.id;
+                return (
+                  <div
+                    key={callout.id}
+                    onPointerDown={(e) => handlePointerDown(e, { type: 'callout', id: callout.id })}
+                    className={`absolute cursor-move select-none transition-all group touch-none z-40 ${
+                      isSelected ? 'ring-2 ring-violet-400' : ''
+                    }`}
+                    style={{
+                      left: `${callout.x}%`,
+                      top: `${callout.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
+                    <div
+                      className={`px-3 py-1.5 rounded-full backdrop-blur-xl border flex items-center gap-2 shadow-2xl ${
+                        callout.colorTheme === 'emerald'
+                          ? 'bg-emerald-950/85 border-emerald-500/40 text-emerald-200 shadow-emerald-950/50'
+                          : callout.colorTheme === 'amber'
+                          ? 'bg-amber-950/85 border-amber-500/40 text-amber-200 shadow-amber-950/50'
+                          : callout.colorTheme === 'rose'
+                          ? 'bg-rose-950/85 border-rose-500/40 text-rose-200 shadow-rose-950/50'
+                          : 'bg-zinc-950/85 border-violet-500/40 text-white shadow-violet-950/40'
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-violet-400 animate-ping" />
+                      {callout.badge && (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-violet-600 text-white">
+                          {callout.badge}
+                        </span>
+                      )}
+                      <span className="text-xs font-bold whitespace-nowrap drop-shadow-sm">
+                        {callout.text}
+                      </span>
+                    </div>
+                    {/* Pointer pin tail */}
+                    <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-zinc-900 mx-auto -mt-0.5 filter drop-shadow-md" />
+                    {isSelected && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCallout(callout.id);
+                        }}
+                        className="absolute -top-3 -right-3 p-1 rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-500"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* STICKERS DE PREUVE SOCIALE */}
+              {(config.socialBadges || []).filter((b) => b.visible).map((badge) => (
+                <div
+                  key={badge.id}
+                  onPointerDown={(e) => handlePointerDown(e, { type: 'socialBadge', id: badge.id })}
+                  className="absolute cursor-move select-none z-35 touch-none hover:ring-1 hover:ring-white/40 rounded-2xl p-0.5"
+                  style={{
+                    left: `${badge.x}%`,
+                    top: `${badge.y}%`,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                >
+                  {badge.type === 'product-hunt' && (
+                    <div className="px-3 py-1.5 rounded-2xl bg-gradient-to-r from-[#da552f] to-[#ea532b] text-white flex items-center gap-2 shadow-xl border border-white/20">
+                      <span className="w-5 h-5 rounded-full bg-white text-[#da552f] flex items-center justify-center font-black text-xs">P</span>
+                      <div>
+                        <div className="text-[9px] font-semibold uppercase tracking-wider text-white/80">Product Hunt</div>
+                        <div className="text-xs font-black">#1 Product of the Day</div>
+                      </div>
+                    </div>
+                  )}
+                  {badge.type === 'stripe-mrr' && (
+                    <div className="px-3.5 py-2 rounded-2xl bg-[#0a2540] text-white flex items-center gap-2.5 shadow-xl border border-[#635bff]/40">
+                      <div className="w-5 h-5 rounded-lg bg-[#635bff] flex items-center justify-center font-bold text-xs text-white">S</div>
+                      <div>
+                        <div className="text-[9px] font-medium text-emerald-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          Verified Revenue
+                        </div>
+                        <div className="text-xs font-mono font-bold">{badge.customText || '$24,500 MRR'}</div>
+                      </div>
+                    </div>
+                  )}
+                  {badge.type === 'trustpilot' && (
+                    <div className="px-3.5 py-1.5 rounded-2xl bg-zinc-950/90 text-white flex items-center gap-2 shadow-xl border border-emerald-500/30">
+                      <span className="text-emerald-400 font-bold text-sm">★ ★ ★ ★ ★</span>
+                      <span className="text-xs font-bold text-zinc-200">4.9/5 Trustpilot</span>
+                    </div>
+                  )}
+                  {badge.type === 'uptime' && (
+                    <div className="px-3 py-1.5 rounded-2xl bg-emerald-950/80 text-emerald-200 flex items-center gap-2 shadow-xl border border-emerald-500/30 text-xs font-mono font-bold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>99.99% Uptime SLA</span>
+                    </div>
+                  )}
+                </div>
+              ))}
 
               {/* BADGES TECH STACK DÉVELOPPEUR SUR LA SCÈNE */}
               {selectedTechIds.length > 0 && (
@@ -1510,13 +2163,35 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               <RotateCcw className="w-3 h-3 text-violet-400" />
               <span>0°</span>
             </button>
+
+            <div className="w-px h-4 bg-zinc-750" />
+
+            {/* Mode Plein Écran HUD */}
+            <button
+              type="button"
+              onClick={() => setPresentationMode(!presentationMode)}
+              className={`flex items-center gap-1 px-2 py-1 text-[11px] rounded-lg transition-all font-medium ${
+                presentationMode
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
+              }`}
+              title={presentationMode ? 'Quitter la présentation' : 'Mode Plein Écran'}
+            >
+              {presentationMode ? (
+                <Minimize2 className="w-3 h-3 text-emerald-400" />
+              ) : (
+                <Maximize2 className="w-3 h-3 text-emerald-400" />
+              )}
+              <span className="hidden sm:inline">Plein Écran</span>
+            </button>
           </div>
         </main>
 
         {/* ═════════════════════════════════════════════════════════════════ */}
-        {/* 3. PANNEAU LATÉRAL D'INSPECTION (STYLE SHOTS.SO & ROTATO)        */}
+        {/* 3. PANNEAU LATÉRAL D'INSPECTION (STYLE DAVINCI / RESOLVE / FIGMA) */}
         {/* ═════════════════════════════════════════════════════════════════ */}
-        <aside className="w-full lg:w-[400px] xl:w-[430px] h-full bg-[#131317] border-t lg:border-t-0 lg:border-l border-zinc-850 flex flex-col shrink-0 z-20 overflow-hidden">
+        {showRightPanel && !presentationMode && (
+          <aside className="w-full lg:w-[380px] xl:w-[410px] h-full bg-[#0a0b10] border-t lg:border-t-0 lg:border-l border-zinc-850/80 flex flex-col shrink-0 z-20 overflow-hidden shadow-2xl">
           {/* Header Mobile Déplier / Replier */}
           <button
             type="button"
@@ -1532,34 +2207,44 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {mobileSheetOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
 
-          {/* BARRE SUPÉRIEURE DE NAVIGATION NETWAVE & TEMPLATES (FrameCapture.PNG) */}
-          <div className="px-4 py-2.5 border-b border-zinc-850 bg-zinc-950/90 flex items-center justify-between shrink-0">
+          {/* BARRE SUPÉRIEURE DE NAVIGATION NETWAVE & TEMPLATES */}
+          <div className="px-4 py-2.5 border-b border-zinc-850/80 bg-[#08090d] flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center text-[10px] font-black text-white shadow-sm">
-                NW
-              </div>
-              <span className="text-xs font-bold text-white tracking-tight">Netwave Studio</span>
-              <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
+              <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
+              <span className="text-xs font-bold text-zinc-200 tracking-tight uppercase font-mono">
+                {activeMainTab === 'mockup' ? 'Propriétés Mockup' : 'Propriétés Frame'}
+              </span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowTemplatesModal(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-violet-500/50 text-zinc-300 hover:text-white text-[11px] font-bold transition-all group"
-            >
-              <Layout className="w-3.5 h-3.5 text-violet-400 group-hover:scale-110 transition-transform" />
-              <span>Templates</span>
-              <ChevronRight className="w-3 h-3 text-zinc-500 group-hover:translate-x-0.5 transition-transform" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setShowTemplatesModal(true)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-[11px] font-semibold transition-all"
+                title="Choisir un template"
+              >
+                <Layout className="w-3 h-3 text-violet-400" />
+                <span>Templates</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowRightPanel(false)}
+                className="p-1 rounded-lg hover:bg-zinc-850 text-zinc-400 hover:text-white transition-colors"
+                title="Masquer le volet"
+              >
+                <PanelRightClose className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
-          {/* SÉLECTEUR DES 2 ONGLETS MAJEURS DU STUDIO (STYLE SHOTS.SO) */}
-          <div className="p-3 border-b border-zinc-850 bg-zinc-950/70 shrink-0">
-            <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-zinc-900 border border-zinc-800 text-xs font-bold">
+          {/* SÉLECTEUR DES 2 ONGLETS MAJEURS DU STUDIO */}
+          <div className="p-3 border-b border-zinc-850/80 bg-[#090a0f] shrink-0">
+            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-zinc-900/90 border border-zinc-800 text-xs font-bold">
               <button
                 type="button"
                 onClick={() => setActiveMainTab('mockup')}
-                className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                className={`py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2 ${
                   activeMainTab === 'mockup'
                     ? 'bg-zinc-800 text-white shadow-md ring-1 ring-white/10 font-black'
                     : 'text-zinc-400 hover:text-white'
@@ -1571,7 +2256,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveMainTab('frame')}
-                className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                className={`py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2 ${
                   activeMainTab === 'frame'
                     ? 'bg-zinc-800 text-white shadow-md ring-1 ring-white/10 font-black'
                     : 'text-zinc-400 hover:text-white'
@@ -1587,18 +2272,19 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           <div
             className={`${
               mobileSheetOpen ? 'flex' : 'hidden lg:flex'
-            } flex-col flex-1 p-4 sm:p-5 space-y-6 overflow-y-auto max-h-[calc(100vh-120px)]`}
+            } flex-col flex-1 p-4 sm:p-5 space-y-6 overflow-y-auto studio-scrollbar max-h-[calc(100vh-120px)]`}
           >
             {/* ══════════ ONGLET PRINCIPAL MOCKUP ══════════ */}
             {activeMainTab === 'mockup' && (
               <div className="space-y-0 animate-fade-in">
-                {/* Sous-onglets : Appareil | 3D | Contenu | Branding */}
+                {/* Sous-onglets : Appareil | 3D | Contenu | Branding | Callouts Vente ✨ */}
                 <div className="flex gap-1 mb-4 p-1 bg-zinc-900 rounded-xl border border-zinc-800">
                   {([
                     { id: 'mockup', label: 'Appareil' },
                     { id: '3d', label: '3D' },
                     { id: 'content', label: 'Contenu' },
                     { id: 'branding', label: 'Branding' },
+                    { id: 'callouts', label: 'Callouts ✨' },
                   ] as const).map((t) => (
                     <button
                       key={t.id}
@@ -1619,38 +2305,58 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {activeTab === 'mockup' && (
 
               <div className="space-y-5 animate-fade-in">
-                {/* Disposition Solo vs Duo */}
+                {/* Disposition Solo vs Duo vs Trio */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
-                    Mode de Disposition (Layout)
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                      Mode de Disposition (Layout)
+                    </label>
+                    <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      Multi-Device Ready
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => setConfig((p) => ({ ...p, layoutMode: 'single' }))}
-                      className={`p-3 rounded-xl border text-left transition-all ${
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
                         (config.layoutMode || 'single') === 'single'
                           ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/50'
                           : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
                       }`}
                     >
-                      <div className="font-bold text-xs text-white">Solo (1 Appareil)</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">Focus sur un seul écran</div>
+                      <div className="font-bold text-xs text-white">Solo</div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5">1 Appareil</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfig((p) => ({ ...p, layoutMode: 'dual-stacked' }))}
-                      className={`p-3 rounded-xl border text-left transition-all relative ${
+                      className={`p-2.5 rounded-xl border text-left transition-all relative ${
                         config.layoutMode === 'dual-stacked'
                           ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/50'
                           : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
                       }`}
                     >
-                      <span className="absolute top-2 right-2 px-1.5 py-0.2 rounded-md bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[9px] font-bold">
-                        DUO ✨
+                      <span className="absolute top-1.5 right-1.5 px-1 py-0.2 rounded bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[8px] font-bold">
+                        DUO
                       </span>
-                      <div className="font-bold text-xs text-white">MacBook + iPhone</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">Desktop & Mobile côte à côte</div>
+                      <div className="font-bold text-xs text-white">Duo</div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5">Mac + iPhone</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfig((p) => ({ ...p, layoutMode: 'trio-ecosystem' }))}
+                      className={`p-2.5 rounded-xl border text-left transition-all relative ${
+                        config.layoutMode === 'trio-ecosystem'
+                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/50'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <span className="absolute top-1.5 right-1.5 px-1 py-0.2 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[8px] font-bold">
+                        TRIO ✨
+                      </span>
+                      <div className="font-bold text-xs text-white">Trio Pro</div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5">Mac+iPad+Phone</div>
                     </button>
                   </div>
                 </div>
@@ -2379,6 +3085,285 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 </div>
               </div>
             )}
+
+            {/* ══════════ ONGLET 5 : CALLOUTS DE VENTE & PREUVE SOCIALE ✨ ══════════ */}
+            {activeTab === 'callouts' && (
+              <div className="space-y-6 animate-fade-in">
+                {/* 1. Badges de Preuve Sociale */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <span>Badges de Preuve Sociale</span>
+                    </label>
+                    <span className="text-[10px] text-zinc-400 font-mono">Glisser-déposer libre</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    Ajoutez ces stickers de confiance directement sur votre maquette pour rassurer vos prospects et booster la conversion.
+                  </p>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Badge Product Hunt */}
+                    {(() => {
+                      const isActive = (config.socialBadges || []).some((b) => b.type === 'producthunt');
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSocialBadge('producthunt')}
+                          className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all ${
+                            isActive
+                              ? 'bg-amber-500/15 border-amber-500/60 ring-1 ring-amber-500/30'
+                              : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1">
+                              😸 Product Hunt
+                            </span>
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-amber-400 animate-pulse' : 'bg-zinc-700'}`} />
+                          </div>
+                          <div className="text-[11px] font-bold text-white">#1 Product of Day</div>
+                          <div className="text-[9px] text-zinc-400 font-mono">{isActive ? '✓ Affiché sur scène' : '+ Cliquer pour ajouter'}</div>
+                        </button>
+                      );
+                    })()}
+
+                    {/* Badge Stripe MRR */}
+                    {(() => {
+                      const isActive = (config.socialBadges || []).some((b) => b.type === 'stripe-mrr');
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSocialBadge('stripe-mrr')}
+                          className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all ${
+                            isActive
+                              ? 'bg-emerald-500/15 border-emerald-500/60 ring-1 ring-emerald-500/30'
+                              : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                              💳 Stripe Verified
+                            </span>
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-700'}`} />
+                          </div>
+                          <div className="text-[11px] font-bold text-white">$48,200 MRR</div>
+                          <div className="text-[9px] text-zinc-400 font-mono">{isActive ? '✓ Affiché sur scène' : '+ Cliquer pour ajouter'}</div>
+                        </button>
+                      );
+                    })()}
+
+                    {/* Badge Trustpilot */}
+                    {(() => {
+                      const isActive = (config.socialBadges || []).some((b) => b.type === 'trustpilot');
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSocialBadge('trustpilot')}
+                          className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all ${
+                            isActive
+                              ? 'bg-emerald-500/15 border-emerald-500/60 ring-1 ring-emerald-500/30'
+                              : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1">
+                              ★ Trustpilot
+                            </span>
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-700'}`} />
+                          </div>
+                          <div className="text-[11px] font-bold text-white">4.9 / 5 (1,200+)</div>
+                          <div className="text-[9px] text-zinc-400 font-mono">{isActive ? '✓ Affiché sur scène' : '+ Cliquer pour ajouter'}</div>
+                        </button>
+                      );
+                    })()}
+
+                    {/* Badge SLA Enterprise */}
+                    {(() => {
+                      const isActive = (config.socialBadges || []).some((b) => b.type === 'sla-enterprise');
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSocialBadge('sla-enterprise')}
+                          className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all ${
+                            isActive
+                              ? 'bg-blue-500/15 border-blue-500/60 ring-1 ring-blue-500/30'
+                              : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-blue-400 flex items-center gap-1">
+                              ⚡ SLA Garanti
+                            </span>
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-blue-400 animate-pulse' : 'bg-zinc-700'}`} />
+                          </div>
+                          <div className="text-[11px] font-bold text-white">99.99% Uptime</div>
+                          <div className="text-[9px] text-zinc-400 font-mono">{isActive ? '✓ Affiché sur scène' : '+ Cliquer pour ajouter'}</div>
+                        </button>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* 2. Bulles d'annotations / Callouts de vente */}
+                <div className="space-y-3 pt-4 border-t border-zinc-800/80">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                      <Tag className="w-4 h-4 text-violet-400" />
+                      <span>Bulles Callouts de Vente</span>
+                    </label>
+                    <span className="text-[10px] text-violet-400 font-bold bg-violet-500/10 px-2 py-0.5 rounded-full border border-violet-500/20">
+                      Flèches Pointées
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    Pointez les fonctionnalités clés de votre produit (IA, Vitesse, Checkout, ROI) directement sur l&apos;écran pour capter l&apos;attention de l&apos;acheteur.
+                  </p>
+
+                  {/* Presets rapides en 1 clic */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-mono uppercase text-zinc-400">Ajout rapide en 1 clic :</span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleAddCallout('⚡ +300% de Conversion', 'emerald')}
+                        className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-emerald-400 hover:border-emerald-500/50 transition-all flex items-center gap-1.5"
+                      >
+                        <span>⚡</span>
+                        <span className="truncate">+300% Conversion</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAddCallout('🤖 IA Native Générative', 'violet')}
+                        className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-violet-400 hover:border-violet-500/50 transition-all flex items-center gap-1.5"
+                      >
+                        <span>🤖</span>
+                        <span className="truncate">IA Native Instantanée</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAddCallout('💳 Paiement 1-Clic Sans Friction', 'amber')}
+                        className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-amber-400 hover:border-amber-500/50 transition-all flex items-center gap-1.5"
+                      >
+                        <span>💳</span>
+                        <span className="truncate">Paiement 1-Clic</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAddCallout('🔒 Sécurité Bancaire 256-bit', 'blue')}
+                        className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-blue-400 hover:border-blue-500/50 transition-all flex items-center gap-1.5"
+                      >
+                        <span>🔒</span>
+                        <span className="truncate">Sécurité Bancaire</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Bouton création d'un callout personnalisé */}
+                  <button
+                    type="button"
+                    onClick={() => handleAddCallout('Nouvel argument clé ✨', 'violet')}
+                    className="w-full py-2.5 px-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-violet-600/20 transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Créer un callout personnalisé</span>
+                  </button>
+
+                  {/* Liste des callouts actifs pour édition */}
+                  {(config.callouts || []).length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      <span className="text-[10px] font-mono uppercase text-zinc-400">
+                        Callouts sur la maquette ({(config.callouts || []).length}) :
+                      </span>
+                      <div className="space-y-2">
+                        {(config.callouts || []).map((c) => (
+                          <div
+                            key={c.id}
+                            className={`p-3 rounded-xl border bg-zinc-900 space-y-2.5 transition-all ${
+                              selectedCalloutId === c.id
+                                ? 'border-violet-500 ring-1 ring-violet-500/30'
+                                : 'border-zinc-800'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={c.text}
+                                onChange={(e) => handleUpdateCallout(c.id, { text: e.target.value })}
+                                onFocus={() => setSelectedCalloutId(c.id)}
+                                className="flex-1 px-2.5 py-1.5 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white focus:outline-none focus:border-violet-500 font-medium"
+                                placeholder="Texte de l'argument..."
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCallout(c.id)}
+                                className="p-1.5 text-zinc-500 hover:text-rose-400 rounded-lg hover:bg-zinc-800 transition-colors"
+                                title="Supprimer ce callout"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                              <span className="flex items-center gap-1.5">
+                                <span>Couleur :</span>
+                                <div className="flex gap-1">
+                                  {(['violet', 'emerald', 'amber', 'blue', 'rose', 'dark'] as const).map((color) => {
+                                    const colorMap: Record<string, string> = {
+                                      violet: 'bg-violet-500',
+                                      emerald: 'bg-emerald-500',
+                                      amber: 'bg-amber-500',
+                                      blue: 'bg-blue-500',
+                                      rose: 'bg-rose-500',
+                                      dark: 'bg-zinc-700',
+                                    };
+                                    return (
+                                      <button
+                                        key={color}
+                                        type="button"
+                                        onClick={() => handleUpdateCallout(c.id, { color })}
+                                        className={`w-3.5 h-3.5 rounded-full ${colorMap[color]} transition-transform ${
+                                          (c.color || 'violet') === color ? 'scale-125 ring-2 ring-white/60' : 'opacity-60 hover:opacity-100'
+                                        }`}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              </span>
+
+                              <span className="flex items-center gap-1.5">
+                                <span>Pointeur :</span>
+                                <select
+                                  value={c.tailPosition || 'bottom-left'}
+                                  onChange={(e) =>
+                                    handleUpdateCallout(c.id, {
+                                      tailPosition: e.target.value as any,
+                                    })
+                                  }
+                                  className="bg-zinc-950 text-white border border-zinc-800 rounded px-1.5 py-0.5 text-[10px] focus:outline-none"
+                                >
+                                  <option value="bottom-left">Bas Gauche</option>
+                                  <option value="bottom-right">Bas Droite</option>
+                                  <option value="top-left">Haut Gauche</option>
+                                  <option value="top-right">Haut Droite</option>
+                                </select>
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-300 leading-relaxed flex items-start gap-2">
+                    <span className="text-base leading-none">💡</span>
+                    <span>
+                      <strong>Astuce Pro :</strong> Cliquez et faites glisser n&apos;importe quelle bulle ou badge directement sur le canevas central pour la placer au pixel près !
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* /activeMainTab==='mockup' wrapper close */}
               </div>
             )}
@@ -2783,6 +3768,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
           </div>
         </aside>
+      )}
       </div>
 
       {/* MODALE DU KIT DE VENTE DÉVELOPPEUR IA */}

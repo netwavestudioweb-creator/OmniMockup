@@ -11,6 +11,36 @@ export type ShadowPreset = 'none' | 'spread' | 'realistic' | 'adaptive';
 
 export type SceneOverlayPreset = 'none' | 'blinds' | 'leaves' | 'palm' | 'window' | 'shapes';
 
+export interface FeatureCallout {
+  id: string;
+  text: string;
+  badge?: string;
+  x: number; // percentage 0-100
+  y: number; // percentage 0-100
+  pointerDirection?: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right';
+  tailPosition?: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right';
+  colorTheme?: 'violet' | 'emerald' | 'amber' | 'rose' | 'dark' | 'blue';
+  color?: 'violet' | 'emerald' | 'amber' | 'rose' | 'dark' | 'blue';
+}
+
+export type SocialProofBadgeType =
+  | 'product-hunt'
+  | 'producthunt'
+  | 'trustpilot'
+  | 'stripe-mrr'
+  | 'rating-stars'
+  | 'uptime'
+  | 'sla-enterprise';
+
+export interface SceneSocialBadge {
+  id: string;
+  type: SocialProofBadgeType;
+  customText?: string;
+  x: number; // percentage 0-100
+  y: number; // percentage 0-100
+  visible: boolean;
+}
+
 export interface SceneConfig {
   aspectRatio: SceneAspectRatio;
   customWidth?: number;
@@ -31,7 +61,7 @@ export interface SceneConfig {
   browserStyle?: BrowserStylePreset;
   cornerRadius?: CornerRadius;
   cropOffsetY?: number; // Défilement vertical de la capture (0% = Haut, 100% = Bas)
-  layoutMode?: 'single' | 'dual-stacked';
+  layoutMode?: 'single' | 'dual-stacked' | 'trio-ecosystem';
   mockupX: number; // percentage offset -50 to 50
   mockupY: number; // percentage offset -50 to 50
   mockupScale: number; // 40 - 150
@@ -49,6 +79,8 @@ export interface SceneConfig {
   customWatermarkUrl?: string; // Pour le plan Agence (marque blanche)
   texts: SceneTextLayer[];
   logos: SceneLogoLayer[];
+  callouts?: FeatureCallout[];
+  socialBadges?: SceneSocialBadge[];
 }
 
 

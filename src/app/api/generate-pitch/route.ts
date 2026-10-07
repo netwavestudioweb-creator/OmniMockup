@@ -82,12 +82,13 @@ Réponds EXCLUSIVEMENT avec cet objet JSON :
       success: true,
       data: parsedResult,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erreur API Generate Pitch:', error);
+    const message = error instanceof Error ? error.message : 'Erreur lors de la génération du pitch avec Gemini.';
     return NextResponse.json(
       {
         success: false,
-        error: error?.message || 'Erreur lors de la génération du pitch avec Gemini.',
+        error: message,
       },
       { status: 500 }
     );

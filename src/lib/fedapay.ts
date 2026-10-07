@@ -31,7 +31,7 @@ export interface FedaPayTransactionResponse {
   currency: {
     iso: string;
   };
-  custom_metadata?: Record<string, any>;
+  custom_metadata?: Record<string, unknown>;
   customer?: {
     email: string;
     phone_number?: {

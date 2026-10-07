@@ -10,7 +10,7 @@ import {
   SceneTextLayer,
   SceneLogoLayer,
   SceneConfig,
-  SceneFilterType,
+  CornerRadius,
   VideoAnimPreset,
 } from '@/types/analyzer';
 import { MockupFrame } from './MockupFrame';
@@ -19,10 +19,8 @@ import {
   Download,
   Sparkles,
   Palette,
-  Type,
   Image as ImageIcon,
   Move,
-  RotateCw,
   Sliders,
   Trash2,
   Plus,
@@ -37,22 +35,17 @@ import {
   Sun,
   Copy,
   RotateCcw,
-  Sparkle,
   ChevronUp,
   ChevronDown,
-  Wand2,
-  Film,
   Video,
   Watch,
   Tv,
   Upload,
   Layers,
-  Code2,
   ArrowLeft,
   ExternalLink,
   ZoomIn,
   ZoomOut,
-  Maximize2,
   Camera,
   Layout,
   Eye,
@@ -61,7 +54,6 @@ import {
   Lightbulb,
   ChevronRight,
   Droplets,
-  Focus,
   Grid,
   Pipette,
   ImageUp,
@@ -75,7 +67,6 @@ import {
   BACKGROUND_CATEGORIES,
   FRAME_PRESETS,
   FramePresetOption,
-  TEMPLATES_CATALOG,
   StudioTemplate,
 } from '@/lib/shotsPresets';
 import { SceneShadowOverlay } from './SceneShadowOverlay';
@@ -266,7 +257,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const [techThemeStyle, setTechThemeStyle] = useState<'dark-glass' | 'light-glass' | 'neon'>('dark-glass');
 
   // État de l'exportation vidéo animée
-  const [videoPreset, setVideoPreset] = useState<VideoAnimPreset>('zoomIn');
+  const [videoPreset] = useState<VideoAnimPreset>('zoomIn');
   const [isExportingVideo, setIsExportingVideo] = useState(false);
 
   // ══ NOUVELLES OPTIONS SHOTS.SO ══
@@ -294,7 +285,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const [vfxGlow, setVfxGlow] = useState<boolean>(false);
   const [uiScale, setUiScale] = useState<number>(100);
   const [magicPresetIdx, setMagicPresetIdx] = useState<number>(0);
-  const [activeBgCategory, setActiveBgCategory] = useState<string>('gradient');
 
   // Application d'un template complet Shots.so
   const handleApplyTemplate = (tmpl: StudioTemplate) => {
@@ -304,7 +294,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       layoutMode: tmpl.layoutMode || 'single',
       browserStyle: tmpl.browserStyle || prev.browserStyle,
       deviceTheme: tmpl.browserStyle ? (tmpl.browserStyle.endsWith('dark') ? 'dark' : 'light') : prev.deviceTheme,
-      bgType: tmpl.bgType as any,
+      bgType: tmpl.bgType as SceneConfig['bgType'],
       bgValue: tmpl.bgValue,
       aspectRatio: tmpl.aspectRatio,
       mockupScale: tmpl.mockupScale,
@@ -722,7 +712,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   const activeRatioConfig = RATIO_PRESETS.find((r) => r.id === config.aspectRatio) || RATIO_PRESETS[0];
   const activeText = config.texts.find((t) => t.id === selectedTextId);
-  const activeLogo = config.logos.find((l) => l.id === selectedLogoId);
 
   // Calcul du drop shadow 3D en fonction du type, de l'opacité et de l'angle de lumière
   const lightRad = (shadowLightAngle * Math.PI) / 180;
@@ -1669,7 +1658,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* Modèle d'appareil (7 options) */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
-                    Modèle d'Appareil
+                    Modèle d&apos;Appareil
                   </label>
                   <div className="grid grid-cols-4 gap-1.5">
                     {[
@@ -1752,7 +1741,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                   {/* Rayon d'angle */}
                   <div className="space-y-1.5">
-                    <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Rayon d'angle</span>
+                    <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Rayon d&apos;angle</span>
                     <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                       {[
                         { id: 'sharp', label: 'Droit (0px)' },
@@ -1762,7 +1751,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <button
                           key={r.id}
                           type="button"
-                          onClick={() => setConfig((p) => ({ ...p, cornerRadius: r.id as any }))}
+                          onClick={() => setConfig((p) => ({ ...p, cornerRadius: r.id as CornerRadius }))}
                           className={`py-1 text-[10px] font-medium rounded transition-all ${
                             config.cornerRadius === r.id ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
                           }`}
@@ -1818,7 +1807,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* ── BARRE D'ADRESSE PERSONNALISÉE ── */}
                 {(config.mockupType === 'browser' || config.mockupType === 'macbook' || config.mockupType === 'imac') && (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Barre d'Adresse</label>
+                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Barre d&apos;Adresse</label>
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 focus-within:border-violet-500/60 transition-colors">
                       <Globe className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                       <input
@@ -1974,7 +1963,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       <Plus className="w-4 h-4" />
                     </div>
                     <span className="text-[11px] text-zinc-400 group-hover:text-zinc-200">
-                      Remplacer l'image ou déposer un fichier
+                      Remplacer l&apos;image ou déposer un fichier
                     </span>
                   </button>
                 </div>
@@ -2749,7 +2738,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                                 onClick={() =>
                                   setConfig((p) => ({
                                     ...p,
-                                    bgType: preset.type as any,
+                                    bgType: preset.type as SceneConfig['bgType'],
                                     bgValue: preset.value,
                                     bgTransparent: false,
                                   }))

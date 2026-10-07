@@ -8,10 +8,8 @@ import {
 import { SceneAspectRatio } from '@/types/analyzer';
 import {
   X,
-  LayoutGrid,
   Image as ImageIcon,
   Smartphone,
-  Check,
   Monitor,
   Video,
   Circle,

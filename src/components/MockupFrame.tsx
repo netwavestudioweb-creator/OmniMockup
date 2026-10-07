@@ -182,6 +182,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
                       : 'bg-white border-zinc-300 text-zinc-800'
                   }`}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={faviconSrc}
                     alt="Favicon"

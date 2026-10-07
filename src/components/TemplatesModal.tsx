@@ -12,7 +12,6 @@ import {
   Monitor,
   Smartphone,
   Tablet,
-  Check,
 } from 'lucide-react';
 
 interface TemplatesModalProps {

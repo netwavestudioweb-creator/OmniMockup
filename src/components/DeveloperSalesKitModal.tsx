@@ -6,12 +6,10 @@ import {
   X,
   Copy,
   Check,
-  Send,
   Loader2,
   TrendingUp,
   Briefcase,
   Share2,
-  Layers,
   Award,
 } from 'lucide-react';
 import { AVAILABLE_TECHS } from './TechStackPicker';
@@ -32,7 +30,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
   selectedTechIds = [],
 }) => {
   const [projectTitle, setProjectTitle] = useState(defaultProjectTitle);
-  const [projectUrl, setProjectUrl] = useState(defaultProjectUrl);
+  const [projectUrl] = useState(defaultProjectUrl);
   const [projectDescription, setProjectDescription] = useState(
     'Application SaaS moderne conçue pour simplifier la vie des utilisateurs et booster les conversions.'
   );

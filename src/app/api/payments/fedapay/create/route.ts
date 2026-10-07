@@ -121,12 +121,13 @@ export async function POST(req: NextRequest) {
       currency: 'XOF',
       plan,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erreur route FedaPay Create:', error);
+    const message = error instanceof Error ? error.message : 'Erreur interne du serveur lors de la création du paiement MoMo.';
     return NextResponse.json(
       {
         success: false,
-        error: error?.message || 'Erreur interne du serveur lors de la création du paiement MoMo.',
+        error: message,
       },
       { status: 500 }
     );

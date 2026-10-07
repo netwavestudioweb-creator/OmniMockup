@@ -5,16 +5,16 @@ import { getFedaPayTransaction } from '@/lib/fedapay';
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
-    let body: any;
+    let body: Record<string, unknown> = {};
     try {
       body = JSON.parse(rawBody);
     } catch {
       return NextResponse.json({ error: 'Format JSON invalide' }, { status: 400 });
     }
 
-    const eventName = body?.name || body?.event || '';
-    const entity = body?.entity || body?.data || body;
-    const transactionId = entity?.id;
+    const eventName = (typeof body?.name === 'string' ? body.name : typeof body?.event === 'string' ? body.event : '') as string;
+    const entity = (body?.entity || body?.data || body) as Record<string, unknown> | undefined;
+    const transactionId = entity?.id as string | number | undefined;
 
     console.log(`[FedaPay Webhook] Événement reçu: "${eventName}" pour transaction #${transactionId}`);
 
@@ -71,10 +71,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ received: true, status: officialTx?.status });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[FedaPay Webhook] Exception interceptée:', error);
+    const message = error instanceof Error ? error.message : 'Erreur interne du webhook FedaPay';
     return NextResponse.json(
-      { error: error?.message || 'Erreur interne du webhook FedaPay' },
+      { error: message },
       { status: 500 }
     );
   }

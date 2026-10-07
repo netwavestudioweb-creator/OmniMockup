@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, X, Check } from 'lucide-react';
+import { Sparkles, Check } from 'lucide-react';
 
 export interface TechBadgeItem {
   id: string;

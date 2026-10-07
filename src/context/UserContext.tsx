@@ -159,7 +159,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const isPremiumUser = profile?.plan === 'pro' || profile?.plan === 'agence';
+  const isPremiumUser = profile?.plan === 'pro' || profile?.plan === 'agence' || profile?.plan === 'studio';
 
   return (
     <UserContext.Provider

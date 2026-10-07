@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const plan = (body?.plan || 'pro') as 'starter' | 'creator' | 'pro' | 'agence';
+    const plan = (body?.plan || 'pro') as string;
 
     let priceId = '';
     if (plan === 'starter') {
@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
       priceId = process.env.STRIPE_CREATOR_PRICE_ID || process.env.STRIPE_PRO_PRICE_ID || '';
     } else if (plan === 'pro') {
       priceId = process.env.STRIPE_PRO_PRICE_ID || '';
-    } else if (plan === 'agence') {
-      priceId = process.env.STRIPE_AGENCE_PRICE_ID || '';
+    } else if (plan === 'studio' || plan === 'agence') {
+      priceId = process.env.STRIPE_STUDIO_PRICE_ID || process.env.STRIPE_AGENCE_PRICE_ID || '';
     }
 
     if (!priceId) {

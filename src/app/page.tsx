@@ -125,21 +125,21 @@ export default function HomePage() {
     setErrorMessage(null);
   };
 
+  if (activeCaptureItem) {
+    return (
+      <div className="fixed inset-0 z-50 w-screen h-screen bg-zinc-950 overflow-hidden flex flex-col select-none">
+        <SceneEditor
+          captureItem={activeCaptureItem}
+          initialMockup="browser"
+          onClose={handleReset}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col selection:bg-violet-500/30 selection:text-violet-200 w-full max-w-full overflow-x-hidden">
-      <Navbar onReset={activeCaptureItem ? handleReset : undefined} />
-
-      {activeCaptureItem ? (
-        /* ─── STUDIO MODE ─── */
-        <div className="flex-1 w-full flex flex-col animate-fade-in">
-          <SceneEditor
-            captureItem={activeCaptureItem}
-            initialMockup="browser"
-            onClose={handleReset}
-          />
-        </div>
-      ) : (
-        <>
+      <Navbar />
           {/* ═══════════ HERO SECTION ═══════════ */}
           <section className="relative hero-mesh noise overflow-hidden">
             {/* Background elements */}
@@ -1569,8 +1569,6 @@ export default function HomePage() {
           </section>
 
 
-        </>
-      )}
 
       {/* Overlay de chargement */}
       {isLoading && (

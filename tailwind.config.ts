@@ -41,6 +41,7 @@ const config: Config = {
         'shimmer': 'shimmer 2.5s infinite linear',
         'fade-in': 'fadeIn 0.3s ease-out forwards',
         'slide-up': 'slideUp 0.4s ease-out forwards',
+        'slideInLeft': 'slideInLeft 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards',
       },
       keyframes: {
         shimmer: {
@@ -54,6 +55,10 @@ const config: Config = {
         slideUp: {
           '0%': { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideInLeft: {
+          '0%': { opacity: '0', transform: 'translateX(-100%)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
         },
       },
     },

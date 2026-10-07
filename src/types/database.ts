@@ -1,4 +1,4 @@
-export type UserPlan = 'free' | 'pro' | 'agence';
+export type UserPlan = 'free' | 'pro' | 'agence' | 'studio';
 
 export interface Profile {
   id: string;

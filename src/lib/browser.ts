@@ -76,6 +76,8 @@ export async function captureWebPage(
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
+        '--use-gl=swiftshader',
+        '--disable-gpu-sandbox',
         '--disable-background-networking',
         '--disable-default-apps',
         '--disable-extensions',
@@ -95,18 +97,23 @@ export async function captureWebPage(
         deviceScaleFactor: 1,
       });
       const page = await context.newPage();
-      page.setDefaultTimeout(10000);
+      page.setDefaultTimeout(30000);
 
-      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
-      await page.waitForTimeout(200);
+      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      await page.waitForTimeout(500);
 
       if (hideBanners) {
         await page.addStyleTag({ content: cookieBannerCSS }).catch(() => {});
       }
 
       const pageTitle = (await page.title()) || domainName;
-      const screenshotBuffer = await page.screenshot({ type: 'jpeg', quality: 80, fullPage });
-      const screenshotBase64 = `data:image/jpeg;base64,${screenshotBuffer.toString('base64')}`;
+      const screenshotBuffer = await page.screenshot({
+        type: 'png',
+        fullPage,
+        timeout: 30000,
+        animations: 'disabled',
+      });
+      const screenshotBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`;
 
       const { candidates, pageSize } = await extractDomSectionsPlaywright(page);
 
@@ -127,6 +134,11 @@ export async function captureWebPage(
   // TIER 2 : Puppeteer-core + @sparticuz/chromium
   // -------------------------------------------------------------
   try {
+    if (process.platform === 'win32') {
+      // @sparticuz/chromium ne contient que les binaires ELF Linux pour AWS Lambda/Vercel
+      throw new Error('Tier 2 Sparticuz ignoré sous Windows (réservé Linux Serverless)');
+    }
+
     const puppeteer = await import('puppeteer-core');
     const sparticuz = await import('@sparticuz/chromium');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -141,9 +153,10 @@ export async function captureWebPage(
 
     try {
       const page = await browser.newPage();
+      page.setDefaultTimeout(30000);
       await page.setViewport({ width: viewportWidth, height: viewportHeight });
-      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
-      await new Promise((r) => setTimeout(r, 200));
+      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      await new Promise((r) => setTimeout(r, 500));
 
       if (hideBanners) {
         await page.addStyleTag({ content: cookieBannerCSS }).catch(() => {});
@@ -151,11 +164,10 @@ export async function captureWebPage(
 
       const pageTitle = (await page.title()) || domainName;
       const screenshotBuffer = (await page.screenshot({
-        type: 'jpeg',
-        quality: 80,
+        type: 'png',
         fullPage,
       })) as Buffer;
-      const screenshotBase64 = `data:image/jpeg;base64,${screenshotBuffer.toString('base64')}`;
+      const screenshotBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`;
 
       const { candidates, pageSize } = await extractDomSectionsPuppeteer(page);
 
@@ -199,7 +211,7 @@ async function captureWebPageCloudFallback(
   try {
     const microlinkUrl = `https://api.microlink.io/?url=${encodeURIComponent(
       targetUrl
-    )}&screenshot=true&meta=true&viewport.width=${width}&viewport.height=${height}&embed=screenshot.url${
+    )}&screenshot=true&meta=true&viewport.width=${width}&viewport.height=${height}${
       fullPage ? '&screenshot.fullPage=true' : ''
     }`;
 
@@ -208,17 +220,24 @@ async function captureWebPageCloudFallback(
     });
 
     if (response.ok) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data: any = await response.json();
-      pageTitle = data?.data?.title || domainName;
-      const screenshotUrl = data?.data?.screenshot?.url;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('image/')) {
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        screenshotBase64 = `data:image/png;base64,${buffer.toString('base64')}`;
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data: any = await response.json();
+        pageTitle = data?.data?.title || domainName;
+        const screenshotUrl = data?.data?.screenshot?.url;
 
-      if (screenshotUrl) {
-        const imgRes = await fetch(screenshotUrl);
-        if (imgRes.ok) {
-          const arrayBuffer = await imgRes.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-          screenshotBase64 = `data:image/jpeg;base64,${buffer.toString('base64')}`;
+        if (screenshotUrl) {
+          const imgRes = await fetch(screenshotUrl);
+          if (imgRes.ok) {
+            const arrayBuffer = await imgRes.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            screenshotBase64 = `data:image/png;base64,${buffer.toString('base64')}`;
+          }
         }
       }
     }
@@ -226,10 +245,11 @@ async function captureWebPageCloudFallback(
     console.warn('[Capture Engine Cloud] Erreur Microlink API :', err);
   }
 
-  // Image de secours de 1x1px si la capture distante échoue
+  // Si aucun moteur n'a réussi à capturer le site, on lève une erreur explicite plutôt qu'un pixel vert trompeur
   if (!screenshotBase64) {
-    screenshotBase64 =
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    throw new Error(
+      `Impossible de capturer le site "${targetUrl}". Vérifiez que le site est accessible publiquement ou importez directement une capture d'écran.`
+    );
   }
 
   // Fetch du HTML direct pour isoler les en-têtes et créer les candidats de section

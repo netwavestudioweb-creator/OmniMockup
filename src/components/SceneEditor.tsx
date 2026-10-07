@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { toPng, toBlob } from 'html-to-image';
 import {
   CaptureItemResult,
@@ -44,10 +45,43 @@ import {
   Video,
   Watch,
   Tv,
-  ShieldCheck,
   Upload,
   Layers,
+  Code2,
+  ArrowLeft,
+  ExternalLink,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Camera,
+  Layout,
+  Eye,
+  EyeOff,
+  Globe,
+  Lightbulb,
+  ChevronRight,
+  Droplets,
+  Focus,
+  Grid,
+  Pipette,
+  ImageUp,
+  Flame,
+  ChevronLeft,
 } from 'lucide-react';
+import { TechStackPicker, AVAILABLE_TECHS } from './TechStackPicker';
+import { DeveloperSalesKitModal } from './DeveloperSalesKitModal';
+import {
+  SOLID_COLORS,
+  BACKGROUND_CATEGORIES,
+  FRAME_PRESETS,
+  FramePresetOption,
+  TEMPLATES_CATALOG,
+  StudioTemplate,
+} from '@/lib/shotsPresets';
+import { SceneShadowOverlay } from './SceneShadowOverlay';
+import { FrameSizePopover } from './FrameSizePopover';
+import { TemplatesModal } from './TemplatesModal';
+import { SceneOverlayPreset } from '@/types/analyzer';
 
 interface SceneEditorProps {
   captureItem: CaptureItemResult;
@@ -154,13 +188,12 @@ const GRADIENT_PRESETS = [
 ];
 
 const RATIO_PRESETS: { id: SceneAspectRatio; label: string; ratioClass: string; desc: string }[] = [
-  { id: '1:1', label: 'Instagram Post', ratioClass: 'aspect-square', desc: '1:1 Carré' },
-  { id: '9:16', label: 'Instagram Story', ratioClass: 'aspect-[9/16]', desc: '9:16 Mobile Vertical' },
-  { id: '16:9', label: 'Twitter / X', ratioClass: 'aspect-[16/9]', desc: '16:9 Bannière' },
-  { id: '2:3', label: 'Pinterest', ratioClass: 'aspect-[2/3]', desc: '2:3 Vertical Pinterest' },
-  { id: '1.91:1', label: 'LinkedIn', ratioClass: 'aspect-[191/100]', desc: '1.91:1 Post pro' },
-  { id: 'libre', label: 'Web Libre', ratioClass: 'aspect-[16/10]', desc: '16:10 Format web' },
-  { id: '4:3', label: 'Dribbble', ratioClass: 'aspect-[4/3]', desc: '4:3 Showcase' },
+  { id: '16:9', label: '16:9', ratioClass: 'aspect-[16/9]', desc: 'Product Hunt & Twitter (16:9)' },
+  { id: '1:1', label: '1:1', ratioClass: 'aspect-square', desc: 'Instagram & LinkedIn (1:1)' },
+  { id: '4:3', label: '4:3', ratioClass: 'aspect-[4/3]', desc: 'Dribbble & Portfolio (4:3)' },
+  { id: '9:16', label: '9:16', ratioClass: 'aspect-[9/16]', desc: 'Stories, Reels & Mobile (9:16)' },
+  { id: '1.91:1', label: '1.91:1', ratioClass: 'aspect-[191/100]', desc: 'Bannière LinkedIn Pro (1.91:1)' },
+  { id: 'libre', label: '16:10', ratioClass: 'aspect-[16/10]', desc: 'Écran Web Libre (16:10)' },
 ];
 
 export const SceneEditor: React.FC<SceneEditorProps> = ({
@@ -171,7 +204,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const { profile } = useUser();
   const userPlan = profile?.plan || 'free';
   const isFreePlan = userPlan === 'free';
-  const isAgencePlan = userPlan === 'agence';
 
   // Configuration d'état de la scène
   const [config, setConfig] = useState<SceneConfig>({
@@ -184,6 +216,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     deviceTheme: 'light',
     deviceStyle: 'default',
     cornerRadius: 'curved',
+    layoutMode: 'single',
     mockupX: 0,
     mockupY: 0,
     mockupScale: 85,
@@ -201,6 +234,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     logos: [],
   });
 
+  // Zoom du canvas central
+  const [canvasZoom, setCanvasZoom] = useState<number>(100);
+
   // Fonds magiques auto-générés à partir de l'image
   const [autoGradients, setAutoGradients] = useState<{ name: string; value: string }[]>([]);
   useEffect(() => {
@@ -211,8 +247,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }
   }, [captureItem.screenshotBase64]);
 
-  // Navigation dans les onglets du studio (Mockup, Cadre, Filtres, Texte, Logo)
-  const [activeTab, setActiveTab] = useState<'mockup' | 'frame' | 'filter' | 'text' | 'logo'>('mockup');
+  // Navigation dans les onglets du studio
+  const [activeTab, setActiveTab] = useState<'mockup' | 'frame' | '3d' | 'content' | 'branding'>('mockup');
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [selectedLogoId, setSelectedLogoId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -221,14 +257,116 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const [copySuccess, setCopySuccess] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(true);
 
+  // État du Kit Vente & Pitch IA
+  const [salesKitOpen, setSalesKitOpen] = useState(false);
+
+  // Badges Stack Technique Développeur
+  const [selectedTechIds, setSelectedTechIds] = useState<string[]>(['nextjs', 'react', 'tailwind']);
+  const [techPosition, setTechPosition] = useState<'bottom' | 'top' | 'floating'>('bottom');
+  const [techThemeStyle, setTechThemeStyle] = useState<'dark-glass' | 'light-glass' | 'neon'>('dark-glass');
+
   // État de l'exportation vidéo animée
   const [videoPreset, setVideoPreset] = useState<VideoAnimPreset>('zoomIn');
   const [isExportingVideo, setIsExportingVideo] = useState(false);
 
+  // ══ NOUVELLES OPTIONS SHOTS.SO ══
+  // Style du navigateur (Safari / Chrome / Arc — Light / Dark)
+  const [browserStyle, setBrowserStyle] = useState<'safari-light' | 'safari-dark' | 'chrome-light' | 'chrome-dark' | 'arc-light' | 'arc-dark'>('safari-light');
+  // Barre d'adresse personnalisée
+  const [customAddressBar, setCustomAddressBar] = useState<string>('');
+  // Type d'ombre
+  const [shadowType, setShadowType] = useState<'none' | 'spread' | 'realistic' | 'adaptive'>('realistic');
+  const [shadowOpacity, setShadowOpacity] = useState<number>(45);
+  const [shadowLightAngle, setShadowLightAngle] = useState<number>(45);
+  // Visibilité du mockup
+  const [mockupHidden, setMockupHidden] = useState<boolean>(false);
+  // Drawer des templates & Modal Shots.so
+  const [showTemplatesDrawer, setShowTemplatesDrawer] = useState<boolean>(false);
+  const [showTemplatesModal, setShowTemplatesModal] = useState<boolean>(false);
+
+  // ══ ONGLETS PRINCIPAUX DU STUDIO (MOCKUP vs FRAME style Shots.so) ══
+  const [activeMainTab, setActiveMainTab] = useState<'mockup' | 'frame'>('mockup');
+  const [showFrameSizePopover, setShowFrameSizePopover] = useState<boolean>(false);
+  const [currentFramePreset, setCurrentFramePreset] = useState<FramePresetOption>(FRAME_PRESETS[2]); // Default 4:3
+  const [showAllSolidColors, setShowAllSolidColors] = useState<boolean>(false);
+  const [sceneOverlay, setSceneOverlay] = useState<SceneOverlayPreset>('none');
+  const [portraitBlur, setPortraitBlur] = useState<boolean>(false);
+  const [vfxGlow, setVfxGlow] = useState<boolean>(false);
+  const [uiScale, setUiScale] = useState<number>(100);
+  const [magicPresetIdx, setMagicPresetIdx] = useState<number>(0);
+  const [activeBgCategory, setActiveBgCategory] = useState<string>('gradient');
+
+  // Application d'un template complet Shots.so
+  const handleApplyTemplate = (tmpl: StudioTemplate) => {
+    setConfig((prev) => ({
+      ...prev,
+      mockupType: tmpl.mockupType,
+      layoutMode: tmpl.layoutMode || 'single',
+      browserStyle: tmpl.browserStyle || prev.browserStyle,
+      deviceTheme: tmpl.browserStyle ? (tmpl.browserStyle.endsWith('dark') ? 'dark' : 'light') : prev.deviceTheme,
+      bgType: tmpl.bgType as any,
+      bgValue: tmpl.bgValue,
+      aspectRatio: tmpl.aspectRatio,
+      mockupScale: tmpl.mockupScale,
+      mockupTiltX: tmpl.mockupTiltX,
+      mockupTiltY: tmpl.mockupTiltY,
+      mockupRotation: tmpl.mockupRotation,
+      mockupX: tmpl.mockupX,
+      mockupY: tmpl.mockupY,
+      sceneOverlay: tmpl.sceneOverlay || 'none',
+    }));
+    if (tmpl.browserStyle) {
+      setBrowserStyle(tmpl.browserStyle);
+    }
+    if (tmpl.sceneOverlay) {
+      setSceneOverlay(tmpl.sceneOverlay);
+    }
+    const matchingPreset = FRAME_PRESETS.find((p) => p.ratioId === tmpl.aspectRatio);
+    if (matchingPreset) {
+      setCurrentFramePreset(matchingPreset);
+    }
+  };
+
+  // Naviguer dans les Magic Presets auto-extraits (< >)
+  const handleCycleMagicPreset = (dir: 'prev' | 'next') => {
+    if (autoGradients.length === 0) return;
+    const newIdx =
+      dir === 'next'
+        ? (magicPresetIdx + 1) % autoGradients.length
+        : (magicPresetIdx - 1 + autoGradients.length) % autoGradients.length;
+    setMagicPresetIdx(newIdx);
+    setConfig((p) => ({
+      ...p,
+      bgType: 'gradient',
+      bgValue: autoGradients[newIdx].value,
+      bgTransparent: false,
+    }));
+  };
+  // Grille 3x3 d'alignement rapide
+  const applyAlignment = (pos: string) => {
+    const alignMap: Record<string, { x: number; y: number }> = {
+      'tl': { x: -30, y: -30 }, 'tc': { x: 0, y: -30 }, 'tr': { x: 30, y: -30 },
+      'ml': { x: -30, y: 0 },  'mc': { x: 0, y: 0 },   'mr': { x: 30, y: 0 },
+      'bl': { x: -30, y: 30 }, 'bc': { x: 0, y: 30 },  'br': { x: 30, y: 30 },
+    };
+    const p = alignMap[pos];
+    if (p) setConfig((prev) => ({ ...prev, mockupX: p.x, mockupY: p.y }));
+  };
+
   // Références DOM
   const sceneRef = useRef<HTMLDivElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  const watermarkInputRef = useRef<HTMLInputElement>(null);
+  const replaceImgInputRef = useRef<HTMLInputElement>(null);
+  const bgImgInputRef = useRef<HTMLInputElement>(null);
+
+  // Image courante affichée (permet le remplacement à la volée)
+  const [currentScreenshot, setCurrentScreenshot] = useState<string>(captureItem.screenshotBase64 || '');
+
+  useEffect(() => {
+    if (captureItem.screenshotBase64) {
+      setCurrentScreenshot(captureItem.screenshotBase64);
+    }
+  }, [captureItem.screenshotBase64]);
 
   // Drag and drop tactile & souris
   const [draggingTarget, setDraggingTarget] = useState<'mockup' | { type: 'text'; id: string } | { type: 'logo'; id: string } | null>(null);
@@ -253,7 +391,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         initialX: config.mockupX,
         initialY: config.mockupY,
       };
-      setActiveTab('mockup');
+      setActiveTab('3d');
     } else if (typeof target === 'object' && target.type === 'text') {
       const txt = config.texts.find((t) => t.id === target.id);
       if (txt) {
@@ -264,7 +402,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           initialY: txt.y,
         };
         setSelectedTextId(target.id);
-        setActiveTab('text');
+        setActiveTab('branding');
       }
     } else if (typeof target === 'object' && target.type === 'logo') {
       const lg = config.logos.find((l) => l.id === target.id);
@@ -276,7 +414,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           initialY: lg.y,
         };
         setSelectedLogoId(target.id);
-        setActiveTab('logo');
+        setActiveTab('branding');
       }
     }
   };
@@ -326,17 +464,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   useEffect(() => {
     if (draggingTarget) {
-      window.addEventListener('pointermove', handlePointerMove, { passive: true });
-      window.addEventListener('pointerup', handlePointerUp, { passive: true });
-      return () => {
-        window.removeEventListener('pointermove', handlePointerMove);
-        window.removeEventListener('pointerup', handlePointerUp);
-      };
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', handlePointerUp);
     }
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
   }, [draggingTarget, handlePointerMove, handlePointerUp]);
 
-  // Réinitialisation 3D rapide
+  // Réinitialiser la vue 3D
   const handleReset3D = () => {
+    setUiScale(100);
     setConfig((prev) => ({
       ...prev,
       mockupX: 0,
@@ -345,146 +484,100 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       mockupRotation: 0,
       mockupTiltX: 0,
       mockupTiltY: 0,
-      framePadding: 8,
     }));
   };
 
-  // Copie dans le presse-papier
-  const handleCopyToClipboard = async () => {
-    if (!sceneRef.current || isCopying) return;
-    setIsCopying(true);
-    setCopySuccess(false);
-
-    try {
-      const prevText = selectedTextId;
-      const prevLogo = selectedLogoId;
-      setSelectedTextId(null);
-      setSelectedLogoId(null);
-
-      await new Promise((r) => setTimeout(r, 80));
-
-      const blob = await toBlob(sceneRef.current, {
-        pixelRatio: config.exportScale || 2,
-        cacheBust: true,
-      });
-
-      if (!blob) throw new Error("Impossible de générer l'image");
-
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'image/png': blob,
-        }),
-      ]);
-
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 3000);
-
-      setSelectedTextId(prevText);
-      setSelectedLogoId(prevLogo);
-    } catch (err) {
-      console.error('Erreur copie presse-papier:', err);
-      alert("Votre navigateur requiert l'autorisation pour copier l'image.");
-    } finally {
-      setIsCopying(false);
-    }
-  };
-
-  // Exportation PNG
+  // Export Haute Définition PNG
   const handleExportPng = async () => {
-    if (!sceneRef.current || isExporting) return;
+    if (!sceneRef.current) return;
     setIsExporting(true);
     setExportSuccess(false);
 
     try {
-      const prevText = selectedTextId;
-      const prevLogo = selectedLogoId;
-      setSelectedTextId(null);
-      setSelectedLogoId(null);
-
-      await new Promise((r) => setTimeout(r, 100));
-
       const dataUrl = await toPng(sceneRef.current, {
-        pixelRatio: config.exportScale || 2,
         cacheBust: true,
+        pixelRatio: config.exportScale || 2,
       });
 
+      const cleanName = (captureItem.domainName || 'omnimockup').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `${cleanName}-${config.aspectRatio}-${config.exportScale || 2}x.png`;
+
       const link = document.createElement('a');
-      const cleanUrl = captureItem.url.replace(/^https?:\/\//, '').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
-      link.download = `mockup_${config.mockupType}_${config.aspectRatio}_${config.exportScale || 2}x_${cleanUrl}.png`;
+      link.download = filename;
       link.href = dataUrl;
-      document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
 
       setExportSuccess(true);
       setTimeout(() => setExportSuccess(false), 3000);
-
-      setSelectedTextId(prevText);
-      setSelectedLogoId(prevLogo);
     } catch (err) {
-      console.error('Erreur export PNG:', err);
-      alert("Une erreur est survenue lors de l'export PNG.");
+      console.error('Erreur export image:', err);
+      alert("Erreur lors de l'exportation de l'image. Veuillez réessayer.");
     } finally {
       setIsExporting(false);
     }
   };
 
-  // EXPORT VIDÉO ANIMÉ AVEC ZOOM (MediaRecorder API)
+  // Copie rapide dans le presse-papier
+  const handleCopyToClipboard = async () => {
+    if (!sceneRef.current) return;
+    setIsCopying(true);
+    setCopySuccess(false);
+
+    try {
+      const blob = await toBlob(sceneRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+      });
+
+      if (!blob) throw new Error('Impossible de générer le blob');
+
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2500);
+    } catch (err) {
+      console.error('Erreur copie presse-papier:', err);
+      alert('Impossible de copier dans le presse-papier sur ce navigateur.');
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
+  // Export Vidéo Animé 3s (.webm)
   const handleExportVideo = async () => {
-    if (!sceneRef.current || isExportingVideo) return;
+    if (!sceneRef.current) return;
     setIsExportingVideo(true);
 
     try {
-      const prevText = selectedTextId;
-      const prevLogo = selectedLogoId;
-      setSelectedTextId(null);
-      setSelectedLogoId(null);
-
-      await new Promise((r) => setTimeout(r, 100));
-
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error("Canvas 2D non disponible.");
-
-      const rect = sceneRef.current.getBoundingClientRect();
-      canvas.width = Math.round(rect.width * 2);
-      canvas.height = Math.round(rect.height * 2);
-
-      const dataUrl = await toPng(sceneRef.current, {
-        pixelRatio: 2,
-        cacheBust: true,
+      const basePngUrl = await toPng(sceneRef.current, { pixelRatio: 1.5, cacheBust: true });
+      const img = new Image();
+      img.src = basePngUrl;
+      await new Promise((r) => {
+        img.onload = r;
       });
 
-      const img = new Image();
-      img.src = dataUrl;
-      await new Promise((r) => (img.onload = r));
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Contexte canvas 2D indisponible');
 
       const stream = canvas.captureStream(30);
-      let recorder: MediaRecorder;
-      try {
-        recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-      } catch {
-        recorder = new MediaRecorder(stream);
-      }
-
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
       const chunks: Blob[] = [];
+
       recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunks.push(e.data);
+        if (e.data.size > 0) chunks.push(e.data);
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: recorder.mimeType || 'video/webm' });
+        const blob = new Blob(chunks, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.download = `mockup_anim_${videoPreset}_${Date.now()}.webm`;
         a.href = url;
-        document.body.appendChild(a);
+        a.download = `mockup-animation-${videoPreset}.webm`;
         a.click();
-        document.body.removeChild(a);
         URL.revokeObjectURL(url);
-
-        setSelectedTextId(prevText);
-        setSelectedLogoId(prevLogo);
         setIsExportingVideo(false);
       };
 
@@ -497,17 +590,17 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
       const interval = setInterval(() => {
         currentFrame++;
-        const progress = currentFrame / totalFrames; // 0 à 1
+        const progress = currentFrame / totalFrames;
 
         let scale = 1;
         let translateX = 0;
 
         if (videoPreset === 'zoomIn') {
-          scale = 1 + progress * 0.12; // Zoom avant 100% -> 112%
+          scale = 1 + progress * 0.12;
         } else if (videoPreset === 'zoomOut') {
-          scale = 1.12 - progress * 0.12; // Zoom arrière 112% -> 100%
+          scale = 1.12 - progress * 0.12;
         } else if (videoPreset === 'panHorizontal') {
-          translateX = (progress - 0.5) * 0.08 * canvas.width; // Pan horizontal
+          translateX = (progress - 0.5) * 0.08 * canvas.width;
         }
 
         ctx.save();
@@ -544,7 +637,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     };
     setConfig((prev) => ({ ...prev, texts: [...prev.texts, newText] }));
     setSelectedTextId(newText.id);
-    setActiveTab('text');
+    setActiveTab('branding');
   };
 
   const handleUpdateText = (id: string, updates: Partial<SceneTextLayer>) => {
@@ -573,24 +666,17 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       const newLogo: SceneLogoLayer = {
         id: `logo_${Date.now()}`,
         src: base64,
-        x: 10,
-        y: 10,
+        x: 12,
+        y: 12,
         width: 80,
         opacity: 1,
       };
       setConfig((prev) => ({ ...prev, logos: [...prev.logos, newLogo] }));
       setSelectedLogoId(newLogo.id);
-      setActiveTab('logo');
+      setActiveTab('branding');
     };
     reader.readAsDataURL(file);
     e.target.value = '';
-  };
-
-  const handleUpdateLogo = (id: string, updates: Partial<SceneLogoLayer>) => {
-    setConfig((prev) => ({
-      ...prev,
-      logos: prev.logos.map((l) => (l.id === id ? { ...l, ...updates } : l)),
-    }));
   };
 
   const handleDeleteLogo = (id: string) => {
@@ -601,15 +687,34 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     if (selectedLogoId === id) setSelectedLogoId(null);
   };
 
-  // Watermark personnalisé (Plan Agence)
-  const handleWatermarkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Remplacement manuel de l'image de capture
+  const handleReplaceScreenshot = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
-      setConfig((prev) => ({ ...prev, customWatermarkUrl: base64 }));
+      setCurrentScreenshot(base64);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  // Import d'image de fond personnalisé
+  const handleBgImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setConfig((p) => ({
+        ...p,
+        bgType: 'texture',
+        bgValue: `url(${base64}) center/cover no-repeat`,
+        bgTransparent: false,
+      }));
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -619,65 +724,243 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const activeText = config.texts.find((t) => t.id === selectedTextId);
   const activeLogo = config.logos.find((l) => l.id === selectedLogoId);
 
-  // Calcul du drop shadow 3D
-  const dynamicShadow = config.shadowEnabled
-    ? `0px ${Math.round(config.shadowIntensity * 0.35)}px ${Math.round(
-        config.shadowIntensity * 0.7
-      )}px rgba(0, 0, 0, ${(config.shadowIntensity * 0.006).toFixed(2)}), 0px ${Math.round(
-        config.shadowIntensity * 0.15
-      )}px ${Math.round(config.shadowIntensity * 0.3)}px rgba(0, 0, 0, ${(
-        config.shadowIntensity * 0.004
-      ).toFixed(2)})`
-    : 'none';
+  // Calcul du drop shadow 3D en fonction du type, de l'opacité et de l'angle de lumière
+  const lightRad = (shadowLightAngle * Math.PI) / 180;
+  const shadowDist = shadowType === 'spread' ? 32 : shadowType === 'adaptive' ? 22 : 16;
+  const shadowOffsetX = Math.round(Math.cos(lightRad) * shadowDist);
+  const shadowOffsetY = Math.round(Math.sin(lightRad) * shadowDist);
+  const effectiveAlpha = Math.min(1, Math.max(0, (shadowOpacity / 100) * (config.shadowIntensity / 50))).toFixed(2);
+
+  const dynamicShadow =
+    !config.shadowEnabled || shadowType === 'none'
+      ? 'none'
+      : shadowType === 'spread'
+      ? `${shadowOffsetX}px ${shadowOffsetY}px 48px rgba(0, 0, 0, ${effectiveAlpha}), 0 10px 24px rgba(0, 0, 0, ${(Number(effectiveAlpha) * 0.6).toFixed(2)})`
+      : shadowType === 'adaptive'
+      ? `${shadowOffsetX}px ${shadowOffsetY}px 32px rgba(0, 0, 0, ${effectiveAlpha}), 0 4px 12px rgba(0, 0, 0, ${(Number(effectiveAlpha) * 0.45).toFixed(2)})`
+      : /* realistic */
+        `${shadowOffsetX}px ${shadowOffsetY}px 24px rgba(0, 0, 0, ${effectiveAlpha}), 0 2px 8px rgba(0, 0, 0, ${(Number(effectiveAlpha) * 0.35).toFixed(2)})`;
 
   return (
-    <div className="w-full rounded-3xl bg-white border border-sand-200 shadow-md overflow-hidden animate-fade-in" id="scene-editor">
-      {/* 1. BARRE DE COMMANDE SUPÉRIEURE PRO */}
-      <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-sand-200 bg-sand-50/90 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="p-2 rounded-xl bg-violet-600 text-white shadow-xs">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm sm:text-lg font-bold text-stone-900 tracking-tight">
-                Studio de Scène & Mockup
-              </h3>
-              <span className="hidden xs:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 border border-violet-200 text-[10px] sm:text-xs font-semibold">
-                <Sparkle className="w-3 h-3 text-violet-600" />
-                <span>OmniMockup 3D Studio</span>
-              </span>
+    <div className="w-screen h-screen flex flex-col bg-[#0b0b0e] text-zinc-150 select-none overflow-hidden font-sans fixed inset-0 z-50">
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      {/* 1. TOP BAR PRO (Shots.so / Rotato App Header)                         */}
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* TEMPLATES DRAWER (Shots.so style)                                   */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {showTemplatesDrawer && (
+        <div className="fixed inset-0 z-[100] flex">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowTemplatesDrawer(false)}
+          />
+          {/* Drawer Panel */}
+          <div className="relative z-10 w-[340px] h-full bg-[#141418] border-r border-zinc-800 flex flex-col shadow-2xl overflow-hidden animate-slideInLeft">
+            {/* Header */}
+            <div className="p-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <Layout className="w-4 h-4 text-violet-400" />
+                <span className="text-sm font-bold text-white">Templates</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTemplatesDrawer(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <p className="text-[11px] sm:text-xs text-stone-500 hidden sm:block">
-              Cadres Apple, fonds magiques, filtres cinématiques & exports vidéo animés.
-            </p>
+            {/* Filtres */}
+            <div className="px-4 pt-3 pb-2 flex items-center gap-2 shrink-0">
+              {['Tous', 'Image', 'Animé'].map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  className="px-3 py-1 rounded-full text-[11px] font-semibold border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-violet-600 hover:text-white hover:border-violet-500 transition-all"
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+            {/* Liste des catégories */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-5">
+              {[
+                {
+                  cat: 'Product Promotion',
+                  items: [
+                    { label: 'Solo Browser', device: 'browser' as MockupType, bg: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', ratio: '16:9' as SceneAspectRatio },
+                    { label: 'Hero iPhone', device: 'iphone' as MockupType, bg: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', ratio: '9:16' as SceneAspectRatio },
+                  ],
+                },
+                {
+                  cat: 'Realistic Desktop',
+                  items: [
+                    { label: 'MacBook Pro', device: 'macbook' as MockupType, bg: 'linear-gradient(135deg, #065f46 0%, #047857 100%)', ratio: '16:9' as SceneAspectRatio },
+                    { label: 'iMac Display', device: 'imac' as MockupType, bg: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)', ratio: '4:3' as SceneAspectRatio },
+                  ],
+                },
+                {
+                  cat: 'Shadow Overlays',
+                  items: [
+                    { label: 'iPhone Dark', device: 'iphone' as MockupType, bg: 'linear-gradient(135deg, #09090b 0%, #18181b 100%)', ratio: '9:16' as SceneAspectRatio },
+                    { label: 'iPad Ombre', device: 'ipad' as MockupType, bg: 'linear-gradient(135deg, #18181b 0%, #27272a 100%)', ratio: '4:3' as SceneAspectRatio },
+                  ],
+                },
+                {
+                  cat: 'UI Showcase',
+                  items: [
+                    { label: 'Flat Clair', device: 'flat' as MockupType, bg: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', ratio: '1:1' as SceneAspectRatio },
+                    { label: 'Duo Mac+Phone', device: 'browser' as MockupType, bg: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', ratio: '16:9' as SceneAspectRatio },
+                  ],
+                },
+                {
+                  cat: 'Abstract Shapes',
+                  items: [
+                    { label: 'Aurora iPhone', device: 'iphone' as MockupType, bg: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%)', ratio: '9:16' as SceneAspectRatio },
+                    { label: 'Mesh Browser', device: 'browser' as MockupType, bg: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #8b5cf6 100%)', ratio: '1:1' as SceneAspectRatio },
+                  ],
+                },
+                {
+                  cat: 'Retro Futuristic',
+                  items: [
+                    { label: 'Cyberpunk Watch', device: 'watch' as MockupType, bg: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', ratio: '1:1' as SceneAspectRatio },
+                    { label: 'Neon MacBook', device: 'macbook' as MockupType, bg: 'linear-gradient(135deg, #7c3aed 0%, #db2777 100%)', ratio: '16:9' as SceneAspectRatio },
+                  ],
+                },
+              ].map(({ cat, items }) => (
+                <div key={cat} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider">{cat}</span>
+                    <button type="button" className="text-[10px] text-violet-400 hover:text-violet-300">Voir tout</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {items.map((tpl) => (
+                      <button
+                        key={tpl.label}
+                        type="button"
+                        onClick={() => {
+                          setConfig((p) => ({
+                            ...p,
+                            mockupType: tpl.device,
+                            bgType: 'gradient',
+                            bgValue: tpl.bg,
+                            bgTransparent: false,
+                            aspectRatio: tpl.ratio,
+                          }));
+                          setShowTemplatesDrawer(false);
+                        }}
+                        className="group relative h-20 rounded-xl border border-zinc-700 overflow-hidden hover:border-violet-500 hover:ring-2 hover:ring-violet-500/40 transition-all"
+                        style={{ background: tpl.bg }}
+                      >
+                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
+                        <span className="absolute bottom-1.5 left-2 text-[10px] font-semibold text-white drop-shadow-md">{tpl.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Boutons d'actions rapides et export */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          {/* Bouton Recentrer 3D */}
+      <header className="h-14 sm:h-16 px-4 sm:px-6 border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl flex items-center justify-between gap-3 z-30 shrink-0">
+        {/* Gauche : Retour, Marque et Site Cible */}
+        <div className="flex items-center gap-3">
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800 text-xs font-semibold transition-all active:scale-95"
+              title="Quitter le studio et revenir à l'accueil"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Quitter</span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-violet-600 text-white shadow-lg shadow-violet-600/30">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white tracking-tight">OmniMockup Studio</span>
+                <span className="px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/30 text-[10px] font-semibold">
+                  PRO 3D
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                <span className="truncate max-w-[180px] sm:max-w-[260px]">{captureItem.domainName || captureItem.url}</span>
+                {captureItem.url && (
+                  <a
+                    href={captureItem.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                    title="Ouvrir le site original"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Bouton Templates */}
           <button
             type="button"
-            onClick={handleReset3D}
-            className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-sand-100 text-stone-600 hover:text-stone-900 border border-sand-200 text-xs font-semibold transition-all shadow-2xs"
-            title="Recentrer les angles 3D"
+            onClick={() => setShowTemplatesModal(true)}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold transition-all active:scale-95"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-stone-500" />
-            <span>Recentrer</span>
+            <Layout className="w-3.5 h-3.5 text-violet-400" />
+            <span>Templates</span>
+            <ChevronRight className="w-3 h-3 text-zinc-500" />
           </button>
+        </div>
 
-          {/* Sélecteur de résolution (1x / 2x / 4x) */}
-          <div className="flex items-center bg-white p-0.5 rounded-xl border border-sand-200 text-xs shadow-2xs">
+        {/* Centre : Mode de disposition (Solo vs Duo) & Résolution */}
+        <div className="hidden md:flex items-center gap-3">
+          {/* Toggle Solo / Duo */}
+          <div className="flex items-center bg-zinc-900 p-0.5 rounded-xl border border-zinc-800 text-xs">
+            <button
+              type="button"
+              onClick={() => setConfig((p) => ({ ...p, layoutMode: 'single' }))}
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                (config.layoutMode || 'single') === 'single'
+                  ? 'bg-violet-600 text-white font-semibold shadow-xs'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              Solo
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfig((p) => ({ ...p, layoutMode: 'dual-stacked' }))}
+              className={`px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+                config.layoutMode === 'dual-stacked'
+                  ? 'bg-violet-600 text-white font-semibold shadow-xs'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              <span>Duo (Mac + Phone)</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            </button>
+          </div>
+
+          {/* Résolution 1x / 2x / 4x */}
+          <div className="flex items-center bg-zinc-900 p-0.5 rounded-xl border border-zinc-800 text-xs">
             {([1, 2, 4] as const).map((scale) => (
               <button
                 key={scale}
                 type="button"
                 onClick={() => setConfig((p) => ({ ...p, exportScale: scale }))}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
                   (config.exportScale || 2) === scale
-                    ? 'bg-violet-600 text-white shadow-xs'
-                    : 'text-stone-500 hover:text-stone-800'
+                    ? 'bg-zinc-800 text-violet-300 border border-violet-500/30'
+                    : 'text-zinc-500 hover:text-zinc-300'
                 }`}
                 title={`Résolution d'export ${scale}x`}
               >
@@ -685,65 +968,75 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               </button>
             ))}
           </div>
+        </div>
 
-          {/* Bouton Copier */}
+        {/* Droite : Actions Vente IA, Copier, Vidéo et Télécharger */}
+        <div className="flex items-center gap-2">
+          {/* Pitch & Vente IA */}
+          <button
+            type="button"
+            onClick={() => setSalesKitOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-violet-600/20 active:scale-95"
+            title="Générer des arguments de vente et pitch client avec l'IA"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span className="hidden sm:inline">Pitch & Vente IA</span>
+          </button>
+
+          {/* Copier */}
           <button
             type="button"
             onClick={handleCopyToClipboard}
             disabled={isCopying}
-            className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl bg-white hover:bg-sand-100 text-stone-700 hover:text-stone-900 border border-sand-200 text-xs font-semibold transition-all shadow-2xs disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
+            title="Copier l'image dans le presse-papier"
           >
             {isCopying ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-600" />
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-400" />
             ) : copySuccess ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-                <span className="text-emerald-700 font-bold hidden sm:inline">Copié !</span>
+                <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                <span className="text-emerald-400 font-bold hidden sm:inline">Copié !</span>
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5 text-stone-600" />
+                <Copy className="w-3.5 h-3.5 text-zinc-400" />
                 <span className="hidden sm:inline">Copier</span>
               </>
             )}
           </button>
 
-          {/* Bouton Export Vidéo Animé */}
+          {/* Vidéo 3s */}
           <button
             type="button"
             onClick={handleExportVideo}
             disabled={isExportingVideo}
-            className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs shadow-sm transition-all disabled:opacity-50"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-amber-300 hover:text-amber-200 border border-zinc-800 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
             title="Enregistrer un zoom animé en vidéo 3s (.webm)"
           >
             {isExportingVideo ? (
-              <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>Animation...</span>
-              </>
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
             ) : (
-              <>
-                <Video className="w-3.5 h-3.5" />
-                <span>Vidéo 3s</span>
-              </>
+              <Video className="w-3.5 h-3.5 text-amber-400" />
             )}
+            <span className="hidden sm:inline">Vidéo 3s</span>
           </button>
 
-          {/* Bouton Télécharger PNG */}
+          {/* Bouton Télécharger PNG Principal */}
           <button
             type="button"
             onClick={handleExportPng}
             disabled={isExporting}
-            className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 sm:gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-violet-600/30 transition-all active:scale-95 disabled:opacity-50"
           >
             {isExporting ? (
               <>
-                <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                 <span>Rendu {config.exportScale || 2}x...</span>
               </>
             ) : exportSuccess ? (
               <>
-                <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white stroke-[3]" />
+                <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
                 <span>Téléchargé !</span>
               </>
             ) : (
@@ -753,395 +1046,673 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               </>
             )}
           </button>
-
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 sm:p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-sand-100 transition-colors"
-            >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          )}
         </div>
-      </div>
+      </header>
 
-      {/* 2. DISPOSITION PRINCIPALE DU STUDIO */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[520px] lg:min-h-[660px]">
-        {/* ZONE DE PRÉVISUALISATION CENTRALE */}
-        <div className="lg:col-span-8 p-4 sm:p-6 lg:p-8 bg-[#ebe7e0] flex flex-col items-center justify-center relative overflow-hidden border-b lg:border-b-0 lg:border-r border-sand-200 select-none min-h-[360px] sm:min-h-[460px]">
-          {/* Grille d'établi design */}
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      {/* 2. ESPACE DE TRAVAIL PRINCIPAL (Canvas Central + Panneau Droit)        */}
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      <div className="flex-1 w-full flex flex-col lg:flex-row overflow-hidden relative">
+        {/* ── ZONE DE PRÉVISUALISATION CENTRALE (CANVAS FLUIDE GÉANT) ── */}
+        <main className="flex-1 h-full relative flex flex-col items-center justify-center p-4 sm:p-8 bg-[#0d0d11] overflow-hidden select-none">
+          {/* Grille d'établi design professionnelle (Dot Matrix) */}
           <div
-            className="absolute inset-0 opacity-[0.05] pointer-events-none"
+            className="absolute inset-0 opacity-[0.06] pointer-events-none"
             style={{
-              backgroundImage: `radial-gradient(circle, #000000 1.2px, transparent 1.2px)`,
+              backgroundImage: `radial-gradient(circle, #ffffff 1.2px, transparent 1.2px)`,
               backgroundSize: '24px 24px',
             }}
           />
 
-          {/* CANVAS DE LA SCÈNE RENDU */}
+          {/* CONTENEUR DE ZOOM DU CANVAS */}
           <div
-            ref={sceneRef}
-            className={`w-full max-w-2xl relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl transition-all duration-300 flex items-center justify-center touch-none ${activeRatioConfig.ratioClass}`}
-            style={{
-              background: config.bgTransparent
-                ? 'transparent'
-                : config.bgType === 'blurred-image'
-                ? '#121214'
-                : config.bgValue,
-              backgroundImage: config.bgTransparent
-                ? `linear-gradient(45deg, #e4e4e7 25%, transparent 25%), linear-gradient(-45deg, #e4e4e7 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e4e4e7 75%), linear-gradient(-45deg, transparent 75%, #e4e4e7 75%)`
-                : undefined,
-              backgroundSize: config.bgTransparent ? '16px 16px' : undefined,
-              backgroundPosition: config.bgTransparent ? '0 0, 0 8px, 8px -8px, -8px 0px' : undefined,
-            }}
-            onClick={() => {
-              setSelectedTextId(null);
-              setSelectedLogoId(null);
-            }}
+            className="w-full h-full flex items-center justify-center transition-transform duration-200"
+            style={{ transform: `scale(${canvasZoom / 100})` }}
           >
-            {/* FOND WALLPAPER FLOUTÉ (Style Shots.so / Pika) */}
-            {config.bgType === 'blurred-image' && captureItem.screenshotBase64 && !config.bgTransparent && (
-              <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={captureItem.screenshotBase64}
-                  alt="Blurred Background Wallpaper"
-                  className="w-full h-full object-cover filter blur-3xl brightness-75 saturate-150 scale-125 transition-all duration-500"
-                />
-                <div className="absolute inset-0 bg-black/25" />
-              </div>
-            )}
-
-            {/* OVERLAY MOTIF DE FOND (Grille / Points / Noise / Mesh) */}
-            {config.bgPattern === 'grid' && !config.bgTransparent && (
-              <div
-                className="absolute inset-0 pointer-events-none opacity-20 z-5"
-                style={{
-                  backgroundImage: `linear-gradient(to right, rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.4) 1px, transparent 1px)`,
-                  backgroundSize: '28px 28px',
-                }}
-              />
-            )}
-
-            {config.bgPattern === 'dots' && !config.bgTransparent && (
-              <div
-                className="absolute inset-0 pointer-events-none opacity-25 z-5"
-                style={{
-                  backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.5) 1.5px, transparent 1.5px)`,
-                  backgroundSize: '24px 24px',
-                }}
-              />
-            )}
-
-            {/* Grain studio basique */}
-            {(config.bgNoise || config.bgPattern === 'noise') && !config.bgTransparent && (
-              <div
-                className="absolute inset-0 pointer-events-none opacity-[0.08] mix-blend-overlay z-10"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-                }}
-              />
-            )}
-
-            {/* FILTRES CINÉMATIQUES EN OVERLAY (Bruit, VHS, Glitch) */}
-            {config.filterType === 'grain' && (
-              <div
-                className="absolute inset-0 pointer-events-none mix-blend-overlay z-15"
-                style={{
-                  opacity: ((config.filterIntensity || 40) / 100) * 0.5,
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-                }}
-              />
-            )}
-
-            {config.filterType === 'vhs' && (
-              <div
-                className="absolute inset-0 pointer-events-none z-15"
-                style={{
-                  opacity: ((config.filterIntensity || 40) / 100) * 0.6,
-                  background: `repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px), linear-gradient(90deg, rgba(255,0,0,0.04), rgba(0,255,0,0.02), rgba(0,0,255,0.04))`,
-                }}
-              />
-            )}
-
-            {config.filterType === 'glitch' && (
-              <div
-                className="absolute inset-0 pointer-events-none mix-blend-screen z-15 overflow-hidden"
-                style={{
-                  opacity: ((config.filterIntensity || 40) / 100) * 0.5,
-                  backgroundImage: `repeating-linear-gradient(90deg, rgba(255,0,80,0.1) 0px, rgba(0,255,255,0.1) 4px, transparent 4px, transparent 12px)`,
-                }}
-              />
-            )}
-
-            {/* MOCKUP 3D DANS LA SCÈNE */}
+            {/* CANVAS DE LA SCÈNE RENDU */}
             <div
-              className={`absolute cursor-move transition-all duration-150 touch-none z-20 ${
-                config.mockupType === 'iphone'
-                  ? 'w-[45%]'
-                  : config.mockupType === 'watch'
-                  ? 'w-[36%]'
-                  : config.mockupType === 'ipad'
-                  ? 'w-[68%]'
-                  : 'w-[80%]'
-              }`}
+              ref={sceneRef}
+              className={`w-full max-w-5xl max-h-[76vh] relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_25px_70px_rgba(0,0,0,0.6)] transition-all duration-300 flex items-center justify-center touch-none ${activeRatioConfig.ratioClass}`}
               style={{
-                left: '50%',
-                top: '50%',
-                perspective: '1200px',
-                transform: `translate(-50%, -50%) translate(${config.mockupX}%, ${config.mockupY}%) scale(${
-                  config.mockupScale / 100
-                }) rotateX(${config.mockupTiltX || 0}deg) rotateY(${config.mockupTiltY || 0}deg) rotateZ(${
-                  config.mockupRotation || 0
-                }deg)`,
-                transformStyle: 'preserve-3d',
-                filter: config.shadowEnabled ? `drop-shadow(${dynamicShadow})` : undefined,
+                aspectRatio: `${currentFramePreset.width} / ${currentFramePreset.height}`,
+                background: config.bgTransparent
+                  ? 'transparent'
+                  : config.bgType === 'blurred-image'
+                  ? '#121214'
+                  : config.bgValue,
+                backgroundImage: config.bgTransparent
+                  ? `linear-gradient(45deg, #27272a 25%, transparent 25%), linear-gradient(-45deg, #27272a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #27272a 75%), linear-gradient(-45deg, transparent 75%, #27272a 75%)`
+                  : undefined,
+                backgroundSize: config.bgTransparent ? '16px 16px' : undefined,
+                backgroundPosition: config.bgTransparent ? '0 0, 0 8px, 8px -8px, -8px 0px' : undefined,
               }}
-              onPointerDown={(e) => handlePointerDown(e, 'mockup')}
+              onClick={() => {
+                setSelectedTextId(null);
+                setSelectedLogoId(null);
+              }}
             >
-              {captureItem.screenshotBase64 && (
-                <MockupFrame
-                  type={config.mockupType}
-                  screenshotBase64={captureItem.screenshotBase64}
-                  url={captureItem.url}
-                  title={captureItem.title}
-                  domainName={captureItem.domainName}
-                  faviconUrl={captureItem.faviconUrl}
-                  theme={config.deviceTheme}
-                  styleVariant={config.deviceStyle}
-                  cornerRadius={config.cornerRadius}
-                  cropOffsetY={config.cropOffsetY}
+              {/* FOND WALLPAPER FLOUTÉ (Style Shots.so / Pika) */}
+              {config.bgType === 'blurred-image' && currentScreenshot && !config.bgTransparent && (
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={currentScreenshot}
+                    alt="Blurred Background Wallpaper"
+                    className="w-full h-full object-cover filter blur-3xl brightness-75 saturate-150 scale-125 transition-all duration-500"
+                  />
+                  <div className="absolute inset-0 bg-black/35" />
+                </div>
+              )}
+
+              {/* OVERLAY MOTIF DE FOND (Grille / Points / Noise / Mesh) */}
+              {config.bgPattern === 'grid' && !config.bgTransparent && (
+                <div
+                  className="absolute inset-0 pointer-events-none opacity-20 z-5"
+                  style={{
+                    backgroundImage: `linear-gradient(to right, rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.4) 1px, transparent 1px)`,
+                    backgroundSize: '28px 28px',
+                  }}
                 />
               )}
-            </div>
 
-            {/* CALQUES DE TEXTES */}
-            {config.texts.map((txt) => {
-              const isSelected = selectedTextId === txt.id;
-              return (
+              {config.bgPattern === 'dots' && !config.bgTransparent && (
                 <div
-                  key={txt.id}
-                  onPointerDown={(e) => handlePointerDown(e, { type: 'text', id: txt.id })}
-                  className={`absolute cursor-move select-none p-2 rounded-lg transition-all group touch-none z-30 ${
-                    isSelected ? 'ring-2 ring-violet-500 bg-black/20 backdrop-blur-xs' : 'hover:ring-1 hover:ring-white/50'
-                  }`}
+                  className="absolute inset-0 pointer-events-none opacity-25 z-5"
                   style={{
-                    left: `${txt.x}%`,
-                    top: `${txt.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                    color: txt.color,
-                    fontSize: `${txt.fontSize}px`,
-                    fontWeight: txt.fontWeight === '900' ? 900 : txt.fontWeight === 'bold' ? 700 : txt.fontWeight === 'medium' ? 500 : 400,
-                    textAlign: txt.align,
+                    backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.5) 1.5px, transparent 1.5px)`,
+                    backgroundSize: '24px 24px',
                   }}
-                >
-                  <span className="whitespace-pre-wrap leading-tight block drop-shadow-xs">{txt.text}</span>
-                  {isSelected && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteText(txt.id);
-                      }}
-                      className="absolute -top-3 -right-3 p-1 rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-500"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+                />
+              )}
 
-            {/* CALQUES DE LOGOS */}
-            {config.logos.map((lg) => {
-              const isSelected = selectedLogoId === lg.id;
-              return (
+              {config.bgPattern === 'mesh' && !config.bgTransparent && (
                 <div
-                  key={lg.id}
-                  onPointerDown={(e) => handlePointerDown(e, { type: 'logo', id: lg.id })}
-                  className={`absolute cursor-move select-none p-1 rounded-lg transition-all group touch-none z-30 ${
-                    isSelected ? 'ring-2 ring-violet-500 bg-black/20 backdrop-blur-xs' : 'hover:ring-1 hover:ring-white/50'
-                  }`}
+                  className="absolute inset-0 pointer-events-none opacity-35 mix-blend-soft-light z-5"
                   style={{
-                    left: `${lg.x}%`,
-                    top: `${lg.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                    width: `${lg.width}px`,
-                    opacity: lg.opacity,
+                    backgroundImage: `radial-gradient(at 20% 20%, rgba(168, 85, 247, 0.4) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(59, 130, 246, 0.4) 0px, transparent 50%), radial-gradient(at 50% 50%, rgba(236, 72, 153, 0.3) 0px, transparent 50%)`,
                   }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={lg.src} alt="Logo" className="w-full h-auto object-contain pointer-events-none drop-shadow-xs" />
-                  {isSelected && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteLogo(lg.id);
+                />
+              )}
+
+              {(config.bgNoise || config.bgPattern === 'noise') && !config.bgTransparent && (
+                <div
+                  className="absolute inset-0 pointer-events-none opacity-[0.08] mix-blend-overlay z-10"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                  }}
+                />
+              )}
+
+              {/* FILTRES CINÉMATIQUES EN OVERLAY */}
+              {config.filterType === 'grain' && (
+                <div
+                  className="absolute inset-0 pointer-events-none mix-blend-overlay z-15"
+                  style={{
+                    opacity: ((config.filterIntensity || 40) / 100) * 0.5,
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                  }}
+                />
+              )}
+
+              {config.filterType === 'vhs' && (
+                <div
+                  className="absolute inset-0 pointer-events-none z-15"
+                  style={{
+                    opacity: ((config.filterIntensity || 40) / 100) * 0.6,
+                    background: `repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px), linear-gradient(90deg, rgba(255,0,0,0.04), rgba(0,255,0,0.02), rgba(0,0,255,0.04))`,
+                  }}
+                />
+              )}
+
+              {config.filterType === 'glitch' && (
+                <div
+                  className="absolute inset-0 pointer-events-none mix-blend-screen z-15 overflow-hidden"
+                  style={{
+                    opacity: ((config.filterIntensity || 40) / 100) * 0.5,
+                    backgroundImage: `repeating-linear-gradient(90deg, rgba(255,0,80,0.1) 0px, rgba(0,255,255,0.1) 4px, transparent 4px, transparent 12px)`,
+                  }}
+                />
+              )}
+
+              {/* EFFET PORTRAIT (Flou de profondeur de champ) */}
+              {portraitBlur && (
+                <div
+                  className="absolute inset-0 pointer-events-none z-15 backdrop-blur-[5px]"
+                  style={{
+                    maskImage: 'radial-gradient(ellipse at center, transparent 38%, black 82%)',
+                    WebkitMaskImage: 'radial-gradient(ellipse at center, transparent 38%, black 82%)',
+                  }}
+                />
+              )}
+
+              {/* ── MOCKUPS 3D DANS LA SCÈNE (MODE SOLO OU MODE DUO) ── */}
+              {!mockupHidden && (
+                config.layoutMode === 'dual-stacked' ? (
+                  /* ── MODE DUO : MACBOOK/BROWSER + IPHONE 16 EN SUPERPOSITION (SIGNATURE SHOTS.SO) ── */
+                  /* FIX: conteneur 80%×76% pour que l'iPhone reste TOUJOURS dans la scène */
+                  <div
+                    className="absolute cursor-move transition-all duration-150 touch-none z-20"
+                    style={{
+                      left: '50%',
+                      top: '50%',
+                      width: '82%',
+                      height: '76%',
+                      perspective: '1200px',
+                      transform: `translate(-50%, -50%) translate(${config.mockupX}%, ${config.mockupY}%) scale(${
+                        config.mockupScale / 100
+                      }) rotateX(${config.mockupTiltX || 0}deg) rotateY(${config.mockupTiltY || 0}deg) rotateZ(${
+                        config.mockupRotation || 0
+                      }deg)`,
+                      transformStyle: 'preserve-3d',
+                    }}
+                    onPointerDown={(e) => handlePointerDown(e, 'mockup')}
+                  >
+                    {/* Appareil 1 : Ordinateur / Web — occupe 68% de la largeur du conteneur Duo */}
+                    <div
+                      className="absolute z-10 transition-transform"
+                      style={{
+                        width: '68%',
+                        left: '4%',
+                        top: '8%',
+                        filter: config.shadowEnabled ? `drop-shadow(${dynamicShadow})` : undefined,
                       }}
-                      className="absolute -top-3 -right-3 p-1 rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-500"
                     >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+                      <MockupFrame
+                        type={config.mockupType === 'iphone' || config.mockupType === 'watch' ? 'macbook' : config.mockupType}
+                        screenshotBase64={currentScreenshot}
+                        url={customAddressBar.trim() ? (customAddressBar.startsWith('http') ? customAddressBar : 'https://' + customAddressBar) : captureItem.url}
+                        title={captureItem.title}
+                        domainName={customAddressBar.trim() || captureItem.domainName}
+                        faviconUrl={captureItem.faviconUrl}
+                        theme={config.deviceTheme}
+                        styleVariant={config.deviceStyle}
+                        browserStyle={config.browserStyle || browserStyle}
+                        cornerRadius={config.cornerRadius}
+                        cropOffsetY={config.cropOffsetY}
+                      />
+                    </div>
 
-            {/* WATERMARK : FREE vs PRO vs AGENCE (Marque blanche) */}
-            {isFreePlan ? (
-              <div className="absolute bottom-3 right-3 z-40 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md text-white/90 text-[10px] font-mono font-semibold flex items-center gap-1.5 shadow-sm border border-white/20 select-none">
-                <Layers className="w-3 h-3 text-violet-400" />
-                <span>Fait avec OmniMockup</span>
-              </div>
-            ) : config.customWatermarkUrl ? (
-              <div className="absolute bottom-3 right-3 z-40 max-w-[120px] max-h-[40px] opacity-90 select-none pointer-events-none">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={config.customWatermarkUrl} alt="Marque Blanche" className="h-7 object-contain drop-shadow-sm" />
-              </div>
-            ) : null}
-          </div>
+                    {/* Appareil 2 : iPhone — 26% de la largeur, ancré en bas-droite DANS le conteneur */}
+                    <div
+                      className="absolute z-20 transition-transform"
+                      style={{
+                        width: '26%',
+                        right: '2%',
+                        bottom: '2%',
+                        filter: config.shadowEnabled ? 'drop-shadow(0 20px 35px rgba(0,0,0,0.60))' : undefined,
+                        transform: 'rotateZ(3deg)',
+                      }}
+                    >
+                      <MockupFrame
+                        type="iphone"
+                        screenshotBase64={currentScreenshot}
+                        url={captureItem.url}
+                        title={captureItem.title}
+                        domainName={captureItem.domainName}
+                        faviconUrl={captureItem.faviconUrl}
+                        theme={config.deviceTheme}
+                        styleVariant={config.deviceStyle}
+                        cornerRadius="round"
+                        cropOffsetY={config.cropOffsetY}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  /* ── MODE SOLO : APPAREIL UNIQUE CENTRÉ ── */
+                  <div
+                    className={`absolute cursor-move transition-all duration-150 touch-none z-20 ${
+                      config.mockupType === 'iphone'
+                        ? 'w-[42%]'
+                        : config.mockupType === 'watch'
+                        ? 'w-[34%]'
+                        : config.mockupType === 'ipad'
+                        ? 'w-[68%]'
+                        : 'w-[82%]'
+                    }`}
+                    style={{
+                      left: '50%',
+                      top: '50%',
+                      perspective: '1200px',
+                      transform: `translate(-50%, -50%) translate(${config.mockupX}%, ${config.mockupY}%) scale(${
+                        config.mockupScale / 100
+                      }) rotateX(${config.mockupTiltX || 0}deg) rotateY(${config.mockupTiltY || 0}deg) rotateZ(${
+                        config.mockupRotation || 0
+                      }deg)`,
+                      transformStyle: 'preserve-3d',
+                      filter: config.shadowEnabled ? `drop-shadow(${dynamicShadow})` : undefined,
+                    }}
+                    onPointerDown={(e) => handlePointerDown(e, 'mockup')}
+                  >
+                    {currentScreenshot && (
+                      <MockupFrame
+                        type={config.mockupType}
+                        screenshotBase64={currentScreenshot}
+                        url={customAddressBar.trim() ? (customAddressBar.startsWith('http') ? customAddressBar : 'https://' + customAddressBar) : captureItem.url}
+                        title={captureItem.title}
+                        domainName={customAddressBar.trim() || captureItem.domainName}
+                        faviconUrl={captureItem.faviconUrl}
+                        theme={config.deviceTheme}
+                        styleVariant={config.deviceStyle}
+                        browserStyle={config.browserStyle || browserStyle}
+                        cornerRadius={config.cornerRadius}
+                        cropOffsetY={config.cropOffsetY}
+                      />
+                    )}
+                  </div>
+                )
+              )}
 
-          {/* Indication d'interaction */}
-          <div className="mt-3.5 flex items-center gap-3 text-[11px] sm:text-xs text-stone-500 font-mono">
-            <span className="flex items-center gap-1.5">
-              <Move className="w-3.5 h-3.5 text-violet-600 shrink-0" />
-              <span>Glissez pour déplacer</span>
-            </span>
-            <span>•</span>
-            <span className="text-stone-400">Ratio {config.aspectRatio}</span>
-          </div>
-        </div>
+              {/* CALQUES DE TEXTES */}
+              {config.texts.map((txt) => {
+                const isSelected = selectedTextId === txt.id;
+                return (
+                  <div
+                    key={txt.id}
+                    onPointerDown={(e) => handlePointerDown(e, { type: 'text', id: txt.id })}
+                    className={`absolute cursor-move select-none p-2 rounded-lg transition-all group touch-none z-30 ${
+                      isSelected ? 'ring-2 ring-violet-500 bg-black/20 backdrop-blur-xs' : 'hover:ring-1 hover:ring-white/50'
+                    }`}
+                    style={{
+                      left: `${txt.x}%`,
+                      top: `${txt.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      color: txt.color,
+                      fontSize: `${txt.fontSize}px`,
+                      fontWeight: txt.fontWeight === '900' ? 900 : txt.fontWeight === 'bold' ? 700 : txt.fontWeight === 'medium' ? 500 : 400,
+                      textAlign: txt.align,
+                    }}
+                  >
+                    <span className="whitespace-pre-wrap leading-tight block drop-shadow-md">{txt.text}</span>
+                    {isSelected && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteText(txt.id);
+                        }}
+                        className="absolute -top-3 -right-3 p-1 rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-500"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
 
-        {/* 3. PANNEAU LATÉRAL DE CONTRÔLES (5 ONGLETS) */}
-        <div className="lg:col-span-4 bg-white border-t lg:border-t-0 flex flex-col justify-between overflow-hidden">
-          {/* Header Mobile plier/déplier */}
-          <button
-            type="button"
-            onClick={() => setMobileSheetOpen(!mobileSheetOpen)}
-            className="lg:hidden w-full px-4 py-3 bg-sand-50 border-b border-sand-200 flex items-center justify-between text-stone-800 hover:bg-sand-100 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-violet-600" />
-              <span className="text-xs font-bold font-mono">
-                {mobileSheetOpen ? 'Réduire les réglages' : 'Ouvrir les réglages du studio'}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-stone-500 text-xs font-medium">
-              <span>{mobileSheetOpen ? 'Masquer' : 'Modifier'}</span>
-              {mobileSheetOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-            </div>
-          </button>
+              {/* CALQUES DE LOGOS */}
+              {config.logos.map((lg) => {
+                const isSelected = selectedLogoId === lg.id;
+                return (
+                  <div
+                    key={lg.id}
+                    onPointerDown={(e) => handlePointerDown(e, { type: 'logo', id: lg.id })}
+                    className={`absolute cursor-move select-none p-1 rounded-lg transition-all group touch-none z-30 ${
+                      isSelected ? 'ring-2 ring-violet-500 bg-black/20 backdrop-blur-xs' : 'hover:ring-1 hover:ring-white/50'
+                    }`}
+                    style={{
+                      left: `${lg.x}%`,
+                      top: `${lg.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      width: `${lg.width}px`,
+                      opacity: lg.opacity,
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={lg.src} alt="Logo" className="w-full h-auto object-contain pointer-events-none drop-shadow-md" />
+                    {isSelected && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteLogo(lg.id);
+                        }}
+                        className="absolute -top-3 -right-3 p-1 rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-500"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
 
-          {/* Contenu des réglages */}
-          <div className={`${mobileSheetOpen ? 'flex' : 'hidden lg:flex'} flex-col justify-between p-4 sm:p-6 space-y-6 overflow-y-auto max-h-[72vh] lg:max-h-[750px]`}>
-            <div className="space-y-6">
-              {/* Sélecteur des 5 onglets */}
-              <div className="grid grid-cols-5 gap-1 p-1 rounded-xl bg-sand-100 border border-sand-200 text-[11px] font-semibold">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('mockup')}
-                  className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition-all ${
-                    activeTab === 'mockup' ? 'bg-violet-600 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+              {/* BADGES TECH STACK DÉVELOPPEUR SUR LA SCÈNE */}
+              {selectedTechIds.length > 0 && (
+                <div
+                  className={`absolute z-35 transition-all duration-300 pointer-events-none select-none flex items-center ${
+                    techPosition === 'top'
+                      ? 'top-4 left-1/2 -translate-x-1/2'
+                      : techPosition === 'bottom'
+                      ? 'bottom-4 left-1/2 -translate-x-1/2'
+                      : 'bottom-6 left-6'
                   }`}
                 >
-                  <Sliders className="w-3.5 h-3.5" />
-                  <span>Mockup</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('frame')}
-                  className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition-all ${
-                    activeTab === 'frame' ? 'bg-violet-600 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <Palette className="w-3.5 h-3.5" />
-                  <span>Cadre</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('filter')}
-                  className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition-all ${
-                    activeTab === 'filter' ? 'bg-violet-600 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <Film className="w-3.5 h-3.5" />
-                  <span>Filtres</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('text')}
-                  className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition-all ${
-                    activeTab === 'text' ? 'bg-violet-600 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <Type className="w-3.5 h-3.5" />
-                  <span>Texte</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('logo')}
-                  className={`py-1.5 px-1 rounded-lg flex flex-col items-center gap-0.5 transition-all ${
-                    activeTab === 'logo' ? 'bg-violet-600 text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  <span>Logo</span>
-                </button>
-              </div>
-
-              {/* ONGLET 1 : MOCKUP & CONTRÔLES 3D */}
-              {activeTab === 'mockup' && (
-                <div className="space-y-5 animate-fade-in">
-                  {/* Modèle d'appareil (7 options) */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                      Appareil & Modèle ({['Web', 'MacBook', 'iMac', 'iPad', 'iPhone', 'Watch', 'Flat'].length})
-                    </label>
-                    <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
-                      {[
-                        { type: 'browser' as MockupType, label: 'Web', icon: Monitor },
-                        { type: 'macbook' as MockupType, label: 'MacBook', icon: Laptop },
-                        { type: 'imac' as MockupType, label: 'iMac', icon: Tv },
-                        { type: 'ipad' as MockupType, label: 'iPad', icon: Tablet },
-                        { type: 'iphone' as MockupType, label: 'iPhone', icon: Smartphone },
-                        { type: 'watch' as MockupType, label: 'Watch', icon: Watch },
-                        { type: 'flat' as MockupType, label: 'Flat', icon: Layers },
-                      ].map((item) => {
-                        const Icon = item.icon;
-                        const isSelected = config.mockupType === item.type;
+                  <div
+                    className={`px-3 py-1.5 rounded-2xl flex items-center gap-1.5 shadow-xl backdrop-blur-md border ${
+                      techThemeStyle === 'dark-glass'
+                        ? 'bg-black/75 border-white/20 text-white shadow-black/50'
+                        : techThemeStyle === 'light-glass'
+                        ? 'bg-white/85 border-white/60 text-stone-900 shadow-stone-950/20'
+                        : 'bg-stone-950/95 border-violet-500/50 text-violet-300 ring-2 ring-violet-500/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {selectedTechIds.map((id) => {
+                        const tech = AVAILABLE_TECHS.find((t) => t.id === id);
+                        if (!tech) return null;
                         return (
-                          <button
-                            key={item.type}
-                            type="button"
-                            onClick={() => setConfig((p) => ({ ...p, mockupType: item.type }))}
-                            className={`py-1.5 px-1 rounded-xl border text-[10px] font-semibold flex flex-col items-center gap-1 transition-all ${
-                              isSelected
-                                ? 'bg-violet-600 text-white border-violet-600 shadow-xs'
-                                : 'bg-sand-50 border-sand-200 text-stone-600 hover:text-stone-900'
+                          <span
+                            key={id}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-tight border flex items-center gap-1 ${
+                              techThemeStyle === 'dark-glass'
+                                ? 'bg-white/10 border-white/15 text-white'
+                                : techThemeStyle === 'light-glass'
+                                ? 'bg-black/5 border-black/10 text-stone-900'
+                                : `${tech.color} ${tech.textColor} ${tech.borderColor}`
                             }`}
                           >
-                            <Icon className="w-3.5 h-3.5" />
-                            <span className="truncate">{item.label}</span>
-                          </button>
+                            {tech.name}
+                          </span>
                         );
                       })}
                     </div>
                   </div>
+                </div>
+              )}
 
-                  {/* Thème clair / sombre */}
-                  <div className="grid grid-cols-2 gap-3 p-3 rounded-2xl bg-sand-50 border border-sand-200">
+              {/* WATERMARK : FREE vs PRO (Marque blanche) */}
+              {isFreePlan ? (
+                <Link
+                  href="/pricing"
+                  className="absolute bottom-3 right-3 z-40 px-2.5 py-1 rounded-lg bg-black/65 hover:bg-violet-950/80 backdrop-blur-md text-white/90 hover:text-white text-[10px] font-mono font-semibold flex items-center gap-1.5 shadow-sm border border-white/20 hover:border-violet-400 transition-all select-none group"
+                  title="Créé avec OmniMockup. Débloquez le plan Pro pour supprimer le filigrane."
+                >
+                  <Layers className="w-3 h-3 text-violet-400 group-hover:scale-110 transition-transform" />
+                  <span>Made with OmniMockup</span>
+                  <span className="text-[9px] bg-violet-600/60 px-1 py-0.5 rounded text-violet-200 group-hover:bg-violet-600 font-sans">
+                    Pro
+                  </span>
+                </Link>
+              ) : config.customWatermarkUrl ? (
+                <div className="absolute bottom-3 right-3 z-40 max-w-[120px] max-h-[40px] opacity-90 select-none pointer-events-none">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={config.customWatermarkUrl} alt="Watermark" className="w-full h-auto object-contain" />
+                </div>
+              ) : null}
+
+              {/* EFFET VFX HALO LUMINEUX */}
+              {vfxGlow && (
+                <div className="absolute inset-0 pointer-events-none z-15 flex items-center justify-center">
+                  <div className="w-[82%] h-[75%] rounded-full bg-violet-600/30 blur-3xl animate-pulse" />
+                </div>
+              )}
+
+              {/* SHADOW OVERLAY DE SCÈNE (Stores vénitiens, Feuilles, Palmier, Fenêtre) */}
+              <SceneShadowOverlay type={sceneOverlay || config.sceneOverlay || 'none'} opacity={shadowOpacity / 100} />
+            </div>
+          </div>
+
+          {/* ── BARRE DE CONTRÔLES FLOTTANTE AU BAS DU CANVAS (STYLE SHOTS.SO) ── */}
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-40 bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl px-3 py-1.5 shadow-2xl flex items-center gap-3 text-xs select-none">
+            {/* Sélecteur de Ratios */}
+            <div className="flex items-center gap-1">
+              {RATIO_PRESETS.slice(0, 5).map((rp) => (
+                <button
+                  key={rp.id}
+                  type="button"
+                  onClick={() => {
+                    setConfig((p) => ({ ...p, aspectRatio: rp.id }));
+                    const found = FRAME_PRESETS.find((fp) => fp.ratioId === rp.id);
+                    if (found) setCurrentFramePreset(found);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                    config.aspectRatio === rp.id
+                      ? 'bg-violet-600 text-white shadow-xs'
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                  }`}
+                  title={rp.desc}
+                >
+                  {rp.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-px h-4 bg-zinc-750" />
+
+            {/* Contrôles de Zoom */}
+            <div className="flex items-center gap-1 text-zinc-400">
+              <button
+                type="button"
+                onClick={() => setCanvasZoom((z) => Math.max(50, z - 10))}
+                className="p-1 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
+                title="Zoom arrière"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-[11px] font-mono font-medium px-1 text-zinc-300 min-w-[36px] text-center">
+                {canvasZoom}%
+              </span>
+              <button
+                type="button"
+                onClick={() => setCanvasZoom((z) => Math.min(150, z + 10))}
+                className="p-1 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
+                title="Zoom avant"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCanvasZoom(100)}
+                className="px-1.5 py-0.5 text-[10px] font-mono text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+                title="Ajuster (100%)"
+              >
+                Fit
+              </button>
+            </div>
+
+            <div className="w-px h-4 bg-zinc-750" />
+
+            {/* Recentrer 3D */}
+            <button
+              type="button"
+              onClick={handleReset3D}
+              className="flex items-center gap-1 px-2 py-1 text-[11px] text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors font-medium"
+              title="Réinitialiser l'orientation 3D (0°)"
+            >
+              <RotateCcw className="w-3 h-3 text-violet-400" />
+              <span>0°</span>
+            </button>
+          </div>
+        </main>
+
+        {/* ═════════════════════════════════════════════════════════════════ */}
+        {/* 3. PANNEAU LATÉRAL D'INSPECTION (STYLE SHOTS.SO & ROTATO)        */}
+        {/* ═════════════════════════════════════════════════════════════════ */}
+        <aside className="w-full lg:w-[400px] xl:w-[430px] h-full bg-[#131317] border-t lg:border-t-0 lg:border-l border-zinc-850 flex flex-col shrink-0 z-20 overflow-hidden">
+          {/* Header Mobile Déplier / Replier */}
+          <button
+            type="button"
+            onClick={() => setMobileSheetOpen(!mobileSheetOpen)}
+            className="lg:hidden w-full px-4 py-3 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between text-zinc-200"
+          >
+            <div className="flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-violet-400" />
+              <span className="text-xs font-bold font-mono">
+                {mobileSheetOpen ? 'Réduire les réglages' : 'Ouvrir les réglages du studio'}
+              </span>
+            </div>
+            {mobileSheetOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          </button>
+
+          {/* BARRE SUPÉRIEURE DE NAVIGATION NETWAVE & TEMPLATES (FrameCapture.PNG) */}
+          <div className="px-4 py-2.5 border-b border-zinc-850 bg-zinc-950/90 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center text-[10px] font-black text-white shadow-sm">
+                NW
+              </div>
+              <span className="text-xs font-bold text-white tracking-tight">Netwave Studio</span>
+              <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowTemplatesModal(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-violet-500/50 text-zinc-300 hover:text-white text-[11px] font-bold transition-all group"
+            >
+              <Layout className="w-3.5 h-3.5 text-violet-400 group-hover:scale-110 transition-transform" />
+              <span>Templates</span>
+              <ChevronRight className="w-3 h-3 text-zinc-500 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+
+          {/* SÉLECTEUR DES 2 ONGLETS MAJEURS DU STUDIO (STYLE SHOTS.SO) */}
+          <div className="p-3 border-b border-zinc-850 bg-zinc-950/70 shrink-0">
+            <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-zinc-900 border border-zinc-800 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setActiveMainTab('mockup')}
+                className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                  activeMainTab === 'mockup'
+                    ? 'bg-zinc-800 text-white shadow-md ring-1 ring-white/10 font-black'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Monitor className="w-4 h-4 text-violet-400" />
+                <span>Mockup</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveMainTab('frame')}
+                className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                  activeMainTab === 'frame'
+                    ? 'bg-zinc-800 text-white shadow-md ring-1 ring-white/10 font-black'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Palette className="w-4 h-4 text-pink-400" />
+                <span>Frame</span>
+              </button>
+            </div>
+          </div>
+
+          {/* CONTENU DE L'INSPECTEUR DÉFILABLE */}
+          <div
+            className={`${
+              mobileSheetOpen ? 'flex' : 'hidden lg:flex'
+            } flex-col flex-1 p-4 sm:p-5 space-y-6 overflow-y-auto max-h-[calc(100vh-120px)]`}
+          >
+            {/* ══════════ ONGLET PRINCIPAL MOCKUP ══════════ */}
+            {activeMainTab === 'mockup' && (
+              <div className="space-y-0 animate-fade-in">
+                {/* Sous-onglets : Appareil | 3D | Contenu | Branding */}
+                <div className="flex gap-1 mb-4 p-1 bg-zinc-900 rounded-xl border border-zinc-800">
+                  {([
+                    { id: 'mockup', label: 'Appareil' },
+                    { id: '3d', label: '3D' },
+                    { id: 'content', label: 'Contenu' },
+                    { id: 'branding', label: 'Branding' },
+                  ] as const).map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setActiveTab(t.id)}
+                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${
+                        activeTab === t.id
+                          ? 'bg-zinc-700 text-white'
+                          : 'text-zinc-500 hover:text-zinc-200'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+            {/* ══════════ ONGLET 1 : APPAREIL & MODÈLES ══════════ */}
+            {activeTab === 'mockup' && (
+
+              <div className="space-y-5 animate-fade-in">
+                {/* Disposition Solo vs Duo */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                    Mode de Disposition (Layout)
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfig((p) => ({ ...p, layoutMode: 'single' }))}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        (config.layoutMode || 'single') === 'single'
+                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/50'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="font-bold text-xs text-white">Solo (1 Appareil)</div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5">Focus sur un seul écran</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfig((p) => ({ ...p, layoutMode: 'dual-stacked' }))}
+                      className={`p-3 rounded-xl border text-left transition-all relative ${
+                        config.layoutMode === 'dual-stacked'
+                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/50'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <span className="absolute top-2 right-2 px-1.5 py-0.2 rounded-md bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[9px] font-bold">
+                        DUO ✨
+                      </span>
+                      <div className="font-bold text-xs text-white">MacBook + iPhone</div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5">Desktop & Mobile côte à côte</div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Modèle d'appareil (7 options) */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                    Modèle d'Appareil
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { type: 'browser' as MockupType, label: 'Web', icon: Monitor },
+                      { type: 'macbook' as MockupType, label: 'MacBook', icon: Laptop },
+                      { type: 'imac' as MockupType, label: 'iMac', icon: Tv },
+                      { type: 'ipad' as MockupType, label: 'iPad', icon: Tablet },
+                      { type: 'iphone' as MockupType, label: 'iPhone', icon: Smartphone },
+                      { type: 'watch' as MockupType, label: 'Watch', icon: Watch },
+                      { type: 'flat' as MockupType, label: 'Flat', icon: Layers },
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      const isSelected = config.mockupType === item.type;
+                      return (
+                        <button
+                          key={item.type}
+                          type="button"
+                          onClick={() => setConfig((p) => ({ ...p, mockupType: item.type }))}
+                          className={`py-2 px-1.5 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1.5 transition-all ${
+                            isSelected
+                              ? 'bg-violet-600 text-white border-violet-500 shadow-md font-bold'
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span className="text-[10px] truncate">{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Finition du Cadre */}
+                <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <span className="text-[10px] font-mono font-bold text-stone-600 uppercase">Thème Cadre</span>
-                      <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-sand-200">
+                      <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Thème</span>
+                      <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                         <button
                           type="button"
                           onClick={() => setConfig((p) => ({ ...p, deviceTheme: 'light' }))}
-                          className={`flex-1 py-1 px-1.5 rounded flex items-center justify-center gap-1 text-[11px] font-medium transition-all ${
-                            config.deviceTheme === 'light'
-                              ? 'bg-violet-600 text-white font-bold'
-                              : 'text-stone-600 hover:text-stone-900'
+                          className={`flex-1 py-1 rounded text-[11px] font-medium flex items-center justify-center gap-1 transition-all ${
+                            config.deviceTheme === 'light' ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
                           }`}
                         >
                           <Sun className="w-3 h-3" />
@@ -1150,10 +1721,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <button
                           type="button"
                           onClick={() => setConfig((p) => ({ ...p, deviceTheme: 'dark' }))}
-                          className={`flex-1 py-1 px-1.5 rounded flex items-center justify-center gap-1 text-[11px] font-medium transition-all ${
-                            config.deviceTheme === 'dark'
-                              ? 'bg-stone-900 text-white font-bold'
-                              : 'text-stone-600 hover:text-stone-900'
+                          className={`flex-1 py-1 rounded text-[11px] font-medium flex items-center justify-center gap-1 transition-all ${
+                            config.deviceTheme === 'dark' ? 'bg-zinc-800 text-white font-bold' : 'text-zinc-400 hover:text-white'
                           }`}
                         >
                           <Moon className="w-3 h-3" />
@@ -1163,17 +1732,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
 
                     <div className="space-y-1.5">
-                      <span className="text-[10px] font-mono font-bold text-stone-600 uppercase">Finition</span>
-                      <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-sand-200">
+                      <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Style</span>
+                      <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                         {(['default', 'glass'] as const).map((st) => (
                           <button
                             key={st}
                             type="button"
                             onClick={() => setConfig((p) => ({ ...p, deviceStyle: st }))}
-                            className={`flex-1 py-1 px-1 rounded text-[11px] font-medium capitalize transition-all ${
-                              config.deviceStyle === st
-                                ? 'bg-violet-600 text-white font-bold'
-                                : 'text-stone-600 hover:text-stone-900'
+                            className={`flex-1 py-1 rounded text-[11px] font-medium capitalize transition-all ${
+                              config.deviceStyle === st ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
                             }`}
                           >
                             {st === 'default' ? 'Standard' : 'Glass'}
@@ -1183,711 +1750,1101 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
                   </div>
 
-                  {/* SECTION 3D PERSPECTIVE */}
-                  <div className="space-y-3.5 p-3.5 rounded-2xl bg-gradient-to-b from-sand-50 to-sand-100/60 border border-sand-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-violet-600" />
-                        <span className="text-xs font-bold text-stone-800 font-mono uppercase">
-                          Perspective 3D Réelle
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setConfig((p) => ({ ...p, mockupTiltX: 0, mockupTiltY: 0, mockupRotation: 0 }))}
-                        className="text-[10px] font-mono text-violet-600 hover:text-violet-800 font-bold"
-                      >
-                        Reset (0°)
-                      </button>
-                    </div>
-
-                    {/* RACCOURCIS DE POSES 3D PRÉDÉFINIES */}
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-mono text-stone-500 font-semibold uppercase">Poses 3D Rapides</span>
-                      <div className="grid grid-cols-4 gap-1">
-                        {[
-                          { label: 'Plat', tx: 0, ty: 0, rot: 0 },
-                          { label: 'Iso G.', tx: 14, ty: -18, rot: -6 },
-                          { label: 'Iso D.', tx: 14, ty: 18, rot: 6 },
-                          { label: 'Hero', tx: -12, ty: 0, rot: 4 },
-                        ].map((pose, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() =>
-                              setConfig((p) => ({
-                                ...p,
-                                mockupTiltX: pose.tx,
-                                mockupTiltY: pose.ty,
-                                mockupRotation: pose.rot,
-                              }))
-                            }
-                            className={`py-1 px-1 rounded-lg border text-[10px] font-semibold text-center transition-all ${
-                              config.mockupTiltX === pose.tx &&
-                              config.mockupTiltY === pose.ty &&
-                              config.mockupRotation === pose.rot
-                                ? 'bg-violet-600 text-white border-violet-600 shadow-xs font-bold'
-                                : 'bg-white border-sand-200 text-stone-600 hover:text-stone-900'
-                            }`}
-                          >
-                            {pose.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px] font-mono text-stone-600">
-                        <span>Tilt Vertical (Haut / Bas)</span>
-                        <span className="font-bold text-violet-700">{config.mockupTiltX || 0}°</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="-30"
-                        max="30"
-                        value={config.mockupTiltX || 0}
-                        onChange={(e) => setConfig((p) => ({ ...p, mockupTiltX: Number(e.target.value) }))}
-                        className="w-full accent-violet-600 cursor-pointer h-1.5 bg-sand-200 rounded-lg"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px] font-mono text-stone-600">
-                        <span>Tilt Horizontal (Gauche / Droite)</span>
-                        <span className="font-bold text-violet-700">{config.mockupTiltY || 0}°</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="-30"
-                        max="30"
-                        value={config.mockupTiltY || 0}
-                        onChange={(e) => setConfig((p) => ({ ...p, mockupTiltY: Number(e.target.value) }))}
-                        className="w-full accent-violet-600 cursor-pointer h-1.5 bg-sand-200 rounded-lg"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px] font-mono text-stone-600">
-                        <span className="flex items-center gap-1">
-                          <RotateCw className="w-3 h-3 text-stone-500" />
-                          <span>Rotation Angulaire (Angle Z)</span>
-                        </span>
-                        <span className="font-bold text-violet-700">{config.mockupRotation || 0}°</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="-40"
-                        max="40"
-                        value={config.mockupRotation || 0}
-                        onChange={(e) => setConfig((p) => ({ ...p, mockupRotation: Number(e.target.value) }))}
-                        className="w-full accent-violet-600 cursor-pointer h-1.5 bg-sand-200 rounded-lg"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Échelle / Zoom */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="font-bold text-stone-700 uppercase">Échelle & Taille</span>
-                      <span className="text-violet-600 font-bold">{config.mockupScale}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="40"
-                      max="140"
-                      value={config.mockupScale}
-                      onChange={(e) => setConfig((p) => ({ ...p, mockupScale: Number(e.target.value) }))}
-                      className="w-full accent-violet-600 cursor-pointer h-1.5 bg-sand-200 rounded-lg"
-                    />
-                  </div>
-
-                  {/* Défilement vertical de la capture (Du haut vers le bas) */}
-                  <div className="space-y-2 p-3.5 rounded-2xl bg-violet-50/70 border border-violet-200">
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="font-bold text-stone-800 uppercase flex items-center gap-1.5">
-                        <Move className="w-3.5 h-3.5 text-violet-600" />
-                        <span>Défilement Capture (Haut ↕ Bas)</span>
-                      </span>
-                      <span className="text-violet-700 font-bold">{config.cropOffsetY || 0}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={config.cropOffsetY || 0}
-                      onChange={(e) => setConfig((p) => ({ ...p, cropOffsetY: Number(e.target.value) }))}
-                      className="w-full accent-violet-600 cursor-pointer h-1.5 bg-sand-200 rounded-lg"
-                    />
-                    <div className="flex justify-between text-[10px] text-stone-500 font-mono">
-                      <span>▲ Haut de page</span>
-                      <span>Bas de page ▼</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ONGLET 2 : CADRE GLOBAL, RATIOS & FONDS MAGIQUES */}
-              {activeTab === 'frame' && (
-                <div className="space-y-5 animate-fade-in">
-                  {/* Ratios d'aspect sociaux rapides en 1 clic */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                      Ratios Sociaux Prédéfinis (1 Clic)
-                    </label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {RATIO_PRESETS.map((rp) => (
+                  {/* Rayon d'angle */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Rayon d'angle</span>
+                    <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
+                      {[
+                        { id: 'sharp', label: 'Droit (0px)' },
+                        { id: 'curved', label: 'Courbé (16px)' },
+                        { id: 'round', label: 'Rond (28px)' },
+                      ].map((r) => (
                         <button
-                          key={rp.id}
+                          key={r.id}
                           type="button"
-                          onClick={() => setConfig((p) => ({ ...p, aspectRatio: rp.id }))}
-                          className={`p-2 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                            config.aspectRatio === rp.id
-                              ? 'bg-violet-50/90 border-violet-500 text-violet-900 shadow-xs ring-1 ring-violet-200 font-bold'
-                              : 'bg-sand-50 border-sand-200 text-stone-600 hover:border-sand-300 hover:text-stone-900'
+                          onClick={() => setConfig((p) => ({ ...p, cornerRadius: r.id as any }))}
+                          className={`py-1 text-[10px] font-medium rounded transition-all ${
+                            config.cornerRadius === r.id ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
                           }`}
                         >
-                          <span className="text-xs">{rp.label}</span>
-                          <span className="text-[10px] text-stone-500 font-mono mt-0.5">{rp.desc}</span>
+                          {r.label}
                         </button>
                       ))}
                     </div>
                   </div>
+                </div>
 
-                  {/* FONDS MAGIQUES AUTOMATIQUES EXTRAITS DE LA CAPTURE */}
-                  {autoGradients.length > 0 && !config.bgTransparent && (
-                    <div className="space-y-2 p-3 rounded-2xl bg-violet-50/50 border border-violet-200">
-                      <div className="flex items-center gap-1.5">
-                        <Wand2 className="w-3.5 h-3.5 text-violet-600" />
-                        <label className="text-xs font-bold text-violet-900 uppercase tracking-wider font-mono">
-                          Fonds Magiques Auto
-                        </label>
+                {/* ── STYLE NAVIGATEUR (Shots.so) ── */}
+                {(config.mockupType === 'browser' || config.mockupType === 'macbook' || config.mockupType === 'imac') && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Style Navigateur</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { id: 'safari-light' as const, label: 'Safari', sub: 'Clair', dot: 'bg-red-500' },
+                        { id: 'chrome-light' as const, label: 'Chrome', sub: 'Clair', dot: 'bg-blue-500' },
+                        { id: 'arc-light' as const, label: 'Arc', sub: 'Clair', dot: 'bg-purple-500' },
+                        { id: 'safari-dark' as const, label: 'Safari', sub: 'Sombre', dot: 'bg-red-700' },
+                        { id: 'chrome-dark' as const, label: 'Chrome', sub: 'Sombre', dot: 'bg-blue-700' },
+                        { id: 'arc-dark' as const, label: 'Arc', sub: 'Sombre', dot: 'bg-purple-700' },
+                      ].map((bs) => {
+                        const isCurrent = (config.browserStyle || browserStyle) === bs.id;
+                        return (
+                          <button
+                            key={bs.id}
+                            type="button"
+                            onClick={() => {
+                              setBrowserStyle(bs.id);
+                              const theme = bs.id.endsWith('dark') ? 'dark' : 'light';
+                              setConfig((p) => ({ ...p, browserStyle: bs.id, deviceTheme: theme }));
+                            }}
+                            className={`p-2 rounded-xl border text-left transition-all ${
+                              isCurrent
+                                ? 'bg-violet-600/25 border-violet-500 ring-1 ring-violet-500/40'
+                                : 'bg-zinc-900 border-zinc-800 hover:border-zinc-600'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <span className={`w-2 h-2 rounded-full ${bs.dot}`} />
+                              <span className="text-[10px] font-bold text-white">{bs.label}</span>
+                            </div>
+                            <span className={`text-[9px] ${isCurrent ? 'text-violet-300' : 'text-zinc-500'}`}>{bs.sub}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── BARRE D'ADRESSE PERSONNALISÉE ── */}
+                {(config.mockupType === 'browser' || config.mockupType === 'macbook' || config.mockupType === 'imac') && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Barre d'Adresse</label>
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 focus-within:border-violet-500/60 transition-colors">
+                      <Globe className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <input
+                        type="text"
+                        value={customAddressBar}
+                        onChange={(e) => setCustomAddressBar(e.target.value)}
+                        placeholder={captureItem.domainName || 'example.com'}
+                        className="flex-1 bg-transparent text-xs text-white placeholder:text-zinc-600 outline-none"
+                      />
+                      {customAddressBar && (
+                        <button type="button" onClick={() => setCustomAddressBar('')} className="text-zinc-500 hover:text-zinc-300">
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── GRILLE D'ALIGNEMENT 3×3 ── */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Position Rapide</label>
+                  <div className="flex items-center gap-3">
+                    <div className="grid grid-cols-3 gap-1">
+                      {[
+                        { pos: 'tl', title: 'Haut gauche' }, { pos: 'tc', title: 'Haut centre' }, { pos: 'tr', title: 'Haut droite' },
+                        { pos: 'ml', title: 'Milieu gauche' }, { pos: 'mc', title: 'Centre' }, { pos: 'mr', title: 'Milieu droite' },
+                        { pos: 'bl', title: 'Bas gauche' }, { pos: 'bc', title: 'Bas centre' }, { pos: 'br', title: 'Bas droite' },
+                      ].map(({ pos, title }) => (
+                        <button
+                          key={pos}
+                          type="button"
+                          onClick={() => applyAlignment(pos)}
+                          title={title}
+                          className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all ${
+                            pos === 'mc'
+                              ? 'bg-violet-600/20 border-violet-500/40 hover:bg-violet-600/40'
+                              : 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-600'
+                          }`}
+                        >
+                          <div className="w-2 h-2 rounded-sm bg-zinc-400" />
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => applyAlignment('mc')}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all font-semibold"
+                    >
+                      Auto
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── SYSTÈME D'OMBRES AVANCÉ (Shots.so) ── */}
+                <div className="space-y-3 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+                    Ombres
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { id: 'none' as const, label: 'Aucune' },
+                      { id: 'spread' as const, label: 'Spread' },
+                      { id: 'realistic' as const, label: 'Réelle' },
+                      { id: 'adaptive' as const, label: 'Adaptive' },
+                    ].map((sh) => (
+                      <button
+                        key={sh.id}
+                        type="button"
+                        onClick={() => setShadowType(sh.id)}
+                        className={`py-2 px-1 rounded-xl border text-[10px] font-semibold transition-all ${
+                          shadowType === sh.id
+                            ? 'bg-violet-600 text-white border-violet-500'
+                            : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        {sh.label}
+                      </button>
+                    ))}
+                  </div>
+                  {shadowType !== 'none' && (
+                    <>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] font-mono">
+                          <span className="text-zinc-400">Opacité</span>
+                          <span className="text-violet-400 font-bold">{shadowOpacity}%</span>
+                        </div>
+                        <input
+                          type="range" min="0" max="100" value={shadowOpacity}
+                          onChange={(e) => setShadowOpacity(Number(e.target.value))}
+                          className="w-full accent-violet-600 h-1.5 rounded-lg cursor-pointer"
+                        />
                       </div>
-                      <p className="text-[11px] text-violet-700">
-                        Dégradés générés automatiquement à partir des couleurs de votre capture :
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] font-mono">
+                          <span className="text-zinc-400">Angle de Lumière</span>
+                          <span className="text-amber-400 font-bold">{shadowLightAngle}°</span>
+                        </div>
+                        <input
+                          type="range" min="0" max="360" value={shadowLightAngle}
+                          onChange={(e) => setShadowLightAngle(Number(e.target.value))}
+                          className="w-full accent-amber-500 h-1.5 rounded-lg cursor-pointer"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* ── BANNIÈRE MAGIC PRESET (Shots.so) ── */}
+                {autoGradients.length > 0 && (
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-xl bg-violet-600/20 text-violet-400">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-bold text-white">Magic Preset</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleCycleMagicPreset('prev')}
+                        className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                        title="Preset précédent"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-[10px] font-mono text-zinc-400 min-w-[28px] text-center">
+                        {magicPresetIdx + 1}/{autoGradients.length}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCycleMagicPreset('next')}
+                        className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                        title="Preset suivant"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── ZONE DE DROP MEDIA (MokupCapture.PNG) ── */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                    Média
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => replaceImgInputRef.current?.click()}
+                    className="w-full h-24 rounded-2xl border-2 border-dashed border-zinc-800 hover:border-violet-500/60 bg-zinc-900/60 hover:bg-zinc-900 transition-all flex flex-col items-center justify-center gap-1.5 group"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-zinc-800 group-hover:bg-violet-600/20 group-hover:text-violet-400 flex items-center justify-center text-zinc-400 transition-colors">
+                      <Plus className="w-4 h-4" />
+                    </div>
+                    <span className="text-[11px] text-zinc-400 group-hover:text-zinc-200">
+                      Remplacer l'image ou déposer un fichier
+                    </span>
+                  </button>
+                </div>
+
+                {/* ── FENÊTRE & ÉCHELLE UI (MokupCapture.PNG) ── */}
+                <div className="space-y-3 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                      Échelle UI
+                    </label>
+                    <span className="text-xs font-mono font-bold text-violet-400">{uiScale}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="50"
+                    max="150"
+                    value={uiScale}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setUiScale(val);
+                      setConfig((p) => ({ ...p, mockupScale: Math.round(val * 0.85) }));
+                    }}
+                    className="w-full accent-violet-600 h-1.5 rounded-lg cursor-pointer"
+                  />
+                  <div className="grid grid-cols-4 gap-1.5 pt-1">
+                    {[
+                      { id: 'auto', label: 'AUTO' },
+                      { id: '16:9', label: '16:9' },
+                      { id: 'square', label: '1:1' },
+                      { id: 'full', label: 'FULL' },
+                    ].map((fmt) => {
+                      const isActive =
+                        (fmt.id === '16:9' && config.aspectRatio === '16:9') ||
+                        (fmt.id === 'square' && config.aspectRatio === '1:1') ||
+                        (fmt.id === 'full' && config.aspectRatio === '4:3');
+                      return (
+                        <button
+                          key={fmt.id}
+                          type="button"
+                          onClick={() => {
+                            if (fmt.id === 'auto') {
+                              setUiScale(100);
+                              setConfig((p) => ({
+                                ...p,
+                                mockupScale: 85,
+                                mockupTiltX: 0,
+                                mockupTiltY: 0,
+                                mockupRotation: 0,
+                                mockupX: 0,
+                                mockupY: 0,
+                                aspectRatio: '16:9',
+                              }));
+                              const found = FRAME_PRESETS.find((fp) => fp.ratioId === '16:9');
+                              if (found) setCurrentFramePreset(found);
+                            } else if (fmt.id === '16:9') {
+                              setConfig((p) => ({ ...p, aspectRatio: '16:9' }));
+                              const found = FRAME_PRESETS.find((fp) => fp.ratioId === '16:9');
+                              if (found) setCurrentFramePreset(found);
+                            } else if (fmt.id === 'square') {
+                              setConfig((p) => ({ ...p, aspectRatio: '1:1' }));
+                              const found = FRAME_PRESETS.find((fp) => fp.ratioId === '1:1');
+                              if (found) setCurrentFramePreset(found);
+                            } else if (fmt.id === 'full') {
+                              setConfig((p) => ({ ...p, aspectRatio: '4:3' }));
+                              const found = FRAME_PRESETS.find((fp) => fp.ratioId === '4:3');
+                              if (found) setCurrentFramePreset(found);
+                            }
+                          }}
+                          className={`py-1.5 rounded-lg border text-[10px] font-mono font-bold transition-all text-center ${
+                            isActive
+                              ? 'bg-violet-600 text-white border-violet-500 shadow-xs'
+                              : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                          }`}
+                        >
+                          {fmt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ── VISIBILITÉ DU MOCKUP ── */}
+                <button
+                  type="button"
+                  onClick={() => setMockupHidden((v) => !v)}
+                  className={`w-full py-2.5 px-4 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                    mockupHidden
+                      ? 'bg-rose-600/20 border-rose-500/50 text-rose-300 hover:bg-rose-600/30'
+                      : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800'
+                  }`}
+                >
+                  {mockupHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  {mockupHidden ? 'Afficher le Mockup' : 'Masquer le Mockup'}
+                </button>
+              </div>
+            )}
+
+            {/* ══════════ ONGLET 3 : 3D, CAMÉRA & OMBRES ══════════ */}
+            {activeTab === '3d' && (
+              <div className="space-y-5 animate-fade-in">
+                {/* Poses 3D Rapides en 1 Clic */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                      Poses 3D Rapides (1 Clic)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleReset3D}
+                      className="text-[11px] font-mono text-violet-400 hover:text-violet-300 font-bold"
+                    >
+                      Reset (0°)
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { label: 'À Plat', tx: 0, ty: 0, rot: 0 },
+                      { label: 'Iso G.', tx: 14, ty: -18, rot: -6 },
+                      { label: 'Iso D.', tx: 14, ty: 18, rot: 6 },
+                      { label: 'Hero 3D', tx: -12, ty: 0, rot: 4 },
+                    ].map((pose, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() =>
+                          setConfig((p) => ({
+                            ...p,
+                            mockupTiltX: pose.tx,
+                            mockupTiltY: pose.ty,
+                            mockupRotation: pose.rot,
+                          }))
+                        }
+                        className={`py-2 px-1 rounded-xl border text-xs font-semibold text-center transition-all ${
+                          config.mockupTiltX === pose.tx &&
+                          config.mockupTiltY === pose.ty &&
+                          config.mockupRotation === pose.rot
+                            ? 'bg-violet-600 text-white border-violet-500 font-bold shadow-md'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
+                        }`}
+                      >
+                        {pose.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sliders de Perspective 3D */}
+                <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-mono text-zinc-300">
+                      <span>Tilt Vertical (Haut / Bas)</span>
+                      <span className="font-bold text-violet-400">{config.mockupTiltX || 0}°</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-30"
+                      max="30"
+                      value={config.mockupTiltX || 0}
+                      onChange={(e) => setConfig((p) => ({ ...p, mockupTiltX: Number(e.target.value) }))}
+                      className="w-full accent-violet-600 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-mono text-zinc-300">
+                      <span>Tilt Horizontal (Gauche / Droite)</span>
+                      <span className="font-bold text-violet-400">{config.mockupTiltY || 0}°</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-30"
+                      max="30"
+                      value={config.mockupTiltY || 0}
+                      onChange={(e) => setConfig((p) => ({ ...p, mockupTiltY: Number(e.target.value) }))}
+                      className="w-full accent-violet-600 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-mono text-zinc-300">
+                      <span>Rotation Angulaire (Angle Z)</span>
+                      <span className="font-bold text-violet-400">{config.mockupRotation || 0}°</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-40"
+                      max="40"
+                      value={config.mockupRotation || 0}
+                      onChange={(e) => setConfig((p) => ({ ...p, mockupRotation: Number(e.target.value) }))}
+                      className="w-full accent-violet-600 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                {/* Échelle / Taille */}
+                <div className="space-y-2 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="font-bold text-zinc-300 uppercase">Échelle & Taille du Mockup</span>
+                    <span className="text-violet-400 font-bold">{config.mockupScale}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="40"
+                    max="140"
+                    value={config.mockupScale}
+                    onChange={(e) => setConfig((p) => ({ ...p, mockupScale: Number(e.target.value) }))}
+                    className="w-full accent-violet-600 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                  />
+                </div>
+
+                {/* Ombre portée 3D */}
+                <div className="space-y-2 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-300 uppercase font-mono">Ombre Portée Réaliste</span>
+                    <input
+                      type="checkbox"
+                      checked={config.shadowEnabled}
+                      onChange={(e) => setConfig((p) => ({ ...p, shadowEnabled: e.target.checked }))}
+                      className="w-4 h-4 accent-violet-600 rounded cursor-pointer"
+                    />
+                  </div>
+                  {config.shadowEnabled && (
+                    <input
+                      type="range"
+                      min="10"
+                      max="100"
+                      value={config.shadowIntensity}
+                      onChange={(e) => setConfig((p) => ({ ...p, shadowIntensity: Number(e.target.value) }))}
+                      className="w-full accent-violet-600 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ══════════ ONGLET 4 : DÉFILEMENT DE PAGE & IMAGE ══════════ */}
+            {activeTab === 'content' && (
+              <div className="space-y-5 animate-fade-in">
+                {/* Défilement vertical de la capture */}
+                <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="font-bold text-white uppercase flex items-center gap-1.5">
+                      <Move className="w-3.5 h-3.5 text-violet-400" />
+                      <span>Défilement Web (Haut ↕ Bas)</span>
+                    </span>
+                    <span className="text-violet-400 font-bold">{config.cropOffsetY || 0}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={config.cropOffsetY || 0}
+                    onChange={(e) => setConfig((p) => ({ ...p, cropOffsetY: Number(e.target.value) }))}
+                    className="w-full accent-violet-600 cursor-pointer h-2 bg-zinc-800 rounded-lg"
+                  />
+                  <div className="flex justify-between text-[11px] text-zinc-400 font-mono">
+                    <span>▲ Haut de page</span>
+                    <span>Tarifs / Features</span>
+                    <span>Footer ▼</span>
+                  </div>
+                </div>
+
+                {/* Remplacement manuel de l'image */}
+                <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-violet-400" />
+                    <span className="text-xs font-bold text-white uppercase font-mono">Remplacer la capture</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400">
+                    Vous souhaitez utiliser une capture locale spécifique ou un mockup personnalisé ?
+                  </p>
+                  <input
+                    ref={replaceImgInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleReplaceScreenshot}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => replaceImgInputRef.current?.click()}
+                    className="w-full py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-white text-xs font-semibold border border-zinc-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ImageIcon className="w-4 h-4 text-zinc-400" />
+                    <span>Choisir un fichier PNG/JPG</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ══════════ ONGLET 5 : TEXTES, LOGOS & TECH STACK ══════════ */}
+            {activeTab === 'branding' && (
+              <div className="space-y-5 animate-fade-in">
+                {/* Calques de textes */}
+                <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white uppercase font-mono">Titres & Textes</span>
+                    <button
+                      type="button"
+                      onClick={handleAddText}
+                      className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold flex items-center gap-1 transition-all"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Ajouter</span>
+                    </button>
+                  </div>
+
+                  {config.texts.length === 0 ? (
+                    <p className="text-[11px] text-zinc-400">Aucun titre ajouté sur la composition.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {config.texts.map((txt) => (
+                        <div
+                          key={txt.id}
+                          onClick={() => setSelectedTextId(txt.id)}
+                          className={`p-2.5 rounded-xl border text-xs cursor-pointer flex items-center justify-between ${
+                            selectedTextId === txt.id ? 'bg-violet-950/40 border-violet-500 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-300'
+                          }`}
+                        >
+                          <span className="truncate max-w-[200px] font-medium">{txt.text}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteText(txt.id);
+                            }}
+                            className="text-zinc-500 hover:text-rose-400"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeText && (
+                    <div className="pt-2 border-t border-zinc-800 space-y-2">
+                      <input
+                        type="text"
+                        value={activeText.text}
+                        onChange={(e) => handleUpdateText(activeText.id, { text: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white"
+                        placeholder="Texte..."
+                      />
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={activeText.color}
+                          onChange={(e) => handleUpdateText(activeText.id, { color: e.target.value })}
+                          className="w-8 h-8 rounded border border-zinc-800 bg-transparent cursor-pointer"
+                        />
+                        <input
+                          type="range"
+                          min="16"
+                          max="64"
+                          value={activeText.fontSize}
+                          onChange={(e) => handleUpdateText(activeText.id, { fontSize: Number(e.target.value) })}
+                          className="flex-1 accent-violet-600"
+                        />
+                        <span className="text-xs font-mono text-zinc-400">{activeText.fontSize}px</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Badges Tech Stack Développeur */}
+                <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white uppercase font-mono">Tech Stack Développeur</span>
+                    <span className="text-[10px] text-zinc-400">{selectedTechIds.length} sélectionnés</span>
+                  </div>
+                  <TechStackPicker
+                    selectedTechIds={selectedTechIds}
+                    onChange={setSelectedTechIds}
+                    position={techPosition}
+                    onPositionChange={setTechPosition}
+                    themeStyle={techThemeStyle}
+                    onThemeStyleChange={setTechThemeStyle}
+                  />
+                </div>
+
+                {/* Logo Client / Watermark */}
+                <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white uppercase font-mono">Logo Personnalisé</span>
+                    <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                    <button
+                      type="button"
+                      onClick={() => logoInputRef.current?.click()}
+                      className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white text-[11px] font-bold flex items-center gap-1 transition-all"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Ajouter Logo</span>
+                    </button>
+                  </div>
+                  {config.logos.length > 0 && (
+                    <div className="flex gap-2 flex-wrap">
+                      {config.logos.map((lg) => (
+                        <div key={lg.id} className="relative p-1 rounded-lg bg-zinc-950 border border-zinc-800 group">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={lg.src} alt="Logo" className="w-10 h-10 object-contain" />
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLogo(lg.id)}
+                            className="absolute -top-1.5 -right-1.5 p-0.5 rounded-full bg-rose-600 text-white hover:bg-rose-500"
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {/* /activeMainTab==='mockup' wrapper close */}
+              </div>
+            )}
+
+            {/* ══════════ ONGLET PRINCIPAL 2 : FRAME & ARRIÈRE-PLANS (SHOTS.SO) ══════════ */}
+            {activeMainTab === 'frame' && (
+              <div className="space-y-6 animate-fade-in">
+                {/* 1. Format & Résolution du Canvas (Bouton Popover) */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                    Format & Dimensions du Canvas
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowFrameSizePopover(true)}
+                    className="w-full p-3 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-violet-500/60 flex items-center justify-between transition-all group shadow-sm hover:bg-zinc-850"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-7 rounded-lg bg-zinc-950 border border-zinc-750 flex items-center justify-center text-[10px] font-mono font-bold text-violet-400 group-hover:border-violet-500">
+                        {currentFramePreset.ratioLabel}
+                      </div>
+                      <div className="text-left">
+                        <div className="text-xs font-bold text-white group-hover:text-violet-300 transition-colors">
+                          {currentFramePreset.name}
+                        </div>
+                        <div className="text-[10px] text-zinc-500 font-mono">
+                          {currentFramePreset.width} × {currentFramePreset.height} • {currentFramePreset.category}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-zinc-400 group-hover:text-white">
+                      <span className="text-[10px] font-medium hidden sm:inline">Changer</span>
+                      <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
+                    </div>
+                  </button>
+                </div>
+
+                {/* 2. Effets & Watermark (FrameCapture.PNG) */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                    Effets & Filigrane
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Portrait Blur */}
+                    <button
+                      type="button"
+                      onClick={() => setPortraitBlur((v) => !v)}
+                      className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
+                        portraitBlur
+                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/40'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-xl ${portraitBlur ? 'bg-violet-600 text-white' : 'bg-zinc-800 text-zinc-300'}`}>
+                        <Camera className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">Portrait</div>
+                        <div className="text-[10px] text-zinc-500">{portraitBlur ? 'Activé' : 'Flou de champ'}</div>
+                      </div>
+                    </button>
+
+                    {/* Watermark */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveMainTab('mockup');
+                        setActiveTab('branding');
+                      }}
+                      className="p-3 rounded-2xl border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850 text-left flex items-center gap-2.5 transition-all"
+                    >
+                      <div className="p-2 rounded-xl bg-zinc-800 text-zinc-300">
+                        <Droplets className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">Watermark</div>
+                        <div className="text-[10px] text-zinc-500">Logo de marque</div>
+                      </div>
+                    </button>
+
+                    {/* Bg Effects */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const patterns: ('none' | 'grid' | 'dots' | 'mesh' | 'noise')[] = ['none', 'grid', 'dots', 'mesh', 'noise'];
+                        const currentIdx = patterns.indexOf(config.bgPattern || 'none');
+                        const nextPat = patterns[(currentIdx + 1) % patterns.length];
+                        setConfig((p) => ({ ...p, bgPattern: nextPat }));
+                      }}
+                      className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
+                        (config.bgPattern || 'none') !== 'none'
+                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/40'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-xl ${(config.bgPattern || 'none') !== 'none' ? 'bg-violet-600 text-white' : 'bg-zinc-800 text-zinc-300'}`}>
+                        <Grid className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">Bg Effects</div>
+                        <div className="text-[10px] text-zinc-500 capitalize">{config.bgPattern || 'Aucun'}</div>
+                      </div>
+                    </button>
+
+                    {/* VFX Glow */}
+                    <button
+                      type="button"
+                      onClick={() => setVfxGlow((v) => !v)}
+                      className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
+                        vfxGlow
+                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/40'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-xl ${vfxGlow ? 'bg-violet-600 text-white' : 'bg-zinc-800 text-zinc-300'}`}>
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">VFX Glow</div>
+                        <div className="text-[10px] text-zinc-500">{vfxGlow ? 'Activé' : 'Halo doux'}</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Scène & Ombres (Overlays Feuilles / Stores / Palmiers / Formes 3D) */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                    Scène & Ombres Portées (Overlays)
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSceneOverlay('none');
+                        setConfig((p) => ({ ...p, sceneOverlay: 'none' }));
+                      }}
+                      className={`p-2.5 rounded-2xl border text-center transition-all ${
+                        (sceneOverlay === 'none' || !sceneOverlay)
+                          ? 'bg-violet-600 text-white border-violet-500 font-bold shadow-md'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <EyeOff className="w-4 h-4 mx-auto mb-1 opacity-70" />
+                      <span className="text-[11px] font-medium">Aucun</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const overlays: SceneOverlayPreset[] = ['blinds', 'leaves', 'palm', 'window'];
+                        const next = sceneOverlay === 'none' ? 'palm' : overlays[(overlays.indexOf(sceneOverlay) + 1) % overlays.length] || 'blinds';
+                        setSceneOverlay(next);
+                        setConfig((p) => ({ ...p, sceneOverlay: next }));
+                      }}
+                      className={`p-2.5 rounded-2xl border text-center transition-all ${
+                        sceneOverlay !== 'none' && sceneOverlay !== 'shapes'
+                          ? 'bg-violet-600 text-white border-violet-500 font-bold shadow-md'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <Sun className="w-4 h-4 mx-auto mb-1 text-amber-300" />
+                      <span className="text-[11px] font-medium capitalize">
+                        {sceneOverlay === 'blinds' ? 'Stores' : sceneOverlay === 'leaves' ? 'Feuilles' : sceneOverlay === 'palm' ? 'Palmier' : sceneOverlay === 'window' ? 'Fenêtre' : 'Ombre'}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = sceneOverlay === 'shapes' ? 'none' : 'shapes';
+                        setSceneOverlay(next);
+                        setConfig((p) => ({ ...p, sceneOverlay: next }));
+                      }}
+                      className={`p-2.5 rounded-2xl border text-center transition-all ${
+                        sceneOverlay === 'shapes'
+                          ? 'bg-violet-600 text-white border-violet-500 font-bold shadow-md'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <Layers className="w-4 h-4 mx-auto mb-1 text-violet-300" />
+                      <span className="text-[11px] font-medium">Formes 3D</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. Arrière-Plans (FrameCapture.PNG, Frame1.PNG, Frame2.PNG) */}
+                <div className="space-y-4 pt-1">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                    Arrière-Plan
+                  </label>
+
+                  {/* 4 Boutons Rapides : Transparent, Couleur, Image, Flouté */}
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {/* Transparent */}
+                    <button
+                      type="button"
+                      onClick={() => setConfig((p) => ({ ...p, bgTransparent: !p.bgTransparent }))}
+                      className={`p-2 rounded-xl border text-center transition-all ${
+                        config.bgTransparent
+                          ? 'bg-violet-600 text-white border-violet-500 font-bold'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="w-4 h-4 mx-auto mb-1 border border-zinc-600 rounded-xs bg-[linear-gradient(45deg,#444_25%,transparent_25%),linear-gradient(-45deg,#444_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#444_75%)] bg-[size:6px_6px]" />
+                      <span className="text-[10px] block truncate">Transp.</span>
+                    </button>
+
+                    {/* Couleur Unie */}
+                    <label className="p-2 rounded-xl border text-center transition-all bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white cursor-pointer relative">
+                      <Pipette className="w-4 h-4 mx-auto mb-1 text-amber-400" />
+                      <span className="text-[10px] block truncate">Couleur</span>
+                      <input
+                        type="color"
+                        value={config.bgType === 'solid' ? config.bgValue : '#ffffff'}
+                        onChange={(e) =>
+                          setConfig((p) => ({
+                            ...p,
+                            bgType: 'solid',
+                            bgValue: e.target.value,
+                            bgTransparent: false,
+                          }))
+                        }
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      />
+                    </label>
+
+                    {/* Image personnalisée */}
+                    <button
+                      type="button"
+                      onClick={() => bgImgInputRef.current?.click()}
+                      className="p-2 rounded-xl border text-center transition-all bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
+                    >
+                      <ImageUp className="w-4 h-4 mx-auto mb-1 text-emerald-400" />
+                      <span className="text-[10px] block truncate">Image</span>
+                    </button>
+
+                    {/* Flouté Web */}
+                    <button
+                      type="button"
+                      onClick={() => setConfig((p) => ({ ...p, bgType: 'blurred-image', bgTransparent: false }))}
+                      className={`p-2 rounded-xl border text-center transition-all ${
+                        config.bgType === 'blurred-image' && !config.bgTransparent
+                          ? 'bg-violet-600 text-white border-violet-500 font-bold'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <Flame className="w-4 h-4 mx-auto mb-1 text-pink-400" />
+                      <span className="text-[10px] block truncate">Flou Web</span>
+                    </button>
+                  </div>
+
+                  {/* ── MAGIC ✨ (Généré par les couleurs réelles de la capture) ── */}
+                  {autoGradients.length > 0 && !config.bgTransparent && (
+                    <div className="p-3.5 rounded-2xl bg-gradient-to-br from-violet-950/40 via-zinc-900 to-zinc-900 border border-violet-500/30 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                          <span className="text-xs font-bold text-white">Magic ✨</span>
+                        </div>
+                        <span className="text-[10px] text-violet-300 font-mono">Auto IA</span>
+                      </div>
+                      <p className="text-[10px] text-zinc-400">
+                        Extrait les teintes dominantes de votre capture pour un accord parfait.
                       </p>
                       <div className="grid grid-cols-3 gap-2 pt-1">
                         {autoGradients.map((grad, i) => (
                           <button
                             key={i}
                             type="button"
-                            onClick={() => setConfig((p) => ({ ...p, bgType: 'gradient', bgValue: grad.value, bgTransparent: false }))}
-                            className={`h-11 rounded-xl relative transition-all group overflow-hidden border ${
-                              !config.bgTransparent && config.bgValue === grad.value
-                                ? 'ring-2 ring-violet-600 border-white shadow-md scale-105'
-                                : 'border-violet-200 hover:border-violet-300'
+                            onClick={() =>
+                              setConfig((p) => ({
+                                ...p,
+                                bgType: 'gradient',
+                                bgValue: grad.value,
+                                bgTransparent: false,
+                              }))
+                            }
+                            className={`h-11 rounded-xl border transition-all transform hover:scale-105 ${
+                              config.bgValue === grad.value ? 'ring-2 ring-violet-400 border-white' : 'border-zinc-700'
                             }`}
                             style={{ background: grad.value }}
                             title={grad.name}
-                          >
-                            {!config.bgTransparent && config.bgValue === grad.value && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                <Check className="w-4 h-4 text-white drop-shadow-sm stroke-[3]" />
-                              </div>
-                            )}
-                          </button>
+                          />
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* MODE DE FOND : WALLPAPER FLOUTÉ OU DÉGRADÉS */}
-                  <div className="space-y-2 p-3 rounded-2xl bg-sand-50 border border-sand-200">
-                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                      Type de Fond
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setConfig((p) => ({ ...p, bgType: 'gradient', bgTransparent: false }))}
-                        className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                          config.bgType === 'gradient' && !config.bgTransparent
-                            ? 'bg-violet-600 text-white border-violet-600 shadow-xs font-bold'
-                            : 'bg-white border-sand-200 text-stone-700 hover:bg-sand-100'
-                        }`}
-                      >
-                        <Palette className="w-3.5 h-3.5" />
-                        <span>Dégradé</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfig((p) => ({ ...p, bgType: 'blurred-image', bgTransparent: false }))}
-                        className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                          config.bgType === 'blurred-image' && !config.bgTransparent
-                            ? 'bg-violet-600 text-white border-violet-600 shadow-xs font-bold'
-                            : 'bg-white border-sand-200 text-stone-700 hover:bg-sand-100'
-                        }`}
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Wallpaper Flouté</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* MOTIF D'ARRIÈRE-PLAN (Style Shots.so / Screely) */}
+                  {/* ── COULEURS UNIES (32 nuances de Frame1.PNG) ── */}
                   {!config.bgTransparent && (
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                        Motifs de Fond Overlay
-                      </label>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {[
-                          { id: 'none', label: 'Aucun' },
-                          { id: 'grid', label: 'Grille' },
-                          { id: 'dots', label: 'Points' },
-                          { id: 'noise', label: 'Bruit' },
-                        ].map((pat) => (
-                          <button
-                            key={pat.id}
-                            type="button"
-                            onClick={() =>
-                              setConfig((p) => ({ ...p, bgPattern: pat.id as 'none' | 'grid' | 'dots' | 'noise' }))
-                            }
-                            className={`py-1.5 px-2 rounded-xl border text-[11px] font-semibold text-center transition-all ${
-                              (config.bgPattern || 'none') === pat.id
-                                ? 'bg-violet-600 text-white border-violet-600 font-bold shadow-xs'
-                                : 'bg-sand-50 border-sand-200 text-stone-600 hover:text-stone-900'
-                            }`}
-                          >
-                            {pat.label}
-                          </button>
-                        ))}
+                    <div className="space-y-2 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                          Couleurs Unies
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowAllSolidColors((v) => !v)}
+                          className="text-[10px] text-zinc-400 hover:text-white flex items-center gap-0.5"
+                        >
+                          <span>{showAllSolidColors ? 'Réduire' : 'Voir tout'}</span>
+                          {showAllSolidColors ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        </button>
                       </div>
-                    </div>
-                  )}
 
-                  {/* FONDS MAGIQUES AUTOMATIQUES EXTRAITS DE LA CAPTURE */}
-                  {autoGradients.length > 0 && !config.bgTransparent && config.bgType === 'gradient' && (
-                    <div className="space-y-2 p-3 rounded-2xl bg-violet-50/50 border border-violet-200">
-                      <div className="flex items-center gap-1.5">
-                        <Wand2 className="w-3.5 h-3.5 text-violet-600" />
-                        <label className="text-xs font-bold text-violet-900 uppercase tracking-wider font-mono">
-                          Fonds Magiques Auto
-                        </label>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {GRADIENT_PRESETS.map((grad, i) => (
+                      <div className="grid grid-cols-8 gap-1.5 pt-1">
+                        {(showAllSolidColors ? SOLID_COLORS : SOLID_COLORS.slice(0, 16)).map((c, i) => (
                           <button
                             key={i}
                             type="button"
-                            onClick={() => setConfig((p) => ({ ...p, bgType: 'gradient', bgValue: grad.value, bgTransparent: false }))}
-                            className={`h-10 rounded-xl relative transition-all group overflow-hidden border ${
-                              !config.bgTransparent && config.bgValue === grad.value
-                                ? 'ring-2 ring-violet-600 border-white shadow-md scale-105'
-                                : 'border-sand-300 hover:border-sand-400'
+                            onClick={() =>
+                              setConfig((p) => ({
+                                ...p,
+                                bgType: 'solid',
+                                bgValue: c,
+                                bgTransparent: false,
+                              }))
+                            }
+                            className={`w-7 h-7 rounded-lg border transition-all transform hover:scale-110 ${
+                              config.bgType === 'solid' && config.bgValue === c
+                                ? 'ring-2 ring-violet-500 border-white scale-105'
+                                : 'border-zinc-750'
                             }`}
-                            style={{ background: grad.value }}
-                            title={grad.name}
-                          >
-                            {!config.bgTransparent && config.bgValue === grad.value && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                <Check className="w-3.5 h-3.5 text-white drop-shadow-sm stroke-[3]" />
-                              </div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Options rapides de rendu */}
-                  <div className="grid grid-cols-2 gap-2.5 p-3 rounded-2xl bg-sand-50 border border-sand-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-stone-800">Détouré</span>
-                        <span className="text-[10px] text-stone-500 font-mono">Transparent</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setConfig((p) => ({ ...p, bgTransparent: !p.bgTransparent }))}
-                        className={`w-9 h-5 rounded-full transition-colors relative ${
-                          config.bgTransparent ? 'bg-violet-600' : 'bg-sand-300'
-                        }`}
-                      >
-                        <div
-                          className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                            config.bgTransparent ? 'translate-x-4.5' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between border-l border-sand-200 pl-3">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-stone-800">Grain Studio</span>
-                        <span className="text-[10px] text-stone-500 font-mono">Effet photo</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setConfig((p) => ({ ...p, bgNoise: !p.bgNoise }))}
-                        className={`w-9 h-5 rounded-full transition-colors relative ${
-                          config.bgNoise ? 'bg-violet-600' : 'bg-sand-300'
-                        }`}
-                      >
-                        <div
-                          className={`w-3.5 h-3.5 rounded-full bg-white transition-transform ${
-                            config.bgNoise ? 'translate-x-4.5' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ONGLET 3 : FILTRES CINÉMATIQUES & EXPORT VIDÉO */}
-              {activeTab === 'filter' && (
-                <div className="space-y-5 animate-fade-in">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                      Filtres Cinématiques Overlay
-                    </label>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {[
-                        { id: 'none' as SceneFilterType, label: 'Aucun' },
-                        { id: 'grain' as SceneFilterType, label: 'Bruit Film' },
-                        { id: 'vhs' as SceneFilterType, label: 'VHS' },
-                        { id: 'glitch' as SceneFilterType, label: 'Glitch' },
-                      ].map((fl) => (
-                        <button
-                          key={fl.id}
-                          type="button"
-                          onClick={() => setConfig((p) => ({ ...p, filterType: fl.id }))}
-                          className={`py-2 px-1 rounded-xl border text-xs font-semibold transition-all ${
-                            (config.filterType || 'none') === fl.id
-                              ? 'bg-violet-600 text-white border-violet-600 shadow-xs'
-                              : 'bg-sand-50 border-sand-200 text-stone-600 hover:text-stone-900'
-                          }`}
-                        >
-                          {fl.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {config.filterType && config.filterType !== 'none' && (
-                    <div className="space-y-2 p-3.5 rounded-2xl bg-sand-50 border border-sand-200">
-                      <div className="flex items-center justify-between text-xs font-mono">
-                        <span className="font-bold text-stone-700">Intensité du filtre</span>
-                        <span className="text-violet-600 font-bold">{config.filterIntensity || 40}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="10"
-                        max="100"
-                        value={config.filterIntensity || 40}
-                        onChange={(e) => setConfig((p) => ({ ...p, filterIntensity: Number(e.target.value) }))}
-                        className="w-full accent-violet-600 cursor-pointer h-1.5 bg-sand-200 rounded-lg"
-                      />
-                    </div>
-                  )}
-
-                  {/* PRESETS D'ANIMATION VIDÉO */}
-                  <div className="space-y-3 p-4 rounded-2xl bg-amber-50/60 border border-amber-200">
-                    <div className="flex items-center gap-2">
-                      <Video className="w-4 h-4 text-amber-600" />
-                      <span className="text-xs font-bold text-amber-900">Animation Vidéo (3s MP4/WebM)</span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { id: 'zoomIn' as VideoAnimPreset, label: 'Zoom Avant' },
-                        { id: 'zoomOut' as VideoAnimPreset, label: 'Zoom Arrière' },
-                        { id: 'panHorizontal' as VideoAnimPreset, label: 'Pan Horiz.' },
-                      ].map((vp) => (
-                        <button
-                          key={vp.id}
-                          type="button"
-                          onClick={() => setVideoPreset(vp.id)}
-                          className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all ${
-                            videoPreset === vp.id
-                              ? 'bg-amber-600 text-white shadow-xs'
-                              : 'bg-white text-amber-900 border border-amber-200'
-                          }`}
-                        >
-                          {vp.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleExportVideo}
-                      disabled={isExportingVideo}
-                      className="w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all disabled:opacity-50"
-                    >
-                      {isExportingVideo ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          <span>Génération de la vidéo (3s)...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Video className="w-3.5 h-3.5" />
-                          <span>Générer la vidéo animée</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* ONGLET 4 : GESTION DES TEXTES */}
-              {activeTab === 'text' && (
-                <div className="space-y-6 animate-fade-in">
-                  <button
-                    type="button"
-                    onClick={handleAddText}
-                    className="w-full py-2.5 px-4 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs"
-                  >
-                    <Plus className="w-4 h-4 text-violet-600" />
-                    <span>Ajouter un calque de texte</span>
-                  </button>
-
-                  {config.texts.length > 0 && (
-                    <div className="space-y-3">
-                      <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                        Calques de texte ({config.texts.length})
-                      </label>
-                      <div className="flex flex-col gap-2">
-                        {config.texts.map((t, index) => (
-                          <div
-                            key={t.id}
-                            onClick={() => setSelectedTextId(t.id)}
-                            className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                              selectedTextId === t.id
-                                ? 'bg-violet-50 border-violet-400 text-stone-900 ring-1 ring-violet-200'
-                                : 'bg-sand-50 border-sand-200 text-stone-600 hover:text-stone-900'
-                            }`}
-                          >
-                            <span className="text-xs truncate max-w-[180px] font-medium">
-                              {t.text || `Texte ${index + 1}`}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteText(t.id);
-                              }}
-                              className="text-stone-400 hover:text-rose-600 p-1"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {activeText && (
-                    <div className="p-4 rounded-2xl bg-sand-50 border border-sand-200 space-y-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-mono text-stone-600">Contenu du texte</label>
-                        <textarea
-                          rows={2}
-                          value={activeText.text}
-                          onChange={(e) => handleUpdateText(activeText.id, { text: e.target.value })}
-                          className="w-full p-2.5 rounded-xl bg-white border border-sand-200 text-xs text-stone-900 outline-none focus:border-violet-500 resize-none shadow-2xs"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-mono text-stone-600">Taille ({activeText.fontSize}px)</label>
-                          <input
-                            type="range"
-                            min="14"
-                            max="64"
-                            value={activeText.fontSize}
-                            onChange={(e) => handleUpdateText(activeText.id, { fontSize: Number(e.target.value) })}
-                            className="w-full accent-violet-600 h-1.5 bg-sand-200 rounded-lg"
+                            style={{ backgroundColor: c }}
+                            title={c}
                           />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-mono text-stone-600">Couleur</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              value={activeText.color}
-                              onChange={(e) => handleUpdateText(activeText.id, { color: e.target.value })}
-                              className="w-7 h-7 rounded cursor-pointer bg-transparent border-none"
-                            />
-                            <input
-                              type="text"
-                              value={activeText.color}
-                              onChange={(e) => handleUpdateText(activeText.id, { color: e.target.value })}
-                              className="w-full bg-white px-2 py-1 rounded text-xs font-mono text-stone-800 border border-sand-200"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ONGLET 5 : GESTION DES LOGOS & MARQUE BLANCHE WATERMARK */}
-              {activeTab === 'logo' && (
-                <div className="space-y-6 animate-fade-in">
-                  <input
-                    type="file"
-                    accept="image/png,image/svg+xml,image/jpeg,image/webp"
-                    ref={logoInputRef}
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                  />
-                  <input
-                    type="file"
-                    accept="image/png,image/svg+xml,image/jpeg,image/webp"
-                    ref={watermarkInputRef}
-                    onChange={handleWatermarkUpload}
-                    className="hidden"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => logoInputRef.current?.click()}
-                    className="w-full py-2.5 px-4 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs"
-                  >
-                    <Plus className="w-4 h-4 text-violet-600" />
-                    <span>Uploader un Logo sur la scène</span>
-                  </button>
-
-                  {/* CONFIGURATION WATERMARK / MARQUE BLANCHE */}
-                  <div className="p-3.5 rounded-2xl bg-sand-50 border border-sand-200 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-violet-600" />
-                        <span className="text-xs font-bold text-stone-900">Filigrane & Marque</span>
-                      </div>
-                      <span className="text-[10px] font-semibold text-violet-700 uppercase font-mono">
-                        Plan {userPlan}
-                      </span>
-                    </div>
-
-                    {isFreePlan ? (
-                      <p className="text-[11px] text-stone-500 leading-relaxed">
-                        Formule Free : Le filigrane discret &quot;Fait avec OmniMockup&quot; est inclus automatiquement. Passez Pro pour le retirer !
-                      </p>
-                    ) : isAgencePlan ? (
-                      <div className="space-y-2 pt-1 border-t border-sand-200">
-                        <p className="text-[11px] text-stone-600">
-                          Formule Agence : Uploadez votre propre logo en filigrane (marque blanche) :
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => watermarkInputRef.current?.click()}
-                          className="w-full py-2 px-3 rounded-xl bg-white hover:bg-sand-100 text-stone-700 border border-sand-200 font-semibold text-xs flex items-center justify-center gap-1.5"
-                        >
-                          <Upload className="w-3.5 h-3.5 text-violet-600" />
-                          <span>{config.customWatermarkUrl ? 'Modifier le filigrane' : 'Uploader mon logo de marque'}</span>
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-emerald-700 font-semibold">
-                        Formule Pro : Filigrane automatique supprimé ! Vos exports sont 100% propres sans filigrane.
-                      </p>
-                    )}
-                  </div>
-
-                  {config.logos.length > 0 && (
-                    <div className="space-y-3">
-                      <label className="text-xs font-bold text-stone-700 uppercase tracking-wider font-mono">
-                        Logos insérés ({config.logos.length})
-                      </label>
-                      <div className="flex flex-col gap-2">
-                        {config.logos.map((l, index) => (
-                          <div
-                            key={l.id}
-                            onClick={() => setSelectedLogoId(l.id)}
-                            className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                              selectedLogoId === l.id
-                                ? 'bg-violet-50 border-violet-400 text-stone-900 ring-1 ring-violet-200'
-                                : 'bg-sand-50 border-sand-200 text-stone-600 hover:text-stone-900'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={l.src} alt="logo preview" className="w-6 h-6 object-contain rounded" />
-                              <span className="text-xs font-medium">Logo #{index + 1}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteLogo(l.id);
-                              }}
-                              className="text-stone-400 hover:text-rose-600 p-1"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {activeLogo && (
-                    <div className="p-4 rounded-2xl bg-sand-50 border border-sand-200 space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-mono text-stone-600">Largeur ({activeLogo.width}px)</span>
-                          <span className="font-mono text-violet-600 font-bold">{activeLogo.width}px</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="30"
-                          max="240"
-                          value={activeLogo.width}
-                          onChange={(e) => handleUpdateLogo(activeLogo.id, { width: Number(e.target.value) })}
-                          className="w-full accent-violet-600 h-1.5 bg-sand-200 rounded-lg"
-                        />
-                      </div>
+                  {/* ── CATÉGORIES DE WALLPAPERS (Frame1.PNG & Frame2.PNG) ── */}
+                  {!config.bgTransparent && (
+                    <div className="space-y-4">
+                      {BACKGROUND_CATEGORIES.map((cat) => (
+                        <div key={cat.id} className="space-y-2 p-3 rounded-2xl bg-zinc-900/90 border border-zinc-800">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-white capitalize">{cat.name}</span>
+                              {cat.badge && (
+                                <span className="px-1.5 py-0.2 rounded-md bg-violet-600/30 border border-violet-500/40 text-violet-300 text-[9px] font-bold">
+                                  {cat.badge}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-zinc-500 font-mono">
+                              {cat.presets.length} presets
+                            </span>
+                          </div>
 
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-mono text-stone-600">Opacité</span>
-                          <span className="font-mono text-violet-600 font-bold">{Math.round(activeLogo.opacity * 100)}%</span>
+                          <div className="grid grid-cols-4 gap-2 pt-1">
+                            {cat.presets.map((preset) => (
+                              <button
+                                key={preset.id}
+                                type="button"
+                                onClick={() =>
+                                  setConfig((p) => ({
+                                    ...p,
+                                    bgType: preset.type as any,
+                                    bgValue: preset.value,
+                                    bgTransparent: false,
+                                  }))
+                                }
+                                className={`h-12 rounded-xl border transition-all transform hover:scale-105 relative overflow-hidden group flex items-end p-1 ${
+                                  config.bgValue === preset.value
+                                    ? 'ring-2 ring-violet-400 border-white shadow-lg'
+                                    : 'border-zinc-750 hover:border-zinc-600'
+                                }`}
+                                style={{ background: preset.value }}
+                                title={preset.name}
+                              >
+                                <span className="text-[8px] font-bold text-white/90 drop-shadow-md truncate max-w-full opacity-80 group-hover:opacity-100">
+                                  {preset.name.split(' ')[0]}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                        <input
-                          type="range"
-                          min="10"
-                          max="100"
-                          value={Math.round(activeLogo.opacity * 100)}
-                          onChange={(e) => handleUpdateLogo(activeLogo.id, { opacity: Number(e.target.value) / 100 })}
-                          className="w-full accent-violet-600 h-1.5 bg-sand-200 rounded-lg"
-                        />
-                      </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Pied du panneau de contrôle */}
-            <div className="pt-4 border-t border-sand-200 space-y-2">
-              <button
-                type="button"
-                onClick={handleExportPng}
-                disabled={isExporting}
-                className="w-full py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs sm:text-sm shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isExporting ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Rendu {config.exportScale || 2}x en cours...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    <span>Télécharger la composition ({config.exportScale || 2}x PNG)</span>
-                  </>
-                )}
-              </button>
-            </div>
+            {/* Inputs fichiers cachés pour l'upload d'image et de fond */}
+            <input
+              ref={replaceImgInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleReplaceScreenshot}
+              className="hidden"
+            />
+            <input
+              ref={bgImgInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleBgImageUpload}
+              className="hidden"
+            />
+
           </div>
-        </div>
+        </aside>
       </div>
+
+      {/* MODALE DU KIT DE VENTE DÉVELOPPEUR IA */}
+      <DeveloperSalesKitModal
+        isOpen={salesKitOpen}
+        onClose={() => setSalesKitOpen(false)}
+        defaultProjectUrl={captureItem.url}
+        defaultProjectTitle={captureItem.title}
+        selectedTechIds={selectedTechIds}
+      />
+
+      {/* POPOVER FORMAT DE FRAME */}
+      {showFrameSizePopover && (
+        <FrameSizePopover
+          currentAspectRatio={config.aspectRatio}
+          currentWidth={currentFramePreset.width}
+          currentHeight={currentFramePreset.height}
+          onSelectPreset={(p) => {
+            setCurrentFramePreset(p);
+            setConfig((prev) => ({ ...prev, aspectRatio: p.ratioId }));
+            setShowFrameSizePopover(false);
+          }}
+          onCustomSize={(w, h) => {
+            const customPreset: FramePresetOption = {
+              id: `custom-${w}x${h}`,
+              name: `Personnalisé (${w}×${h})`,
+              category: 'Custom',
+              ratioId: 'libre',
+              ratioLabel: `${w}:${h}`,
+              width: w,
+              height: h,
+              ratioClass: 'aspect-auto',
+            };
+            setCurrentFramePreset(customPreset);
+            setConfig((prev) => ({ ...prev, aspectRatio: 'libre' }));
+            setShowFrameSizePopover(false);
+          }}
+          onClose={() => setShowFrameSizePopover(false)}
+        />
+      )}
+
+      {/* MODALE TEMPLATES */}
+      {showTemplatesModal && (
+        <TemplatesModal
+          onSelectTemplate={(tmpl) => {
+            handleApplyTemplate(tmpl);
+            setShowTemplatesModal(false);
+          }}
+          onClose={() => setShowTemplatesModal(false)}
+        />
+      )}
     </div>
   );
 };

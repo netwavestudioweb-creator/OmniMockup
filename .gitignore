@@ -39,3 +39,6 @@ next-env.d.ts
 # scraped reference
 Shots/
 
+# screenshots
+*.PNG
+*.png

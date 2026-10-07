@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { MockupType, DeviceTheme, DeviceStyle, CornerRadius } from '@/types/analyzer';
-import { Lock, ExternalLink } from 'lucide-react';
+import { MockupType, DeviceTheme, DeviceStyle, CornerRadius, BrowserStylePreset } from '@/types/analyzer';
+import { Lock, ExternalLink, Globe, RotateCw, ArrowLeft, ArrowRight, Plus } from 'lucide-react';
 
 interface MockupFrameProps {
   type: MockupType;
@@ -13,6 +13,7 @@ interface MockupFrameProps {
   faviconUrl?: string;
   theme?: DeviceTheme;
   styleVariant?: DeviceStyle;
+  browserStyle?: BrowserStylePreset;
   cornerRadius?: CornerRadius;
   cropOffsetY?: number;
   onClickImage?: () => void;
@@ -27,10 +28,17 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
   faviconUrl,
   theme = 'light',
   styleVariant = 'default',
+  browserStyle,
   cornerRadius = 'curved',
   cropOffsetY = 0,
   onClickImage,
 }) => {
+  const [imageError, setImageError] = React.useState(false);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [screenshotBase64]);
+
   // Extraction dynamique du domaine si non fourni
   const cleanDomain = React.useMemo(() => {
     if (domainName) return domainName;
@@ -62,10 +70,40 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
       ? 'rounded-2xl sm:rounded-[24px]'
       : 'rounded-lg sm:rounded-xl';
 
-  // 1. Cadre Navigateur Desktop (avec Dark / Light / Glass / Inset)
+  // Rendu unifié et sécurisé de l'écran (avec fallback anti-écran vert)
+  const renderScreen = (customClasses = '') => {
+    if (imageError || !screenshotBase64) {
+      return (
+        <div className={`w-full h-full flex flex-col items-center justify-center p-6 bg-zinc-950 text-zinc-300 text-center select-none ${customClasses}`}>
+          <div className="w-12 h-12 rounded-2xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-3">
+            <Globe className="w-6 h-6 text-violet-400" />
+          </div>
+          <span className="font-semibold text-sm text-white mb-1 truncate max-w-[240px]">{cleanDomain}</span>
+          <span className="text-xs text-zinc-400 max-w-xs">
+            Aperçu non disponible ou erreur de chargement.
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={screenshotBase64}
+        alt={title || url}
+        className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01] ${customClasses}`}
+        style={{ objectPosition: `center ${cropOffsetY}%` }}
+        onError={() => setImageError(true)}
+      />
+    );
+  };
+
+  // 1. Cadre Navigateur Desktop (Safari, Chrome, Arc - Light / Dark / Glass)
   if (type === 'browser') {
-    const isDark = theme === 'dark';
+    const isDark = browserStyle ? browserStyle.includes('dark') : theme === 'dark';
     const isGlass = styleVariant === 'glass';
+    const isChrome = browserStyle === 'chrome-light' || browserStyle === 'chrome-dark';
+    const isArc = browserStyle === 'arc-light' || browserStyle === 'arc-dark';
 
     return (
       <div
@@ -74,79 +112,191 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
             ? isDark
               ? 'bg-stone-900/60 backdrop-blur-xl border-white/10 shadow-2xl text-stone-200'
               : 'bg-white/60 backdrop-blur-xl border-white/60 shadow-2xl text-stone-800'
+            : isArc
+            ? isDark
+              ? 'bg-[#121316] border-zinc-700/60 shadow-2xl text-zinc-200 ring-1 ring-violet-500/20'
+              : 'bg-[#f4f3ef] border-zinc-300 shadow-2xl text-zinc-800 ring-1 ring-violet-300/30'
             : isDark
             ? 'bg-[#18181b] border-stone-800 shadow-2xl text-stone-200'
             : 'bg-white border-stone-200/90 shadow-xl text-stone-800'
         }`}
       >
-        {/* Barre d'en-tête de fenêtre macOS moderne */}
-        <div
-          className={`h-10 px-4 border-b flex items-center justify-between transition-colors ${
-            isGlass
-              ? isDark
-                ? 'bg-black/30 border-white/10'
-                : 'bg-white/40 border-stone-200/50'
-              : isDark
-              ? 'bg-[#202024] border-stone-800'
-              : 'bg-stone-100/90 border-stone-200'
-          }`}
-        >
-          {/* Boutons rouge / jaune / vert Apple */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56] shadow-xs" />
-            <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e] shadow-xs" />
-            <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f] shadow-xs" />
-          </div>
+        {/* ── DESIGN ARC BROWSER ── */}
+        {isArc ? (
+          <div
+            className={`h-11 px-3.5 border-b flex items-center justify-between transition-colors ${
+              isDark ? 'bg-[#16171c] border-zinc-800' : 'bg-[#ece9e3] border-zinc-300/80'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+              </div>
+              <div className="w-px h-3.5 bg-zinc-700/40 mx-1" />
+              <div className="flex items-center gap-1 text-zinc-400">
+                <ArrowLeft className="w-3 h-3" />
+                <ArrowRight className="w-3 h-3 opacity-40" />
+              </div>
+            </div>
 
-          {/* Barre d'adresse URL avec Favicon */}
-          <div className="flex-1 max-w-sm mx-3">
-            <div
-              className={`flex items-center justify-between px-3 py-1 rounded-md text-[11px] font-mono shadow-2xs border transition-colors ${
-                isDark
-                  ? 'bg-stone-900/80 border-stone-700/60 text-stone-300'
-                  : 'bg-white border-stone-200 text-stone-600'
-              }`}
-            >
-              <span className="flex items-center gap-1.5 truncate">
-                <Lock className="w-3 h-3 text-emerald-500 shrink-0" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={faviconSrc}
-                  alt="Favicon"
-                  className="w-3.5 h-3.5 rounded-xs shrink-0 object-contain"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-                <span className="truncate font-medium">{cleanDomain}</span>
-              </span>
-              {url && (
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className={`ml-2 transition-colors ${
-                    isDark ? 'text-stone-400 hover:text-stone-100' : 'text-stone-400 hover:text-stone-700'
-                  }`}
-                  title="Ouvrir le site original"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
+            <div className="flex-1 max-w-xs mx-3">
+              <div
+                className={`flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono shadow-xs border transition-colors ${
+                  isDark
+                    ? 'bg-zinc-900/90 border-zinc-750 text-zinc-200'
+                    : 'bg-white border-zinc-300 text-zinc-700'
+                }`}
+              >
+                <Lock className="w-3 h-3 text-violet-400 shrink-0" />
+                <span className="truncate font-semibold">{cleanDomain}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 text-[10px] font-mono font-bold text-violet-400">
+              <span>ARC</span>
             </div>
           </div>
-
-          <div className="w-8 flex justify-end shrink-0">
-            <span
-              className={`text-[10px] font-mono uppercase font-semibold tracking-wider ${
-                isDark ? 'text-stone-400' : 'text-stone-400'
+        ) : isChrome ? (
+          /* ── DESIGN GOOGLE CHROME ── */
+          <div>
+            {/* Onglet Chrome supérieur */}
+            <div
+              className={`h-9 px-3 pt-1.5 flex items-center justify-between border-b ${
+                isDark ? 'bg-[#1e1f22] border-zinc-850' : 'bg-[#dee1e6] border-zinc-300'
               }`}
             >
-              Web
-            </span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 mr-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+                </div>
+
+                {/* Onglet actif */}
+                <div
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-t-lg text-[11px] font-medium shadow-xs border-t border-x ${
+                    isDark
+                      ? 'bg-[#2b2d31] border-zinc-750 text-white'
+                      : 'bg-white border-zinc-300 text-zinc-800'
+                  }`}
+                >
+                  <img
+                    src={faviconSrc}
+                    alt="Favicon"
+                    className="w-3 h-3 rounded-xs shrink-0 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                  <span className="truncate max-w-[140px] font-medium">{title || cleanDomain}</span>
+                </div>
+
+                <div className="p-0.5 rounded text-zinc-400 hover:text-zinc-200">
+                  <Plus className="w-3 h-3" />
+                </div>
+              </div>
+            </div>
+
+            {/* Barre de navigation et Omnibox */}
+            <div
+              className={`h-9 px-3 border-b flex items-center gap-2 ${
+                isDark ? 'bg-[#2b2d31] border-zinc-800' : 'bg-white border-zinc-200'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 text-zinc-400">
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3.5 h-3.5 opacity-40" />
+                <RotateCw className="w-3 h-3" />
+              </div>
+
+              <div className="flex-1 mx-1">
+                <div
+                  className={`flex items-center justify-between px-3 py-0.5 rounded-full text-[11px] font-mono border ${
+                    isDark
+                      ? 'bg-[#1e1f22] border-zinc-750 text-zinc-200'
+                      : 'bg-[#f1f3f4] border-transparent text-zinc-700'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <Lock className="w-3 h-3 text-emerald-500 shrink-0" />
+                    <span className="truncate">{cleanDomain}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          /* ── DESIGN APPLE SAFARI STANDARD ── */
+          <div
+            className={`h-10 px-4 border-b flex items-center justify-between transition-colors ${
+              isGlass
+                ? isDark
+                  ? 'bg-black/30 border-white/10'
+                  : 'bg-white/40 border-stone-200/50'
+                : isDark
+                ? 'bg-[#202024] border-stone-800'
+                : 'bg-stone-100/90 border-stone-200'
+            }`}
+          >
+            {/* Boutons rouge / jaune / vert Apple */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56] shadow-xs" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e] shadow-xs" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f] shadow-xs" />
+            </div>
+
+            {/* Barre d'adresse URL avec Favicon */}
+            <div className="flex-1 max-w-sm mx-3">
+              <div
+                className={`flex items-center justify-between px-3 py-1 rounded-md text-[11px] font-mono shadow-2xs border transition-colors ${
+                  isDark
+                    ? 'bg-stone-900/80 border-stone-700/60 text-stone-300'
+                    : 'bg-white border-stone-200 text-stone-600'
+                }`}
+              >
+                <span className="flex items-center gap-1.5 truncate">
+                  <Lock className="w-3 h-3 text-emerald-500 shrink-0" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={faviconSrc}
+                    alt="Favicon"
+                    className="w-3.5 h-3.5 rounded-xs shrink-0 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                  <span className="truncate font-medium">{cleanDomain}</span>
+                </span>
+                {url && (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className={`ml-2 transition-colors ${
+                      isDark ? 'text-stone-400 hover:text-stone-100' : 'text-stone-400 hover:text-stone-700'
+                    }`}
+                    title="Ouvrir le site original"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <div className="w-8 flex justify-end shrink-0">
+              <span
+                className={`text-[10px] font-mono uppercase font-semibold tracking-wider ${
+                  isDark ? 'text-stone-400' : 'text-stone-400'
+                }`}
+              >
+                Web
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Écran Navigateur avec image */}
         <div
@@ -155,13 +305,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
           }`}
           onClick={onClickImage}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={screenshotBase64}
-            alt={title || url}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
-            style={{ objectPosition: `center ${cropOffsetY}%` }}
-          />
+          {renderScreen()}
         </div>
       </div>
     );
@@ -186,13 +330,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
             className="relative aspect-[16/10] bg-black overflow-hidden cursor-pointer group"
             onClick={onClickImage}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={screenshotBase64}
-              alt={title || url}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
-              style={{ objectPosition: `center ${cropOffsetY}%` }}
-            />
+            {renderScreen()}
             {/* Reflet vitré Apple */}
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none" />
           </div>
@@ -223,13 +361,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
             className="relative rounded-[20px] sm:rounded-[26px] overflow-hidden aspect-[4/3] bg-black cursor-pointer group shadow-inner"
             onClick={onClickImage}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={screenshotBase64}
-              alt={title || url}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
-              style={{ objectPosition: `center ${cropOffsetY}%` }}
-            />
+            {renderScreen()}
             {/* Barre de retour iPad */}
             <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 z-20 w-32 h-1 bg-white/40 rounded-full backdrop-blur-md" />
           </div>
@@ -262,13 +394,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
             </div>
 
             {/* Screenshot dans l'écran de l'iPhone */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={screenshotBase64}
-              alt={title || url}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-              style={{ objectPosition: `center ${cropOffsetY}%` }}
-            />
+            {renderScreen('group-hover:scale-[1.02]')}
 
             {/* Barre d'accueil tactile */}
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 w-28 h-1 bg-white/40 rounded-full backdrop-blur-md" />
@@ -294,13 +420,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
             className="relative aspect-[16/9] bg-black overflow-hidden cursor-pointer group"
             onClick={onClickImage}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={screenshotBase64}
-              alt={title || url}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
-              style={{ objectPosition: `center ${cropOffsetY}%` }}
-            />
+            {renderScreen()}
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-transparent pointer-events-none" />
           </div>
 
@@ -341,13 +461,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
               className="relative rounded-[30px] sm:rounded-[34px] overflow-hidden aspect-[4/5] bg-black cursor-pointer group shadow-inner"
               onClick={onClickImage}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={screenshotBase64}
-                alt={title || url}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                style={{ objectPosition: `center ${cropOffsetY}%` }}
-              />
+              {renderScreen('group-hover:scale-[1.02]')}
             </div>
           </div>
 
@@ -371,13 +485,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
       onClick={onClickImage}
     >
       <div className={`relative aspect-[16/10] overflow-hidden ${innerRadiusClass} bg-stone-100 group`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={screenshotBase64}
-          alt={title || url}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
-          style={{ objectPosition: `center ${cropOffsetY}%` }}
-        />
+        {renderScreen()}
       </div>
     </div>
   );

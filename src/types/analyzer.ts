@@ -9,13 +9,22 @@ export type VideoAnimPreset = 'zoomIn' | 'zoomOut' | 'panHorizontal';
 export type BrowserStylePreset = 'safari-light' | 'safari-dark' | 'chrome-light' | 'chrome-dark' | 'arc-light' | 'arc-dark';
 export type ShadowPreset = 'none' | 'spread' | 'realistic' | 'adaptive';
 
+export type SceneOverlayPreset = 'none' | 'blinds' | 'leaves' | 'palm' | 'window' | 'shapes';
+
 export interface SceneConfig {
   aspectRatio: SceneAspectRatio;
-  bgType: 'solid' | 'gradient' | 'blurred-image';
+  customWidth?: number;
+  customHeight?: number;
+  bgType: 'solid' | 'gradient' | 'blurred-image' | 'texture' | 'glass';
   bgValue: string;
   bgPattern?: 'none' | 'grid' | 'dots' | 'mesh' | 'noise';
   bgTransparent?: boolean;
   bgNoise?: boolean;
+  sceneOverlay?: SceneOverlayPreset;
+  portraitBlur?: boolean;
+  vfxGlow?: boolean;
+  uiScale?: number; // 50 to 150%
+  windowFormat?: 'auto' | '16:9' | 'square' | 'fullscreen';
   mockupType: MockupType;
   deviceTheme?: DeviceTheme;
   deviceStyle?: DeviceStyle;
@@ -145,7 +154,21 @@ export interface CaptureResponse {
   totalExecutionTimeMs: number;
 }
 
-export type SceneAspectRatio = '1:1' | '16:9' | 'libre' | '9:16' | '4:3' | '2:3' | '1.91:1';
+export type SceneAspectRatio =
+  | '1:1'
+  | '16:9'
+  | 'libre'
+  | '9:16'
+  | '4:3'
+  | '2:3'
+  | '3:2'
+  | '5:4'
+  | '4:5'
+  | '3:4'
+  | '1.91:1'
+  | '3:1'
+  | '10:21'
+  | 'custom';
 
 export interface SceneTextLayer {
   id: string;

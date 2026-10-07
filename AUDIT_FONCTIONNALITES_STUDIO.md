@@ -73,9 +73,24 @@
 
 ---
 
+### 5. Axe Nouveautés Avancées Studio (Inspiré de Shots.so & Captures)
+* **Système Double Onglet Mockup / Frame :**
+  * `Mockup` : Gestion de l'appareil, mode Duo (Mac + Phone), styles de navigateur réels (**Safari**, **Chrome** et **Arc** en versions claire et sombre), slider d'échelle UI (50% à 150%), zone de drop intuitive et sélecteur Magic Preset `< >`.
+  * `Frame` : Contrôle total du canevas, popover de formats et ratios ultra-complet (16:9, 3:2, 4:3, Instagram, Twitter/X, YouTube, Pinterest, Dribbble, App Store 6.5"/5.5"/12.9", dimensions personnalisées W×H).
+* **Effets & Scénographie Réaliste :**
+  * **Overlays d'Ombres Naturelles :** Stores vénitiens (*blinds*), feuilles tropicales (*leaves*), palmiers (*palm*), verrière d'atelier (*window*) et formes 3D.
+  * **Effets Visuels :** Mode Portrait (flou de profondeur de champ), VFX Glow (halo lumineux doux), filigrane de marque et motifs dynamiques (grille, points, grain, mesh).
+* **Bibliothèque de Fonds & Wallpapers :**
+  * 32 nuances unies minimalistes avec accordéon compact.
+  * 9 collections de dégradés et matières : *Gradient*, *Glass (By Paper)*, *Cosmic*, *Mystic*, *Desktop* (macOS Sonoma, Monterey, Tahoe), *Abstract*, *Earth*, *Radiant* et *Textures* (bois scandinave, cuir noble, bouleau).
+* **Modale Complète de Templates :**
+  * Préréglages de mise en scène en 1 clic classés par catégories (*Product promotion*, *Realistic Desktop*, *Shadow Overlays*, *UI Showcase*) avec filtres Tous / Images / Animés.
+
+---
+
 ## 🎯 RÉSUMÉ EXÉCUTIF
 
-* **Total de fonctionnalités promises auditées :** 17
-* **Fonctionnalités présentes et fonctionnelles :** 17 (100%)
+* **Total de fonctionnalités promises auditées :** 22
+* **Fonctionnalités présentes et fonctionnelles :** 22 (100%)
 * **Fonctionnalités manquantes ou fausses :** 0 (0%)
-* **Verdict :** **Aucune fausse promesse.** L'ensemble des fonctionnalités mises en avant sur la page d'accueil correspond rigoureusement à des implémentations actives et testées dans le code source du Studio.
+* **Verdict :** **Studio Haute Performance 100% Conforme & Enrichi.** Toutes les fonctionnalités demandées à partir des captures de référence sont opérationnelles, sans aucune erreur TypeScript ni dégradation du design initial.

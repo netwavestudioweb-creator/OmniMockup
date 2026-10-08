@@ -93,7 +93,7 @@ const PLANS: PricingPlan[] = [
     monthlyPriceFcfa: 3900,
     annualPriceFcfa: 3250, // 39 000 FCFA / an
     savingsAnnuallyFcfa: 'Économisez 7 800 FCFA (2 mois offerts)',
-    savingsAnnuallyEur: 'Économisez 10€ / an (2 mois offerts)',
+    savingsAnnuallyEur: 'Économisez 12€ / an (2 mois offerts)',
     description: 'Pour les freelances, devs et créateurs qui veulent des mockups impeccables sans filigrane.',
     isPopular: true,
     ctaText: 'Débloquer le forfait Pro',
@@ -121,7 +121,7 @@ const PLANS: PricingPlan[] = [
     monthlyPriceFcfa: 12900,
     annualPriceFcfa: 10750, // 129 000 FCFA / an
     savingsAnnuallyFcfa: 'Économisez 25 800 FCFA (2 mois offerts)',
-    savingsAnnuallyEur: 'Économisez 50€ / an (2 mois offerts)',
+    savingsAnnuallyEur: 'Économisez 60€ / an (2 mois offerts)',
     description: 'La suite complète pour les agences web, équipes produit et studios créatifs.',
     isPopular: false,
     ctaText: 'Choisir Studio Agence',
@@ -218,7 +218,7 @@ export default function PricingPage() {
   const router = useRouter();
   const { user, profile } = useUser();
 
-  const [paymentMethod, setPaymentMethod] = useState<'momo' | 'stripe' | 'flutterwave'>('momo');
+  const [paymentMethod, setPaymentMethod] = useState<'momo' | 'stripe' | 'flutterwave'>('stripe');
   const [isAnnual, setIsAnnual] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -387,7 +387,7 @@ export default function PricingPage() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-sand-100 text-stone-600 hover:text-stone-900 border border-sand-200 text-xs font-medium transition-all shadow-2xs"
           >
             <ArrowLeft className="w-3.5 h-3.5 text-stone-500" />
-            <span>Retour au Studio</span>
+            <span>Retour à l&apos;accueil</span>
           </Link>
 
           <div className="hidden sm:flex items-center gap-2 text-xs text-stone-500">
@@ -407,14 +407,14 @@ export default function PricingPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold uppercase tracking-wider bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-md border border-amber-400/30 flex items-center gap-1">
                     <Sparkles className="w-3 h-3 text-amber-300" />
-                    Offre de Lancement Afrique & Monde
+                    Offre de Lancement Pro
                   </span>
                   <span className="text-xs text-stone-300 hidden md:flex items-center gap-1">
                     <Clock className="w-3 h-3 text-violet-300" /> Accès immédiat
                   </span>
                 </div>
                 <h4 className="text-xs sm:text-sm font-semibold text-white mt-1">
-                  Passez au plan Pro à <span className="text-amber-300 font-extrabold">3 900 FCFA / mois</span> seulement, ou commencez gratuitement sans aucune carte !
+                  Passez au plan Pro à <span className="text-amber-300 font-extrabold">5€ / mois</span> seulement (ou 4€/mois en annuel), ou commencez gratuitement sans carte !
                 </h4>
               </div>
             </div>
@@ -490,6 +490,22 @@ export default function PricingPage() {
             <div className="p-1.5 rounded-2xl bg-white border border-sand-300 shadow-xs flex flex-wrap items-center justify-center gap-1.5">
               <button
                 type="button"
+                onClick={() => setPaymentMethod('stripe')}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  paymentMethod === 'stripe'
+                    ? 'bg-stone-900 text-white shadow-md ring-2 ring-violet-500/30 scale-[1.02]'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                <CreditCard className="w-4 h-4 text-current" />
+                <span>Carte Bancaire &amp; Stripe (Euro)</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-violet-600 text-white font-black">
+                  €
+                </span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setPaymentMethod('momo')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                   paymentMethod === 'momo'
@@ -499,25 +515,9 @@ export default function PricingPage() {
               >
                 <span className="text-base">🇧🇯</span>
                 <Smartphone className="w-4 h-4 text-stone-950" />
-                <span>MTN Mobile Money Bénin & Afrique</span>
+                <span>MTN Mobile Money Afrique</span>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-stone-900 text-amber-300 font-black">
                   FCFA
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('stripe')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                  paymentMethod === 'stripe'
-                    ? 'bg-stone-900 text-white shadow-md ring-2 ring-violet-500/30 scale-[1.02]'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                <CreditCard className="w-4 h-4 text-current" />
-                <span>Carte Bancaire Internationale</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sand-200 text-stone-800 font-semibold">
-                  € / $
                 </span>
               </button>
 
@@ -648,14 +648,18 @@ export default function PricingPage() {
                     <span className="text-3xl sm:text-4xl font-black tracking-tight text-stone-900 font-mono">
                       {priceToShow}
                     </span>
-                    {plan.monthlyPriceFcfa > 0 && (
+                    {plan.id === 'free' ? (
                       <span className="text-xs font-semibold text-stone-500 font-sans">
-                        / mois {isAnnual ? '(facturé à l’année)' : ''}
+                        / pour toujours
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold text-stone-500 font-sans">
+                        / mois {isAnnual ? (isFcfa ? '(facturé à l’année)' : `(facturé ${plan.annualPriceEur * 12}€ / an)`) : ''}
                       </span>
                     )}
                   </div>
 
-                  {isAnnual && plan.monthlyPriceFcfa > 0 && (
+                  {isAnnual && plan.id !== 'free' && (
                     <p className="text-xs font-bold text-emerald-700 -mt-3 mb-4 flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>{savingsToShow}</span>
@@ -849,7 +853,7 @@ export default function PricingPage() {
                 Économie Réalisée
               </p>
               <div className="text-3xl font-black text-white font-mono">
-                150 000+ FCFA
+                {paymentMethod === 'momo' ? '150 000+ FCFA' : '350€+ / an'}
               </div>
               <p className="text-[11px] text-stone-200 leading-tight">
                 vs un graphiste externe ou une agence pour préparer vos captures de pitch.

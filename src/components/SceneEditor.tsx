@@ -72,6 +72,12 @@ import {
   ShieldCheck,
   Star,
   BadgeCheck,
+  User as UserIcon,
+  LogOut,
+  CreditCard,
+  Shield,
+  Zap,
+  Crown,
 } from 'lucide-react';
 import { TechStackPicker, AVAILABLE_TECHS } from './TechStackPicker';
 import { DeveloperSalesKitModal } from './DeveloperSalesKitModal';
@@ -205,9 +211,21 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   initialMockup = 'browser',
   onClose,
 }) => {
-  const { profile } = useUser();
+  const { user, profile, signOut, isPremiumUser } = useUser();
   const userPlan = profile?.plan || 'free';
   const isFreePlan = userPlan === 'free';
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const userDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setUserDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Configuration d'état de la scène
   const [config, setConfig] = useState<SceneConfig>({
@@ -1051,14 +1069,17 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       )}
 
       {!presentationMode && (
-        <header className="h-13 sm:h-14 px-4 sm:px-6 border-b border-zinc-850/80 bg-[#07080c]/95 backdrop-blur-xl flex items-center justify-between gap-3 z-30 shrink-0">
-          {/* Gauche : Retour, Marque et Site Cible */}
-          <div className="flex items-center gap-3">
+        <header className="h-14 sm:h-16 px-3 sm:px-5 lg:px-6 border-b border-zinc-800/90 bg-[#08090e]/95 backdrop-blur-2xl flex items-center justify-between gap-2.5 z-30 shrink-0 relative select-none">
+          {/* Ligne d'accentuation subtile en haut */}
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent pointer-events-none" />
+
+          {/* ── GAUCHE : Quitter, Marque OmniMockup, Site Cible & Templates ── */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
             {onClose && (
               <button
                 type="button"
                 onClick={onClose}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800 text-xs font-semibold transition-all active:scale-95"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-850/90 border border-zinc-800/80 hover:border-zinc-700 text-xs font-semibold transition-all active:scale-95 shrink-0"
                 title="Quitter le studio et revenir à l'accueil"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -1066,57 +1087,63 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               </button>
             )}
 
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-xl bg-violet-600 text-white shadow-lg shadow-violet-600/30">
-                <Sparkles className="w-4 h-4" />
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-violet-500 text-white flex items-center justify-center shadow-lg shadow-violet-600/30 ring-1 ring-white/15 shrink-0">
+                <Sparkles className="w-4 h-4 text-amber-200" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-white tracking-tight">OmniMockup Studio</span>
-                  <span className="px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/30 text-[10px] font-semibold">
-                    PRO 3D
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs sm:text-sm font-black tracking-tight text-white truncate">
+                    Omni<span className="text-violet-400">Mockup</span>
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded-md bg-violet-500/15 text-violet-300 border border-violet-500/30 text-[9px] font-bold tracking-wider uppercase shrink-0">
+                    Studio
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-                  <span className="truncate max-w-[180px] sm:max-w-[260px]">{captureItem.domainName || captureItem.url}</span>
+                <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
+                  <span className="truncate max-w-[120px] sm:max-w-[200px] font-mono text-[10px] text-zinc-300">
+                    {captureItem.domainName || captureItem.url}
+                  </span>
                   {captureItem.url && (
                     <a
                       href={captureItem.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                      className="text-zinc-500 hover:text-zinc-300 transition-colors shrink-0"
                       title="Ouvrir le site original"
                     >
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-2.5 h-2.5" />
                     </a>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Bouton Templates */}
+            {/* Bouton Templates avec badge */}
             <button
               type="button"
               onClick={() => setShowTemplatesModal(true)}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold transition-all active:scale-95"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-750 hover:border-zinc-650 text-zinc-200 hover:text-white text-xs font-semibold transition-all active:scale-95 shrink-0 shadow-xs"
+              title="Ouvrir la bibliothèque de templates (T)"
             >
               <Layout className="w-3.5 h-3.5 text-violet-400" />
               <span>Templates</span>
-              <ChevronRight className="w-3 h-3 text-zinc-500" />
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 font-mono">18</span>
             </button>
           </div>
 
-          {/* Centre : Mode de disposition (Solo vs Duo vs Trio) & Résolution */}
-          <div className="hidden md:flex items-center gap-3">
-            {/* Toggle Solo / Duo / Trio */}
-            <div className="flex items-center bg-zinc-900 p-0.5 rounded-xl border border-zinc-800 text-xs">
+          {/* ── CENTRE : Sélecteur de Mode (Solo / Duo / Trio) & Résolution ── */}
+          <div className="hidden xl:flex items-center gap-2.5">
+            {/* Capsule Disposition */}
+            <div className="flex items-center bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800 shadow-inner">
               <button
                 type="button"
                 onClick={() => setConfig((p) => ({ ...p, layoutMode: 'single' }))}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all ${
                   (config.layoutMode || 'single') === 'single'
-                    ? 'bg-violet-600 text-white font-semibold shadow-xs'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
+                    : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 Solo
@@ -1124,43 +1151,43 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               <button
                 type="button"
                 onClick={() => setConfig((p) => ({ ...p, layoutMode: 'dual-stacked' }))}
-                className={`px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+                className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
                   config.layoutMode === 'dual-stacked'
-                    ? 'bg-violet-600 text-white font-semibold shadow-xs'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
+                    : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 <span>Duo</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               </button>
               <button
                 type="button"
                 onClick={() => setConfig((p) => ({ ...p, layoutMode: 'trio-ecosystem' }))}
-                className={`px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+                className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
                   config.layoutMode === 'trio-ecosystem'
-                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold shadow-xs'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 text-white shadow-md shadow-violet-600/40 ring-1 ring-violet-400/40'
+                    : 'text-zinc-400 hover:text-zinc-200'
                 }`}
-                title="Trio Écosystème : MacBook + iPad + iPhone"
+                title="Trio Écosystème : MacBook + iPad + iPhone en 3D"
               >
-                <span>Trio ✨</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Trio Pro</span>
+                <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
               </button>
             </div>
 
-            {/* Résolution 1x / 2x / 4x */}
-            <div className="flex items-center bg-zinc-900 p-0.5 rounded-xl border border-zinc-800 text-xs">
+            {/* Capsule Résolution d'export */}
+            <div className="flex items-center bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800 shadow-inner">
               {([1, 2, 4] as const).map((scale) => (
                 <button
                   key={scale}
                   type="button"
                   onClick={() => setConfig((p) => ({ ...p, exportScale: scale }))}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                  className={`px-2 py-0.5 rounded-lg text-xs font-mono font-bold transition-all ${
                     (config.exportScale || 2) === scale
-                      ? 'bg-zinc-850 text-violet-300 border border-violet-500/30'
+                      ? 'bg-zinc-800 text-violet-300 border border-violet-500/40 shadow-xs'
                       : 'text-zinc-500 hover:text-zinc-300'
                   }`}
-                  title={`Résolution d'export ${scale}x`}
+                  title={`Résolution d'export ${scale}x (${scale === 4 ? 'Ultra HD Retina' : scale === 2 ? 'HD' : 'Standard'})`}
                 >
                   {scale}x
                 </button>
@@ -1168,28 +1195,28 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             </div>
           </div>
 
-          {/* Droite : Actions Vente IA, Présentation, Pack OmniExport, Copier, Vidéo, Télécharger */}
-          <div className="flex items-center gap-2">
+          {/* ── DROITE : Outils Créatifs, Export Hub & Profil Compte ── */}
+          <div className="flex items-center gap-2 shrink-0">
             {/* Pitch & Vente IA */}
             <button
               type="button"
               onClick={() => setSalesKitOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-violet-600/20 active:scale-95"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-950/40 hover:bg-violet-900/60 border border-violet-500/40 hover:border-violet-400 text-violet-200 hover:text-white text-xs font-bold transition-all shadow-xs active:scale-95"
               title="Générer des arguments de vente et pitch client avec l'IA"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span className="hidden sm:inline">Pitch & Vente IA</span>
+              <span className="hidden xl:inline">Pitch IA</span>
             </button>
 
             {/* Mode Plein Écran / Présentation */}
             <button
               type="button"
               onClick={() => setPresentationMode(true)}
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-semibold transition-all active:scale-95"
-              title="Passer en mode Présentation immersive (Échap pour quitter)"
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-750 text-xs font-semibold transition-all active:scale-95"
+              title="Passer en mode Présentation plein écran (Échap pour quitter)"
             >
               <Maximize2 className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="hidden xl:inline">Présentation</span>
+              <span className="hidden 2xl:inline">Présentation</span>
             </button>
 
             {/* Pack OmniExport 5 Formats 1-Click */}
@@ -1197,41 +1224,42 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               type="button"
               onClick={handleExportPack}
               disabled={isExportingPack}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 active:scale-95 disabled:opacity-50"
-              title="Télécharger les 5 formats réseaux sociaux en 1 clic (Twitter, Insta, Story, LinkedIn, Dribbble)"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 hover:border-emerald-400 text-emerald-200 hover:text-white text-xs font-bold transition-all shadow-xs active:scale-95 disabled:opacity-50"
+              title="Télécharger les 5 formats réseaux sociaux en 1 clic (Twitter, Insta, Stories, LinkedIn, Dribbble)"
             >
               {isExportingPack ? (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Pack {packProgress}...</span>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                  <span>{packProgress}</span>
                 </>
               ) : packProgress === 'Fait !' ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
-                  <span>Pack Prêt !</span>
+                  <Check className="w-3.5 h-3.5 text-emerald-300 stroke-[3]" />
+                  <span>Prêt !</span>
                 </>
               ) : (
                 <>
-                  <Layers className="w-3.5 h-3.5 text-emerald-200" />
-                  <span className="hidden sm:inline">Pack OmniExport (5)</span>
+                  <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="hidden xl:inline">Pack OmniExport</span>
+                  <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">5</span>
                 </>
               )}
             </button>
 
-            {/* Copier */}
+            {/* Copier dans le presse-papier */}
             <button
               type="button"
               onClick={handleCopyToClipboard}
               disabled={isCopying}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
-              title="Copier l'image dans le presse-papier"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-750 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
+              title="Copier l'image directement dans le presse-papier"
             >
               {isCopying ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-400" />
               ) : copySuccess ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
-                  <span className="text-emerald-400 font-bold hidden sm:inline">Copié !</span>
+                  <span className="text-emerald-400 font-bold hidden sm:inline">Copié</span>
                 </>
               ) : (
                 <>
@@ -1246,23 +1274,23 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               type="button"
               onClick={handleExportVideo}
               disabled={isExportingVideo}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-amber-300 hover:text-amber-200 border border-zinc-800 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
-              title="Enregistrer un zoom animé en vidéo 3s (.webm)"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-amber-300 hover:text-amber-200 border border-zinc-750 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
+              title="Générer une vidéo d'animation 3s (.webm 60fps)"
             >
               {isExportingVideo ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
               ) : (
                 <Video className="w-3.5 h-3.5 text-amber-400" />
               )}
-              <span className="hidden sm:inline">Vidéo 3s</span>
+              <span className="hidden xl:inline">Vidéo 3s</span>
             </button>
 
-            {/* Bouton Télécharger PNG Principal */}
+            {/* Bouton Télécharger PNG Principal (Primary CTA) */}
             <button
               type="button"
               onClick={handleExportPng}
               disabled={isExporting}
-              className="flex items-center gap-1.5 sm:gap-2 px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-violet-600/30 transition-all active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-violet-600/30 ring-1 ring-white/20 transition-all active:scale-95 disabled:opacity-50"
             >
               {isExporting ? (
                 <>
@@ -1276,7 +1304,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 </>
               ) : (
                 <>
-                  <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                   <span>Télécharger</span>
                 </>
               )}
@@ -1286,15 +1314,199 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             <button
               type="button"
               onClick={() => setShowRightPanel((p) => !p)}
-              className="hidden lg:flex items-center justify-center p-2 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-400 hover:text-white transition-all"
+              className="flex items-center justify-center p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-750 text-zinc-400 hover:text-white transition-all"
               title={showRightPanel ? "Masquer le panneau d'inspection" : "Afficher le panneau d'inspection"}
             >
               {showRightPanel ? (
-                <PanelRightClose className="w-3.5 h-3.5 text-zinc-400" />
+                <PanelRightClose className="w-4 h-4 text-zinc-400" />
               ) : (
-                <PanelRightOpen className="w-3.5 h-3.5 text-violet-400" />
+                <PanelRightOpen className="w-4 h-4 text-violet-400" />
               )}
             </button>
+
+            {/* ── SECTION COMPTE UTILISATEUR ULTRA-SOIGNÉE ── */}
+            <div className="relative" ref={userDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setUserDropdownOpen((p) => !p)}
+                className="flex items-center gap-1.5 sm:gap-2 pl-1.5 pr-2 py-1 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-750 hover:border-zinc-650 transition-all shadow-xs text-xs"
+                title="Gestion de compte et abonnement"
+              >
+                {/* Avatar utilisateur */}
+                <div className="relative">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-violet-600 to-fuchsia-600 text-white flex items-center justify-center font-bold text-[11px] shadow-sm uppercase">
+                    {user?.email ? user.email.slice(0, 2) : <UserIcon className="w-3.5 h-3.5 text-white" />}
+                  </div>
+                  <span
+                    className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-zinc-900 ${
+                      user ? 'bg-emerald-400' : 'bg-zinc-500'
+                    }`}
+                  />
+                </div>
+
+                {/* Badge du forfait */}
+                <span
+                  className={`hidden sm:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                    userPlan === 'studio'
+                      ? 'bg-amber-400/15 text-amber-300 border-amber-400/30'
+                      : userPlan === 'pro'
+                      ? 'bg-violet-500/20 text-violet-300 border-violet-500/40'
+                      : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                  }`}
+                >
+                  {userPlan === 'studio' ? (
+                    <>
+                      <Crown className="w-2.5 h-2.5 text-amber-300" />
+                      <span>Agence</span>
+                    </>
+                  ) : userPlan === 'pro' ? (
+                    <>
+                      <Zap className="w-2.5 h-2.5 text-violet-400" />
+                      <span>Pro</span>
+                    </>
+                  ) : (
+                    <span>Gratuit</span>
+                  )}
+                </span>
+
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-200 ${
+                    userDropdownOpen ? 'rotate-180 text-white' : ''
+                  }`}
+                />
+              </button>
+
+              {/* Menu Déroulant Profil & Compte */}
+              {userDropdownOpen && (
+                <div className="absolute right-0 mt-2.5 w-72 bg-[#0c0d14] border border-zinc-800 rounded-2xl shadow-2xl shadow-black/80 py-2.5 z-50 animate-slide-up text-xs backdrop-blur-2xl">
+                  {/* Header compte */}
+                  <div className="px-4 py-3 border-b border-zinc-800/80">
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                      {user ? 'Compte Connecté' : 'Mode Découverte'}
+                    </p>
+                    <p className="font-semibold text-white truncate text-sm mt-0.5">
+                      {user?.email || 'Visiteur Anonyme'}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                          userPlan === 'studio'
+                            ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+                            : userPlan === 'pro'
+                            ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                            : 'bg-zinc-800 text-zinc-300 border border-zinc-700'
+                        }`}
+                      >
+                        {userPlan === 'studio' ? <Crown className="w-3 h-3 text-amber-300" /> : userPlan === 'pro' ? <Zap className="w-3 h-3 text-violet-400" /> : <Shield className="w-3 h-3 text-zinc-400" />}
+                        Plan {userPlan === 'studio' ? 'Studio Agence' : userPlan === 'pro' ? 'Pro Développeur' : 'Gratuit Découverte'}
+                      </span>
+
+                      <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        Actif
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Quota & Statut des exports */}
+                  <div className="p-3 mx-3 my-2 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-300 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-zinc-400">Qualité Export PNG :</span>
+                      <span className="font-mono font-bold text-white">
+                        {userPlan === 'free' ? '1x (Filigrane)' : '2x & 4K Illimités'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-zinc-400">Vidéos MP4 60fps :</span>
+                      <span className="font-bold text-white">
+                        {userPlan === 'free' ? 'Version démo' : 'Incluses'}
+                      </span>
+                    </div>
+
+                    {isFreePlan && (
+                      <div className="pt-2">
+                        <Link
+                          href="/pricing"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-[11px] transition-all shadow-md shadow-violet-600/30"
+                        >
+                          <Sparkles className="w-3 h-3 text-amber-300" />
+                          <span>Passer au Pro (dès 4€/mois)</span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Liens de navigation */}
+                  <div className="py-1">
+                    {user ? (
+                      <>
+                        <Link
+                          href="/account"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-zinc-300 hover:text-white hover:bg-zinc-850/80 transition-colors"
+                        >
+                          <UserIcon className="w-3.5 h-3.5 text-zinc-400" />
+                          <span>Mon Compte &amp; Facturation</span>
+                        </Link>
+
+                        <Link
+                          href="/pricing"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-zinc-300 hover:text-white hover:bg-zinc-850/80 transition-colors"
+                        >
+                          <CreditCard className="w-3.5 h-3.5 text-zinc-400" />
+                          <span>Changer de Forfait &amp; Tarifs (€)</span>
+                        </Link>
+
+                        <div className="my-1 border-t border-zinc-800/80" />
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setUserDropdownOpen(false);
+                            await signOut();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors text-left"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Se déconnecter</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          href="/login"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-zinc-300 hover:text-white hover:bg-zinc-850/80 transition-colors font-medium"
+                        >
+                          <UserIcon className="w-3.5 h-3.5 text-zinc-400" />
+                          <span>Se connecter</span>
+                        </Link>
+
+                        <Link
+                          href="/signup"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-violet-400 hover:text-violet-300 hover:bg-zinc-850/80 transition-colors font-bold"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                          <span>Créer un compte gratuit</span>
+                        </Link>
+
+                        <Link
+                          href="/pricing"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-zinc-300 hover:text-white hover:bg-zinc-850/80 transition-colors"
+                        >
+                          <CreditCard className="w-3.5 h-3.5 text-zinc-400" />
+                          <span>Tarifs &amp; Formules (€)</span>
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
       )}

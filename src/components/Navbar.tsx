@@ -72,14 +72,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
 
         {/* Navigation Desktop & Tablette */}
         <div className="hidden sm:flex items-center space-x-3">
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 text-xs font-semibold text-stone-700 hover:text-violet-700 px-3 py-1.5 rounded-lg border border-transparent hover:border-sand-200 hover:bg-white transition-all"
-          >
-            <Layers className="w-3.5 h-3.5 text-violet-600" />
-            <span>Studio</span>
-          </Link>
-
           {showPricingLink && (
             <Link
               href="/pricing"
@@ -272,18 +264,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
           )}
 
           <div className="space-y-1.5 pt-2 border-t border-sand-100">
-            <Link
-              href="/"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                if (onReset) onReset();
-              }}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium text-stone-800 hover:bg-sand-100 transition-colors"
-            >
-              <Layers className="w-4 h-4 text-violet-600" />
-              <span>Studio de Mockups</span>
-            </Link>
-
             {showPricingLink && (
               <Link
                 href="/pricing"

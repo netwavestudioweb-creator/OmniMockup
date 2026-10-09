@@ -39,7 +39,17 @@ export interface CaptureOptions {
   fullPage?: boolean;
   viewport?: { width: number; height: number };
   hideBanners?: boolean;
+  /** Capture la version téléphone du site (390 px, mode mobile, écran Retina) */
+  mobile?: boolean;
 }
+
+const DESKTOP_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+const MOBILE_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+const MOBILE_VIEWPORT = { width: 390, height: 844 };
+// Hauteur maximale d'une capture mobile pleine page (6 écrans) : évite des images de 40 000 px
+const MOBILE_MAX_HEIGHT = MOBILE_VIEWPORT.height * 6;
 
 /**
  * Moteur universel de capture web 3-Tiers Haute Performance :
@@ -55,8 +65,9 @@ export async function captureWebPage(
   const faviconUrl = getFaviconUrl(targetUrl);
 
   const fullPage = options.fullPage ?? true;
-  const viewportWidth = options.viewport?.width || 1440;
-  const viewportHeight = options.viewport?.height || 900;
+  const mobile = options.mobile === true;
+  const viewportWidth = mobile ? MOBILE_VIEWPORT.width : options.viewport?.width || 1440;
+  const viewportHeight = mobile ? MOBILE_VIEWPORT.height : options.viewport?.height || 900;
   const hideBanners = options.hideBanners ?? true;
 
   const cookieBannerCSS = `
@@ -93,9 +104,10 @@ export async function captureWebPage(
     try {
       const context = await browser.newContext({
         viewport: { width: viewportWidth, height: viewportHeight },
-        userAgent:
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        deviceScaleFactor: 1,
+        userAgent: mobile ? MOBILE_UA : DESKTOP_UA,
+        deviceScaleFactor: mobile ? 2 : 1,
+        isMobile: mobile,
+        hasTouch: mobile,
       });
       const page = await context.newPage();
       page.setDefaultTimeout(30000);
@@ -108,11 +120,16 @@ export async function captureWebPage(
       }
 
       const pageTitle = (await page.title()) || domainName;
+      const mobileClipHeight =
+        mobile && fullPage
+          ? Math.min(MOBILE_MAX_HEIGHT, await page.evaluate(() => document.documentElement.scrollHeight))
+          : 0;
       const screenshotBuffer = await page.screenshot({
         type: 'png',
         fullPage,
         timeout: 30000,
         animations: 'disabled',
+        ...(mobileClipHeight ? { clip: { x: 0, y: 0, width: viewportWidth, height: mobileClipHeight } } : {}),
       });
       const screenshotBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`;
 
@@ -155,7 +172,14 @@ export async function captureWebPage(
     try {
       const page = await browser.newPage();
       page.setDefaultTimeout(30000);
-      await page.setViewport({ width: viewportWidth, height: viewportHeight });
+      await page.setViewport({
+        width: viewportWidth,
+        height: viewportHeight,
+        deviceScaleFactor: mobile ? 2 : 1,
+        isMobile: mobile,
+        hasTouch: mobile,
+      });
+      await page.setUserAgent(mobile ? MOBILE_UA : DESKTOP_UA);
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
       await new Promise((r) => setTimeout(r, 500));
 
@@ -164,9 +188,15 @@ export async function captureWebPage(
       }
 
       const pageTitle = (await page.title()) || domainName;
+      const mobileClipHeight =
+        mobile && fullPage
+          ? Math.min(MOBILE_MAX_HEIGHT, await page.evaluate(() => document.documentElement.scrollHeight))
+          : 0;
       const screenshotBuffer = (await page.screenshot({
         type: 'png',
-        fullPage,
+        ...(mobileClipHeight
+          ? { clip: { x: 0, y: 0, width: viewportWidth, height: mobileClipHeight }, captureBeyondViewport: true }
+          : { fullPage }),
       })) as Buffer;
       const screenshotBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`;
 
@@ -202,8 +232,9 @@ async function captureWebPageCloudFallback(
 
   const domainName = extractDomainName(targetUrl);
   const faviconUrl = getFaviconUrl(targetUrl);
-  const width = options.viewport?.width || 1440;
-  const height = options.viewport?.height || 900;
+  const mobile = options.mobile === true;
+  const width = mobile ? MOBILE_VIEWPORT.width : options.viewport?.width || 1440;
+  const height = mobile ? MOBILE_VIEWPORT.height : options.viewport?.height || 900;
   const fullPage = options.fullPage ?? true;
 
   let screenshotBase64 = '';
@@ -213,7 +244,9 @@ async function captureWebPageCloudFallback(
     const microlinkUrl = `https://api.microlink.io/?url=${encodeURIComponent(
       targetUrl
     )}&screenshot=true&meta=true&viewport.width=${width}&viewport.height=${height}${
-      fullPage ? '&screenshot.fullPage=true' : ''
+      mobile ? '&viewport.isMobile=true&viewport.hasTouch=true&viewport.deviceScaleFactor=2' : ''
+    }${
+      fullPage && !mobile ? '&screenshot.fullPage=true' : ''
     }`;
 
     const response = await fetch(microlinkUrl, {

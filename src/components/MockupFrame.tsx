@@ -1,7 +1,16 @@
 'use client';
 
 import React from 'react';
-import { MockupType, DeviceTheme, DeviceStyle, CornerRadius, BrowserStylePreset } from '@/types/analyzer';
+import { MockupType, DeviceTheme, DeviceStyle, CornerRadius, BrowserStylePreset, DeviceColor } from '@/types/analyzer';
+
+// Châssis selon la couleur choisie (téléphones, tablette, montre)
+const DEVICE_BODY: Record<DeviceColor, { body: string; button: string }> = {
+  graphite: { body: 'bg-gradient-to-b from-stone-700 via-stone-800 to-stone-950 border-stone-600', button: 'bg-stone-600' },
+  silver: { body: 'bg-gradient-to-b from-zinc-100 via-zinc-300 to-zinc-400 border-zinc-200', button: 'bg-zinc-300' },
+  titanium: { body: 'bg-gradient-to-b from-stone-400 via-stone-500 to-stone-600 border-stone-300', button: 'bg-stone-400' },
+  midnight: { body: 'bg-gradient-to-b from-slate-700 via-slate-800 to-slate-950 border-slate-600', button: 'bg-slate-600' },
+  gold: { body: 'bg-gradient-to-b from-amber-100 via-amber-200 to-amber-300 border-amber-100', button: 'bg-amber-200' },
+};
 import { Lock, ExternalLink, Globe, RotateCw, ArrowLeft, ArrowRight, Plus } from 'lucide-react';
 
 interface MockupFrameProps {
@@ -17,6 +26,7 @@ interface MockupFrameProps {
   cornerRadius?: CornerRadius;
   cropOffsetY?: number;
   onClickImage?: () => void;
+  deviceColor?: DeviceColor;
 }
 
 export const MockupFrame: React.FC<MockupFrameProps> = ({
@@ -32,7 +42,9 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
   cornerRadius = 'curved',
   cropOffsetY = 0,
   onClickImage,
+  deviceColor = 'graphite',
 }) => {
+  const chassis = DEVICE_BODY[deviceColor] || DEVICE_BODY.graphite;
   const [imageError, setImageError] = React.useState(false);
 
   React.useEffect(() => {
@@ -351,7 +363,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
     return (
       <div className="w-full flex justify-center select-none py-1">
         <div
-          className={`w-full max-w-[560px] relative rounded-[28px] sm:rounded-[36px] p-[8px] sm:p-[12px] bg-gradient-to-b from-stone-700 via-stone-800 to-stone-900 shadow-2xl border border-stone-600/70`}
+          className={`w-full max-w-[560px] relative rounded-[28px] sm:rounded-[36px] p-[8px] sm:p-[12px] shadow-2xl border ${chassis.body}`}
         >
           {/* Caméra avant iPad */}
           <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 w-2 h-2 rounded-full bg-stone-950 border border-stone-700 flex items-center justify-center">
@@ -376,11 +388,11 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
   if (type === 'iphone') {
     return (
       <div className="w-full flex justify-center select-none py-2">
-        <div className="w-full max-w-[270px] sm:max-w-[290px] relative rounded-[44px] sm:rounded-[48px] p-[7px] sm:p-[9px] bg-gradient-to-b from-stone-700 via-stone-800 to-stone-950 shadow-2xl border border-stone-600">
+        <div className={`w-full max-w-[270px] sm:max-w-[290px] relative rounded-[44px] sm:rounded-[48px] p-[7px] sm:p-[9px] shadow-2xl border ${chassis.body}`}>
           {/* Boutons latéraux iPhone */}
-          <div className="absolute -left-[3px] top-24 w-[3px] h-9 bg-stone-600 rounded-l-sm" />
-          <div className="absolute -left-[3px] top-36 w-[3px] h-9 bg-stone-600 rounded-l-sm" />
-          <div className="absolute -right-[3px] top-28 w-[3px] h-12 bg-stone-600 rounded-r-sm" />
+          <div className={`absolute -left-[3px] top-24 w-[3px] h-9 rounded-l-sm ${chassis.button}`} />
+          <div className={`absolute -left-[3px] top-36 w-[3px] h-9 rounded-l-sm ${chassis.button}`} />
+          <div className={`absolute -right-[3px] top-28 w-[3px] h-12 rounded-r-sm ${chassis.button}`} />
 
           {/* Écran tactile iPhone */}
           <div
@@ -400,6 +412,30 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
 
             {/* Barre d'accueil tactile */}
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 w-28 h-1 bg-white/40 rounded-full backdrop-blur-md" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 4b. Téléphone Android générique (caméra centrale percée, bords fins)
+  if (type === 'android') {
+    return (
+      <div className="w-full flex justify-center select-none py-2">
+        <div className={`w-full max-w-[270px] sm:max-w-[290px] relative rounded-[34px] p-[5px] shadow-2xl border ${chassis.body}`}>
+          {/* Boutons latéraux (volume + alimentation à droite) */}
+          <div className={`absolute -right-[3px] top-24 w-[3px] h-14 rounded-r-sm ${chassis.button}`} />
+          <div className={`absolute -right-[3px] top-44 w-[3px] h-8 rounded-r-sm ${chassis.button}`} />
+
+          <div
+            className="relative rounded-[29px] overflow-hidden aspect-[9/20] bg-black cursor-pointer group shadow-inner"
+            onClick={onClickImage}
+          >
+            {/* Caméra frontale percée */}
+            <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-30 w-3 h-3 rounded-full bg-black border border-white/10 shadow-md" />
+            {renderScreen('group-hover:scale-[1.02]')}
+            {/* Barre de navigation par gestes */}
+            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 z-30 w-24 h-1 bg-white/40 rounded-full backdrop-blur-md" />
           </div>
         </div>
       </div>
@@ -449,7 +485,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
           <div className="w-28 sm:w-32 h-3 sm:h-4 bg-gradient-to-b from-stone-800 to-stone-700 rounded-t-lg shadow-sm border-t border-stone-600" />
 
           {/* Boîtier principal Apple Watch */}
-          <div className="w-full relative rounded-[38px] sm:rounded-[44px] p-[8px] sm:p-[10px] bg-gradient-to-b from-stone-700 via-stone-800 to-stone-900 shadow-2xl border-2 border-stone-600">
+          <div className={`w-full relative rounded-[38px] sm:rounded-[44px] p-[8px] sm:p-[10px] shadow-2xl border-2 ${chassis.body}`}>
             {/* Couronne numérique à droite */}
             <div className="absolute -right-[7px] top-10 w-[7px] h-9 bg-gradient-to-b from-stone-500 via-stone-600 to-stone-500 rounded-r-md border border-stone-400 shadow-sm flex items-center justify-center">
               <div className="w-1 h-7 bg-stone-800/80 rounded-full" />

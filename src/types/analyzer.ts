@@ -1,4 +1,6 @@
-export type MockupType = 'browser' | 'macbook' | 'iphone' | 'ipad' | 'flat' | 'watch' | 'imac';
+export type MockupType = 'browser' | 'macbook' | 'iphone' | 'android' | 'ipad' | 'flat' | 'watch' | 'imac';
+/** Couleur du châssis des téléphones, tablettes et montres */
+export type DeviceColor = 'graphite' | 'silver' | 'titanium' | 'midnight' | 'gold';
 export type DeviceTheme = 'light' | 'dark';
 export type DeviceStyle = 'default' | 'glass' | 'inset';
 export type CornerRadius = 'sharp' | 'curved' | 'round';
@@ -62,6 +64,12 @@ export interface SceneConfig {
   cornerRadius?: CornerRadius;
   cropOffsetY?: number; // Défilement vertical de la capture (0% = Haut, 100% = Bas)
   layoutMode?: 'single' | 'dual-stacked' | 'trio-ecosystem';
+  /** Couleur du châssis des téléphones, tablettes et montres */
+  deviceColor?: DeviceColor;
+  /** Téléphone utilisé en Duo / Trio */
+  phoneModel?: 'iphone' | 'android';
+  /** Écran des téléphones : version mobile capturée ou même image que l'ordinateur */
+  phoneScreen?: 'mobile' | 'desktop';
   mockupX: number; // percentage offset -50 to 50
   mockupY: number; // percentage offset -50 to 50
   mockupScale: number; // 40 - 150

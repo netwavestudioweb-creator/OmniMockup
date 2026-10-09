@@ -15,6 +15,7 @@ import {
   FeatureCallout,
   SocialProofBadgeType,
   SceneSocialBadge,
+  DeviceColor,
 } from '@/types/analyzer';
 import { MockupFrame } from './MockupFrame';
 import { useUser } from '@/context/UserContext';
@@ -266,6 +267,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     deviceStyle: 'default',
     cornerRadius: 'curved',
     layoutMode: 'single',
+    deviceColor: 'graphite',
+    phoneModel: 'iphone',
+    phoneScreen: 'mobile',
     mockupX: 0,
     mockupY: 0,
     mockupScale: 85,
@@ -504,6 +508,54 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       setCurrentScreenshot(captureItem.screenshotBase64);
     }
   }, [captureItem.screenshotBase64]);
+
+  // ══ CAPTURE MOBILE RÉELLE ══
+  // Dès qu'un téléphone apparaît sur la scène, la version téléphone du site est capturée une fois.
+  const [mobileScreenshot, setMobileScreenshot] = useState<string>('');
+  const [mobileCaptureState, setMobileCaptureState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const phoneVisible =
+    config.mockupType === 'iphone' || config.mockupType === 'android' || (config.layoutMode || 'single') !== 'single';
+  const canCaptureMobile = !!captureItem.url && /^https?:\/\//.test(captureItem.url);
+
+  const mobileCaptureRequested = useRef(false);
+  const studioUnmountedRef = useRef(false);
+  useEffect(() => {
+    studioUnmountedRef.current = false; // remontage (mode strict de React)
+    return () => {
+      studioUnmountedRef.current = true;
+    };
+  }, []);
+  useEffect(() => {
+    if (mobileCaptureState === 'idle') mobileCaptureRequested.current = false; // « Réessayer »
+  }, [mobileCaptureState]);
+  useEffect(() => {
+    if (!phoneVisible || !canCaptureMobile || config.phoneScreen === 'desktop' || mobileCaptureRequested.current) return;
+    // Verrou hors état React : relancer l'effet ne doit pas annuler la capture en cours
+    mobileCaptureRequested.current = true;
+    setMobileCaptureState('loading');
+    fetch('/api/capture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targets: [captureItem.url], mobile: true, fullPage: true }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (studioUnmountedRef.current) return;
+        const item = (data?.results || data?.items || [])[0];
+        if (item?.success && item.screenshotBase64) {
+          setMobileScreenshot(item.screenshotBase64);
+          setMobileCaptureState('done');
+        } else {
+          setMobileCaptureState('error');
+        }
+      })
+      .catch(() => !studioUnmountedRef.current && setMobileCaptureState('error'));
+  }, [phoneVisible, canCaptureMobile, config.phoneScreen, mobileCaptureState, captureItem.url]);
+
+  // Image affichée dans les téléphones (et la montre)
+  const phoneScreenshot =
+    config.phoneScreen !== 'desktop' && mobileScreenshot ? mobileScreenshot : currentScreenshot;
+  const phoneModel = config.phoneModel || 'iphone';
 
   // Drag and drop tactile & souris
   const [draggingTarget, setDraggingTarget] = useState<
@@ -1179,6 +1231,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     reader.onload = () => {
       const base64 = reader.result as string;
       setCurrentScreenshot(base64);
+      // L'image importée remplace aussi l'écran des téléphones
+      setMobileScreenshot('');
+      setConfig((p) => ({ ...p, phoneScreen: 'desktop' }));
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -1953,7 +2008,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       }}
                     >
                       <MockupFrame
-                        type={config.mockupType === 'iphone' || config.mockupType === 'watch' ? 'macbook' : config.mockupType}
+                        type={config.mockupType === 'iphone' || config.mockupType === 'android' || config.mockupType === 'watch' ? 'macbook' : config.mockupType}
                         screenshotBase64={currentScreenshot}
                         url={customAddressBar.trim() ? (customAddressBar.startsWith('http') ? customAddressBar : 'https://' + customAddressBar) : captureItem.url}
                         title={captureItem.title}
@@ -1979,8 +2034,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       }}
                     >
                       <MockupFrame
-                        type="iphone"
-                        screenshotBase64={currentScreenshot}
+                        type={phoneModel}
+                        screenshotBase64={phoneScreenshot}
                         url={captureItem.url}
                         title={captureItem.title}
                         domainName={captureItem.domainName}
@@ -1989,6 +2044,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         styleVariant={config.deviceStyle}
                         cornerRadius="round"
                         cropOffsetY={config.cropOffsetY}
+                        deviceColor={config.deviceColor}
                       />
                     </div>
                   </div>
@@ -2057,6 +2113,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         styleVariant={config.deviceStyle}
                         cornerRadius="round"
                         cropOffsetY={config.cropOffsetY}
+                        deviceColor={config.deviceColor}
                       />
                     </div>
 
@@ -2071,8 +2128,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       }}
                     >
                       <MockupFrame
-                        type="iphone"
-                        screenshotBase64={currentScreenshot}
+                        type={phoneModel}
+                        screenshotBase64={phoneScreenshot}
                         url={captureItem.url}
                         title={captureItem.title}
                         domainName={captureItem.domainName}
@@ -2081,6 +2138,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         styleVariant={config.deviceStyle}
                         cornerRadius="round"
                         cropOffsetY={config.cropOffsetY}
+                        deviceColor={config.deviceColor}
                       />
                     </div>
                   </div>
@@ -2088,7 +2146,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   /* ── MODE SOLO : APPAREIL UNIQUE CENTRÉ ── */
                   <div
                     className={`absolute cursor-move transition-all duration-150 touch-none z-20 ${
-                      config.mockupType === 'iphone'
+                      config.mockupType === 'iphone' || config.mockupType === 'android'
                         ? 'w-[42%]'
                         : config.mockupType === 'watch'
                         ? 'w-[34%]'
@@ -2113,7 +2171,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     {currentScreenshot && (
                       <MockupFrame
                         type={config.mockupType}
-                        screenshotBase64={currentScreenshot}
+                        screenshotBase64={
+                          config.mockupType === 'iphone' || config.mockupType === 'android' || config.mockupType === 'watch'
+                            ? phoneScreenshot
+                            : currentScreenshot
+                        }
+                        deviceColor={config.deviceColor}
                         url={customAddressBar.trim() ? (customAddressBar.startsWith('http') ? customAddressBar : 'https://' + customAddressBar) : captureItem.url}
                         title={captureItem.title}
                         domainName={customAddressBar.trim() || captureItem.domainName}
@@ -2614,6 +2677,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       { type: 'imac' as MockupType, label: 'iMac', icon: Tv },
                       { type: 'ipad' as MockupType, label: 'iPad', icon: Tablet },
                       { type: 'iphone' as MockupType, label: 'iPhone', icon: Smartphone },
+                      { type: 'android' as MockupType, label: 'Android', icon: Smartphone },
                       { type: 'watch' as MockupType, label: 'Watch', icon: Watch },
                       { type: 'flat' as MockupType, label: 'Flat', icon: Layers },
                     ].map((item) => {
@@ -2623,7 +2687,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <button
                           key={item.type}
                           type="button"
-                          onClick={() => setConfig((p) => ({ ...p, mockupType: item.type }))}
+                          onClick={() =>
+                            setConfig((p) => ({
+                              ...p,
+                              mockupType: item.type,
+                              // Le téléphone choisi est aussi utilisé en Duo et en Trio
+                              phoneModel: item.type === 'android' ? 'android' : item.type === 'iphone' ? 'iphone' : p.phoneModel,
+                            }))
+                          }
                           className={`py-2 px-1.5 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1.5 transition-all ${
                             isSelected
                               ? 'bg-violet-600 text-white border-violet-500 shadow-md font-bold'
@@ -2637,6 +2708,100 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     })}
                   </div>
                 </div>
+
+                {/* Téléphone (Duo / Trio), couleur de l'appareil et écran du téléphone */}
+                {(phoneVisible || ['ipad', 'watch'].includes(config.mockupType)) && (
+                  <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+                    {(config.layoutMode || 'single') !== 'single' && (
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Téléphone</span>
+                        <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-950 border border-zinc-800">
+                          {(['iphone', 'android'] as const).map((m) => (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => setConfig((p) => ({ ...p, phoneModel: m }))}
+                              aria-pressed={phoneModel === m}
+                              className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                                phoneModel === m ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:text-white'
+                              }`}
+                            >
+                              {m === 'iphone' ? 'iPhone' : 'Android'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Couleur de l&apos;appareil</span>
+                      <div className="flex items-center gap-2">
+                        {([
+                          { id: 'graphite', label: 'Graphite', swatch: 'bg-stone-800' },
+                          { id: 'silver', label: 'Argent', swatch: 'bg-zinc-300' },
+                          { id: 'titanium', label: 'Titane', swatch: 'bg-stone-500' },
+                          { id: 'midnight', label: 'Bleu nuit', swatch: 'bg-slate-800' },
+                          { id: 'gold', label: 'Or', swatch: 'bg-amber-200' },
+                        ] as { id: DeviceColor; label: string; swatch: string }[]).map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setConfig((p) => ({ ...p, deviceColor: c.id }))}
+                            aria-pressed={(config.deviceColor || 'graphite') === c.id}
+                            aria-label={c.label}
+                            title={c.label}
+                            className={`w-7 h-7 rounded-full border-2 transition-transform ${c.swatch} ${
+                              (config.deviceColor || 'graphite') === c.id ? 'border-violet-400 scale-110' : 'border-zinc-700 hover:scale-105'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {phoneVisible && canCaptureMobile && (
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Écran du téléphone</span>
+                        <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-950 border border-zinc-800">
+                          {([
+                            { id: 'mobile', label: 'Version mobile' },
+                            { id: 'desktop', label: 'Même image' },
+                          ] as const).map((o) => (
+                            <button
+                              key={o.id}
+                              type="button"
+                              onClick={() => setConfig((p) => ({ ...p, phoneScreen: o.id }))}
+                              aria-pressed={(config.phoneScreen || 'mobile') === o.id}
+                              className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                                (config.phoneScreen || 'mobile') === o.id ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:text-white'
+                              }`}
+                            >
+                              {o.label}
+                            </button>
+                          ))}
+                        </div>
+                        {(config.phoneScreen || 'mobile') === 'mobile' && (
+                          <p className="text-[10px] text-zinc-500 flex items-center gap-1.5" role="status">
+                            {mobileCaptureState === 'loading' && (
+                              <>
+                                <RefreshCw className="w-3 h-3 animate-spin text-violet-400" />
+                                Capture de la version mobile du site…
+                              </>
+                            )}
+                            {mobileCaptureState === 'done' && <>✓ Le téléphone affiche la vraie version mobile du site.</>}
+                            {mobileCaptureState === 'error' && (
+                              <>
+                                Version mobile indisponible : le téléphone affiche l&apos;image de l&apos;ordinateur.{' '}
+                                <button type="button" onClick={() => setMobileCaptureState('idle')} className="text-violet-300 font-semibold">
+                                  Réessayer
+                                </button>
+                              </>
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Finition du Cadre */}
                 <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">

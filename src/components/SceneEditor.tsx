@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { toPng, toBlob, toJpeg, toCanvas } from 'html-to-image';
+import { toCanvas } from 'html-to-image';
 import {
   CaptureItemResult,
   MockupType,
@@ -16,6 +16,7 @@ import {
   SocialProofBadgeType,
   SceneSocialBadge,
   DeviceColor,
+  SceneAnnotation,
 } from '@/types/analyzer';
 import { MockupFrame } from './MockupFrame';
 import { useUser } from '@/context/UserContext';
@@ -85,6 +86,12 @@ import {
   Redo2,
   Lock,
   SlidersHorizontal,
+  PenLine,
+  MoveUpRight,
+  Square,
+  Circle,
+  Hash,
+  EyeOff as BlurIcon,
 } from 'lucide-react';
 import { TechStackPicker, AVAILABLE_TECHS } from './TechStackPicker';
 import { DeveloperSalesKitModal } from './DeveloperSalesKitModal';
@@ -102,6 +109,7 @@ import { SceneOverlayPreset } from '@/types/analyzer';
 import { ExportCrossSellBanner } from './ExportCrossSellBanner';
 import { PlanUpsellModal, UpsellMode } from './PlanUpsellModal';
 import { saveStudioDraft } from '@/lib/studioDraft';
+import { SceneAnnotationsLayer } from './SceneAnnotationsLayer';
 
 interface SceneEditorProps {
   captureItem: CaptureItemResult;
@@ -310,7 +318,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   }, [captureItem.screenshotBase64]);
 
   // Navigation dans les onglets du studio
-  const [activeTab, setActiveTab] = useState<'mockup' | 'frame' | '3d' | 'content' | 'branding' | 'callouts'>('mockup');
+  const [activeTab, setActiveTab] = useState<'mockup' | 'frame' | '3d' | 'content' | 'branding' | 'callouts' | 'annotate'>('mockup');
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [selectedLogoId, setSelectedLogoId] = useState<string | null>(null);
   const [selectedCalloutId, setSelectedCalloutId] = useState<string | null>(null);
@@ -573,6 +581,17 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     config.phoneScreen !== 'desktop' && mobileScreenshot ? mobileScreenshot : currentScreenshot;
   const phoneModel = config.phoneModel || 'iphone';
 
+  // ══ REPÈRES D'ALIGNEMENT (magnétisme au centre de la scène) ══
+  const SNAP_TOLERANCE = 1.5; // en % de la scène
+  const [snapGuides, setSnapGuides] = useState<{ v: boolean; h: boolean }>({ v: false, h: false });
+  const snapToCenter = useCallback((x: number, y: number) => {
+    const v = Math.abs(x - 50) < SNAP_TOLERANCE;
+    const h = Math.abs(y - 50) < SNAP_TOLERANCE;
+    setSnapGuides((g) => (g.v === v && g.h === h ? g : { v, h }));
+    return { x: v ? 50 : x, y: h ? 50 : y };
+  }, []);
+  const clearSnapGuides = useCallback(() => setSnapGuides({ v: false, h: false }), []);
+
   // Drag and drop tactile & souris
   const [draggingTarget, setDraggingTarget] = useState<
     | 'mockup'
@@ -673,13 +692,17 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       const deltaYPercent = ((e.clientY - dragStartRef.current.clientY) / sceneRect.height) * 100;
 
       if (draggingTarget === 'mockup') {
-        const newX = Math.max(-50, Math.min(50, dragStartRef.current.initialX + deltaXPercent));
-        const newY = Math.max(-50, Math.min(50, dragStartRef.current.initialY + deltaYPercent));
-        setConfig((prev) => ({ ...prev, mockupX: Math.round(newX), mockupY: Math.round(newY) }));
+        const rawX = Math.max(-50, Math.min(50, dragStartRef.current.initialX + deltaXPercent));
+        const rawY = Math.max(-50, Math.min(50, dragStartRef.current.initialY + deltaYPercent));
+        // 0 = centre de la scène : même aimantation que les calques (centre = 50 %)
+        const snapped = snapToCenter(rawX + 50, rawY + 50);
+        setConfig((prev) => ({ ...prev, mockupX: Math.round(snapped.x - 50), mockupY: Math.round(snapped.y - 50) }));
       } else if (typeof draggingTarget === 'object' && draggingTarget.type === 'text') {
         const targetId = draggingTarget.id;
-        const newX = Math.max(0, Math.min(95, dragStartRef.current.initialX + deltaXPercent));
-        const newY = Math.max(0, Math.min(95, dragStartRef.current.initialY + deltaYPercent));
+        const { x: newX, y: newY } = snapToCenter(
+          Math.max(0, Math.min(95, dragStartRef.current.initialX + deltaXPercent)),
+          Math.max(0, Math.min(95, dragStartRef.current.initialY + deltaYPercent))
+        );
         setConfig((prev) => ({
           ...prev,
           texts: prev.texts.map((t) => (t.id === targetId ? { ...t, x: Math.round(newX), y: Math.round(newY) } : t)),
@@ -710,11 +733,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         }));
       }
     });
-  }, [draggingTarget]);
+  }, [draggingTarget, snapToCenter]);
 
   const handlePointerUp = useCallback(() => {
     if (rafMoveRef.current) cancelAnimationFrame(rafMoveRef.current);
     setDraggingTarget(null);
+    setSnapGuides({ v: false, h: false });
   }, []);
 
   useEffect(() => {
@@ -889,6 +913,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         setShowExportMenu((v) => !v);
       } else if (!mod && !typing && !e.altKey && e.key.toLowerCase() === 't') {
         setShowTemplatesModal(true);
+      } else if (!typing && (e.key === 'Delete' || e.key === 'Backspace') && selectedAnnotationId) {
+        e.preventDefault();
+        handleDeleteAnnotation(selectedAnnotationId);
+      } else if (e.key === 'Escape' && selectedAnnotationId) {
+        setSelectedAnnotationId(null);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -909,27 +938,80 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }));
   };
 
-  /** Rend la scène aux dimensions exactes du format choisi. */
-  const renderScene = async (format: ExportFormat, preset: FramePresetOption, quality: ExportQuality): Promise<string> => {
+  /**
+   * Rend la scène sur un canvas aux dimensions demandées :
+   * - les éléments d'interface (poignées, repères, sélection) sont exclus ;
+   * - les zones floutées sont floutées sur l'image elle-même (le flou d'affichage ne s'exporte pas).
+   */
+  const renderSceneCanvas = async (width: number, height: number): Promise<HTMLCanvasElement> => {
     const node = sceneRef.current;
     if (!node) throw new Error('Scène introuvable');
-    const { width, height } = getExportSize(preset, quality);
-    // Le rendu est redimensionné aux dimensions exactes du format (aucun pixel perdu à l'arrondi)
-    const opts = {
+    // Retirer la sélection à l'écran avant le rendu
+    setSelectedTextId(null);
+    setSelectedLogoId(null);
+    setSelectedCalloutId(null);
+    setSelectedAnnotationId(null);
+    await new Promise((r) => setTimeout(r, 60));
+
+    const canvas = await toCanvas(node, {
       cacheBust: true,
       pixelRatio: 1,
       canvasWidth: width,
       canvasHeight: height,
       imagePlaceholder: EXPORT_IMAGE_PLACEHOLDER,
-      // La scène est réduite à l'écran (transform) : la copie exportée est rendue à sa taille de référence
       style: { transform: 'none' },
-    };
-    if (format === 'jpg') return toJpeg(node, { ...opts, quality: 0.92, backgroundColor: '#ffffff' });
-    if (format === 'webp') {
-      const canvas = await toCanvas(node, opts);
-      return canvas.toDataURL('image/webp', 0.9);
+      filter: (el) => !(el instanceof Element && el.hasAttribute('data-export-hide')),
+    });
+
+    const blurs = (config.annotations || []).filter((a) => a.kind === 'blur');
+    const ctx = canvas.getContext('2d');
+    if (ctx && blurs.length) {
+      const copy = document.createElement('canvas');
+      copy.width = canvas.width;
+      copy.height = canvas.height;
+      const cctx = copy.getContext('2d');
+      const radius = Math.max(8, Math.round(canvas.width * 0.012));
+      for (const b of blurs) {
+        const x = Math.round(((b.x || 0) / 100) * canvas.width);
+        const y = Math.round(((b.y || 0) / 100) * canvas.height);
+        const w = Math.round(((b.w || 0) / 100) * canvas.width);
+        const h = Math.round(((b.h || 0) / 100) * canvas.height);
+        if (!cctx || w <= 0 || h <= 0) continue;
+        // Deux passes de flou fort : le texte d'origine devient illisible
+        for (let pass = 0; pass < 2; pass++) {
+          cctx.clearRect(0, 0, copy.width, copy.height);
+          cctx.drawImage(canvas, 0, 0);
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(x, y, w, h);
+          ctx.clip();
+          ctx.filter = `blur(${radius}px)`;
+          ctx.drawImage(copy, 0, 0);
+          ctx.restore();
+        }
+      }
     }
-    return toPng(node, opts);
+    return canvas;
+  };
+
+  /** Rend la scène aux dimensions exactes du format choisi. */
+  const renderScene = async (format: ExportFormat, preset: FramePresetOption, quality: ExportQuality): Promise<string> => {
+    const { width, height } = getExportSize(preset, quality);
+    const canvas = await renderSceneCanvas(width, height);
+    if (format === 'jpg') {
+      // Fond blanc sous les zones transparentes (le JPG n'a pas de transparence)
+      const flat = document.createElement('canvas');
+      flat.width = canvas.width;
+      flat.height = canvas.height;
+      const fctx = flat.getContext('2d');
+      if (fctx) {
+        fctx.fillStyle = '#ffffff';
+        fctx.fillRect(0, 0, flat.width, flat.height);
+        fctx.drawImage(canvas, 0, 0);
+      }
+      return flat.toDataURL('image/jpeg', 0.92);
+    }
+    return canvas.toDataURL(format === 'webp' ? 'image/webp' : 'image/png', 0.9);
   };
 
   const downloadDataUrl = (dataUrl: string, filename: string) => {
@@ -999,12 +1081,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     setCopySuccess(false);
 
     try {
-      const blob = await toBlob(sceneRef.current, {
-        cacheBust: true,
-        pixelRatio: 2,
-        imagePlaceholder: EXPORT_IMAGE_PLACEHOLDER,
-        style: { transform: 'none' },
-      });
+      const size = getExportSize(currentFramePreset, effectiveQuality);
+      const copyCanvas = await renderSceneCanvas(size.width, size.height);
+      const blob = await new Promise<Blob | null>((resolve) => copyCanvas.toBlob(resolve, 'image/png'));
 
       if (!blob) throw new Error('Impossible de générer le blob');
 
@@ -1026,7 +1105,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     setIsExportingVideo(true);
 
     try {
-      const basePngUrl = await toPng(sceneRef.current, { pixelRatio: 1.5, cacheBust: true, imagePlaceholder: EXPORT_IMAGE_PLACEHOLDER, style: { transform: 'none' } });
+      const videoBase = getExportSize(currentFramePreset, effectiveQuality);
+      const basePngUrl = (await renderSceneCanvas(videoBase.width, videoBase.height)).toDataURL('image/png');
       const img = new Image();
       img.src = basePngUrl;
       await new Promise((r) => {
@@ -1130,6 +1210,37 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       texts: prev.texts.filter((t) => t.id !== id),
     }));
     if (selectedTextId === id) setSelectedTextId(null);
+  };
+
+  // ══ ANNOTATIONS ══
+  const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
+  const [annotationColor, setAnnotationColor] = useState<string>('#ef4444');
+
+  const handleAddAnnotation = (kind: SceneAnnotation['kind']) => {
+    const id = `annot_${Date.now()}`;
+    const existingSteps = (config.annotations || []).filter((a) => a.kind === 'number').length;
+    const base: SceneAnnotation =
+      kind === 'arrow'
+        ? { id, kind, x: 35, y: 60, x2: 55, y2: 42, color: annotationColor }
+        : kind === 'number'
+        ? { id, kind, x: 30 + ((existingSteps * 12) % 50), y: 30, color: annotationColor, label: String(existingSteps + 1) }
+        : kind === 'blur'
+        ? { id, kind, x: 38, y: 40, w: 24, h: 12, color: '#000000' }
+        : { id, kind, x: 36, y: 36, w: 28, h: 18, color: annotationColor };
+    setConfig((prev) => ({ ...prev, annotations: [...(prev.annotations || []), base] }));
+    setSelectedAnnotationId(id);
+  };
+
+  const handleUpdateAnnotation = (id: string, updates: Partial<SceneAnnotation>) => {
+    setConfig((prev) => ({
+      ...prev,
+      annotations: (prev.annotations || []).map((a) => (a.id === id ? { ...a, ...updates } : a)),
+    }));
+  };
+
+  const handleDeleteAnnotation = (id: string) => {
+    setConfig((prev) => ({ ...prev, annotations: (prev.annotations || []).filter((a) => a.id !== id) }));
+    if (selectedAnnotationId === id) setSelectedAnnotationId(null);
   };
 
   // Ajout & gestion de Callouts de vente
@@ -1924,6 +2035,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               onClick={() => {
                 setSelectedTextId(null);
                 setSelectedLogoId(null);
+                setSelectedAnnotationId(null);
               }}
             >
               {/* FOND WALLPAPER FLOUTÉ (Style Shots.so / Pika) */}
@@ -2440,6 +2552,35 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 </div>
               )}
 
+              {/* ANNOTATIONS */}
+              {(config.annotations || []).length > 0 && (
+                <SceneAnnotationsLayer
+                  annotations={config.annotations || []}
+                  selectedId={selectedAnnotationId}
+                  onSelect={(id) => {
+                    setSelectedAnnotationId(id);
+                    if (id) {
+                      setActiveMainTab('mockup');
+                      setActiveTab('annotate');
+                    }
+                  }}
+                  onChange={handleUpdateAnnotation}
+                  width={sceneLogicalW}
+                  height={sceneLogicalH}
+                  sceneRef={sceneRef}
+                  snap={snapToCenter}
+                  onDragEnd={clearSnapGuides}
+                />
+              )}
+
+              {/* REPÈRES D'ALIGNEMENT (jamais exportés) */}
+              {snapGuides.v && (
+                <div data-export-hide data-snap-guide="v" className="absolute top-0 bottom-0 left-1/2 w-px bg-fuchsia-400/90 z-[60] pointer-events-none" />
+              )}
+              {snapGuides.h && (
+                <div data-export-hide data-snap-guide="h" className="absolute left-0 right-0 top-1/2 h-px bg-fuchsia-400/90 z-[60] pointer-events-none" />
+              )}
+
               {/* WATERMARK : FREE vs PRO (Marque blanche) */}
               {isFreePlan ? (
                 <Link
@@ -2620,12 +2761,13 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
           {/* ONGLETS (un seul niveau) */}
           <div className={`${mobileSheetOpen ? 'block' : 'hidden lg:block'} px-3 py-2.5 border-b border-zinc-850/80 bg-[#090a0f] shrink-0`}>
-            <div className={`grid ${expertMode ? 'grid-cols-6' : 'grid-cols-4'} gap-1 p-1 rounded-xl bg-zinc-900/90 border border-zinc-800`} role="tablist">
+            <div className={`grid ${expertMode ? 'grid-cols-7' : 'grid-cols-5'} gap-1 p-1 rounded-xl bg-zinc-900/90 border border-zinc-800`} role="tablist">
               {([
                 { key: 'mockup', main: 'mockup', label: 'Appareil', icon: Monitor, expert: false },
                 { key: '3d', main: 'mockup', label: 'Angle', icon: Box, expert: false },
                 { key: 'frame', main: 'frame', label: 'Fond', icon: Palette, expert: false },
                 { key: 'branding', main: 'mockup', label: 'Textes', icon: Type, expert: false },
+                { key: 'annotate', main: 'mockup', label: 'Annoter', icon: PenLine, expert: false },
                 { key: 'callouts', main: 'mockup', label: 'Badges', icon: Tag, expert: true },
                 { key: 'content', main: 'mockup', label: 'Image', icon: ImageIcon, expert: true },
               ] as const)
@@ -3366,6 +3508,127 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   )}
                 </div>
                 </>)}
+              </div>
+            )}
+
+            {/* ══════════ ONGLET ANNOTER ══════════ */}
+            {activeTab === 'annotate' && (
+              <div className="space-y-5 animate-fade-in">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Ajouter</label>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {([
+                      { kind: 'arrow', label: 'Flèche', icon: MoveUpRight },
+                      { kind: 'rect', label: 'Cadre', icon: Square },
+                      { kind: 'ellipse', label: 'Cercle', icon: Circle },
+                      { kind: 'number', label: 'Étape', icon: Hash },
+                      { kind: 'blur', label: 'Flouter', icon: BlurIcon },
+                    ] as const).map((tool) => {
+                      const Icon = tool.icon;
+                      return (
+                        <button
+                          key={tool.kind}
+                          type="button"
+                          onClick={() => handleAddAnnotation(tool.kind)}
+                          className="py-2 rounded-xl border bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:border-violet-500/60 text-[10px] font-semibold flex flex-col items-center gap-1 transition-all"
+                          title={tool.kind === 'blur' ? 'Cacher une information sensible (e-mail, nom, chiffre…)' : `Ajouter : ${tool.label}`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          {tool.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Couleur</label>
+                  <div className="flex items-center gap-2">
+                    {[
+                      { c: '#ef4444', n: 'Rouge' },
+                      { c: '#f59e0b', n: 'Orange' },
+                      { c: '#22c55e', n: 'Vert' },
+                      { c: '#3b82f6', n: 'Bleu' },
+                      { c: '#7c3aed', n: 'Violet' },
+                      { c: '#ffffff', n: 'Blanc' },
+                      { c: '#111827', n: 'Noir' },
+                    ].map(({ c, n }) => {
+                      const sel = (config.annotations || []).find((a) => a.id === selectedAnnotationId);
+                      const active = sel && sel.kind !== 'blur' ? sel.color === c : annotationColor === c;
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => {
+                            setAnnotationColor(c);
+                            if (sel && sel.kind !== 'blur') handleUpdateAnnotation(sel.id, { color: c });
+                          }}
+                          aria-label={n}
+                          aria-pressed={active}
+                          title={n}
+                          className={`w-7 h-7 rounded-full border-2 transition-transform ${active ? 'border-violet-400 scale-110' : 'border-zinc-700 hover:scale-105'}`}
+                          style={{ background: c }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {(config.annotations || []).length > 0 ? (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                      Sur l&apos;image ({(config.annotations || []).length})
+                    </label>
+                    <div className="space-y-1.5">
+                      {(config.annotations || []).map((a) => (
+                        <div
+                          key={a.id}
+                          className={`flex items-center gap-2 p-2 rounded-xl border transition-all ${
+                            selectedAnnotationId === a.id ? 'border-violet-500 bg-violet-500/10' : 'border-zinc-800 bg-zinc-900'
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setSelectedAnnotationId(a.id)}
+                            className="flex-1 flex items-center gap-2 text-left text-xs text-zinc-200"
+                          >
+                            <span className="w-3 h-3 rounded-full border border-white/30 shrink-0" style={{ background: a.kind === 'blur' ? 'transparent' : a.color }} />
+                            {a.kind === 'arrow' ? 'Flèche' : a.kind === 'rect' ? 'Cadre' : a.kind === 'ellipse' ? 'Cercle' : a.kind === 'blur' ? 'Zone floutée' : `Étape ${a.label}`}
+                          </button>
+                          {a.kind === 'number' && (
+                            <input
+                              type="text"
+                              value={a.label || ''}
+                              maxLength={2}
+                              onChange={(e) => handleUpdateAnnotation(a.id, { label: e.target.value })}
+                              aria-label="Numéro de l'étape"
+                              className="w-10 px-1.5 py-1 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white text-center"
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAnnotation(a.id)}
+                            className="p-1.5 text-zinc-500 hover:text-rose-400 rounded-lg hover:bg-zinc-800 transition-colors"
+                            title="Supprimer (touche Suppr)"
+                            aria-label="Supprimer l'annotation"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-zinc-500 leading-relaxed">
+                    Ajoutez une flèche ou un cadre pour montrer une fonctionnalité à votre client, ou floutez une information
+                    privée avant d&apos;envoyer l&apos;image.
+                  </p>
+                )}
+
+                <p className="text-[11px] text-zinc-500 leading-relaxed">
+                  Faites glisser une annotation sur l&apos;image pour la placer ; les poignées violettes la redimensionnent.
+                  Le flou est appliqué sur l&apos;image exportée : l&apos;information cachée n&apos;est pas récupérable.
+                </p>
               </div>
             )}
 

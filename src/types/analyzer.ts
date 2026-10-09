@@ -43,6 +43,23 @@ export interface SceneSocialBadge {
   visible: boolean;
 }
 
+/** Annotation dessinée sur la scène (coordonnées en % de la scène) */
+export interface SceneAnnotation {
+  id: string;
+  kind: 'arrow' | 'rect' | 'ellipse' | 'number' | 'blur';
+  x: number;
+  y: number;
+  /** Flèche : point d'arrivée */
+  x2?: number;
+  y2?: number;
+  /** Cadre, cercle, flou : taille */
+  w?: number;
+  h?: number;
+  color: string;
+  /** Étape numérotée */
+  label?: string;
+}
+
 export interface SceneConfig {
   aspectRatio: SceneAspectRatio;
   customWidth?: number;
@@ -70,6 +87,8 @@ export interface SceneConfig {
   phoneModel?: 'iphone' | 'android';
   /** Écran des téléphones : version mobile capturée ou même image que l'ordinateur */
   phoneScreen?: 'mobile' | 'desktop';
+  /** Annotations : flèches, cadres, étapes, zones floutées */
+  annotations?: SceneAnnotation[];
   mockupX: number; // percentage offset -50 to 50
   mockupY: number; // percentage offset -50 to 50
   mockupScale: number; // 40 - 150

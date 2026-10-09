@@ -1206,6 +1206,86 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }
   };
 
+  // ══ WHATSAPP ET PARTAGE ══
+  // Partage natif (WhatsApp, Telegram, e-mail…) disponible surtout sur téléphone
+  const [canShareFiles, setCanShareFiles] = useState(false);
+  useEffect(() => {
+    try {
+      const probe = new File([new Blob(['x'], { type: 'image/jpeg' })], 'test.jpg', { type: 'image/jpeg' });
+      setCanShareFiles(typeof navigator.canShare === 'function' && navigator.canShare({ files: [probe] }));
+    } catch {
+      setCanShareFiles(false);
+    }
+  }, []);
+
+  const dataUrlToFile = async (dataUrl: string, filename: string) => {
+    const blob = await (await fetch(dataUrl)).blob();
+    return new File([blob], filename, { type: blob.type });
+  };
+
+  /** Statut WhatsApp : image 9:16 en JPG léger (le format du canevas est rétabli ensuite) */
+  const handleExportWhatsAppStatus = async () => {
+    if (!sceneRef.current) return;
+    const story = FRAME_PRESETS.find((fp) => fp.id === 'ig-story');
+    if (!story) return;
+    setIsExporting(true);
+    const originalPreset = currentFramePreset;
+    try {
+      const auth = await authorizeExport('image', exportQuality === '4k' ? 'hd' : exportQuality);
+      if (!auth) return;
+      selectFramePreset(story);
+      await new Promise((r) => setTimeout(r, 500));
+      const { width, height } = getExportSize(story, auth.quality);
+      const canvas = await renderSceneCanvas(width, height, !auth.watermark);
+      const flat = document.createElement('canvas');
+      flat.width = canvas.width;
+      flat.height = canvas.height;
+      const fctx = flat.getContext('2d');
+      if (fctx) {
+        fctx.fillStyle = '#ffffff';
+        fctx.fillRect(0, 0, flat.width, flat.height);
+        fctx.drawImage(canvas, 0, 0);
+      }
+      // Qualité 0,85 : fichier léger, rapide à envoyer même avec une connexion faible
+      const dataUrl = flat.toDataURL('image/jpeg', 0.85);
+      const filename = `${fileBaseName}-statut-whatsapp-${width}x${height}.jpg`;
+      if (canShareFiles) {
+        const file = await dataUrlToFile(dataUrl, filename);
+        await navigator.share({ files: [file], title: 'Mockup' }).catch(() => downloadDataUrl(dataUrl, filename));
+      } else {
+        downloadDataUrl(dataUrl, filename);
+      }
+      setShowExportMenu(false);
+    } catch (err) {
+      console.error('Erreur export WhatsApp:', err);
+      alert("Erreur lors de l'export pour WhatsApp. Veuillez réessayer.");
+    } finally {
+      selectFramePreset(originalPreset);
+      setIsExporting(false);
+    }
+  };
+
+  /** Partage natif de l'image au format actuel */
+  const handleShareImage = async () => {
+    if (!sceneRef.current) return;
+    setIsExporting(true);
+    try {
+      const auth = await authorizeExport('image', exportQuality);
+      if (!auth) return;
+      const format: ExportFormat = exportFormat === 'png' ? 'jpg' : exportFormat; // plus léger à partager
+      const dataUrl = await renderScene(format, currentFramePreset, auth.quality, !auth.watermark);
+      const { width, height } = getExportSize(currentFramePreset, auth.quality);
+      const file = await dataUrlToFile(dataUrl, `${fileBaseName}-${width}x${height}.${format}`);
+      await navigator.share({ files: [file], title: 'Mockup' });
+      setShowExportMenu(false);
+    } catch (err) {
+      // Partage annulé par l'utilisateur : rien à signaler
+      if ((err as Error)?.name !== 'AbortError') console.error('Erreur partage:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Copie rapide dans le presse-papier
   const handleCopyToClipboard = async () => {
     if (!sceneRef.current) return;
@@ -1919,6 +1999,32 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   {/* Autres exports */}
                   <div className="pt-3 border-t border-zinc-800 space-y-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Autres exports</span>
+                    {canShareFiles && (
+                      <button
+                        type="button"
+                        onClick={handleShareImage}
+                        disabled={isExporting}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left disabled:opacity-50"
+                      >
+                        <ExternalLink className="w-4 h-4 text-sky-400" />
+                        <span className="flex-1">
+                          <span className="font-semibold block">Partager…</span>
+                          <span className="text-[10px] text-zinc-500">WhatsApp, Telegram, e-mail… avec l&apos;image jointe</span>
+                        </span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleExportWhatsAppStatus}
+                      disabled={isExporting}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left disabled:opacity-50"
+                    >
+                      <Smartphone className="w-4 h-4 text-emerald-400" />
+                      <span className="flex-1">
+                        <span className="font-semibold block">Statut WhatsApp</span>
+                        <span className="text-[10px] text-zinc-500">Format vertical 9:16, JPG léger</span>
+                      </span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => {

@@ -25,7 +25,9 @@ export async function POST(req: NextRequest) {
     const billingCycle = (body?.billingCycle || 'monthly') as 'monthly' | 'annual';
     const phoneNumber = (body?.phoneNumber || '').trim();
 
-    const planConfig = FEDAPAY_PLANS_FCFA[plan];
+    const planConfig = Object.prototype.hasOwnProperty.call(FEDAPAY_PLANS_FCFA, plan)
+      ? FEDAPAY_PLANS_FCFA[plan]
+      : undefined;
     if (!planConfig) {
       return NextResponse.json(
         {
@@ -36,9 +38,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Calcul du montant selon le cycle
-    const amount =
-      billingCycle === 'annual'
+    // Calcul du montant selon le cycle (un pack de crédits a un prix unique)
+    const isCreditPack = planConfig.isCreditPack === true;
+
+    // Un abonnement par carte (Stripe) est déjà actif : on refuse un second
+    // plan payé par Mobile Money AVANT le paiement (les packs restent possibles).
+    if (!isCreditPack) {
+      const { data: current } = await createAdminClient()
+        .from('profiles')
+        .select('stripe_subscription_id, subscription_status, plan')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (
+        current?.stripe_subscription_id &&
+        current.plan !== 'free' &&
+        ['active', 'trialing', 'past_due'].includes(current.subscription_status || '')
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Vous avez déjà un abonnement actif par carte. Gérez-le depuis votre espace membre avant de payer par Mobile Money.',
+          },
+          { status: 409 }
+        );
+      }
+    }
+    const amount = isCreditPack
+      ? planConfig.monthlyPrice
+      : billingCycle === 'annual'
         ? planConfig.annualTotal
         : planConfig.monthlyPrice;
 
@@ -74,16 +101,22 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await createFedaPayCheckout({
-      description: `OmniMockup Studio - Plan ${planConfig.name} (${billingCycle === 'annual' ? '1 an' : '1 mois'})`,
+      description: isCreditPack
+        ? `OmniMockup Studio - ${planConfig.name}`
+        : `OmniMockup Studio - Plan ${planConfig.name} (${billingCycle === 'annual' ? '1 an' : '1 mois'})`,
       amount,
       currency: 'XOF',
       callbackUrl,
       customer: customerPayload,
+      // Métadonnées fixées par le serveur (jamais par le navigateur) :
+      // relues ensuite via l'API FedaPay pour appliquer le paiement.
       customMetadata: {
         userId: user.id,
         userEmail: user.email || '',
         plan,
-        billingCycle,
+        billingCycle: isCreditPack ? 'monthly' : billingCycle,
+        kind: isCreditPack ? 'credits' : 'plan',
+        credits: isCreditPack ? planConfig.credits || 0 : 0,
       },
     });
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getEffectivePlan } from '@/lib/plan';
 import { captureWebPage } from '@/lib/browser';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
@@ -83,12 +84,12 @@ export async function POST(req: NextRequest) {
       userId = user.id;
       const { data: profile } = await supabase
         .from('profiles')
-        .select('plan')
+        .select('plan, plan_expires_at')
         .eq('id', userId)
         .maybeSingle();
 
       if (profile?.plan) {
-        userPlan = profile.plan as UserPlan;
+        userPlan = getEffectivePlan(profile) as UserPlan;
       }
     }
   } catch (authErr) {

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentMonth } from '@/lib/usage';
 import { PLANS } from '@/lib/pricing';
+import { getEffectivePlan } from '@/lib/plan';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,11 +27,11 @@ export async function GET() {
     // 1. Récupération du profil utilisateur
     const { data: profile } = await admin
       .from('profiles')
-      .select('plan, credit_balance, subscription_status, billing_cycle, stripe_customer_id, stripe_subscription_id, created_at')
+      .select('plan, plan_expires_at, credit_balance, subscription_status, billing_cycle, stripe_customer_id, stripe_subscription_id, created_at')
       .eq('id', user.id)
       .maybeSingle();
 
-    const plan = profile?.plan || 'free';
+    const plan = getEffectivePlan(profile);
     const planDef = PLANS.find((p) => p.id === plan);
     const aiLimit = planDef?.quotas.aiAnalysesPerMonth ?? (plan === 'pro' || plan === 'agence' ? 999999 : 3);
     const pngLimit = planDef?.quotas.pngExportsPerMonth ?? (plan === 'pro' || plan === 'agence' ? 999999 : 20);
@@ -51,6 +52,7 @@ export async function GET() {
       success: true,
       email: user.email,
       plan,
+      plan_expires_at: profile?.plan_expires_at ?? null,
       credit_balance: profile?.credit_balance ?? 0,
       subscription_status: profile?.subscription_status || 'active',
       billing_cycle: profile?.billing_cycle || 'monthly',

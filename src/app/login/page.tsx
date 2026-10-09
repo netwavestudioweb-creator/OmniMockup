@@ -45,7 +45,8 @@ function LoginForm() {
     setErrorMessage(null);
 
     // Bypass de test pour validation sans configuration Supabase Auth
-    if (email === 'test@omnimockup.com' && password === 'OmniMockup2026!') {
+    // Uniquement en développement local : jamais actif sur le site en ligne
+    if (process.env.NODE_ENV === 'development' && email === 'test@omnimockup.com' && password === 'OmniMockup2026!') {
       const mockTestSession = {
         user: {
           id: 'test-user-id-999',
@@ -166,7 +167,8 @@ function LoginForm() {
                 </div>
               )}
 
-              {/* Raccourci Démo Test */}
+              {/* Raccourci Démo Test — développement local uniquement */}
+              {process.env.NODE_ENV === 'development' && (
               <div className="mb-6 p-3.5 rounded-2xl bg-violet-50/80 border border-violet-200/80 text-violet-900 text-xs space-y-2">
                 <div className="flex items-center justify-between font-bold">
                   <span className="flex items-center gap-1.5 text-violet-950">
@@ -188,6 +190,7 @@ function LoginForm() {
                   <span>Remplir les identifiants de test</span>
                 </button>
               </div>
+              )}
 
               {/* Bouton Google OAuth */}
               <button

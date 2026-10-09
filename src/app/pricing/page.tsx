@@ -545,7 +545,7 @@ export default function PricingPage() {
 
                   {/* Liste des fonctionnalités — Éléments non inclus avec ✕ et texte barré bien visibles */}
                   <ul className="space-y-2.5 text-xs">
-                    {plan.features.map((feat, i) => (
+                    {plan.features.filter((feat) => feat.included).map((feat, i) => (
                       <li
                         key={i}
                         className={`flex items-start gap-2.5 ${
@@ -799,7 +799,7 @@ export default function PricingPage() {
                   <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-medium text-stone-800">Analyses IA Directeur Artistique</td>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Analyses IA Directeur Artistique <span className="text-[10px] font-semibold text-violet-600">(bientôt)</span></td>
                   <td className="py-3.5 px-4 text-center text-stone-500">3 / mois</td>
                   <td className="py-3.5 px-4 text-center text-stone-500">3 / mois</td>
                   <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Illimité</td>
@@ -820,7 +820,7 @@ export default function PricingPage() {
                   <td className="py-3.5 px-4 text-center font-bold text-emerald-600">Inclus</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-medium text-stone-800">Sièges collaborateurs</td>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Sièges collaborateurs <span className="text-[10px] font-semibold text-violet-600">(bientôt)</span></td>
                   <td className="py-3.5 px-4 text-center text-stone-500">1</td>
                   <td className="py-3.5 px-4 text-center text-stone-500">1</td>
                   <td className="py-3.5 px-4 text-center text-stone-500 bg-violet-50/50">1</td>

@@ -11,6 +11,11 @@
 ALTER TABLE public.profiles
   DROP CONSTRAINT IF EXISTS profiles_plan_check;
 
+-- Convertir les anciens noms de plans (sinon la nouvelle contrainte échoue)
+UPDATE public.profiles SET plan = 'solo' WHERE plan = 'starter';
+UPDATE public.profiles SET plan = 'pro'  WHERE plan = 'creator';
+UPDATE public.profiles SET plan = 'free' WHERE plan NOT IN ('free', 'solo', 'pro', 'agence');
+
 ALTER TABLE public.profiles
   ADD CONSTRAINT profiles_plan_check
   CHECK (plan IN ('free', 'solo', 'pro', 'agence'));

@@ -224,7 +224,7 @@ export const FEDAPAY_PLANS_FCFA: Record<
     monthlyPrice: 19000,
     annualTotal: 190000,
     annualPrice: 15833,
-    description: 'Tout le plan Pro, 5 sièges, Marque blanche totale, Vidéo illimitée, Support WhatsApp 7j/7',
+    description: 'Tout le plan Pro, Marque blanche totale, Vidéo illimitée, Support WhatsApp 7j/7',
   },
   // Alias studio -> agence pour compatibilité
   studio: {
@@ -232,7 +232,7 @@ export const FEDAPAY_PLANS_FCFA: Record<
     monthlyPrice: 19000,
     annualTotal: 190000,
     annualPrice: 15833,
-    description: 'Tout le plan Pro, 5 sièges, Marque blanche totale, Vidéo illimitée, Support WhatsApp 7j/7',
+    description: 'Tout le plan Pro, Marque blanche totale, Vidéo illimitée, Support WhatsApp 7j/7',
   },
   // Packs de crédits
   credit_petit: {

@@ -1479,7 +1479,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-[11px] transition-all shadow-md shadow-violet-600/30"
                         >
                           <Sparkles className="w-3 h-3 text-amber-300" />
-                          <span>Passer au Pro (dès 4€/mois)</span>
+                          <span>Passer au Pro</span>
                         </Link>
                       </div>
                     )}
@@ -1504,7 +1504,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           className="flex items-center gap-2.5 px-4 py-2 text-zinc-300 hover:text-white hover:bg-zinc-850/80 transition-colors"
                         >
                           <CreditCard className="w-3.5 h-3.5 text-zinc-400" />
-                          <span>Changer de Forfait &amp; Tarifs (€)</span>
+                          <span>Changer de forfait &amp; tarifs</span>
                         </Link>
 
                         <div className="my-1 border-t border-zinc-800/80" />

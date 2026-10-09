@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
 
           const updateData = {
             plan,
+            plan_expires_at: null, // abonnement Stripe : pas de date de fin fixe
             billing_cycle: billing,
             subscription_status: 'active',
             stripe_customer_id: customerId,
@@ -103,10 +104,11 @@ export async function POST(req: NextRequest) {
         const newPlan = (status === 'active' || status === 'trialing') ? plan : 'free';
         await admin.from('profiles').update({
           plan: newPlan,
+          plan_expires_at: null,
           subscription_status: status,
           stripe_subscription_id: subscription.id,
           updated_at: new Date().toISOString(),
-        }).eq('stripe_customer_id', customerId);
+        }).eq('stripe_customer_id', customerId).eq('stripe_subscription_id', subscription.id);
         break;
       }
 
@@ -122,7 +124,7 @@ export async function POST(req: NextRequest) {
           subscription_status: 'canceled',
           stripe_subscription_id: null,
           updated_at: new Date().toISOString(),
-        }).eq('stripe_customer_id', customerId);
+        }).eq('stripe_customer_id', customerId).eq('stripe_subscription_id', subscription.id);
         break;
       }
 
@@ -163,29 +165,19 @@ async function creditUser(
   reason: string,
   stripeEventId?: string
 ): Promise<void> {
-  // 1. Insérer la transaction (UNIQUE sur stripe_event_id → idempotence)
-  const { error: txError } = await admin.from('credit_transactions').insert({
-    user_id: userId,
-    delta,
-    reason,
-    stripe_event_id: stripeEventId ?? null,
+  // Verrou (UNIQUE sur stripe_event_id) + ajout des crédits dans UNE transaction SQL
+  const { data, error } = await admin.rpc('grant_credits_once', {
+    p_user_id: userId,
+    p_delta: delta,
+    p_reason: reason,
+    p_stripe_event: stripeEventId ?? null,
+    p_external_ref: stripeEventId ? null : `stripe:${reason}:${userId}:${Date.now()}`,
   });
-
-  if (txError) {
-    if (txError.code === '23505') {
-      console.log(`[Webhook] Crédit déjà appliqué pour event ${stripeEventId} — ignoré.`);
-      return;
-    }
-    throw txError;
+  if (error) throw error; // Stripe renverra le webhook
+  if (data === 'already_applied') {
+    console.log(`[Webhook] Crédit déjà appliqué pour event ${stripeEventId} — ignoré.`);
+    return;
   }
-
-  // 2. Incrémenter le solde (avec RLS contourné par service_role)
-  const { data: profile } = await admin.from('profiles').select('credit_balance').eq('id', userId).maybeSingle();
-  const currentBalance = profile?.credit_balance ?? 0;
-  await admin.from('profiles').update({
-    credit_balance: Math.max(0, currentBalance + delta),
-    updated_at: new Date().toISOString(),
-  }).eq('id', userId);
 
   console.log(`[Webhook] +${delta} crédits → user ${userId} (raison: ${reason})`);
 }

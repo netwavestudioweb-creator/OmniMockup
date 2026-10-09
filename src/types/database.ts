@@ -7,6 +7,7 @@ export interface Profile {
   id: string;
   email: string;
   plan: UserPlan;
+  plan_expires_at: string | null;
   credit_balance: number;
   subscription_status: string | null;
   billing_cycle: 'monthly' | 'annual' | null;
@@ -37,6 +38,7 @@ export interface CreditTransaction {
   delta: number;
   reason: string;
   stripe_event_id: string | null;
+  external_ref: string | null;
   created_at: string;
 }
 

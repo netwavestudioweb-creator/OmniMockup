@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/database';
+import { getEffectivePlan } from '@/lib/plan';
 
 interface UserContextType {
   user: User | null;
@@ -38,29 +39,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
-        // Si le profil n'existe pas encore (délai de trigger), on peut le créer à la volée
-        console.warn('[UserContext] Profil non trouvé, création automatique...');
-        const { data: userResp } = await supabase.auth.getUser();
-        if (userResp?.user) {
-          const { data: newProfile } = await supabase
-            .from('profiles')
-            .upsert({
-              id: userId,
-              email: userResp.user.email || '',
-              plan: 'free',
-            })
-            .select('*')
-            .single();
-
-          if (newProfile) {
-            setProfile(newProfile as Profile);
-            return;
-          }
+        // Le profil est créé par un trigger SQL à l'inscription. S'il n'est pas
+        // encore visible, on réessaie une fois (le navigateur n'a pas le droit
+        // de créer ou modifier un profil : c'est voulu, pour la sécurité).
+        console.warn('[UserContext] Profil pas encore disponible, nouvel essai…');
+        await new Promise((r) => setTimeout(r, 1500));
+        const retry = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+        if (retry.data) {
+          const p = retry.data as Profile;
+          setProfile({ ...p, plan: getEffectivePlan(p) });
         }
+        return;
       }
 
       if (data) {
-        setProfile(data as Profile);
+        // Un plan Mobile Money expiré est affiché comme "free"
+        const p = data as Profile;
+        setProfile({ ...p, plan: getEffectivePlan(p) });
       }
     } catch (err) {
       console.error('[UserContext] Erreur lors du chargement du profil :', err);
@@ -79,7 +74,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     async function initSession() {
       try {
         // Vérification d'une session de test locale (mode démo/test)
-        const localTestSession = typeof window !== 'undefined' ? localStorage.getItem('omnimockup_test_session') : null;
+        // Session de test : uniquement en développement local. En production,
+        // on l'ignore et on la supprime (sinon n'importe qui pourrait se donner un plan payant).
+        if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'development') {
+          localStorage.removeItem('omnimockup_test_session');
+        }
+        const localTestSession =
+          typeof window !== 'undefined' && process.env.NODE_ENV === 'development'
+            ? localStorage.getItem('omnimockup_test_session')
+            : null;
         if (localTestSession) {
           try {
             const parsed = JSON.parse(localTestSession);

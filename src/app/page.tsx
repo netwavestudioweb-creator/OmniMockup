@@ -7,13 +7,12 @@ import { UrlInputForm } from '@/components/UrlInputForm';
 import { SceneEditor } from '@/components/SceneEditor';
 
 import { Footer } from '@/components/Footer';
+import { FounderApplicationForm } from '@/components/FounderApplicationForm';
 import { safeFetchJson } from '@/lib/api';
 import {
   CaptureItemResult,
   CaptureResponse,
-  SmartAnalyzeResponse,
 } from '@/types/analyzer';
-import { useUser } from '@/context/UserContext';
 import { useCurrency } from '@/context/CurrencyContext';
 import { PLANS, formatPrice, getPlanMonthlyPrice, getPlanMonthlyEquivalent } from '@/lib/pricing';
 import {
@@ -37,7 +36,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  Star,
   Globe,
   Layout,
   Shield,
@@ -46,11 +44,44 @@ import {
   Users,
   BadgeCheck,
   Watch,
-  Check,
 } from 'lucide-react';
 
+const AGENCY_USES = [
+  {
+    label: 'Devis',
+    icon: Wand2,
+    title: 'Propositions commerciales',
+    sub: 'Gagnez le client',
+    desc: 'Montrez à votre prospect à quoi ressemblera son futur site, ou présentez vos réalisations dans des mockups dignes d\'une grande agence.',
+    gradient: 'from-violet-600 to-indigo-600',
+  },
+  {
+    label: 'Livraison',
+    icon: BadgeCheck,
+    title: 'Livraison du site au client',
+    sub: 'Marquez la fin du projet',
+    desc: 'Remettez le site avec un kit de visuels prêts à publier : ordinateur, mobile et tablette, dans les formats des réseaux sociaux.',
+    gradient: 'from-indigo-600 to-fuchsia-600',
+  },
+  {
+    label: 'Portfolio',
+    icon: Layout,
+    title: 'Portfolio & page Réalisations',
+    sub: 'Valorisez votre travail',
+    desc: 'Mettez à jour votre page Réalisations en quelques minutes, avec un rendu homogène pour tous vos projets.',
+    gradient: 'from-fuchsia-600 to-rose-600',
+  },
+  {
+    label: 'Réseaux',
+    icon: Users,
+    title: 'Annonce sur LinkedIn & Instagram',
+    sub: 'Attirez les prochains clients',
+    desc: 'Annoncez chaque site livré avec un visuel au bon format : 1.91:1 pour LinkedIn, 1:1 et 9:16 pour Instagram.',
+    gradient: 'from-amber-500 to-orange-500',
+  },
+];
+
 export default function HomePage() {
-  const { isPremiumUser } = useUser();
   const { currency } = useCurrency();
 
   const [activeCaptureItem, setActiveCaptureItem] = useState<CaptureItemResult | null>(null);
@@ -60,7 +91,7 @@ export default function HomePage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [activePricingPlan, setActivePricingPlan] = useState<number>(2); // 0=Découverte, 1=Solo, 2=Pro (recommandé), 3=Agence
   const [activeStep, setActiveStep] = useState<number>(0); // 0=01 Collez, 1=02 Personnalisez, 2=03 Exportez
-  const [activeUseCase, setActiveUseCase] = useState<number>(0); // 0=Agences, 1=SaaS, 2=Designers, 3=Ecommerce
+  const [activeUseCase, setActiveUseCase] = useState<number>(0); // index dans AGENCY_USES
   const [heroMobileDevice, setHeroMobileDevice] = useState<'iphone' | 'watch'>('iphone');
 
   const handleAnalyzeUrl = async (urlToCapture: string, settings?: import('@/types/analyzer').CaptureSettings) => {
@@ -98,12 +129,6 @@ export default function HomePage() {
       if (firstSuccess) {
         setActiveCaptureItem(firstSuccess);
         setIsLoading(false);
-
-        safeFetchJson<SmartAnalyzeResponse>('/api/smart-analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: urlToCapture, isPremiumUser }),
-        }).catch(() => {});
       } else {
         throw new Error('Impossible de réaliser la capture de cette page web.');
       }
@@ -159,18 +184,18 @@ export default function HomePage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
                 </span>
-                Studio de Mockups 3D Professionnel
+                Pour les agences web &amp; freelances
                 <span className="px-1.5 py-0.5 rounded-md bg-violet-500/20 text-violet-200 text-[10px] font-bold border border-violet-400/30">NEW</span>
               </div>
 
               {/* Titre principal centré — Phrase complète sans coupure artificielle */}
               <h1 className="animate-fade-in delay-100 text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-white max-w-4xl mx-auto leading-[1.1] mb-6">
-                Transformez votre site en <span className="shimmer-text">mockup 3D premium</span>
+                Présentez vos sites clients comme une <span className="shimmer-text">agence haut de gamme</span>
               </h1>
 
               {/* Sous-titre centré — Complet et équilibré */}
               <p className="animate-fade-in delay-200 text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-8">
-                Collez simplement votre URL. Obtenez instantanément des visuels ultra-réalistes sur MacBook Pro, iPhone 16 Pro et iPad avec perspective 3D et export 4K.
+                Collez l&apos;URL d&apos;un site. OmniMockup capture la page automatiquement et la met en scène sur MacBook, iPhone et iPad. Prêt à envoyer au client en quelques secondes.
               </p>
 
               {/* Champ de saisie d'URL centré et aéré — Pièce maîtresse */}
@@ -202,36 +227,20 @@ export default function HomePage() {
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-700 hidden sm:block" />
                 <span className="flex items-center gap-1.5">
                   <Shield className="w-4 h-4 text-amber-400" />
-                  Essai gratuit, sans carte bancaire
+                  Essai sans inscription ni carte bancaire
                 </span>
               </div>
 
-              {/* Preuve de lancement centrée */}
-              <div className="animate-fade-in delay-500 flex items-center justify-center gap-3 mb-12 sm:mb-16">
-                <div className="flex -space-x-2">
-                  {['V', 'S', 'A', 'T', 'M'].map((l, i) => (
-                    <div
-                      key={i}
-                      className="w-8 h-8 rounded-full border-2 border-zinc-900 flex items-center justify-center text-[10px] font-bold text-white shadow-md"
-                      style={{ background: ['#7c3aed', '#6366f1', '#8b5cf6', '#a855f7', '#c084fc'][i] }}
-                    >
-                      {l}
-                    </div>
-                  ))}
-                </div>
-                <div className="text-left">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-xs text-zinc-300 font-semibold">
-                    Lancé en octobre 2026 · Gratuit pour commencer
-                  </p>
-                  <p className="text-[11px] text-zinc-500">
-                    sans filigrane dès le plan Pro
-                  </p>
-                </div>
+              {/* Lancement (sans fausse preuve sociale) */}
+              <div className="animate-fade-in delay-500 flex items-center justify-center mb-12 sm:mb-16">
+                <a
+                  href="#agences-fondatrices"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 text-xs sm:text-sm text-zinc-300 font-medium hover:border-violet-400/40 hover:text-white transition-colors"
+                >
+                  <Rocket className="w-4 h-4 text-violet-400" />
+                  Lancé en octobre 2026 · Nous cherchons 10 agences fondatrices
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </a>
               </div>
 
               {/* Prévisualisation Produit 3D — Spécifique PC (MacBook Pro) et Mobile (iPhone 16 Pro) */}
@@ -317,24 +326,21 @@ export default function HomePage() {
 
                           {/* Carte d'illustration visuelle */}
                           <div className="col-span-5">
-                            <div className="p-4 rounded-2xl bg-zinc-900/90 border border-violet-500/30 shadow-xl space-y-3">
-                              <div className="flex items-center justify-between text-xs text-zinc-400">
-                                <span className="font-semibold text-white">Score Performance</span>
-                                <span className="text-emerald-400 font-mono font-bold">100 / 100</span>
+                            <div className="p-4 rounded-2xl bg-zinc-900/90 border border-violet-500/30 shadow-xl space-y-2.5">
+                              <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                                <Layout className="w-3.5 h-3.5 text-violet-400" />
+                                Formats prêts à envoyer
                               </div>
-                              <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                                <div className="h-full w-full bg-emerald-500 rounded-full" />
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
-                                <div className="p-2 rounded-lg bg-zinc-800/80 border border-zinc-700/50">
-                                  <p className="text-zinc-500">LCP</p>
-                                  <p className="font-bold text-white font-mono">0.6s</p>
+                              {[
+                                { name: 'Présentation client', ratio: '16:9' },
+                                { name: 'Post LinkedIn', ratio: '1.91:1' },
+                                { name: 'Post Instagram', ratio: '1:1' },
+                              ].map((row) => (
+                                <div key={row.name} className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/80 border border-zinc-700/50 text-[11px]">
+                                  <span className="text-zinc-300">{row.name}</span>
+                                  <span className="font-bold font-mono text-emerald-400">{row.ratio}</span>
                                 </div>
-                                <div className="p-2 rounded-lg bg-zinc-800/80 border border-zinc-700/50">
-                                  <p className="text-zinc-500">Conversion</p>
-                                  <p className="font-bold text-emerald-400 font-mono">+240%</p>
-                                </div>
-                              </div>
+                              ))}
                             </div>
                           </div>
                         </div>
@@ -540,12 +546,12 @@ export default function HomePage() {
           <section className="border-y border-white/5 bg-zinc-900/40 py-5 overflow-hidden">
             <div className="max-w-5xl mx-auto px-4 flex flex-wrap items-center justify-center gap-6 sm:gap-10">
               {[
-                { icon: Rocket, label: 'Lancé en octobre 2026' },
-                { icon: ScanLine, label: 'Export 4K Retina' },
-                { icon: Smartphone, label: 'iPhone 16 Pro' },
-                { icon: Monitor, label: 'MacBook Pro M3' },
-                { icon: Zap, label: 'Résultat en 5 sec' },
-                { icon: Shield, label: 'Sans inscription' },
+                { icon: Globe, label: 'Capture depuis l\'URL' },
+                { icon: Zap, label: 'Résultat en quelques secondes' },
+                { icon: Monitor, label: 'MacBook, iPhone, iPad' },
+                { icon: ScanLine, label: 'Jusqu\'en 4K (Pro)' },
+                { icon: BadgeCheck, label: 'Marque blanche (Agence)' },
+                { icon: Shield, label: 'Sans inscription pour tester' },
               ].map((item, i) => (
                 <React.Fragment key={i}>
                   <span className="flex items-center gap-2 text-sm text-zinc-400 font-semibold whitespace-nowrap">
@@ -562,12 +568,12 @@ export default function HomePage() {
           <section className="bg-zinc-950 py-20 sm:py-28">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center max-w-3xl mx-auto mb-14">
-                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Comparatif Rapide</p>
+                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Le problème</p>
                 <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-4">
-                  L&apos;ancienne méthode face à la <span className="shimmer-text">nouvelle façon</span>
+                  Vos clients jugent un site <span className="shimmer-text">sur une image</span>
                 </h2>
                 <p className="text-zinc-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-                  Arrêtez de perdre des heures sur des logiciels complexes comme Figma ou Photoshop. Obtenez un rendu studio 3D en quelques secondes.
+                  Proposition commerciale, livraison, portfolio : la première impression se joue sur un visuel. Une capture plate fait paraître un site à 3 000 € comme un site à 300 €.
                 </p>
               </div>
 
@@ -581,11 +587,11 @@ export default function HomePage() {
                     <h3 className="font-bold text-rose-200 text-base sm:text-lg">Sans OmniMockup</h3>
                   </div>
                   {[
-                    'Des heures passées à ajuster des calques sur Figma ou Photoshop',
-                    'Obligation de faire appel à un designer pour chaque maquette',
-                    'Résultats statiques, génériques et sans relief valorisant',
-                    'Difficulté d\'itérer et de créer des déclinaisons rapidement',
-                    'Captures plates qui n\'attirent pas l\'attention des clients',
+                    'Des captures plates qui ne mettent pas votre travail en valeur',
+                    'Des heures non facturées à préparer des visuels sur Figma pour chaque client',
+                    'Des captures d\'écran à refaire à la main à chaque modification du site',
+                    'Des propositions commerciales qui ressemblent à celles de vos concurrents',
+                    'Un portfolio d\'agence qui ne reflète pas le niveau de vos réalisations',
                   ].map((pb, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <XCircle className="w-4 h-4 text-rose-500 mt-1 shrink-0" />
@@ -603,11 +609,11 @@ export default function HomePage() {
                     <h3 className="font-bold text-emerald-200 text-base sm:text-lg">Avec OmniMockup</h3>
                   </div>
                   {[
-                    'Mockup 3D ultra-réaliste généré en moins de 5 secondes',
-                    'Zéro compétence technique requise : tout est automatique',
-                    'Rendu professionnel haut de gamme prêt pour Product Hunt',
-                    'Personnalisation en direct de l\'appareil, de l\'angle et du fond',
-                    'Export 4K Retina instantané et copie dans le presse-papier en 1 clic',
+                    'Collez l\'URL : les pages sont capturées automatiquement, sans capture manuelle',
+                    'Les bannières cookies et popups sont masquées automatiquement',
+                    'Mise en scène sur MacBook, iPhone et iPad, angle et fond réglables',
+                    'Tous les formats (présentation, LinkedIn, Instagram) en quelques clics',
+                    'Vos mockups avec le logo de votre agence (marque blanche, plan Agence)',
                   ].map((sol, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-1 shrink-0" />
@@ -846,71 +852,31 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* ═══════════ USE CASES ═══════════ */}
+          {/* ═══════════ USAGES POUR UNE AGENCE ═══════════ */}
           <section className="bg-zinc-900 py-20 sm:py-28">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center max-w-3xl mx-auto mb-14">
-                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Cas d&apos;Usage</p>
+                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Pour les agences</p>
                 <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-4">
-                  Conçu sur mesure pour chaque <span className="shimmer-text">créateur numérique</span>
+                  Un visuel pro à chaque <span className="shimmer-text">étape du projet</span>
                 </h2>
                 <p className="text-zinc-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-                  Découvrez comment les professionnels du web valorisent leur travail et convertissent davantage.
+                  De la proposition commerciale à l&apos;annonce du site livré, vos réalisations sont présentées comme elles le méritent.
                 </p>
               </div>
 
               {/* Desktop 2x2 Grid */}
               <div className="hidden sm:grid sm:grid-cols-2 gap-5">
-                {[
-                  {
-                    icon: Users,
-                    title: 'Agences & Freelances',
-                    sub: 'Valorisez vos livrables',
-                    desc: 'Ne livrez plus de simples captures plates. Présentez les créations de vos clients dans des MacBook 3D pour justifier vos tarifs et décrocher des contrats plus ambitieux.',
-                    badge: 'Gain de temps ×10',
-                    badgeClass: 'bg-violet-500/15 text-violet-300 border-violet-500/25',
-                    gradient: 'from-violet-600 to-indigo-600',
-                  },
-                  {
-                    icon: Rocket,
-                    title: 'Fondateurs SaaS',
-                    sub: 'Optimisez vos conversions',
-                    desc: 'Préparez tous vos visuels de lancement, bannières Twitter/X et posts LinkedIn en moins de 60 secondes, sans attendre la disponibilité d\'un graphiste.',
-                    badge: 'Conversion Boostée',
-                    badgeClass: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/25',
-                    gradient: 'from-indigo-600 to-fuchsia-600',
-                  },
-                  {
-                    icon: Palette,
-                    title: 'Designers & Développeurs',
-                    sub: 'Sublimez vos portfolios',
-                    desc: 'Mettez en scène vos réalisations sur Dribbble, Behance et GitHub avec des perspectives 3D remarquables sans ouvrir Photoshop ni Figma.',
-                    badge: 'Qualité Studio',
-                    badgeClass: 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/25',
-                    gradient: 'from-fuchsia-600 to-rose-600',
-                  },
-                  {
-                    icon: Globe,
-                    title: 'Boutiques E-commerce',
-                    sub: 'Publicités & Réseaux Sociaux',
-                    desc: 'Créez vos visuels produits pour Instagram, TikTok et vos campagnes publicitaires directement depuis votre boutique en ligne dans tous les ratios.',
-                    badge: 'Multi-Formats 4K',
-                    badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/25',
-                    gradient: 'from-amber-500 to-orange-500',
-                  },
-                ].map((uc, i) => (
+                {AGENCY_USES.map((uc, i) => (
                   <div key={i} className="group relative p-6 sm:p-7 rounded-2xl bg-zinc-800/40 border border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800/70 transition-all flex flex-col gap-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${uc.gradient} flex items-center justify-center shadow-lg shrink-0`}>
-                          <uc.icon className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-white text-base">{uc.title}</h3>
-                          <p className="text-xs text-violet-400 font-semibold mt-0.5">{uc.sub}</p>
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${uc.gradient} flex items-center justify-center shadow-lg shrink-0`}>
+                        <uc.icon className="w-5 h-5 text-white" />
                       </div>
-                      <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold border ${uc.badgeClass}`}>{uc.badge}</span>
+                      <div>
+                        <h3 className="font-bold text-white text-base">{uc.title}</h3>
+                        <p className="text-xs text-violet-400 font-semibold mt-0.5">{uc.sub}</p>
+                      </div>
                     </div>
                     <p className="text-sm text-zinc-400 leading-relaxed">{uc.desc}</p>
                     <button
@@ -918,73 +884,27 @@ export default function HomePage() {
                       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                       className="self-start flex items-center gap-1.5 text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors group-hover:gap-2.5"
                     >
-                      Essayer maintenant
+                      Tester avec le site d&apos;un client
                       <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                     </button>
                   </div>
                 ))}
               </div>
 
-              {/* Mobile View: Interactive Persona Tabs (no vertical stacking) */}
+              {/* Mobile : onglets (pas d'empilement vertical) */}
               <div className="block sm:hidden">
                 {(() => {
-                  const cases = [
-                    {
-                      label: 'Agences',
-                      icon: Users,
-                      title: 'Agences & Freelances',
-                      sub: 'Valorisez vos livrables',
-                      desc: 'Ne livrez plus de simples captures plates. Présentez les créations de vos clients dans des MacBook 3D pour justifier vos tarifs et décrocher des contrats plus ambitieux.',
-                      badge: 'Gain de temps ×10',
-                      badgeClass: 'bg-violet-500/15 text-violet-300 border-violet-500/25',
-                      gradient: 'from-violet-600 to-indigo-600',
-                    },
-                    {
-                      label: 'SaaS',
-                      icon: Rocket,
-                      title: 'Fondateurs SaaS',
-                      sub: 'Optimisez vos conversions',
-                      desc: 'Préparez tous vos visuels de lancement, bannières Twitter/X et posts LinkedIn en moins de 60 secondes, sans attendre la disponibilité d\'un graphiste.',
-                      badge: 'Conversion Boostée',
-                      badgeClass: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/25',
-                      gradient: 'from-indigo-600 to-fuchsia-600',
-                    },
-                    {
-                      label: 'Designers',
-                      icon: Palette,
-                      title: 'Designers & Développeurs',
-                      sub: 'Sublimez vos portfolios',
-                      desc: 'Mettez en scène vos réalisations sur Dribbble, Behance et GitHub avec des perspectives 3D remarquables sans ouvrir Photoshop ni Figma.',
-                      badge: 'Qualité Studio',
-                      badgeClass: 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/25',
-                      gradient: 'from-fuchsia-600 to-rose-600',
-                    },
-                    {
-                      label: 'E-commerce',
-                      icon: Globe,
-                      title: 'Boutiques E-commerce',
-                      sub: 'Publicités & Réseaux Sociaux',
-                      desc: 'Créez vos visuels produits pour Instagram, TikTok et vos campagnes publicitaires directement depuis votre boutique en ligne dans tous les ratios.',
-                      badge: 'Multi-Formats 4K',
-                      badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/25',
-                      gradient: 'from-amber-500 to-orange-500',
-                    },
-                  ];
-                  const current = cases[activeUseCase];
-
+                  const current = AGENCY_USES[activeUseCase] ?? AGENCY_USES[0];
                   return (
                     <div className="flex flex-col gap-4">
-                      {/* Horizontal pill tabs */}
                       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                        {cases.map((c, idx) => (
+                        {AGENCY_USES.map((c, idx) => (
                           <button
                             key={idx}
                             type="button"
                             onClick={() => setActiveUseCase(idx)}
                             className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                              activeUseCase === idx
-                                ? 'bg-violet-600 text-white shadow-md'
-                                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                              activeUseCase === idx ? 'bg-violet-600 text-white shadow-md' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
                             }`}
                           >
                             <c.icon className="w-3.5 h-3.5" />
@@ -992,111 +912,79 @@ export default function HomePage() {
                           </button>
                         ))}
                       </div>
-
-                      {/* Spotlight Card */}
                       <div className="p-6 rounded-2xl bg-zinc-800/60 border border-zinc-700/70 flex flex-col gap-4 shadow-xl">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${current.gradient} flex items-center justify-center shadow-lg shrink-0`}>
-                              <current.icon className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-white text-base">{current.title}</h3>
-                              <p className="text-xs text-violet-400 font-semibold mt-0.5">{current.sub}</p>
-                            </div>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${current.gradient} flex items-center justify-center shadow-lg shrink-0`}>
+                            <current.icon className="w-5 h-5 text-white" />
                           </div>
-                          <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold border ${current.badgeClass}`}>
-                            {current.badge}
-                          </span>
+                          <div>
+                            <h3 className="font-bold text-white text-base">{current.title}</h3>
+                            <p className="text-xs text-violet-400 font-semibold mt-0.5">{current.sub}</p>
+                          </div>
                         </div>
-
                         <p className="text-sm text-zinc-300 leading-relaxed">{current.desc}</p>
-
-                        <div className="pt-2 border-t border-zinc-700/50 flex items-center justify-between">
-                          <button
-                            type="button"
-                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors"
-                          >
-                            Essayer maintenant
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                          <div className="flex gap-1">
-                            {cases.map((_, dotIdx) => (
-                              <button
-                                key={dotIdx}
-                                type="button"
-                                onClick={() => setActiveUseCase(dotIdx)}
-                                className={`w-1.5 h-1.5 rounded-full transition-all ${
-                                  activeUseCase === dotIdx ? 'w-4 bg-violet-500' : 'bg-zinc-700'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                          className="self-start flex items-center gap-1.5 text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors"
+                        >
+                          Tester avec le site d&apos;un client
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   );
                 })()}
               </div>
+
+              <p className="mt-8 text-center text-sm text-zinc-400">
+                <BadgeCheck className="inline w-4 h-4 text-violet-400 mr-1.5 -mt-0.5" />
+                Marque blanche : vos mockups avec le logo de votre agence (plan Agence).
+              </p>
             </div>
           </section>
 
-          {/* ═══════════ LANCEMENT & PREMIERS RETOURS ═══════════ */}
-          <section className="bg-zinc-950 py-20 sm:py-28">
+          {/* ═══════════ FONDATEURS SAAS (cible secondaire) ═══════════ */}
+          <section className="bg-zinc-950 py-16 sm:py-20">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center max-w-3xl mx-auto mb-14">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-indigo-950/60 to-zinc-900 border border-indigo-500/25">
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-600 to-fuchsia-600 flex items-center justify-center shrink-0">
+                    <Rocket className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-black text-white mb-1.5">Vous lancez votre SaaS ?</h2>
+                    <p className="text-sm text-zinc-400 leading-relaxed max-w-xl">
+                      Tous vos visuels de lancement (Product Hunt, X, LinkedIn) en quelques minutes, sans abonnement : payez seulement les crédits dont vous avez besoin.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/pricing#credits"
+                  className="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-zinc-900 font-bold text-sm hover:bg-zinc-100 transition-colors"
+                >
+                  Voir les packs de crédits
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          {/* ═══════════ PROGRAMME AGENCES FONDATRICES ═══════════ */}
+          <section className="bg-zinc-950 pb-20 sm:pb-28 scroll-mt-20" id="agences-fondatrices">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-10">
                 <span className="inline-block text-[11px] font-black uppercase tracking-[0.2em] text-violet-400 bg-violet-950/60 border border-violet-800/60 px-3.5 py-1 rounded-full mb-3">
                   Lancé en octobre 2026
                 </span>
                 <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-4">
-                  Les premiers retours <span className="shimmer-text">arrivent bientôt</span>
+                  Devenez l&apos;une des <span className="shimmer-text">10 agences fondatrices</span>
                 </h2>
-                <p className="text-zinc-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-                  OmniMockup Studio vient d&apos;ouvrir ses portes. Participez aux premières créations, partagez vos impressions et aidez-nous à façonner les prochains templates et formats.
+                <p className="text-zinc-400 text-sm sm:text-base leading-relaxed">
+                  1 mois de plan Pro offert. En échange, nous vous demandons simplement un retour honnête sur l&apos;outil après l&apos;avoir utilisé sur vos projets clients.
                 </p>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex flex-col justify-between gap-4">
-                  <div className="space-y-2.5">
-                    <span className="text-2xl">🚀</span>
-                    <h3 className="text-base font-bold text-white">Rendu 3D Temps Réel 60fps</h3>
-                    <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                      Moteur WebGL haute fidélité : contrôlez la rotation, l&apos;angle de caméra, l&apos;éclairage et les ombres directement depuis votre navigateur.
-                    </p>
-                  </div>
-                  <div className="pt-3 border-t border-zinc-800 text-[11px] font-bold text-violet-400">
-                    Sans plugin ni installation
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex flex-col justify-between gap-4">
-                  <div className="space-y-2.5">
-                    <span className="text-2xl">💎</span>
-                    <h3 className="text-base font-bold text-white">Qualité Studio 4K & Vidéo</h3>
-                    <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                      Exports Retina Ultra-HD sans filigrane, animations vidéo 60fps prêtes pour vos lancements sur Twitter/X, LinkedIn et Product Hunt.
-                    </p>
-                  </div>
-                  <div className="pt-3 border-t border-zinc-800 text-[11px] font-bold text-violet-400">
-                    Standard Apple & Airbnb
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex flex-col justify-between gap-4">
-                  <div className="space-y-2.5">
-                    <span className="text-2xl">🤝</span>
-                    <h3 className="text-base font-bold text-white">Construit avec la Communauté</h3>
-                    <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                      Chaque retour ou suggestion de nouveau mockup est analysé directement par notre équipe pour les mises à jour hebdomadaires.
-                    </p>
-                  </div>
-                  <div className="pt-3 border-t border-zinc-800 text-[11px] font-bold text-violet-400">
-                    Support réactif sous 24h
-                  </div>
-                </div>
-              </div>
+              <FounderApplicationForm />
             </div>
           </section>
 
@@ -1131,7 +1019,6 @@ export default function HomePage() {
                       { name: 'Studio complet (MacBook, iPhone)', included: true },
                       { name: '3 exports PNG par jour (1x)', included: true },
                       { name: 'Filigrane discret OmniMockup', included: true },
-                      { name: '3 analyses IA par mois', included: true },
                       { name: 'Exports 4K Retina', included: false },
                       { name: 'Export Vidéo MP4', included: false },
                     ],
@@ -1150,7 +1037,6 @@ export default function HomePage() {
                       { name: 'Studio complet 3D', included: true },
                       { name: '20 exports PNG HD 2x / mois', included: true },
                       { name: 'Filigrane discret (non intrusif)', included: true },
-                      { name: '3 analyses IA par mois', included: true },
                       { name: 'Exports 4K Retina', included: false },
                       { name: 'Export Vidéo MP4', included: false },
                     ],
@@ -1170,8 +1056,7 @@ export default function HomePage() {
                       { name: 'ZÉRO filigrane (rendus neutres)', included: true },
                       { name: '10 exports Vidéo MP4 60fps / mois', included: true },
                       { name: 'IA Pitch Kit (5 générations / mois)', included: true },
-                      { name: 'Analyses IA illimitées', included: true },
-                      { name: '5 sièges collaborateurs', included: false },
+                      { name: 'Templates Pro & réseaux sociaux', included: true },
                     ],
                   },
                   {
@@ -1179,14 +1064,14 @@ export default function HomePage() {
                     name: 'Agence',
                     price: formatPrice(getPlanMonthlyPrice(PLANS[3], currency), currency),
                     period: 'par mois',
-                    desc: 'La suite complète : marque blanche totale, 5 sièges, vidéo illimitée et support WhatsApp.',
+                    desc: 'La suite complète : marque blanche totale, vidéo illimitée, kit de vente IA et support WhatsApp.',
                     cta: 'Choisir Agence',
                     href: '/pricing',
                     highlighted: false,
                     badge: null,
                     features: [
                       { name: 'Tout le forfait Pro inclus', included: true },
-                      { name: '5 sièges collaborateurs inclus', included: true },
+                      { name: 'Kit Vente & Devis IA', included: true },
                       { name: 'Marque blanche totale (White Label)', included: true },
                       { name: 'Exports Vidéo MP4 ILLIMITÉS', included: true },
                       { name: 'Pack OmniExport 1-Click (5 formats)', included: true },
@@ -1217,13 +1102,13 @@ export default function HomePage() {
                           <div>
                             <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">{plan.name}</p>
                             <div className="flex items-baseline gap-1">
-                              <span className="text-3xl font-black text-white font-mono">{plan.price}</span>
+                              <span className="text-3xl font-black text-white font-mono whitespace-nowrap shrink-0">{plan.price}</span>
                               <span className="text-xs text-zinc-500">/ {plan.period}</span>
                             </div>
                             <p className="text-xs text-zinc-400 mt-2 leading-relaxed min-h-[34px]">{plan.desc}</p>
 
                             <ul className="flex flex-col gap-2 mt-4 pt-4 border-t border-zinc-800 text-xs">
-                              {plan.features.map((f, j) => (
+                              {plan.features.filter((f) => f.included).map((f, j) => (
                                 <li
                                   key={j}
                                   className={`flex items-start gap-2 ${
@@ -1321,7 +1206,7 @@ export default function HomePage() {
                             </div>
 
                             <ul className="flex flex-col gap-2.5 my-5 pt-4 border-t border-zinc-800 text-xs">
-                              {activePlan.features.map((f, j) => (
+                              {activePlan.features.filter((f) => f.included).map((f, j) => (
                                 <li
                                   key={j}
                                   className={`flex items-start gap-2 ${
@@ -1390,28 +1275,32 @@ export default function HomePage() {
               <div className="flex flex-col gap-3">
                 {[
                   {
-                    q: 'Comment fonctionne la capture automatique d\'URL ?',
-                    a: 'Notre moteur lance un navigateur headless haute performance, charge votre page en résolution HD, masque automatiquement les bandeaux de consentement et génère une capture nette en moins de 5 secondes.',
+                    q: 'Puis-je utiliser les mockups pour mes clients et à des fins commerciales ?',
+                    a: 'Oui. Les visuels que vous créez avec OmniMockup peuvent être utilisés dans vos propositions commerciales, vos livrables clients, votre portfolio et vos publications, y compris à des fins commerciales.',
                   },
                   {
-                    q: 'Est-il obligatoire de créer un compte pour commencer ?',
-                    a: 'Non ! Vous pouvez générer gratuitement jusqu\'à 5 mockups par mois sans inscription. Le compte Pro débloque les créations illimitées et l\'export 4K Retina.',
+                    q: 'Comment fonctionne la marque blanche ?',
+                    a: 'Avec le plan Agence, la mention OmniMockup disparaît et vous pouvez ajouter le logo de votre agence sur vos rendus. Vos clients voient uniquement votre marque.',
                   },
                   {
-                    q: 'Quels sont les formats d\'exportation proposés ?',
-                    a: 'Vous pouvez exporter votre visuel au format image PNG haute définition (4K Retina avec le plan Pro) ou le copier d\'un clic directement dans votre presse-papier pour l\'insérer partout.',
+                    q: 'Que deviennent les captures des sites de mes clients ?',
+                    a: 'La page est chargée par notre moteur de capture, puis l\'image est envoyée directement à votre navigateur. Nous ne conservons pas les captures sur nos serveurs.',
                   },
                   {
-                    q: 'Quels appareils puis-je utiliser pour mes présentations ?',
-                    a: 'Vous avez accès au MacBook Pro M3, iPhone 16 Pro avec Dynamic Island, iPad Pro, navigateur Safari macOS, Chrome, ainsi qu\'à un mode épuré sans cadre.',
+                    q: 'Faut-il créer un compte pour tester ?',
+                    a: 'Non. Vous pouvez tester le studio et exporter jusqu\'à 3 images par jour (avec un filigrane discret) sans compte ni carte bancaire. Les exports HD sans filigrane commencent avec le plan Pro.',
                   },
                   {
-                    q: 'Puis-je importer une capture d\'écran faite par mes soins ?',
-                    a: 'Absolument. Si votre projet est hébergé en local ou protégé par mot de passe, déposez simplement votre capture PNG, JPG ou WebP dans l\'onglet dédié.',
+                    q: 'Le site du client est en local ou protégé par mot de passe : comment faire ?',
+                    a: 'Déposez simplement votre propre capture d\'écran (PNG, JPG ou WebP) : vous profitez de la même mise en scène.',
                   },
                   {
-                    q: 'Comment s\'effectue la gestion des abonnements ?',
-                    a: 'Les paiements sont traités de façon sécurisée via Stripe. Vous pouvez modifier ou résilier votre abonnement à tout moment en un clic depuis votre espace membre.',
+                    q: 'Puis-je payer en euros, en dollars ou par Mobile Money ?',
+                    a: 'Oui. Le paiement par carte est disponible partout, en euros ou en dollars. En Afrique de l\'Ouest, vous pouvez aussi payer en FCFA par Mobile Money.',
+                  },
+                  {
+                    q: 'Puis-je annuler à tout moment ?',
+                    a: 'Oui, sans engagement. Un abonnement par carte se résilie en un clic depuis votre espace membre et reste actif jusqu\'à la fin de la période payée. Un paiement Mobile Money couvre 1 mois ou 1 an, sans renouvellement automatique.',
                   },
                 ].map((faq, i) => (
                   <div
@@ -1455,10 +1344,10 @@ export default function HomePage() {
             <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center">
 
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-5">
-                Prêt à créer votre <span className="shimmer-text">premier mockup 3D ?</span>
+                Testez avec le site de <span className="shimmer-text">votre dernier client</span>
               </h2>
               <p className="text-zinc-400 text-sm sm:text-base mb-10 leading-relaxed max-w-2xl mx-auto">
-                Lancé en octobre 2026 · Gratuit pour commencer — sans filigrane dès le plan Pro. Créez des visuels d&apos;exception en quelques secondes.
+                Collez son URL, choisissez l&apos;appareil et exportez. Gratuit pour tester, sans filigrane dès le plan Pro.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -1468,7 +1357,7 @@ export default function HomePage() {
                   className="group w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-base flex items-center justify-center gap-2.5 transition-all shadow-2xl shadow-violet-600/35 active:scale-[0.98]"
                 >
                   <Wand2 className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                  <span>Créer mon Mockup gratuitement</span>
+                  <span>Tester avec le site d&apos;un client</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
                 </button>
                 <Link
@@ -1481,7 +1370,7 @@ export default function HomePage() {
 
               <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-xs text-zinc-500">
                 <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-emerald-400" /> Sans carte bancaire</span>
-                <span className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5 text-violet-400" /> Résultat en 5 secondes</span>
+                <span className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5 text-violet-400" /> Sans inscription pour tester</span>
                 <span className="flex items-center gap-1.5"><Smartphone className="w-3.5 h-3.5 text-indigo-400" /> Mobile, Tablette & Desktop</span>
               </div>
             </div>

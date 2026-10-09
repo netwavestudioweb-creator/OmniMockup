@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { getFedaPayTransaction } from '@/lib/fedapay';
+import { applyFedaPayTransaction } from '@/lib/fedapay-apply';
 
+export const dynamic = 'force-dynamic';
+
+/**
+ * Retour du navigateur après le paiement FedaPay.
+ * Le paiement est vérifié auprès de l'API FedaPay et appliqué une seule fois
+ * (le webhook peut aussi l'appliquer : le premier arrivé gagne).
+ */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const transactionId = searchParams.get('id') || searchParams.get('transaction_id');
@@ -12,54 +18,25 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const transaction = await getFedaPayTransaction(transactionId);
-    if (!transaction) {
-      return NextResponse.redirect(`${siteUrl}/pricing?error=transaction_not_found`);
-    }
+    const result = await applyFedaPayTransaction(transactionId);
 
-    if (transaction.status === 'approved' || transaction.status === 'transferred') {
-      const metadata = transaction.custom_metadata || {};
-      const userId = metadata.userId || metadata.user_id;
-      const plan = (metadata.plan || 'pro') as 'solo' | 'pro' | 'agence';
-      const isCreditPack = metadata.isCreditPack === true || String(metadata.isCreditPack) === 'true';
-      const credits = Number(metadata.credits || 0);
-
-      if (userId) {
-        const admin = createAdminClient();
-        if (isCreditPack && credits > 0) {
-          // Créditer les crédits achetés
-          const { data: prof } = await admin.from('profiles').select('credit_balance').eq('id', userId).maybeSingle();
-          const currentBal = prof?.credit_balance ?? 0;
-          await admin.from('profiles').update({
-            credit_balance: currentBal + credits,
-            payment_provider: 'fedapay',
-            fedapay_transaction_id: String(transactionId),
-            updated_at: new Date().toISOString(),
-          }).eq('id', userId);
-        } else {
-          await admin
-            .from('profiles')
-            .update({
-              plan,
-              payment_provider: 'fedapay',
-              fedapay_transaction_id: String(transactionId),
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', userId);
+    switch (result.status) {
+      case 'applied':
+        return NextResponse.redirect(
+          result.kind === 'credits'
+            ? `${siteUrl}/account?success=true&type=credits&provider=fedapay`
+            : `${siteUrl}/account?success=true&provider=fedapay&plan=${result.plan}`
+        );
+      case 'already_applied':
+        return NextResponse.redirect(`${siteUrl}/account?success=true&provider=fedapay`);
+      case 'pending':
+        return NextResponse.redirect(`${siteUrl}/pricing?pending=true&tx=${encodeURIComponent(transactionId)}`);
+      default:
+        if (result.reason.startsWith('status_')) {
+          return NextResponse.redirect(`${siteUrl}/pricing?canceled=true`);
         }
-      }
-
-      return NextResponse.redirect(
-        `${siteUrl}/pricing?success=true&provider=fedapay&plan=${plan}`
-      );
-    } else if (transaction.status === 'canceled' || transaction.status === 'declined') {
-      return NextResponse.redirect(`${siteUrl}/pricing?canceled=true`);
+        return NextResponse.redirect(`${siteUrl}/pricing?error=verification_failed`);
     }
-
-    // Si encore en attente (pending)
-    return NextResponse.redirect(
-      `${siteUrl}/pricing?pending=true&tx=${transactionId}`
-    );
   } catch (error) {
     console.error('Erreur Callback FedaPay:', error);
     return NextResponse.redirect(`${siteUrl}/pricing?error=verification_failed`);

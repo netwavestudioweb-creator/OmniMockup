@@ -16,7 +16,6 @@ import {
   Eye,
   EyeOff,
   Sparkles,
-  Quote,
   Zap,
 } from 'lucide-react';
 
@@ -156,7 +155,7 @@ function LoginForm() {
                   Bon retour parmi nous !
                 </h1>
                 <p className="text-xs sm:text-sm text-stone-500 mt-1.5 leading-relaxed">
-                  Connectez-vous pour retrouver vos mockups HD et les conseils de votre Directeur Artistique IA.
+                  Connectez-vous pour retrouver votre studio et vos exports HD.
                 </p>
               </div>
 
@@ -329,37 +328,23 @@ function LoginForm() {
                 Sublimez vos captures web avec un studio d&apos;exception.
               </h2>
 
-              {/* Témoignage client */}
-              <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 space-y-4 shadow-xl">
-                <Quote className="w-6 h-6 text-amber-300/80" />
-                <p className="text-xs sm:text-sm text-stone-200 italic leading-relaxed">
-                  &ldquo;OmniMockup a complètement métamorphosé nos présentations clients. Nos démos SaaS ont un rendu 3D immédiat d&apos;une netteté 4K irréprochable.&rdquo;
-                </p>
-
-                <div className="flex items-center gap-3 pt-2">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-violet-500 to-indigo-400 font-bold text-xs flex items-center justify-center text-white border border-white/30 shadow-xs">
-                    TD
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-white">Thomas Delacroix</h4>
-                    <p className="text-[11px] text-stone-300">Directeur Créatif chez Studio Pulse</p>
-                  </div>
-                </div>
-              </div>
+              {/* Ce que vous obtenez (sans faux témoignage) */}
+              <ul className="p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 space-y-3 shadow-xl text-xs sm:text-sm text-stone-200">
+                <li>✓ Capture automatique de la page depuis son URL</li>
+                <li>✓ Mise en scène sur MacBook, iPhone et iPad</li>
+                <li>✓ Formats prêts pour présentation, LinkedIn et Instagram</li>
+                <li>✓ Exports HD et 4K sans filigrane dès le plan Pro</li>
+                <li>✓ Marque blanche avec le logo de votre agence (plan Agence)</li>
+              </ul>
             </div>
 
-            {/* Logos des équipes / Marques de confiance */}
-            <div className="relative z-10 mt-8 pt-6 border-t border-white/10 space-y-3">
+            <div className="relative z-10 mt-8 pt-6 border-t border-white/10 space-y-2">
               <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 font-mono">
-                Rejoint par +1 500 créateurs &amp; studios :
+                Lancé en octobre 2026
               </p>
-              <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-stone-300/80">
-                <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10">Next.js</span>
-                <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10">Tailwind</span>
-                <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10">Stripe</span>
-                <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10">Supabase</span>
-                <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10">Vercel</span>
-              </div>
+              <Link href="/#agences-fondatrices" className="text-xs font-semibold text-violet-200 hover:text-white transition-colors">
+                Agence web ? Rejoignez les 10 agences fondatrices : 1 mois Pro offert →
+              </Link>
             </div>
           </div>
 

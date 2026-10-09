@@ -1,4 +1,4 @@
-﻿/**
+/**
  * src/lib/pricing.ts
  * SOURCE UNIQUE DE VERITE — OmniMockup Studio
  * Toute modification de prix, quota ou crédit SE FAIT ICI UNIQUEMENT.
@@ -8,6 +8,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
 // ─────────────────────────────────────────────────────────────────────────────
+
+export type Currency = 'EUR' | 'USD' | 'XOF';
 
 export type PlanId = 'free' | 'solo' | 'pro' | 'agence';
 
@@ -46,6 +48,8 @@ export interface Plan {
   badge?: string;
   monthlyEur: number;
   annualEur: number;
+  monthlyUsd: number;
+  annualUsd: number;
   monthlyFcfa: number;
   annualFcfa: number;
   description: string;
@@ -54,6 +58,35 @@ export interface Plan {
   ctaText: string;
   features: PlanFeature[];
   quotas: PlanQuota;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAYS ET DÉTECTION GÉOGRAPHIQUE
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Pays couverts par FedaPay (UEMOA / Mobile Money)
+export const FEDAPAY_COUNTRIES = ['BJ', 'CI', 'SN', 'TG', 'ML', 'BF', 'NE', 'GW'] as const;
+
+// Pays zone Euro + Europe principale
+export const EUR_COUNTRIES = [
+  'FR', 'DE', 'IT', 'ES', 'BE', 'NL', 'PT', 'AT', 'IE', 'FI',
+  'GR', 'LU', 'CY', 'MT', 'SI', 'SK', 'EE', 'LV', 'LT', 'GB',
+  'CH', 'NO', 'SE', 'DK', 'PL', 'CZ', 'RO', 'BG', 'HR', 'HU',
+  'AD', 'MC', 'SM', 'VA',
+] as const;
+
+export function isFedaPayCountry(countryCode?: string | null): boolean {
+  if (!countryCode) return false;
+  const upper = countryCode.toUpperCase();
+  return (FEDAPAY_COUNTRIES as readonly string[]).includes(upper);
+}
+
+export function detectCurrencyFromCountry(countryCode?: string | null): Currency {
+  if (!countryCode) return 'USD';
+  const upper = countryCode.toUpperCase();
+  if ((FEDAPAY_COUNTRIES as readonly string[]).includes(upper)) return 'XOF';
+  if ((EUR_COUNTRIES as readonly string[]).includes(upper)) return 'EUR';
+  return 'USD';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -68,6 +101,8 @@ export const PLANS: Plan[] = [
     badge: '100% Gratuit',
     monthlyEur: 0,
     annualEur: 0,
+    monthlyUsd: 0,
+    annualUsd: 0,
     monthlyFcfa: 0,
     annualFcfa: 0,
     description: 'Studio complet sans carte bancaire. Testez et concevez librement.',
@@ -93,8 +128,10 @@ export const PLANS: Plan[] = [
     badge: 'Entrée de gamme',
     monthlyEur: 5,
     annualEur: 50,
-    monthlyFcfa: 3280,
-    annualFcfa: 32800,
+    monthlyUsd: 5,
+    annualUsd: 50,
+    monthlyFcfa: 3300,
+    annualFcfa: 33000,
     description: 'Pour les créateurs occasionnels. 20 exports HD/mois avec filigrane discret.',
     ctaText: 'Choisir Solo',
     isPopular: false,
@@ -117,6 +154,8 @@ export const PLANS: Plan[] = [
     badge: 'Le plus populaire',
     monthlyEur: 9,
     annualEur: 90,
+    monthlyUsd: 9,
+    annualUsd: 90,
     monthlyFcfa: 5900,
     annualFcfa: 59000,
     description: 'Exports illimités HD+4K, vidéo MP4, ZÉRO filigrane. Le meilleur rapport valeur/prix.',
@@ -153,6 +192,8 @@ export const PLANS: Plan[] = [
     badge: 'Agences & Startups',
     monthlyEur: 29,
     annualEur: 290,
+    monthlyUsd: 29,
+    annualUsd: 290,
     monthlyFcfa: 19000,
     annualFcfa: 190000,
     description: 'Suite complète : marque blanche, 5 sièges, vidéo illimitée, support WhatsApp 7j/7.',
@@ -195,18 +236,63 @@ export function getPlan(id: PlanId): Plan {
   return plan;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS CALCULS ET PRIX MULTI-DEVISES
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function getPlanMonthlyPrice(plan: Plan, currency: Currency): number {
+  if (currency === 'EUR') return plan.monthlyEur;
+  if (currency === 'USD') return plan.monthlyUsd;
+  return plan.monthlyFcfa;
+}
+
+export function getPlanAnnualPrice(plan: Plan, currency: Currency): number {
+  if (currency === 'EUR') return plan.annualEur;
+  if (currency === 'USD') return plan.annualUsd;
+  return plan.annualFcfa;
+}
+
+export function getPlanMonthlyEquivalent(plan: Plan, currency: Currency): number {
+  const annual = getPlanAnnualPrice(plan, currency);
+  if (annual === 0) return 0;
+  if (currency === 'XOF') {
+    return Math.round(annual / 12);
+  }
+  return Math.round((annual / 12) * 100) / 100;
+}
+
+export function getPlanAnnualSavings(plan: Plan, currency: Currency): number {
+  const monthly = getPlanMonthlyPrice(plan, currency);
+  const annual = getPlanAnnualPrice(plan, currency);
+  return monthly * 12 - annual;
+}
+
+export function formatPrice(amount: number, currency: Currency, showUnit = true): string {
+  if (currency === 'EUR') {
+    const formatted = amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2);
+    return showUnit ? `${formatted} €` : formatted;
+  }
+  if (currency === 'USD') {
+    const formatted = amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2);
+    return showUnit ? `$${formatted}` : formatted;
+  }
+  // XOF
+  const formatted = Math.round(amount).toLocaleString('fr-FR');
+  return showUnit ? `${formatted} FCFA` : formatted;
+}
+
+// Rétrocompatibilité
 export function monthlyEquivalentFromAnnual(plan: Plan): { eur: number; fcfa: number } {
-  if (plan.monthlyEur === 0) return { eur: 0, fcfa: 0 };
   return {
-    eur: Math.round((plan.annualEur / 12) * 100) / 100,
-    fcfa: Math.round(plan.annualFcfa / 12),
+    eur: getPlanMonthlyEquivalent(plan, 'EUR'),
+    fcfa: getPlanMonthlyEquivalent(plan, 'XOF'),
   };
 }
 
 export function annualSavings(plan: Plan): { eur: number; fcfa: number } {
   return {
-    eur: plan.monthlyEur * 12 - plan.annualEur,
-    fcfa: plan.monthlyFcfa * 12 - plan.annualFcfa,
+    eur: getPlanAnnualSavings(plan, 'EUR'),
+    fcfa: getPlanAnnualSavings(plan, 'XOF'),
   };
 }
 
@@ -222,8 +308,10 @@ export interface CreditPack {
   name: string;
   credits: number;
   priceEur: number;
+  priceUsd: number;
   priceFcfa: number;
   pricePerCreditEur: number;
+  pricePerCreditUsd: number;
   pricePerCreditFcfa: number;
   badge?: string;
   isTarget?: boolean;
@@ -236,8 +324,10 @@ export const CREDIT_PACKS: CreditPack[] = [
     name: 'Petit Pack',
     credits: 10,
     priceEur: 4,
+    priceUsd: 4,
     priceFcfa: 2600,
     pricePerCreditEur: 0.40,
+    pricePerCreditUsd: 0.40,
     pricePerCreditFcfa: 260,
     badge: 'Découverte',
   },
@@ -246,8 +336,10 @@ export const CREDIT_PACKS: CreditPack[] = [
     name: 'Pack Moyen',
     credits: 30,
     priceEur: 10,
+    priceUsd: 10,
     priceFcfa: 6600,
     pricePerCreditEur: 0.33,
+    pricePerCreditUsd: 0.33,
     pricePerCreditFcfa: 220,
     isDecoy: true,
   },
@@ -256,8 +348,10 @@ export const CREDIT_PACKS: CreditPack[] = [
     name: 'Grand Pack',
     credits: 75,
     priceEur: 15,
+    priceUsd: 15,
     priceFcfa: 9800,
     pricePerCreditEur: 0.20,
+    pricePerCreditUsd: 0.20,
     pricePerCreditFcfa: 131,
     badge: 'Meilleure valeur : -50 %',
     isTarget: true,
@@ -268,6 +362,12 @@ export function getCreditPack(id: CreditPackId): CreditPack {
   const pack = CREDIT_PACKS.find((p) => p.id === id);
   if (!pack) throw new Error(`Pack crédits inconnu : ${id}`);
   return pack;
+}
+
+export function getCreditPackPrice(pack: CreditPack, currency: Currency): number {
+  if (currency === 'EUR') return pack.priceEur;
+  if (currency === 'USD') return pack.priceUsd;
+  return pack.priceFcfa;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -293,25 +393,61 @@ export const ORDER_BUMP = {
   name: 'Kit IA Pitch (5 générations)',
   description: 'Génération IA de vos textes de vente, pitch deck et arguments-clés.',
   priceEur: 2,
+  priceUsd: 2,
   priceFcfa: 1300,
   creditsEquivalent: 10,
 } as const;
 
+export function getOrderBumpPrice(currency: Currency): number {
+  if (currency === 'EUR') return ORDER_BUMP.priceEur;
+  if (currency === 'USD') return ORDER_BUMP.priceUsd;
+  return ORDER_BUMP.priceFcfa;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// LOOKUP KEYS STRIPE (idempotence — pas de doublons à chaque setup)
+// LOOKUP KEYS STRIPE (idempotence — multi-devises EUR et USD)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const STRIPE_LOOKUP_KEYS = {
-  solo_monthly:   'omnimockup_solo_monthly_v2',
-  solo_annual:    'omnimockup_solo_annual_v2',
-  pro_monthly:    'omnimockup_pro_monthly_v2',
-  pro_annual:     'omnimockup_pro_annual_v2',
-  agence_monthly: 'omnimockup_agence_monthly_v2',
-  agence_annual:  'omnimockup_agence_annual_v2',
-  credit_petit:   'omnimockup_credit_petit_v2',
-  credit_moyen:   'omnimockup_credit_moyen_v2',
-  credit_grand:   'omnimockup_credit_grand_v2',
-  bump_pitch_kit: 'omnimockup_bump_pitch_kit_v2',
+  // Plans mensuels
+  solo_monthly_eur:   'omnimockup_solo_monthly_eur_v2',
+  solo_monthly_usd:   'omnimockup_solo_monthly_usd_v2',
+  pro_monthly_eur:    'omnimockup_pro_monthly_eur_v2',
+  pro_monthly_usd:    'omnimockup_pro_monthly_usd_v2',
+  agence_monthly_eur: 'omnimockup_agence_monthly_eur_v2',
+  agence_monthly_usd: 'omnimockup_agence_monthly_usd_v2',
+
+  // Plans annuels
+  solo_annual_eur:    'omnimockup_solo_annual_eur_v2',
+  solo_annual_usd:    'omnimockup_solo_annual_usd_v2',
+  pro_annual_eur:     'omnimockup_pro_annual_eur_v2',
+  pro_annual_usd:     'omnimockup_pro_annual_usd_v2',
+  agence_annual_eur:  'omnimockup_agence_annual_eur_v2',
+  agence_annual_usd:  'omnimockup_agence_annual_usd_v2',
+
+  // Packs crédits
+  credit_petit_eur:   'omnimockup_credit_petit_eur_v2',
+  credit_petit_usd:   'omnimockup_credit_petit_usd_v2',
+  credit_moyen_eur:   'omnimockup_credit_moyen_eur_v2',
+  credit_moyen_usd:   'omnimockup_credit_moyen_usd_v2',
+  credit_grand_eur:   'omnimockup_credit_grand_eur_v2',
+  credit_grand_usd:   'omnimockup_credit_grand_usd_v2',
+
+  // Order Bump
+  bump_pitch_kit_eur: 'omnimockup_bump_pitch_kit_eur_v2',
+  bump_pitch_kit_usd: 'omnimockup_bump_pitch_kit_usd_v2',
+
+  // Rétrocompatibilité V2 (pointe vers EUR)
+  solo_monthly:       'omnimockup_solo_monthly_eur_v2',
+  solo_annual:        'omnimockup_solo_annual_eur_v2',
+  pro_monthly:        'omnimockup_pro_monthly_eur_v2',
+  pro_annual:         'omnimockup_pro_annual_eur_v2',
+  agence_monthly:     'omnimockup_agence_monthly_eur_v2',
+  agence_annual:      'omnimockup_agence_annual_eur_v2',
+  credit_petit:       'omnimockup_credit_petit_eur_v2',
+  credit_moyen:       'omnimockup_credit_moyen_eur_v2',
+  credit_grand:       'omnimockup_credit_grand_eur_v2',
+  bump_pitch_kit:     'omnimockup_bump_pitch_kit_eur_v2',
 } as const;
 
 export type StripeLookupKey = (typeof STRIPE_LOOKUP_KEYS)[keyof typeof STRIPE_LOOKUP_KEYS];

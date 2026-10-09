@@ -14,6 +14,8 @@ import {
   SmartAnalyzeResponse,
 } from '@/types/analyzer';
 import { useUser } from '@/context/UserContext';
+import { useCurrency } from '@/context/CurrencyContext';
+import { PLANS, formatPrice, getPlanMonthlyPrice, getPlanMonthlyEquivalent } from '@/lib/pricing';
 import {
   Loader2,
   Monitor,
@@ -29,6 +31,7 @@ import {
   ScanLine,
   CheckCircle2,
   XCircle,
+  X as XIcon,
   ChevronDown,
   ChevronUp,
   ChevronLeft,
@@ -43,17 +46,19 @@ import {
   Users,
   BadgeCheck,
   Watch,
+  Check,
 } from 'lucide-react';
 
 export default function HomePage() {
   const { isPremiumUser } = useUser();
+  const { currency } = useCurrency();
 
   const [activeCaptureItem, setActiveCaptureItem] = useState<CaptureItemResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState<string>('Connexion au serveur...');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [activePricingPlan, setActivePricingPlan] = useState<number>(1); // 0=Gratuit, 1=Pro (recommandé par défaut), 2=Agence
+  const [activePricingPlan, setActivePricingPlan] = useState<number>(2); // 0=Découverte, 1=Solo, 2=Pro (recommandé), 3=Agence
   const [activeStep, setActiveStep] = useState<number>(0); // 0=01 Collez, 1=02 Personnalisez, 2=03 Exportez
   const [activeUseCase, setActiveUseCase] = useState<number>(0); // 0=Agences, 1=SaaS, 2=Designers, 3=Ecommerce
   const [heroMobileDevice, setHeroMobileDevice] = useState<'iphone' | 'watch'>('iphone');
@@ -187,7 +192,7 @@ export default function HomePage() {
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-700 hidden sm:block" />
                 <span className="flex items-center gap-1.5">
                   <Download className="w-4 h-4 text-indigo-400" />
-                  Export 4K Retina
+                  Export jusqu&apos;en 4K (plan Pro)
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-700 hidden sm:block" />
                 <span className="flex items-center gap-1.5">
@@ -197,11 +202,11 @@ export default function HomePage() {
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-700 hidden sm:block" />
                 <span className="flex items-center gap-1.5">
                   <Shield className="w-4 h-4 text-amber-400" />
-                  Sans inscription requise
+                  Essai gratuit, sans carte bancaire
                 </span>
               </div>
 
-              {/* Preuve sociale centrée */}
+              {/* Preuve de lancement centrée */}
               <div className="animate-fade-in delay-500 flex items-center justify-center gap-3 mb-12 sm:mb-16">
                 <div className="flex -space-x-2">
                   {['V', 'S', 'A', 'T', 'M'].map((l, i) => (
@@ -220,8 +225,11 @@ export default function HomePage() {
                       <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                     ))}
                   </div>
-                  <p className="text-xs text-zinc-400">
-                    <span className="text-zinc-200 font-bold">2 400+</span> créateurs satisfaits
+                  <p className="text-xs text-zinc-300 font-semibold">
+                    Lancé en octobre 2026 · Gratuit pour commencer
+                  </p>
+                  <p className="text-[11px] text-zinc-500">
+                    sans filigrane dès le plan Pro
                   </p>
                 </div>
               </div>
@@ -1093,8 +1101,8 @@ export default function HomePage() {
           </section>
 
           {/* ═══════════ PRICING ═══════════ */}
-          <section className="bg-zinc-900 py-20 sm:py-28">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <section className="bg-zinc-900 py-20 sm:py-28" id="pricing">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center max-w-3xl mx-auto mb-14">
                 <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Tarification Transparente</p>
                 <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-4">
@@ -1105,313 +1113,264 @@ export default function HomePage() {
                 </p>
               </div>
 
-              {/* Desktop View: 3 cols side-by-side (taille normale, bien lisibles) */}
-              <div className="hidden md:grid md:grid-cols-3 gap-5 items-stretch">
-                {[
+              {/* Plans Homepage configurés dynamiquement avec la source unique src/lib/pricing.ts */}
+              {(() => {
+                const homepagePlans = [
                   {
+                    id: 0,
+                    name: 'Découverte',
+                    price: formatPrice(0, currency),
+                    period: 'Gratuit à vie',
+                    desc: 'Studio complet sans carte bancaire requise. Testez et concevez librement.',
+                    cta: 'Commencer gratuitement',
+                    href: '#',
+                    onCtaClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+                    highlighted: false,
+                    badge: '100% Gratuit',
+                    features: [
+                      { name: 'Studio complet (MacBook, iPhone)', included: true },
+                      { name: '3 exports PNG par jour (1x)', included: true },
+                      { name: 'Filigrane discret OmniMockup', included: true },
+                      { name: '3 analyses IA par mois', included: true },
+                      { name: 'Exports 4K Retina', included: false },
+                      { name: 'Export Vidéo MP4', included: false },
+                    ],
+                  },
+                  {
+                    id: 1,
                     name: 'Solo',
-                    price: '5€',
-                    period: 'par mois (50€/an)',
+                    price: formatPrice(getPlanMonthlyPrice(PLANS[1], currency), currency),
+                    period: 'par mois',
                     desc: 'Pour les créateurs occasionnels. 20 exports HD/mois avec filigrane discret.',
                     cta: 'Choisir Solo',
                     href: '/pricing',
                     highlighted: false,
                     badge: null,
                     features: [
-                      '20 exports PNG HD 2x / mois',
-                      'Filigrane discret (non intrusif)',
-                      'Studio complet 3D (MacBook, iPhone)',
-                      '3 analyses IA par mois',
-                      '50+ templates inclus',
+                      { name: 'Studio complet 3D', included: true },
+                      { name: '20 exports PNG HD 2x / mois', included: true },
+                      { name: 'Filigrane discret (non intrusif)', included: true },
+                      { name: '3 analyses IA par mois', included: true },
+                      { name: 'Exports 4K Retina', included: false },
+                      { name: 'Export Vidéo MP4', included: false },
                     ],
                   },
                   {
+                    id: 2,
                     name: 'Pro',
-                    price: '9€',
-                    period: 'par mois (7,50€ en annuel)',
+                    price: formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency),
+                    period: `par mois (${formatPrice(getPlanMonthlyEquivalent(PLANS[2], currency), currency)} en annuel)`,
                     desc: 'Exports illimités HD & 4K, ZÉRO filigrane, vidéo animée et kit IA. Le meilleur choix.',
-                    cta: 'Débloquer le forfait Pro',
+                    cta: 'Débloquer Pro',
                     href: '/pricing',
                     highlighted: true,
                     badge: 'Populaire',
                     features: [
-                      'Exports PNG HD 2x & 4K ILLIMITÉS',
-                      'ZÉRO filigrane (rendus 100% neutres)',
-                      '10 exports Vidéo MP4 60fps / mois',
-                      'IA Pitch Kit (5 générations / mois)',
-                      'Analyses IA illimitées Directeur Artistique',
-                      'Historique cloud 30 jours & Partage',
+                      { name: 'Exports PNG HD 2x & 4K ILLIMITÉS', included: true },
+                      { name: 'ZÉRO filigrane (rendus neutres)', included: true },
+                      { name: '10 exports Vidéo MP4 60fps / mois', included: true },
+                      { name: 'IA Pitch Kit (5 générations / mois)', included: true },
+                      { name: 'Analyses IA illimitées', included: true },
+                      { name: '5 sièges collaborateurs', included: false },
                     ],
                   },
                   {
+                    id: 3,
                     name: 'Agence',
-                    price: '29€',
-                    period: 'par mois (290€/an)',
+                    price: formatPrice(getPlanMonthlyPrice(PLANS[3], currency), currency),
+                    period: 'par mois',
                     desc: 'La suite complète : marque blanche totale, 5 sièges, vidéo illimitée et support WhatsApp.',
                     cta: 'Choisir Agence',
                     href: '/pricing',
                     highlighted: false,
                     badge: null,
                     features: [
-                      'Tout le forfait Pro inclus',
-                      '5 sièges collaborateurs inclus',
-                      'Marque blanche totale (White Label)',
-                      'Exports Vidéo MP4 ILLIMITÉS',
-                      'Pack OmniExport 1-Click (5 formats)',
-                      'Support WhatsApp direct 7j/7',
+                      { name: 'Tout le forfait Pro inclus', included: true },
+                      { name: '5 sièges collaborateurs inclus', included: true },
+                      { name: 'Marque blanche totale (White Label)', included: true },
+                      { name: 'Exports Vidéo MP4 ILLIMITÉS', included: true },
+                      { name: 'Pack OmniExport 1-Click (5 formats)', included: true },
+                      { name: 'Support WhatsApp direct 7j/7', included: true },
                     ],
                   },
-                ].map((plan, i) => (
-                  <div
-                    key={i}
-                    className={`relative flex flex-col gap-6 p-6 sm:p-7 rounded-2xl border transition-all ${
-                      plan.highlighted
-                        ? 'bg-gradient-to-b from-violet-600/10 to-zinc-900 border-violet-500/50 shadow-2xl shadow-violet-600/10 scale-[1.02]'
-                        : 'bg-zinc-800/40 border-zinc-700/50 hover:border-zinc-600'
-                    }`}
-                  >
-                    {plan.badge && (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-violet-600 text-white text-xs font-bold shadow-lg">
-                        {plan.badge}
-                      </span>
-                    )}
+                ];
 
-                    <div>
-                      <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">{plan.name}</p>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-4xl font-black text-white">{plan.price}</span>
-                        <span className="text-sm text-zinc-500">/ {plan.period}</span>
-                      </div>
-                      <p className="text-sm text-zinc-400 mt-2 leading-relaxed">{plan.desc}</p>
+                return (
+                  <>
+                    {/* Desktop View: 4 colonnes claires (Découverte 0€/0$/0FCFA en point d'ancrage gratuité) */}
+                    <div className="hidden lg:grid lg:grid-cols-4 gap-4 items-stretch">
+                      {homepagePlans.map((plan) => (
+                        <div
+                          key={plan.id}
+                          className={`relative flex flex-col justify-between p-6 rounded-2xl border transition-all ${
+                            plan.highlighted
+                              ? 'bg-gradient-to-b from-violet-600/15 via-zinc-900 to-zinc-900 border-violet-500/60 shadow-2xl shadow-violet-600/20 scale-[1.02] z-10'
+                              : 'bg-zinc-800/40 border-zinc-700/50 hover:border-zinc-600'
+                          }`}
+                        >
+                          {plan.badge && (
+                            <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-0.5 rounded-full bg-violet-600 text-white text-[11px] font-black uppercase tracking-wider shadow-lg">
+                              {plan.badge}
+                            </span>
+                          )}
+
+                          <div>
+                            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">{plan.name}</p>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-3xl font-black text-white font-mono">{plan.price}</span>
+                              <span className="text-xs text-zinc-500">/ {plan.period}</span>
+                            </div>
+                            <p className="text-xs text-zinc-400 mt-2 leading-relaxed min-h-[34px]">{plan.desc}</p>
+
+                            <ul className="flex flex-col gap-2 mt-4 pt-4 border-t border-zinc-800 text-xs">
+                              {plan.features.map((f, j) => (
+                                <li
+                                  key={j}
+                                  className={`flex items-start gap-2 ${
+                                    f.included ? 'text-zinc-300' : 'text-zinc-500 line-through opacity-70'
+                                  }`}
+                                >
+                                  {f.included ? (
+                                    <CheckCircle2
+                                      className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
+                                        plan.highlighted ? 'text-violet-400' : 'text-emerald-500'
+                                      }`}
+                                    />
+                                  ) : (
+                                    <XIcon className="w-3.5 h-3.5 mt-0.5 shrink-0 text-zinc-500 stroke-[2]" />
+                                  )}
+                                  <span>{f.name}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div className="mt-6 pt-4 border-t border-zinc-800/80">
+                            {plan.onCtaClick ? (
+                              <button
+                                type="button"
+                                onClick={plan.onCtaClick}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs bg-zinc-700/70 hover:bg-zinc-700 text-zinc-200 border border-zinc-600 transition-all active:scale-[0.98]"
+                              >
+                                <span>{plan.cta}</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <Link
+                                href={plan.href}
+                                className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs transition-all active:scale-[0.98] ${
+                                  plan.highlighted
+                                    ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-600/30'
+                                    : 'bg-zinc-700/70 hover:bg-zinc-700 text-zinc-200 border border-zinc-600'
+                                }`}
+                              >
+                                <span>{plan.cta}</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
 
-                    <ul className="flex flex-col gap-2.5 flex-1">
-                      {plan.features.map((f, j) => (
-                        <li key={j} className="flex items-start gap-2.5 text-sm">
-                          <CheckCircle2 className={`w-4 h-4 mt-0.5 shrink-0 ${plan.highlighted ? 'text-violet-400' : 'text-emerald-500'}`} />
-                          <span className="text-zinc-300">{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <Link
-                      href={plan.href}
-                      className={`w-full flex items-center justify-center gap-2 py-3 px-5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] ${
-                        plan.highlighted
-                          ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-600/30'
-                          : 'bg-zinc-700/70 hover:bg-zinc-700 text-zinc-200 border border-zinc-600'
-                      }`}
-                    >
-                      {plan.cta}
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                ))}
-              </div>
-
-              {/* Mobile View: Cartes empilées l'une derrière l'autre avec plan recommandé devant */}
-              <div className="block md:hidden">
-                {(() => {
-                  const plans = [
-                    {
-                      id: 0,
-                      name: 'Solo',
-                      price: '5€',
-                      period: 'par mois',
-                      desc: '20 exports HD/mois avec filigrane discret.',
-                      cta: 'Choisir Solo',
-                      href: '/pricing',
-                      highlighted: false,
-                      badge: null,
-                      features: [
-                        '20 exports PNG HD 2x / mois',
-                        'Filigrane discret (non intrusif)',
-                        'Studio complet 3D',
-                        '3 analyses IA par mois',
-                      ],
-                    },
-                    {
-                      id: 1,
-                      name: 'Pro',
-                      price: '9€',
-                      period: 'par mois (7,50€ en annuel)',
-                      desc: 'Exports illimités HD/4K, ZÉRO filigrane et vidéo.',
-                      cta: 'Débloquer Pro',
-                      href: '/pricing',
-                      highlighted: true,
-                      badge: 'Recommandé',
-                      features: [
-                        'Exports PNG HD 2x & 4K ILLIMITÉS',
-                        'ZÉRO filigrane',
-                        '10 exports Vidéo MP4 / mois',
-                        'IA Pitch Kit inclus',
-                      ],
-                    },
-                    {
-                      id: 2,
-                      name: 'Agence',
-                      price: '29€',
-                      period: 'par mois',
-                      desc: 'Suite complète avec marque blanche et 5 sièges.',
-                      cta: 'Choisir Agence',
-                      href: '/pricing',
-                      highlighted: false,
-                      badge: null,
-                      features: [
-                        'Tout le forfait Pro inclus',
-                        'Marque blanche totale',
-                        '5 sièges collaborateurs',
-                        'Vidéos MP4 ILLIMITÉES',
-                      ],
-                    },
-                  ];
-
-                  return (
-                    <div className="flex flex-col gap-5">
-                      {/* Sélecteur d'onglets mobile */}
-                      <div className="flex p-1.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 max-w-sm mx-auto w-full shadow-inner">
-                        {[
-                          { id: 0, label: 'Solo' },
-                          { id: 1, label: '★ Pro' },
-                          { id: 2, label: 'Agence' },
-                        ].map((tab) => (
+                    {/* Tablet & Mobile View: Sélecteur d'onglets pour les 4 plans */}
+                    <div className="block lg:hidden">
+                      <div className="flex p-1.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 max-w-md mx-auto w-full shadow-inner mb-6">
+                        {homepagePlans.map((tab) => (
                           <button
                             key={tab.id}
                             type="button"
                             onClick={() => setActivePricingPlan(tab.id)}
-                            className={`flex-1 py-2 px-1 rounded-xl text-xs font-bold transition-all text-center ${
+                            className={`flex-1 py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center ${
                               activePricingPlan === tab.id
-                                ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
+                                ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30 font-black'
                                 : 'text-zinc-400 hover:text-zinc-200'
                             }`}
                           >
-                            {tab.label}
+                            {tab.id === 2 ? '★ ' : ''}{tab.name}
                           </button>
                         ))}
                       </div>
 
-                      {/* Stack de cartes l'une derrière l'autre */}
-                      <div className="relative h-[480px] w-full max-w-sm mx-auto mt-4">
-                        {plans.map((p, i) => {
-                          const isActive = activePricingPlan === i;
-                          // Calcul du décalage pour l'effet "l'un derrière l'autre"
-                          const offset = (i - activePricingPlan + 3) % 3;
-                          let transformClass = '';
-                          let zIndexClass = '';
-                          let opacityClass = '';
-
-                          if (isActive) {
-                            transformClass = 'translate-y-0 scale-100';
-                            zIndexClass = 'z-30 pointer-events-auto';
-                            opacityClass = 'opacity-100 shadow-2xl';
-                          } else if (offset === 1) {
-                            // Immédiatement derrière
-                            transformClass = '-translate-y-3.5 scale-[0.94]';
-                            zIndexClass = 'z-20 cursor-pointer pointer-events-auto';
-                            opacityClass = 'opacity-60 blur-[0.4px] hover:opacity-85';
-                          } else {
-                            // Tout au fond
-                            transformClass = '-translate-y-7 scale-[0.88]';
-                            zIndexClass = 'z-10 cursor-pointer pointer-events-auto';
-                            opacityClass = 'opacity-35 blur-[0.8px] hover:opacity-75';
-                          }
-
-                          return (
-                            <div
-                              key={p.id}
-                              onClick={() => {
-                                if (!isActive) setActivePricingPlan(p.id);
-                              }}
-                              className={`absolute inset-0 transition-all duration-300 ease-out flex flex-col justify-between p-6 rounded-2xl border ${transformClass} ${zIndexClass} ${opacityClass} ${
-                                p.highlighted
-                                  ? 'bg-gradient-to-b from-violet-950/90 via-zinc-900 to-zinc-900 border-violet-500/70 shadow-violet-600/20'
-                                  : 'bg-zinc-900/95 border-zinc-700/60'
-                              }`}
-                            >
-                              {p.badge && (
-                                <span className="self-center -mt-9 px-4 py-1 rounded-full bg-violet-600 text-white text-xs font-bold shadow-lg shadow-violet-600/40">
-                                  {p.badge}
+                      {/* Carte active sélectionnée */}
+                      {(() => {
+                        const activePlan = homepagePlans[activePricingPlan] || homepagePlans[2];
+                        return (
+                          <div
+                            className={`max-w-sm mx-auto p-6 sm:p-7 rounded-2xl border transition-all ${
+                              activePlan.highlighted
+                                ? 'bg-gradient-to-b from-violet-600/15 via-zinc-900 to-zinc-900 border-violet-500/70 shadow-2xl shadow-violet-600/20'
+                                : 'bg-zinc-900 border-zinc-700'
+                            }`}
+                          >
+                            {activePlan.badge && (
+                              <div className="mb-2">
+                                <span className="inline-block px-3 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-black uppercase">
+                                  {activePlan.badge}
                                 </span>
-                              )}
-
-                              <div>
-                                <div className="flex items-center justify-between">
-                                  <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{p.name}</p>
-                                  {!isActive && (
-                                    <span className="text-[10px] text-violet-400 font-bold bg-violet-500/10 px-2 py-0.5 rounded-full border border-violet-500/20">
-                                      Toucher pour afficher
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-baseline gap-1.5 mt-2">
-                                  <span className="text-3xl font-black text-white">{p.price}</span>
-                                  <span className="text-xs text-zinc-500">/ {p.period}</span>
-                                </div>
-                                <p className="text-xs text-zinc-400 mt-2 leading-relaxed">{p.desc}</p>
                               </div>
+                            )}
 
-                              <ul className="flex flex-col gap-2 my-2">
-                                {p.features.map((f, j) => (
-                                  <li key={j} className="flex items-start gap-2 text-xs">
-                                    <CheckCircle2 className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${p.highlighted ? 'text-violet-400' : 'text-emerald-500'}`} />
-                                    <span className="text-zinc-300">{f}</span>
-                                  </li>
-                                ))}
-                              </ul>
+                            <div>
+                              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{activePlan.name}</p>
+                              <div className="flex items-baseline gap-1 mt-1">
+                                <span className="text-3xl font-black text-white font-mono">{activePlan.price}</span>
+                                <span className="text-xs text-zinc-500">/ {activePlan.period}</span>
+                              </div>
+                              <p className="text-xs text-zinc-400 mt-2 leading-relaxed">{activePlan.desc}</p>
+                            </div>
 
+                            <ul className="flex flex-col gap-2.5 my-5 pt-4 border-t border-zinc-800 text-xs">
+                              {activePlan.features.map((f, j) => (
+                                <li
+                                  key={j}
+                                  className={`flex items-start gap-2 ${
+                                    f.included ? 'text-zinc-300' : 'text-zinc-500 line-through opacity-70'
+                                  }`}
+                                >
+                                  {f.included ? (
+                                    <CheckCircle2
+                                      className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
+                                        activePlan.highlighted ? 'text-violet-400' : 'text-emerald-500'
+                                      }`}
+                                    />
+                                  ) : (
+                                    <XIcon className="w-3.5 h-3.5 mt-0.5 shrink-0 text-zinc-500 stroke-[2]" />
+                                  )}
+                                  <span>{f.name}</span>
+                                </li>
+                              ))}
+                            </ul>
+
+                            {activePlan.onCtaClick ? (
+                              <button
+                                type="button"
+                                onClick={activePlan.onCtaClick}
+                                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-xs bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 transition-all active:scale-[0.98]"
+                              >
+                                <span>{activePlan.cta}</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
                               <Link
-                                href={p.href}
-                                tabIndex={isActive ? 0 : -1}
-                                className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs transition-all active:scale-[0.98] ${
-                                  p.highlighted
+                                href={activePlan.href}
+                                className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-xs transition-all active:scale-[0.98] ${
+                                  activePlan.highlighted
                                     ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-600/30'
-                                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700'
+                                    : 'bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700'
                                 }`}
                               >
-                                {p.cta}
+                                <span>{activePlan.cta}</span>
                                 <ArrowRight className="w-3.5 h-3.5" />
                               </Link>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Contrôles interactifs sous les cartes */}
-                      <div className="flex items-center justify-center gap-4 mt-2">
-                        <button
-                          type="button"
-                          onClick={() => setActivePricingPlan((prev) => (prev - 1 + 3) % 3)}
-                          className="p-2 rounded-xl bg-zinc-800/80 border border-zinc-700 text-zinc-300 hover:text-white"
-                          aria-label="Plan précédent"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <div className="flex gap-1.5">
-                          {[0, 1, 2].map((idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setActivePricingPlan(idx)}
-                              className={`h-1.5 rounded-full transition-all ${
-                                activePricingPlan === idx ? 'w-5 bg-violet-500' : 'w-2 bg-zinc-700'
-                              }`}
-                              aria-label={`Plan ${idx + 1}`}
-                            />
-                          ))}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setActivePricingPlan((prev) => (prev + 1) % 3)}
-                          className="p-2 rounded-xl bg-zinc-800/80 border border-zinc-700 text-zinc-300 hover:text-white"
-                          aria-label="Plan suivant"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
-                  );
-                })()}
-              </div>
+                  </>
+                );
+              })()}
             </div>
           </section>
 
@@ -1499,7 +1458,7 @@ export default function HomePage() {
                 Prêt à créer votre <span className="shimmer-text">premier mockup 3D ?</span>
               </h2>
               <p className="text-zinc-400 text-sm sm:text-base mb-10 leading-relaxed max-w-2xl mx-auto">
-                Rejoignez les 2 400+ créateurs qui génèrent des visuels d&apos;exception en quelques secondes.
+                Lancé en octobre 2026 · Gratuit pour commencer — sans filigrane dès le plan Pro. Créez des visuels d&apos;exception en quelques secondes.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

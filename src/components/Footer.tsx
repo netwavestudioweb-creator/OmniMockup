@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Layers } from 'lucide-react';
+import { CurrencySwitcher } from './CurrencySwitcher';
 
 export const Footer: React.FC = () => {
   return (
@@ -40,8 +41,11 @@ export const Footer: React.FC = () => {
           </a>
         </div>
 
-        <div className="text-[11px] text-stone-400 font-mono text-center md:text-right">
-          © {new Date().getFullYear()} OmniMockup Studio. Tous droits réservés.
+        <div className="flex items-center gap-4">
+          <CurrencySwitcher variant="footer" />
+          <div className="text-[11px] text-stone-400 font-mono text-center md:text-right">
+            © {new Date().getFullYear()} OmniMockup Studio. Tous droits réservés.
+          </div>
         </div>
       </div>
     </footer>

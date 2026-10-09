@@ -1,5 +1,6 @@
 // scripts/setup-stripe-products.ts
 // Script idempotent : utilise des lookup_keys stables — aucun doublon à chaque exécution.
+// Support multi-devises complet : EUR (€) et USD ($).
 // Usage : npx ts-node --project tsconfig.json scripts/setup-stripe-products.ts
 
 import fs from 'fs';
@@ -31,16 +32,20 @@ const stripe = new Stripe(stripeKey, {
   apiVersion: '2024-06-20' as Stripe.LatestApiVersion,
 });
 
+// Cache local de produits pour éviter de dupliquer les produits entre EUR et USD
+const productCache: Record<string, string> = {};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER : upsert idempotent d'un prix Stripe via lookup_key
 // ─────────────────────────────────────────────────────────────────────────────
 async function upsertPrice(params: {
+  productKey: string;
   productName: string;
   productDescription: string;
   productMetadata: Record<string, string>;
   lookupKey: string;
   unitAmountCents: number;
-  currency: 'eur';
+  currency: 'eur' | 'usd';
   recurring?: { interval: 'month' | 'year' };
 }): Promise<{ productId: string; priceId: string }> {
   // 1. Cherche un prix existant via lookup_key
@@ -49,20 +54,26 @@ async function upsertPrice(params: {
   if (existing.data.length > 0) {
     const price = existing.data[0];
     const product = price.product as Stripe.Product;
-    console.log(`  ↩️  Existant [${params.lookupKey}] → price ${price.id}`);
+    productCache[params.productKey] = product.id;
+    console.log(`  ↩️  Existant [${params.lookupKey}] (${params.currency.toUpperCase()}) → price ${price.id}`);
     return { productId: product.id, priceId: price.id };
   }
 
-  // 2. Crée le produit (ou réutilise via name+metadata)
-  const product = await stripe.products.create({
-    name: params.productName,
-    description: params.productDescription,
-    metadata: params.productMetadata,
-  });
+  // 2. Réutilise le produit existant dans le cache ou crée un nouveau produit
+  let productId = productCache[params.productKey];
+  if (!productId) {
+    const product = await stripe.products.create({
+      name: params.productName,
+      description: params.productDescription,
+      metadata: params.productMetadata,
+    });
+    productId = product.id;
+    productCache[params.productKey] = productId;
+  }
 
   // 3. Crée le prix avec lookup_key
   const price = await stripe.prices.create({
-    product: product.id,
+    product: productId,
     unit_amount: params.unitAmountCents,
     currency: params.currency,
     ...(params.recurring ? { recurring: params.recurring } : {}),
@@ -71,15 +82,15 @@ async function upsertPrice(params: {
     metadata: params.productMetadata,
   });
 
-  console.log(`  ✅ Créé [${params.lookupKey}] → price ${price.id}`);
-  return { productId: product.id, priceId: price.id };
+  console.log(`  ✅ Créé [${params.lookupKey}] (${params.currency.toUpperCase()}) → price ${price.id}`);
+  return { productId, priceId: price.id };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN
 // ─────────────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log('\n⚡ OmniMockup Studio — Setup Stripe (idempotent)\n');
+  console.log('\n⚡ OmniMockup Studio — Setup Stripe Multi-Devises (EUR & USD idempotent)\n');
 
   const newEnvVars: Record<string, string> = {};
 
@@ -89,57 +100,118 @@ async function main() {
   for (const plan of subscriptionPlans) {
     console.log(`\n📦 Plan ${plan.name.toUpperCase()}`);
 
-    // Mensuel
-    const monthly = await upsertPrice({
+    // Mensuel EUR
+    const monthlyEur = await upsertPrice({
+      productKey: `${plan.id}_monthly`,
       productName: `OmniMockup ${plan.name}`,
       productDescription: plan.description,
       productMetadata: { plan_id: plan.id, billing: 'monthly' },
-      lookupKey: STRIPE_LOOKUP_KEYS[`${plan.id}_monthly` as keyof typeof STRIPE_LOOKUP_KEYS],
+      lookupKey: STRIPE_LOOKUP_KEYS[`${plan.id}_monthly_eur` as keyof typeof STRIPE_LOOKUP_KEYS],
       unitAmountCents: Math.round(plan.monthlyEur * 100),
       currency: 'eur',
       recurring: { interval: 'month' },
     });
-    newEnvVars[`STRIPE_${plan.id.toUpperCase()}_MONTHLY_PRICE_ID`] = monthly.priceId;
+    newEnvVars[`STRIPE_${plan.id.toUpperCase()}_MONTHLY_EUR_PRICE_ID`] = monthlyEur.priceId;
+    newEnvVars[`STRIPE_${plan.id.toUpperCase()}_MONTHLY_PRICE_ID`] = monthlyEur.priceId;
 
-    // Annuel (facturé en 1 fois = 10 mois)
-    const annual = await upsertPrice({
+    // Mensuel USD
+    const monthlyUsd = await upsertPrice({
+      productKey: `${plan.id}_monthly`,
+      productName: `OmniMockup ${plan.name}`,
+      productDescription: plan.description,
+      productMetadata: { plan_id: plan.id, billing: 'monthly' },
+      lookupKey: STRIPE_LOOKUP_KEYS[`${plan.id}_monthly_usd` as keyof typeof STRIPE_LOOKUP_KEYS],
+      unitAmountCents: Math.round(plan.monthlyUsd * 100),
+      currency: 'usd',
+      recurring: { interval: 'month' },
+    });
+    newEnvVars[`STRIPE_${plan.id.toUpperCase()}_MONTHLY_USD_PRICE_ID`] = monthlyUsd.priceId;
+
+    // Annuel EUR
+    const annualEur = await upsertPrice({
+      productKey: `${plan.id}_annual`,
       productName: `OmniMockup ${plan.name} (Annuel)`,
       productDescription: `${plan.description} — 2 mois offerts, facturé annuellement.`,
       productMetadata: { plan_id: plan.id, billing: 'annual' },
-      lookupKey: STRIPE_LOOKUP_KEYS[`${plan.id}_annual` as keyof typeof STRIPE_LOOKUP_KEYS],
+      lookupKey: STRIPE_LOOKUP_KEYS[`${plan.id}_annual_eur` as keyof typeof STRIPE_LOOKUP_KEYS],
       unitAmountCents: Math.round(plan.annualEur * 100),
       currency: 'eur',
       recurring: { interval: 'year' },
     });
-    newEnvVars[`STRIPE_${plan.id.toUpperCase()}_ANNUAL_PRICE_ID`] = annual.priceId;
+    newEnvVars[`STRIPE_${plan.id.toUpperCase()}_ANNUAL_EUR_PRICE_ID`] = annualEur.priceId;
+    newEnvVars[`STRIPE_${plan.id.toUpperCase()}_ANNUAL_PRICE_ID`] = annualEur.priceId;
+
+    // Annuel USD
+    const annualUsd = await upsertPrice({
+      productKey: `${plan.id}_annual`,
+      productName: `OmniMockup ${plan.name} (Annuel)`,
+      productDescription: `${plan.description} — 2 mois offerts, facturé annuellement.`,
+      productMetadata: { plan_id: plan.id, billing: 'annual' },
+      lookupKey: STRIPE_LOOKUP_KEYS[`${plan.id}_annual_usd` as keyof typeof STRIPE_LOOKUP_KEYS],
+      unitAmountCents: Math.round(plan.annualUsd * 100),
+      currency: 'usd',
+      recurring: { interval: 'year' },
+    });
+    newEnvVars[`STRIPE_${plan.id.toUpperCase()}_ANNUAL_USD_PRICE_ID`] = annualUsd.priceId;
   }
 
   // ── PACKS DE CRÉDITS (paiement unique) ───────────────────────────────────────
   console.log('\n🪙 Packs de crédits');
 
   for (const pack of CREDIT_PACKS) {
-    const result = await upsertPrice({
+    // Pack EUR
+    const packEur = await upsertPrice({
+      productKey: `credit_pack_${pack.id}`,
       productName: `OmniMockup — ${pack.name}`,
       productDescription: `${pack.credits} crédits à vie (aucune expiration). ${pack.badge ?? ''}`,
       productMetadata: { pack_id: pack.id, credits: String(pack.credits) },
-      lookupKey: STRIPE_LOOKUP_KEYS[pack.id as keyof typeof STRIPE_LOOKUP_KEYS],
+      lookupKey: STRIPE_LOOKUP_KEYS[`${pack.id}_eur` as keyof typeof STRIPE_LOOKUP_KEYS],
       unitAmountCents: Math.round(pack.priceEur * 100),
       currency: 'eur',
     });
-    newEnvVars[`STRIPE_${pack.id.toUpperCase()}_PRICE_ID`] = result.priceId;
+    newEnvVars[`STRIPE_${pack.id.toUpperCase()}_EUR_PRICE_ID`] = packEur.priceId;
+    newEnvVars[`STRIPE_${pack.id.toUpperCase()}_PRICE_ID`] = packEur.priceId;
+
+    // Pack USD
+    const packUsd = await upsertPrice({
+      productKey: `credit_pack_${pack.id}`,
+      productName: `OmniMockup — ${pack.name}`,
+      productDescription: `${pack.credits} crédits à vie (aucune expiration). ${pack.badge ?? ''}`,
+      productMetadata: { pack_id: pack.id, credits: String(pack.credits) },
+      lookupKey: STRIPE_LOOKUP_KEYS[`${pack.id}_usd` as keyof typeof STRIPE_LOOKUP_KEYS],
+      unitAmountCents: Math.round(pack.priceUsd * 100),
+      currency: 'usd',
+    });
+    newEnvVars[`STRIPE_${pack.id.toUpperCase()}_USD_PRICE_ID`] = packUsd.priceId;
   }
 
   // ── ORDER BUMP ────────────────────────────────────────────────────────────────
   console.log('\n🎁 Order Bump');
-  const bump = await upsertPrice({
+
+  // Bump EUR
+  const bumpEur = await upsertPrice({
+    productKey: 'bump_pitch_kit',
     productName: `OmniMockup — ${ORDER_BUMP.name}`,
     productDescription: ORDER_BUMP.description,
     productMetadata: { bump_id: ORDER_BUMP.id },
-    lookupKey: STRIPE_LOOKUP_KEYS.bump_pitch_kit,
+    lookupKey: STRIPE_LOOKUP_KEYS.bump_pitch_kit_eur,
     unitAmountCents: Math.round(ORDER_BUMP.priceEur * 100),
     currency: 'eur',
   });
-  newEnvVars['STRIPE_BUMP_PITCH_KIT_PRICE_ID'] = bump.priceId;
+  newEnvVars['STRIPE_BUMP_PITCH_KIT_EUR_PRICE_ID'] = bumpEur.priceId;
+  newEnvVars['STRIPE_BUMP_PITCH_KIT_PRICE_ID'] = bumpEur.priceId;
+
+  // Bump USD
+  const bumpUsd = await upsertPrice({
+    productKey: 'bump_pitch_kit',
+    productName: `OmniMockup — ${ORDER_BUMP.name}`,
+    productDescription: ORDER_BUMP.description,
+    productMetadata: { bump_id: ORDER_BUMP.id },
+    lookupKey: STRIPE_LOOKUP_KEYS.bump_pitch_kit_usd,
+    unitAmountCents: Math.round(ORDER_BUMP.priceUsd * 100),
+    currency: 'usd',
+  });
+  newEnvVars['STRIPE_BUMP_PITCH_KIT_USD_PRICE_ID'] = bumpUsd.priceId;
 
   // ── MISE À JOUR .env.local ────────────────────────────────────────────────────
   let updatedEnv = envContent;
@@ -158,7 +230,7 @@ async function main() {
     console.log(`  ${key}=${value}`);
   }
   console.log('══════════════════════════════════════════════════════\n');
-  console.log('💡 Redémarrez le serveur Next.js pour charger les nouvelles variables.');
+  console.log('💡 Configuration Stripe multi-devises terminée avec succès.');
 }
 
 main().catch((err) => {

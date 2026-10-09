@@ -29,6 +29,7 @@ export const metadata: Metadata = {
 };
 
 import { UserProvider } from "@/context/UserContext";
+import { CurrencyProvider } from "@/context/CurrencyContext";
 
 export default function RootLayout({
   children,
@@ -41,7 +42,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} font-sans bg-sand-50 text-stone-900 antialiased selection:bg-violet-100 selection:text-violet-900 min-h-screen flex flex-col overflow-x-hidden w-full max-w-full`}
       >
         <UserProvider>
-          {children}
+          <CurrencyProvider>
+            {children}
+          </CurrencyProvider>
         </UserProvider>
       </body>
     </html>

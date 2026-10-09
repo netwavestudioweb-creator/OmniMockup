@@ -207,9 +207,9 @@ export const FEDAPAY_PLANS_FCFA: Record<
 > = {
   solo: {
     name: 'Solo',
-    monthlyPrice: 3280,
-    annualTotal: 32800,
-    annualPrice: 2733,
+    monthlyPrice: 3300,
+    annualTotal: 33000,
+    annualPrice: 2750,
     description: '20 exports HD/mois avec filigrane discret',
   },
   pro: {

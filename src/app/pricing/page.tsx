@@ -5,16 +5,24 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { CurrencySwitcher } from '@/components/CurrencySwitcher';
 import { useUser } from '@/context/UserContext';
+import { useCurrency } from '@/context/CurrencyContext';
 import {
   PLANS,
   CREDIT_PACKS,
   ORDER_BUMP,
-  monthlyEquivalentFromAnnual,
-  annualSavings,
+  getPlanMonthlyPrice,
+  getPlanAnnualPrice,
+  getPlanMonthlyEquivalent,
+  getPlanAnnualSavings,
+  formatPrice,
+  getCreditPackPrice,
+  getOrderBumpPrice,
   Plan,
   CreditPack,
   PlanId,
+  Currency,
 } from '@/lib/pricing';
 import { trackEvent } from '@/lib/tracking';
 import {
@@ -44,12 +52,24 @@ import {
 export default function PricingPage() {
   const router = useRouter();
   const { user, profile } = useUser();
+  const { currency, setCurrency } = useCurrency();
 
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'momo'>('stripe');
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'momo'>(
+    currency === 'XOF' ? 'momo' : 'stripe'
+  );
   const [isAnnual, setIsAnnual] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [paymentSuccessMessage, setPaymentSuccessMessage] = useState<string | null>(null);
+
+  // Synchronisation du moyen de paiement par défaut quand la devise change
+  useEffect(() => {
+    if (currency === 'XOF') {
+      setPaymentMethod('momo');
+    } else {
+      setPaymentMethod('stripe');
+    }
+  }, [currency]);
 
   // Étape 6 : Modal Order Bump avant redirection Checkout Stripe
   const [bumpModalPlan, setBumpModalPlan] = useState<Plan | null>(null);
@@ -164,6 +184,7 @@ export default function PricingPage() {
           plan: plan.id,
           billing: isAnnual ? 'annual' : 'monthly',
           withBump,
+          currency: currency === 'USD' ? 'USD' : 'EUR',
         }),
       });
 
@@ -214,7 +235,10 @@ export default function PricingPage() {
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pack: pack.id }),
+        body: JSON.stringify({
+          pack: pack.id,
+          currency: currency === 'USD' ? 'USD' : 'EUR',
+        }),
       });
 
       const data = await res.json();
@@ -318,74 +342,110 @@ export default function PricingPage() {
           </div>
         )}
 
-        {/* SÉLECTEUR DE MOYEN DE PAIEMENT & TOGGLE ANNUEL/MENSUEL */}
-        <div className="max-w-3xl mx-auto mb-10 flex flex-col sm:flex-row items-center justify-between gap-5 p-4 rounded-3xl bg-white border border-sand-200 shadow-sm">
-          {/* Moyen de paiement */}
-          <div className="flex items-center gap-1 p-1 bg-sand-100 rounded-2xl border border-sand-200 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('stripe')}
-              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all ${
-                paymentMethod === 'stripe'
-                  ? 'bg-white text-stone-900 shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900'
-              }`}
-            >
-              <CreditCard className="w-4 h-4 text-violet-600" />
-              <span>Carte bancaire (Stripe)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('momo')}
-              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all ${
-                paymentMethod === 'momo'
-                  ? 'bg-amber-400 text-stone-950 shadow-xs font-black'
-                  : 'text-stone-600 hover:text-stone-900'
-              }`}
-            >
-              <Smartphone className="w-4 h-4 text-stone-950" />
-              <span>MTN MoMo Bénin (FCFA)</span>
-            </button>
+        {/* SÉLECTEUR DE MOYEN DE PAIEMENT, DEVISE & TOGGLE ANNUEL/MENSUEL */}
+        <div className="max-w-5xl mx-auto mb-10 flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-3xl bg-white border border-sand-200 shadow-sm">
+          {/* Moyen de paiement adapté à la devise */}
+          <div className="flex items-center gap-1 p-1 bg-sand-100 rounded-2xl border border-sand-200 w-full md:w-auto">
+            {currency === 'XOF' ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('momo')}
+                  className={`flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition-all ${
+                    paymentMethod === 'momo'
+                      ? 'bg-amber-400 text-stone-950 shadow-xs font-black'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <Smartphone className="w-4 h-4 text-stone-950" />
+                  <span>Mobile Money (FedaPay)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('stripe')}
+                  className={`flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition-all ${
+                    paymentMethod === 'stripe'
+                      ? 'bg-white text-stone-900 shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <CreditCard className="w-4 h-4 text-violet-600" />
+                  <span>Carte bancaire (Stripe)</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('stripe')}
+                  className={`flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition-all ${
+                    paymentMethod === 'stripe'
+                      ? 'bg-white text-stone-900 shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <CreditCard className="w-4 h-4 text-violet-600" />
+                  <span>Carte bancaire (Stripe)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrency('XOF');
+                    setPaymentMethod('momo');
+                  }}
+                  className="flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold text-stone-600 hover:text-stone-900 transition-all"
+                  title="Bascule vers la facturation en FCFA et Mobile Money"
+                >
+                  <Smartphone className="w-4 h-4 text-stone-600" />
+                  <span>Mobile Money (FCFA)</span>
+                </button>
+              </>
+            )}
           </div>
 
-          {/* Toggle Facturation Annuel / Mensuel (Annuel par défaut avec 2 mois offerts) */}
-          <div className="flex items-center gap-3">
-            <span
-              onClick={() => setIsAnnual(false)}
-              className={`text-xs font-bold cursor-pointer transition-colors ${
-                !isAnnual ? 'text-stone-900 font-extrabold' : 'text-stone-400 hover:text-stone-600'
-              }`}
-            >
-              Mensuel
-            </span>
+          <div className="flex flex-wrap items-center justify-center gap-4 w-full md:w-auto">
+            {/* Sélecteur de devise */}
+            <CurrencySwitcher />
 
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isAnnual}
-              onClick={() => setIsAnnual(!isAnnual)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2 ${
-                isAnnual ? 'bg-violet-600' : 'bg-stone-300'
-              }`}
-            >
+            {/* Toggle Facturation Annuel / Mensuel (Annuel par défaut avec 2 mois offerts) */}
+            <div className="flex items-center gap-3">
               <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  isAnnual ? 'translate-x-5' : 'translate-x-0'
+                onClick={() => setIsAnnual(false)}
+                className={`text-xs font-bold cursor-pointer transition-colors ${
+                  !isAnnual ? 'text-stone-900 font-extrabold' : 'text-stone-400 hover:text-stone-600'
                 }`}
-              />
-            </button>
-
-            <span
-              onClick={() => setIsAnnual(true)}
-              className={`text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-colors ${
-                isAnnual ? 'text-violet-900 font-extrabold' : 'text-stone-400 hover:text-stone-600'
-              }`}
-            >
-              <span>Annuel</span>
-              <span className="px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-black tracking-wide shadow-2xs">
-                2 mois offerts (-17 %)
+              >
+                Mensuel
               </span>
-            </span>
+
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isAnnual}
+                onClick={() => setIsAnnual(!isAnnual)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2 ${
+                  isAnnual ? 'bg-violet-600' : 'bg-stone-300'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    isAnnual ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+
+              <span
+                onClick={() => setIsAnnual(true)}
+                className={`text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-colors ${
+                  isAnnual ? 'text-violet-900 font-extrabold' : 'text-stone-400 hover:text-stone-600'
+                }`}
+              >
+                <span>Annuel</span>
+                <span className="px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-black tracking-wide shadow-2xs">
+                  2 mois offerts (-17 %)
+                </span>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -396,11 +456,13 @@ export default function PricingPage() {
           {paidPlans.map((plan) => {
             const isTarget = plan.isPopular; // Pro
             const isAnchor = plan.isAnchor;  // Agence
-            const eq = monthlyEquivalentFromAnnual(plan);
-            const savings = annualSavings(plan);
 
-            const displayPriceEur = isAnnual ? eq.eur : plan.monthlyEur;
-            const displayPriceFcfa = isAnnual ? eq.fcfa : plan.monthlyFcfa;
+            const monthlyPrice = getPlanMonthlyPrice(plan, currency);
+            const annualPrice = getPlanAnnualPrice(plan, currency);
+            const eq = getPlanMonthlyEquivalent(plan, currency);
+            const savings = getPlanAnnualSavings(plan, currency);
+
+            const displayPrice = isAnnual ? eq : monthlyPrice;
 
             return (
               <div
@@ -451,16 +513,14 @@ export default function PricingPage() {
                     </p>
                   </div>
 
-                  {/* Prix */}
+                  {/* Prix — Une seule devise affichée */}
                   <div className="p-4 rounded-2xl bg-sand-50/80 border border-sand-200/80 mb-6">
                     <div className="flex items-baseline gap-1">
                       <span className="text-4xl sm:text-5xl font-black text-stone-950 font-mono tracking-tight">
-                        {paymentMethod === 'momo'
-                          ? displayPriceFcfa.toLocaleString('fr-FR')
-                          : `${displayPriceEur.toFixed(displayPriceEur % 1 === 0 ? 0 : 2)} €`}
+                        {formatPrice(displayPrice, currency, false)}
                       </span>
                       <span className="text-xs text-stone-500 font-semibold">
-                        {paymentMethod === 'momo' ? 'FCFA / mois' : '/ mois'}
+                        {currency === 'EUR' ? '€ / mois' : currency === 'USD' ? '$ / mois' : 'FCFA / mois'}
                       </span>
                     </div>
 
@@ -469,10 +529,10 @@ export default function PricingPage() {
                       {isAnnual ? (
                         <>
                           <span className="text-emerald-700 font-bold">
-                            Facturé {paymentMethod === 'momo' ? `${plan.annualFcfa.toLocaleString('fr-FR')} FCFA` : `${plan.annualEur} €`} / an (2 mois offerts)
+                            Facturé {formatPrice(annualPrice, currency)} / an (2 mois offerts)
                           </span>
                           <span className="text-stone-400">
-                            Économie : {paymentMethod === 'momo' ? `${savings.fcfa.toLocaleString('fr-FR')} FCFA` : `${savings.eur} €`} par an
+                            Économie : {formatPrice(savings, currency)} par an
                           </span>
                         </>
                       ) : (
@@ -483,13 +543,13 @@ export default function PricingPage() {
                     </div>
                   </div>
 
-                  {/* Liste des fonctionnalités */}
+                  {/* Liste des fonctionnalités — Éléments non inclus avec ✕ et texte barré bien visibles */}
                   <ul className="space-y-2.5 text-xs">
                     {plan.features.map((feat, i) => (
                       <li
                         key={i}
                         className={`flex items-start gap-2.5 ${
-                          feat.included ? 'text-stone-800' : 'text-stone-400 line-through opacity-60'
+                          feat.included ? 'text-stone-800' : 'text-stone-400 line-through opacity-75'
                         }`}
                       >
                         {feat.included ? (
@@ -499,7 +559,7 @@ export default function PricingPage() {
                             }`}
                           />
                         ) : (
-                          <XIcon className="w-4 h-4 shrink-0 mt-0.5 text-stone-300" />
+                          <XIcon className="w-4 h-4 shrink-0 mt-0.5 text-stone-400 stroke-[2]" />
                         )}
                         <span className={feat.highlight ? 'font-bold text-stone-900' : ''}>
                           {feat.name}
@@ -588,14 +648,10 @@ export default function PricingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {CREDIT_PACKS.map((pack) => {
               const isTargetPack = pack.isTarget;
-              const isFcfa = paymentMethod === 'momo';
-              const priceDisplay = isFcfa
-                ? `${pack.priceFcfa.toLocaleString('fr-FR')} FCFA`
-                : `${pack.priceEur.toFixed(0)} €`;
-
-              const perCreditDisplay = isFcfa
-                ? `${pack.pricePerCreditFcfa} FCFA / crédit`
-                : `${pack.pricePerCreditEur.toFixed(2)} € / crédit`;
+              const packPrice = getCreditPackPrice(pack, currency);
+              const priceDisplay = formatPrice(packPrice, currency);
+              const perCredit = packPrice / pack.credits;
+              const perCreditDisplay = `${formatPrice(perCredit, currency)} / crédit`;
 
               return (
                 <div
@@ -699,10 +755,18 @@ export default function PricingPage() {
               <thead>
                 <tr className="border-b border-sand-200">
                   <th className="py-3 px-4 font-bold text-stone-500 uppercase tracking-wider">Fonctionnalité</th>
-                  <th className="py-3 px-4 font-bold text-stone-600 text-center">Découverte (0€)</th>
-                  <th className="py-3 px-4 font-bold text-stone-900 text-center">Solo (5€)</th>
-                  <th className="py-3 px-4 font-bold text-violet-700 text-center bg-violet-50/80 rounded-t-xl">Pro (9€) ⭐</th>
-                  <th className="py-3 px-4 font-bold text-stone-900 text-center">Agence (29€)</th>
+                  <th className="py-3 px-4 font-bold text-stone-600 text-center">
+                    Découverte ({formatPrice(0, currency)})
+                  </th>
+                  <th className="py-3 px-4 font-bold text-stone-900 text-center">
+                    Solo ({formatPrice(getPlanMonthlyPrice(PLANS[1], currency), currency)})
+                  </th>
+                  <th className="py-3 px-4 font-bold text-violet-700 text-center bg-violet-50/80 rounded-t-xl">
+                    Pro ({formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency)}) ⭐
+                  </th>
+                  <th className="py-3 px-4 font-bold text-stone-900 text-center">
+                    Agence ({formatPrice(getPlanMonthlyPrice(PLANS[3], currency), currency)})
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-sand-100">
@@ -787,7 +851,7 @@ export default function PricingPage() {
                 Garantie Qualité & Questions Fréquentes
               </h3>
               <p className="text-xs text-stone-500">
-                Tout ce que vous devez savoir sur le paiement, les abonnements et les exports.
+                Tout ce que vous devez savoir sur le paiement, les devises et les exports.
               </p>
             </div>
           </div>
@@ -795,11 +859,22 @@ export default function PricingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-sand-100 text-xs text-stone-600">
             <div className="space-y-1.5">
               <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
-                <Smartphone className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                Puis-je payer avec MTN Mobile Money sans carte bancaire ?
+                <CreditCard className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+                Quels sont les moyens de paiement acceptés selon ma région ?
               </h4>
               <p className="leading-relaxed text-stone-500">
-                Oui, à 100% ! Grâce à notre passerelle sécurisée FedaPay, vous renseignez simplement votre numéro MTN Bénin (+229). Une notification USSD apparaît directement sur votre téléphone pour valider avec votre code secret PIN.
+                <strong>International (Europe, États-Unis, Canada &amp; reste du monde) :</strong> Carte bancaire Visa, Mastercard, American Express via Stripe sécurisé 3D Secure.<br />
+                <strong>Bénin &amp; Afrique de l&apos;Ouest (zone FCFA / UEMOA) :</strong> MTN Mobile Money, Moov Money et Wave via FedaPay avec validation PIN sur votre mobile. La carte bancaire internationale reste également disponible.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                Comment changer la devise d&apos;affichage (€, $, FCFA) ?
+              </h4>
+              <p className="leading-relaxed text-stone-500">
+                OmniMockup détecte automatiquement votre région mais vous pouvez basculer à tout moment entre EUR (€), USD ($) et FCFA grâce au sélecteur en haut de page ou dans le pied de page. Votre choix est sauvegardé pour vos prochaines visites.
               </p>
             </div>
 
@@ -822,21 +897,11 @@ export default function PricingPage() {
                 Absolument. Aucun engagement de durée : vous pouvez suspendre ou résilier votre abonnement en un clic depuis votre espace compte. Vous conservez vos accès jusqu&apos;à la fin de la période facturée.
               </p>
             </div>
-
-            <div className="space-y-1.5">
-              <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-stone-900 shrink-0" />
-                Qu&apos;est-ce que la Marque Blanche du plan Agence ?
-              </h4>
-              <p className="leading-relaxed text-stone-500">
-                Elle vous permet de supprimer toute mention d&apos;OmniMockup et d&apos;apposer votre propre logo ou celui de vos clients sur vos rendus et présentations.
-              </p>
-            </div>
           </div>
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* MODAL ÉTAPE 6 : ORDER BUMP AU PAIEMENT (KIT IA PITCH +2€) */}
+        {/* MODAL ÉTAPE 6 : ORDER BUMP AU PAIEMENT (KIT IA PITCH) */}
         {/* ══════════════════════════════════════════════════════════════════════ */}
         {bumpModalPlan && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in">
@@ -894,7 +959,7 @@ export default function PricingPage() {
                         {ORDER_BUMP.name}
                       </span>
                       <span className="text-xs font-black text-violet-700 font-mono">
-                        +{ORDER_BUMP.priceEur} €
+                        +{formatPrice(getOrderBumpPrice(currency), currency)}
                       </span>
                     </div>
                     <p className="text-[11px] text-stone-600 leading-relaxed">
@@ -961,7 +1026,7 @@ export default function PricingPage() {
                   Vous hésitez sur le plan Agence ?
                 </h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  Le forfait <strong>Pro</strong> vous offre déjà les exports HD/4K <strong>illimités</strong>, <strong>zéro filigrane</strong> et 10 vidéos par mois pour seulement <strong>9 €/mois</strong> (ou 7,50 € en annuel) !
+                  Le forfait <strong>Pro</strong> vous offre déjà les exports HD/4K <strong>illimités</strong>, <strong>zéro filigrane</strong> et 10 vidéos par mois pour seulement <strong>{formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency)}/mois</strong> (ou {formatPrice(getPlanMonthlyEquivalent(PLANS[2], currency), currency)} en annuel) !
                 </p>
               </div>
 
@@ -976,7 +1041,7 @@ export default function PricingPage() {
                   }}
                   className="w-full py-3.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
                 >
-                  <span>Passer au Pro (9 €/mois)</span>
+                  <span>Passer au Pro ({formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency)}/mois)</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
 

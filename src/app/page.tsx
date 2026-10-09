@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { UrlInputForm } from '@/components/UrlInputForm';
 import { SceneEditor } from '@/components/SceneEditor';
+import { loadStudioDraft, clearStudioDraft, StudioDraft } from '@/lib/studioDraft';
 
 import { Footer } from '@/components/Footer';
 import { FounderApplicationForm } from '@/components/FounderApplicationForm';
@@ -85,6 +86,13 @@ export default function HomePage() {
   const { currency } = useCurrency();
 
   const [activeCaptureItem, setActiveCaptureItem] = useState<CaptureItemResult | null>(null);
+  // Brouillon du studio (dernier mockup) proposé à la reprise
+  const [savedDraft, setSavedDraft] = useState<StudioDraft | null>(null);
+  const [resumedDraft, setResumedDraft] = useState<StudioDraft | null>(null);
+  useEffect(() => {
+    if (activeCaptureItem) return;
+    loadStudioDraft().then(setSavedDraft);
+  }, [activeCaptureItem]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState<string>('Connexion au serveur...');
@@ -127,6 +135,7 @@ export default function HomePage() {
       const firstSuccess = captureData.results?.find((r) => r.success && r.screenshotBase64);
 
       if (firstSuccess) {
+        setResumedDraft(null);
         setActiveCaptureItem(firstSuccess);
         setIsLoading(false);
       } else {
@@ -140,6 +149,7 @@ export default function HomePage() {
   };
 
   const handleUploadImage = (base64Image: string, title: string) => {
+    setResumedDraft(null);
     setActiveCaptureItem({
       url: 'Image locale',
       title: title || 'Capture téléversée',
@@ -162,6 +172,8 @@ export default function HomePage() {
           captureItem={activeCaptureItem}
           initialMockup="browser"
           onClose={handleReset}
+          initialSnapshot={resumedDraft?.snapshot}
+          initialMobileScreenshot={resumedDraft?.mobileScreenshot}
         />
       </div>
     );
@@ -200,6 +212,41 @@ export default function HomePage() {
 
               {/* Champ de saisie d'URL centré et aéré — Pièce maîtresse */}
               <div className="animate-fade-in delay-300 w-full max-w-3xl mx-auto mb-8">
+                {savedDraft && (
+                  <div className="mb-4 p-3 rounded-2xl bg-violet-500/10 border border-violet-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+                    <p className="text-xs sm:text-sm text-violet-100">
+                      Reprendre votre dernier mockup :{' '}
+                      <strong className="text-white">
+                        {savedDraft.captureItem.domainName || savedDraft.captureItem.title || 'image importée'}
+                      </strong>
+                      <span className="text-violet-300/80">
+                        {' '}· {new Date(savedDraft.updatedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                      </span>
+                    </p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResumedDraft(savedDraft);
+                          setActiveCaptureItem(savedDraft.captureItem);
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors"
+                      >
+                        Reprendre
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearStudioDraft();
+                          setSavedDraft(null);
+                        }}
+                        className="px-3 py-1.5 rounded-xl text-violet-200 hover:text-white text-xs font-semibold transition-colors"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <UrlInputForm
                   onAnalyze={handleAnalyzeUrl}
                   onUploadImage={handleUploadImage}

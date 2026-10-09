@@ -101,11 +101,16 @@ import { TemplatesModal } from './TemplatesModal';
 import { SceneOverlayPreset } from '@/types/analyzer';
 import { ExportCrossSellBanner } from './ExportCrossSellBanner';
 import { PlanUpsellModal, UpsellMode } from './PlanUpsellModal';
+import { saveStudioDraft } from '@/lib/studioDraft';
 
 interface SceneEditorProps {
   captureItem: CaptureItemResult;
   initialMockup?: MockupType;
   onClose?: () => void;
+  /** Réglages d'un brouillon sauvegardé à restaurer à l'ouverture */
+  initialSnapshot?: unknown;
+  /** Version mobile déjà capturée (brouillon) */
+  initialMobileScreenshot?: string;
 }
 
 // Fonction d'extraction automatique des couleurs dominantes de la capture (Fonds Magiques - ultra rapide <1ms)
@@ -238,6 +243,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   captureItem,
   initialMockup = 'browser',
   onClose,
+  initialSnapshot,
+  initialMobileScreenshot,
 }) => {
   const { user, profile, signOut, isPremiumUser } = useUser();
   const userPlan = profile?.plan || 'free';
@@ -511,8 +518,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   // ══ CAPTURE MOBILE RÉELLE ══
   // Dès qu'un téléphone apparaît sur la scène, la version téléphone du site est capturée une fois.
-  const [mobileScreenshot, setMobileScreenshot] = useState<string>('');
-  const [mobileCaptureState, setMobileCaptureState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [mobileScreenshot, setMobileScreenshot] = useState<string>(initialMobileScreenshot || '');
+  const [mobileCaptureState, setMobileCaptureState] = useState<'idle' | 'loading' | 'done' | 'error'>(
+    initialMobileScreenshot ? 'done' : 'idle'
+  );
   const phoneVisible =
     config.mockupType === 'iphone' || config.mockupType === 'android' || (config.layoutMode || 'single') !== 'single';
   const canCaptureMobile = !!captureItem.url && /^https?:\/\//.test(captureItem.url);
@@ -529,7 +538,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     if (mobileCaptureState === 'idle') mobileCaptureRequested.current = false; // « Réessayer »
   }, [mobileCaptureState]);
   useEffect(() => {
-    if (!phoneVisible || !canCaptureMobile || config.phoneScreen === 'desktop' || mobileCaptureRequested.current) return;
+    if (
+      !phoneVisible ||
+      !canCaptureMobile ||
+      config.phoneScreen === 'desktop' ||
+      mobileCaptureRequested.current ||
+      mobileCaptureState === 'done' // déjà disponible (brouillon repris)
+    )
+      return;
     // Verrou hors état React : relancer l'effet ne doit pas annuler la capture en cours
     mobileCaptureRequested.current = true;
     setMobileCaptureState('loading');
@@ -827,6 +843,35 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     applySnapshot(next);
     setHistoryVersion((v) => v + 1);
   };
+
+  // ══ BROUILLON : restauration à l'ouverture puis sauvegarde automatique ══
+  const draftRestoredRef = useRef(false);
+  useEffect(() => {
+    if (draftRestoredRef.current || !initialSnapshot) return;
+    draftRestoredRef.current = true;
+    try {
+      applySnapshot(initialSnapshot as SceneSnapshot);
+    } catch {
+      // brouillon d'un ancien format : on garde les réglages par défaut
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (!currentScreenshot) return;
+    const t = setTimeout(() => {
+      const now = Date.now();
+      saveStudioDraft({
+        captureItem: { ...captureItem, screenshotBase64: currentScreenshot },
+        mobileScreenshot: mobileScreenshot || undefined,
+        snapshot: JSON.parse(snapshotKey),
+        updatedAt: now,
+      }).then(() => setDraftSavedAt(now));
+    }, 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshotKey, currentScreenshot, mobileScreenshot]);
 
   // Raccourcis clavier : Ctrl+Z, Ctrl+Y / Ctrl+Maj+Z, E (exporter), T (modèles)
   useEffect(() => {
@@ -2538,7 +2583,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
           {/* EN-TÊTE : mode Simple / Expert */}
           <div className={`${mobileSheetOpen ? 'flex' : 'hidden lg:flex'} px-4 py-2.5 border-b border-zinc-850/80 bg-[#08090d] items-center justify-between shrink-0`}>
-            <span className="text-xs font-bold text-zinc-200">Réglages</span>
+            <span className="text-xs font-bold text-zinc-200 flex items-center gap-2">
+              Réglages
+              {draftSavedAt && (
+                <span className="text-[10px] font-medium text-zinc-500" title="Votre travail est enregistré dans ce navigateur">
+                  · Enregistré
+                </span>
+              )}
+            </span>
             <div className="flex items-center gap-1.5">
               <button
                 type="button"

@@ -80,7 +80,10 @@ export interface SceneConfig {
   browserStyle?: BrowserStylePreset;
   cornerRadius?: CornerRadius;
   cropOffsetY?: number; // Défilement vertical de la capture (0% = Haut, 100% = Bas)
-  layoutMode?: 'single' | 'dual-stacked' | 'trio-ecosystem';
+  layoutMode?: 'single' | 'dual-stacked' | 'trio-ecosystem' | 'before-after';
+  /** Avant / Après : libellés affichés au-dessus des deux écrans */
+  beforeLabel?: string;
+  afterLabel?: string;
   /** Couleur du châssis des téléphones, tablettes et montres */
   deviceColor?: DeviceColor;
   /** Téléphone utilisé en Duo / Trio */

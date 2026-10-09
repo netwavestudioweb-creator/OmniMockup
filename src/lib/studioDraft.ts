@@ -8,6 +8,9 @@ import type { CaptureItemResult } from '@/types/analyzer';
 export interface StudioDraft {
   captureItem: CaptureItemResult;
   mobileScreenshot?: string;
+  /** Avant / Après : capture de l'ancien site */
+  beforeScreenshot?: string;
+  beforeUrl?: string;
   /** Instantané des réglages du studio (format interne de SceneEditor) */
   snapshot: unknown;
   updatedAt: number;

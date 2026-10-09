@@ -174,6 +174,8 @@ export default function HomePage() {
           onClose={handleReset}
           initialSnapshot={resumedDraft?.snapshot}
           initialMobileScreenshot={resumedDraft?.mobileScreenshot}
+          initialBeforeScreenshot={resumedDraft?.beforeScreenshot}
+          initialBeforeUrl={resumedDraft?.beforeUrl}
         />
       </div>
     );

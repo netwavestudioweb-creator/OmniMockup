@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import Link from 'next/link';
 import { toCanvas } from 'html-to-image';
 import {
@@ -110,6 +111,10 @@ import { ExportCrossSellBanner } from './ExportCrossSellBanner';
 import { PlanUpsellModal, UpsellMode } from './PlanUpsellModal';
 import { saveStudioDraft } from '@/lib/studioDraft';
 import { SceneAnnotationsLayer } from './SceneAnnotationsLayer';
+import { BrandKitPanel } from './BrandKitPanel';
+import { SavedStylesPanel } from './SavedStylesPanel';
+import type { BrandKit } from '@/lib/brandKit';
+import { STUDIO_FONTS, STUDIO_FONT_VARIABLES, studioFontFamily } from '@/lib/studioFonts';
 
 interface SceneEditorProps {
   captureItem: CaptureItemResult;
@@ -1008,12 +1013,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const renderSceneCanvas = async (width: number, height: number): Promise<HTMLCanvasElement> => {
     const node = sceneRef.current;
     if (!node) throw new Error('Scène introuvable');
-    // Retirer la sélection à l'écran avant le rendu
-    setSelectedTextId(null);
-    setSelectedLogoId(null);
-    setSelectedCalloutId(null);
-    setSelectedAnnotationId(null);
-    await new Promise((r) => setTimeout(r, 60));
+    // Retirer la sélection à l'écran AVANT la copie de la scène (rendu React immédiat)
+    flushSync(() => {
+      setSelectedTextId(null);
+      setSelectedLogoId(null);
+      setSelectedCalloutId(null);
+      setSelectedAnnotationId(null);
+    });
+    // Les contours de sélection portent data-export-hide : une image suffit pour finir le rendu
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
 
     const canvas = await toCanvas(node, {
       cacheBust: true,
@@ -1246,6 +1254,82 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }
   };
 
+  // Police des nouveaux textes (celle du kit de marque une fois appliqué)
+  const [defaultTextFont, setDefaultTextFont] = useState<string>('inter');
+
+  // ══ KIT DE MARQUE : logo, fond aux couleurs de l'agence, police, signature ══
+  const handleApplyBrandKit = (kit: BrandKit) => {
+    const colors = kit.colors.filter(Boolean);
+    setConfig((prev) => {
+      const logos = prev.logos.filter((l) => l.id !== 'brand_logo');
+      if (kit.logo) logos.push({ id: 'brand_logo', src: kit.logo, x: 10, y: 10, width: 90, opacity: 1 });
+      let texts = prev.texts.filter((t) => t.id !== 'brand_signature');
+      if (kit.font) texts = texts.map((t) => ({ ...t, fontFamily: kit.font as string }));
+      if (kit.signature) {
+        texts.push({
+          id: 'brand_signature',
+          text: kit.signature,
+          // En bas à droite : le centre est occupé par les badges de technologies
+          x: 82,
+          y: 93,
+          fontSize: 16,
+          fontFamily: kit.font || 'inter',
+          color: '#ffffff',
+          fontWeight: 'medium',
+          align: 'center',
+        });
+      }
+      return {
+        ...prev,
+        logos,
+        texts,
+        ...(colors.length >= 2
+          ? { bgType: 'gradient' as const, bgValue: `linear-gradient(135deg, ${colors.join(', ')})`, bgTransparent: false }
+          : colors.length === 1
+          ? { bgType: 'solid' as const, bgValue: colors[0], bgTransparent: false }
+          : {}),
+      };
+    });
+    if (kit.font) setDefaultTextFont(kit.font);
+  };
+
+  // ══ MES STYLES : réglages de mise en scène réutilisables ══
+  const STYLE_CONFIG_KEYS = [
+    'mockupType', 'layoutMode', 'deviceTheme', 'deviceStyle', 'cornerRadius', 'deviceColor', 'phoneModel',
+    'bgType', 'bgValue', 'bgTransparent', 'bgPattern', 'mockupX', 'mockupY', 'mockupScale', 'mockupRotation',
+    'mockupTiltX', 'mockupTiltY', 'shadowEnabled', 'shadowIntensity',
+  ] as const;
+  const getCurrentStyle = () => {
+    const values: Record<string, unknown> = {
+      browserStyle,
+      shadowType,
+      shadowOpacity,
+      shadowLightAngle,
+      sceneOverlay,
+      portraitBlur,
+      vfxGlow,
+      framePresetId: currentFramePreset.id,
+    };
+    for (const k of STYLE_CONFIG_KEYS) values[k] = config[k];
+    return { preview: config.bgTransparent ? '#27272a' : config.bgValue, values };
+  };
+  const applySavedStyle = (v: Record<string, unknown>) => {
+    setConfig((prev) => {
+      const next = { ...prev } as Record<string, unknown>;
+      for (const k of STYLE_CONFIG_KEYS) if (k in v) next[k] = v[k];
+      return next as unknown as SceneConfig;
+    });
+    if (v.browserStyle) setBrowserStyle(v.browserStyle as typeof browserStyle);
+    if (v.shadowType) setShadowType(v.shadowType as typeof shadowType);
+    if (typeof v.shadowOpacity === 'number') setShadowOpacity(v.shadowOpacity);
+    if (typeof v.shadowLightAngle === 'number') setShadowLightAngle(v.shadowLightAngle);
+    if (v.sceneOverlay) setSceneOverlay(v.sceneOverlay as SceneOverlayPreset);
+    if (typeof v.portraitBlur === 'boolean') setPortraitBlur(v.portraitBlur);
+    if (typeof v.vfxGlow === 'boolean') setVfxGlow(v.vfxGlow);
+    const preset = FRAME_PRESETS.find((fp) => fp.id === v.framePresetId);
+    if (preset) selectFramePreset(preset);
+  };
+
   // Ajout & gestion de texte
   const handleAddText = () => {
     const newText: SceneTextLayer = {
@@ -1254,7 +1338,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       x: 50,
       y: 15,
       fontSize: 26,
-      fontFamily: 'font-sans',
+      fontFamily: defaultTextFont,
       color: '#ffffff',
       fontWeight: 'bold',
       align: 'center',
@@ -1513,7 +1597,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         `${shadowOffsetX}px ${shadowOffsetY}px 24px rgba(0, 0, 0, ${effectiveAlpha}), 0 2px 8px rgba(0, 0, 0, ${(Number(effectiveAlpha) * 0.35).toFixed(2)})`;
 
   return (
-    <div className="w-screen h-screen flex flex-col bg-[#0b0b0e] text-zinc-150 select-none overflow-hidden font-sans fixed inset-0 z-50">
+    <div className={`w-screen h-screen flex flex-col bg-[#0b0b0e] text-zinc-150 select-none overflow-hidden font-sans fixed inset-0 z-50 ${STUDIO_FONT_VARIABLES}`}>
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {/* 1. TOP BAR PRO (Shots.so / Rotato App Header)                         */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
@@ -2473,13 +2557,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     key={txt.id}
                     onPointerDown={(e) => handlePointerDown(e, { type: 'text', id: txt.id })}
                     className={`absolute cursor-move select-none p-2 rounded-lg transition-all group touch-none z-30 ${
-                      isSelected ? 'ring-2 ring-violet-500 bg-black/20 backdrop-blur-xs' : 'hover:ring-1 hover:ring-white/50'
+                      isSelected ? '' : 'hover:ring-1 hover:ring-white/50'
                     }`}
                     style={{
                       left: `${txt.x}%`,
                       top: `${txt.y}%`,
                       transform: 'translate(-50%, -50%)',
                       color: txt.color,
+                      fontFamily: studioFontFamily(txt.fontFamily),
                       fontSize: `${txt.fontSize}px`,
                       fontWeight: txt.fontWeight === '900' ? 900 : txt.fontWeight === 'bold' ? 700 : txt.fontWeight === 'medium' ? 500 : 400,
                       textAlign: txt.align,
@@ -2487,12 +2572,16 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   >
                     <span className="whitespace-pre-wrap leading-tight block drop-shadow-md">{txt.text}</span>
                     {isSelected && (
+                      <span data-export-hide className="absolute inset-0 rounded-lg ring-2 ring-violet-500 pointer-events-none" />
+                    )}
+                    {isSelected && (
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteText(txt.id);
                         }}
+                        data-export-hide
                         className="absolute -top-3 -right-3 p-1 rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-500"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -2510,7 +2599,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     key={lg.id}
                     onPointerDown={(e) => handlePointerDown(e, { type: 'logo', id: lg.id })}
                     className={`absolute cursor-move select-none p-1 rounded-lg transition-all group touch-none z-30 ${
-                      isSelected ? 'ring-2 ring-violet-500 bg-black/20 backdrop-blur-xs' : 'hover:ring-1 hover:ring-white/50'
+                      isSelected ? '' : 'hover:ring-1 hover:ring-white/50'
                     }`}
                     style={{
                       left: `${lg.x}%`,
@@ -2523,12 +2612,16 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={lg.src} alt="Logo" className="w-full h-auto object-contain pointer-events-none drop-shadow-md" />
                     {isSelected && (
+                      <span data-export-hide className="absolute inset-0 rounded-lg ring-2 ring-violet-500 pointer-events-none" />
+                    )}
+                    {isSelected && (
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteLogo(lg.id);
                         }}
+                        data-export-hide
                         className="absolute -top-3 -right-3 p-1 rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-500"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -2546,7 +2639,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     key={callout.id}
                     onPointerDown={(e) => handlePointerDown(e, { type: 'callout', id: callout.id })}
                     className={`absolute cursor-move select-none transition-all group touch-none z-40 ${
-                      isSelected ? 'ring-2 ring-violet-400' : ''
+                      ''
                     }`}
                     style={{
                       left: `${callout.x}%`,
@@ -2578,12 +2671,16 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     {/* Pointer pin tail */}
                     <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-zinc-900 mx-auto -mt-0.5 filter drop-shadow-md" />
                     {isSelected && (
+                      <span data-export-hide className="absolute inset-0 rounded-lg ring-2 ring-violet-500 pointer-events-none" />
+                    )}
+                    {isSelected && (
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteCallout(callout.id);
                         }}
+                        data-export-hide
                         className="absolute -top-3 -right-3 p-1 rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-500"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -3880,6 +3977,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {/* ══════════ ONGLET 5 : TEXTES, LOGOS & TECH STACK ══════════ */}
             {activeTab === 'branding' && (
               <div className="space-y-5 animate-fade-in">
+                {/* Kit de marque de l'agence */}
+                <BrandKitPanel userId={user?.id} onApply={handleApplyBrandKit} />
+
                 {/* Calques de textes */}
                 <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
                   <div className="flex items-center justify-between">
@@ -3931,6 +4031,43 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white"
                         placeholder="Texte..."
                       />
+                      <div className="flex flex-wrap gap-1" role="group" aria-label="Police du texte">
+                        {STUDIO_FONTS.map((f) => (
+                          <button
+                            key={f.id}
+                            type="button"
+                            onClick={() => handleUpdateText(activeText.id, { fontFamily: f.id })}
+                            aria-pressed={studioFontFamily(activeText.fontFamily) === f.family}
+                            className={`px-2 py-1 rounded-lg border text-[11px] ${
+                              studioFontFamily(activeText.fontFamily) === f.family
+                                ? 'bg-violet-600 border-violet-500 text-white'
+                                : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:text-white'
+                            }`}
+                            style={{ fontFamily: f.family }}
+                          >
+                            {f.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-zinc-950 border border-zinc-800" role="group" aria-label="Graisse">
+                        {([
+                          { id: 'medium', label: 'Normal' },
+                          { id: 'bold', label: 'Gras' },
+                          { id: '900', label: 'Très gras' },
+                        ] as const).map((w) => (
+                          <button
+                            key={w.id}
+                            type="button"
+                            onClick={() => handleUpdateText(activeText.id, { fontWeight: w.id })}
+                            aria-pressed={activeText.fontWeight === w.id}
+                            className={`py-1 rounded-md text-[11px] font-semibold ${
+                              activeText.fontWeight === w.id ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            {w.label}
+                          </button>
+                        ))}
+                      </div>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -4238,6 +4375,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {/* ══════════ ONGLET PRINCIPAL 2 : FRAME & ARRIÈRE-PLANS (SHOTS.SO) ══════════ */}
             {activeMainTab === 'frame' && (
               <div className="space-y-6 animate-fade-in">
+                {/* Mes styles */}
+                <SavedStylesPanel getCurrent={getCurrentStyle} onApply={applySavedStyle} />
+
                 {/* 1. Format & Résolution du Canvas (Bouton Popover) */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">

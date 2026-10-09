@@ -404,13 +404,24 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   // ══ EXPORT ══
   const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png');
-  const [exportQuality, setExportQuality] = useState<ExportQuality>('hd');
+  const [exportQuality, setExportQualityState] = useState<ExportQuality>('standard');
+  // Qualité par défaut = la meilleure incluse dans le forfait ; une qualité supérieure
+  // n'est demandée que si l'utilisateur la choisit lui-même (crédits ou forfait supérieur).
+  const qualityChosenRef = useRef(false);
+  const setExportQuality = (q: ExportQuality) => {
+    qualityChosenRef.current = true;
+    setExportQualityState(q);
+  };
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
   // Qualités incluses dans le forfait (affichage). Le serveur décide au moment de l'export :
   // inclus, payable en crédits, ou refusé (/api/exports/authorize).
   const canExportHd = userPlan !== 'free';
   const canExport4k = userPlan === 'pro' || userPlan === 'agence';
   const effectiveQuality: ExportQuality = exportQuality;
+  useEffect(() => {
+    if (qualityChosenRef.current) return;
+    setExportQualityState(canExport4k ? 'hd' : canExportHd ? 'hd' : 'standard');
+  }, [canExportHd, canExport4k]);
   // Filigrane affiché selon le forfait ; retiré du fichier pour un export payé en crédits
   const planWatermark = userPlan === 'free' || userPlan === 'solo';
 

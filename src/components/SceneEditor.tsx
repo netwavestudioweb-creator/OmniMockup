@@ -113,6 +113,7 @@ import { saveStudioDraft } from '@/lib/studioDraft';
 import { SceneAnnotationsLayer } from './SceneAnnotationsLayer';
 import { BrandKitPanel } from './BrandKitPanel';
 import { SavedStylesPanel } from './SavedStylesPanel';
+import { StudioTour } from './StudioTour';
 import type { BrandKit } from '@/lib/brandKit';
 import { STUDIO_FONTS, STUDIO_FONT_VARIABLES, studioFontFamily } from '@/lib/studioFonts';
 
@@ -1887,7 +1888,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             </button>
 
             {/* Exporter : un seul bouton, toutes les options dans le menu */}
-            <div className="relative" ref={exportMenuRef}>
+            <div className="relative" ref={exportMenuRef} data-tour="export">
               <button
                 type="button"
                 onClick={() => setShowExportMenu((v) => !v)}
@@ -3000,7 +3001,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           </div>
 
           {/* ── BARRE DE CONTRÔLES FLOTTANTE AU BAS DU CANVAS (STYLE SHOTS.SO) ── */}
-          <div className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100%-1rem)] overflow-x-auto no-scrollbar bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl px-3 py-1.5 shadow-2xl flex items-center gap-3 text-xs select-none whitespace-nowrap">
+          <div data-tour="formats" className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100%-1rem)] overflow-x-auto no-scrollbar bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl px-3 py-1.5 shadow-2xl flex items-center gap-3 text-xs select-none whitespace-nowrap">
             {/* Formats rapides (même réglage que « Format du canevas ») */}
             <div className="flex items-center gap-1">
               {(['geo-16-9', 'geo-4-3', 'geo-1-1', 'ig-portrait', 'geo-9-16'] as const).map((id) => {
@@ -3145,7 +3146,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           </div>
 
           {/* ONGLETS (un seul niveau) */}
-          <div className={`${mobileSheetOpen ? 'block' : 'hidden lg:block'} px-3 py-2.5 border-b border-zinc-850/80 bg-[#090a0f] shrink-0`}>
+          <div data-tour="panel" className={`${mobileSheetOpen ? 'block' : 'hidden lg:block'} px-3 py-2.5 border-b border-zinc-850/80 bg-[#090a0f] shrink-0`}>
             <div className={`grid ${expertMode ? 'grid-cols-7' : 'grid-cols-5'} gap-1 p-1 rounded-xl bg-zinc-900/90 border border-zinc-800`} role="tablist">
               {([
                 { key: 'mockup', main: 'mockup', label: 'Appareil', icon: Monitor, expert: false },
@@ -5027,6 +5028,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           }}
         />
       )}
+
+      {/* VISITE GUIDÉE (premier lancement) */}
+      {!presentationMode && <StudioTour />}
 
       {/* ACCORD POUR PAYER UN EXPORT EN CRÉDITS */}
       {creditOffer && (

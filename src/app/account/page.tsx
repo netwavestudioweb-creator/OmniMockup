@@ -41,6 +41,7 @@ interface UsageData {
   png_exports_count: number;
   png_limit: number;
   hasStripeCustomer: boolean;
+  plan_expires_at: string | null;
   createdAt: string;
 }
 
@@ -133,6 +134,9 @@ function AccountContent() {
   const creditBalance = usage?.credit_balance ?? profile?.credit_balance ?? 0;
   const subscriptionStatus = usage?.subscription_status ?? profile?.subscription_status ?? 'active';
   const isPastDue = subscriptionStatus === 'past_due';
+  // Plan payé en une fois (SasPay) : date de fin fixe, pas de portail Stripe
+  const planExpiresAt = usage?.plan_expires_at ?? profile?.plan_expires_at ?? null;
+  const isOneTimePlan = currentPlan !== 'free' && !!planExpiresAt;
 
   const planLabel =
     currentPlan === 'agence'
@@ -380,11 +384,22 @@ function AccountContent() {
               </div>
               <p className="text-xs text-stone-500">
                 Statut : <span className={isPastDue ? 'text-amber-700 font-bold' : 'text-emerald-600 font-semibold'}>{isPastDue ? 'Paiement en attente' : 'Actif'}</span>
+                {isOneTimePlan && planExpiresAt && (
+                  <> · Paiement unique, actif jusqu&apos;au {new Date(planExpiresAt).toLocaleDateString('fr-FR')}</>
+                )}
               </p>
             </div>
 
             <div className="flex items-center gap-3">
-              {currentPlan !== 'free' ? (
+              {isOneTimePlan ? (
+                <Link
+                  href="/pricing"
+                  className="py-2.5 px-4 rounded-xl font-semibold text-xs text-stone-800 bg-white hover:bg-sand-100 border border-sand-300 flex items-center justify-center gap-2 transition-all shadow-2xs"
+                >
+                  <ArrowRight className="w-4 h-4 text-stone-600" />
+                  <span>Prolonger mon plan</span>
+                </Link>
+              ) : currentPlan !== 'free' ? (
                 <button
                   type="button"
                   onClick={handleOpenBillingPortal}

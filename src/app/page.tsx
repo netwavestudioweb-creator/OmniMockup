@@ -1296,11 +1296,11 @@ export default function HomePage() {
                   },
                   {
                     q: 'Comment puis-je payer ?',
-                    a: 'Par carte bancaire (Visa, Mastercard, American Express), partout dans le monde, en euros ou en dollars.',
+                    a: 'Par carte bancaire (Visa, Mastercard, American Express), partout dans le monde, en euros ou en dollars. En Afrique de l\'Ouest et du Centre, vous pouvez aussi payer en FCFA par Mobile Money ou carte via SasPay.',
                   },
                   {
                     q: 'Puis-je annuler à tout moment ?',
-                    a: 'Oui, sans engagement. Un abonnement par carte se résilie en un clic depuis votre espace membre et reste actif jusqu\'à la fin de la période payée.',
+                    a: 'Oui, sans engagement. Un abonnement par carte se résilie en un clic depuis votre espace membre et reste actif jusqu\'à la fin de la période payée. Un paiement en FCFA (SasPay) couvre 1 mois ou 1 an, sans renouvellement automatique.',
                   },
                 ].map((faq, i) => (
                   <div

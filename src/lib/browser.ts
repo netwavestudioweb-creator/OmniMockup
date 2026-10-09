@@ -125,13 +125,15 @@ export async function captureWebPage(
           ? Math.min(MOBILE_MAX_HEIGHT, await page.evaluate(() => document.documentElement.scrollHeight))
           : 0;
       const screenshotBuffer = await page.screenshot({
-        type: 'png',
+        // JPG haute qualité : 5 à 8 fois plus léger que le PNG (chargement rapide sur connexion mobile)
+        type: 'jpeg',
+        quality: 85,
         fullPage,
         timeout: 30000,
         animations: 'disabled',
         ...(mobileClipHeight ? { clip: { x: 0, y: 0, width: viewportWidth, height: mobileClipHeight } } : {}),
       });
-      const screenshotBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`;
+      const screenshotBase64 = `data:image/jpeg;base64,${screenshotBuffer.toString('base64')}`;
 
       const { candidates, pageSize } = await extractDomSectionsPlaywright(page);
 
@@ -193,12 +195,14 @@ export async function captureWebPage(
           ? Math.min(MOBILE_MAX_HEIGHT, await page.evaluate(() => document.documentElement.scrollHeight))
           : 0;
       const screenshotBuffer = (await page.screenshot({
-        type: 'png',
+        // JPG haute qualité : 5 à 8 fois plus léger que le PNG (chargement rapide sur connexion mobile)
+        type: 'jpeg',
+        quality: 85,
         ...(mobileClipHeight
           ? { clip: { x: 0, y: 0, width: viewportWidth, height: mobileClipHeight }, captureBeyondViewport: true }
           : { fullPage }),
       })) as Buffer;
-      const screenshotBase64 = `data:image/png;base64,${screenshotBuffer.toString('base64')}`;
+      const screenshotBase64 = `data:image/jpeg;base64,${screenshotBuffer.toString('base64')}`;
 
       const { candidates, pageSize } = await extractDomSectionsPuppeteer(page);
 

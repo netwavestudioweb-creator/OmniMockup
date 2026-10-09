@@ -4,7 +4,17 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { UrlInputForm } from '@/components/UrlInputForm';
-import { SceneEditor } from '@/components/SceneEditor';
+import dynamic from 'next/dynamic';
+
+// Le studio (plus de 5 000 lignes) n'est chargé qu'à son ouverture : accueil plus rapide
+const SceneEditor = dynamic(() => import('@/components/SceneEditor').then((m) => m.SceneEditor), {
+  ssr: false,
+  loading: () => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950 text-zinc-400 text-sm">
+      Ouverture du studio…
+    </div>
+  ),
+});
 import { loadStudioDraft, clearStudioDraft, StudioDraft } from '@/lib/studioDraft';
 
 import { Footer } from '@/components/Footer';

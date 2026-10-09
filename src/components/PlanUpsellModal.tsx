@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Sparkles, Flame, Check, X, ArrowRight, Coins, Zap } from 'lucide-react';
 import { trackEvent } from '@/lib/tracking';
 
-export type UpsellMode = 'free_quota_reached' | 'solo_quota_approaching' | 'low_credits';
+export type UpsellMode = 'free_quota_reached' | 'solo_quota_approaching' | 'low_credits' | 'feature_locked';
 
 interface PlanUpsellModalProps {
   isOpen: boolean;
@@ -95,7 +95,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                     <span className="text-[10px] bg-violet-600 text-white px-2 py-0.5 rounded-full font-bold">9 €/mois</span>
                   </div>
                   <p className="text-[11px] text-violet-800 leading-tight mb-3 font-medium">
-                    Exports illimités HD + 4K, ZÉRO filigrane et vidéo MP4.
+                    Exports illimités HD + 4K, ZÉRO filigrane et vidéo MP4 (10 / mois).
                   </p>
                   <ul className="space-y-1.5 text-[11px] text-stone-800">
                     <li className="flex items-center gap-1.5">
@@ -154,6 +154,43 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                 className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs"
               >
                 Upgrader (+4 €) →
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* SCÉNARIO 4 : Option non incluse (4K, vidéo) et pas assez de crédits */}
+        {mode === 'feature_locked' && (
+          <div className="space-y-4 text-center sm:text-left">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-100 text-violet-800 text-xs font-black uppercase">
+              <Zap className="w-3.5 h-3.5 text-violet-600" />
+              <span>Option non incluse dans votre forfait</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">Débloquez la 4K et la vidéo</h3>
+            <p className="text-xs text-stone-600 leading-relaxed">
+              Le plan <strong>Pro</strong> inclut les exports HD et 4K illimités sans filigrane et 10 vidéos par mois.
+              Besoin ponctuel ? Achetez des <strong>crédits</strong> : 1 crédit l&apos;image HD, 2 la 4K, 3 la vidéo.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Link
+                href="/pricing"
+                onClick={() => {
+                  trackEvent('plan_click', { source: 'upsell_feature_locked', plan_id: 'pro' });
+                  onClose();
+                }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs text-center"
+              >
+                Voir le plan Pro (9 €/mois)
+              </Link>
+              <Link
+                href="/pricing#credits"
+                onClick={() => {
+                  trackEvent('plan_click', { source: 'upsell_feature_locked', pack_id: 'credits' });
+                  onClose();
+                }}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-stone-300 hover:bg-stone-50 text-stone-800 font-bold text-xs text-center"
+              >
+                Acheter des crédits
               </Link>
             </div>
           </div>

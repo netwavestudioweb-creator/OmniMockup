@@ -274,7 +274,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   initialBeforeScreenshot,
   initialBeforeUrl,
 }) => {
-  const { user, profile, signOut, isPremiumUser } = useUser();
+  const { user, profile, signOut, isPremiumUser, refreshProfile } = useUser();
   const userPlan = profile?.plan || 'free';
   const isFreePlan = userPlan === 'free';
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -405,11 +405,85 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png');
   const [exportQuality, setExportQuality] = useState<ExportQuality>('hd');
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
-  // Qualités autorisées selon le forfait (contrôle d'affichage ; le contrôle serveur viendra au Lot 2)
+  // Qualités incluses dans le forfait (affichage). Le serveur décide au moment de l'export :
+  // inclus, payable en crédits, ou refusé (/api/exports/authorize).
   const canExportHd = userPlan !== 'free';
   const canExport4k = userPlan === 'pro' || userPlan === 'agence';
-  const effectiveQuality: ExportQuality =
-    exportQuality === '4k' && !canExport4k ? (canExportHd ? 'hd' : 'standard') : exportQuality === 'hd' && !canExportHd ? 'standard' : exportQuality;
+  const effectiveQuality: ExportQuality = exportQuality;
+  // Filigrane affiché selon le forfait ; retiré du fichier pour un export payé en crédits
+  const planWatermark = userPlan === 'free' || userPlan === 'solo';
+
+  // ══ AUTORISATION SERVEUR ET CRÉDITS ══
+  type ExportAuth = {
+    allowed: boolean;
+    quality: ExportQuality;
+    watermark: boolean;
+    reason?: string | null;
+    cost?: number;
+    balance?: number;
+    credits_used?: number;
+  };
+  const [creditOffer, setCreditOffer] = useState<{
+    kind: 'image' | 'pack' | 'video';
+    cost: number;
+    balance: number;
+    resolve: (accepted: boolean) => void;
+  } | null>(null);
+
+  const authorizeExport = async (kind: 'image' | 'pack' | 'video', quality: ExportQuality): Promise<ExportAuth | null> => {
+    const call = async (useCredits: boolean): Promise<ExportAuth | null> => {
+      try {
+        const res = await fetch('/api/exports/authorize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kind,
+            quality,
+            useCredits,
+            // Session de démonstration locale : ignorée par le serveur en production
+            demoPlan: user?.id === 'test-user-id-999' ? userPlan : undefined,
+          }),
+        });
+        if (res.status === 429) return null;
+        return (await res.json()) as ExportAuth;
+      } catch {
+        return null;
+      }
+    };
+
+    const first = await call(false);
+    // Serveur injoignable : l'export n'est pas bloqué, filigrane selon le forfait connu
+    if (!first) return { allowed: true, quality, watermark: planWatermark };
+    if (first.allowed) return first;
+
+    // Hors forfait mais payable en crédits : on demande l'accord
+    if (user && first.cost && (first.balance ?? 0) >= first.cost) {
+      const accepted = await new Promise<boolean>((resolve) =>
+        setCreditOffer({ kind, cost: first.cost as number, balance: first.balance as number, resolve })
+      );
+      setCreditOffer(null);
+      if (!accepted) return null;
+      const paid = await call(true);
+      if (paid?.allowed) {
+        refreshProfile();
+        if ((paid.balance ?? 0) <= 2) setUpsellModal({ open: true, mode: 'low_credits' });
+        return paid;
+      }
+      return null;
+    }
+
+    setShowExportMenu(false);
+    setUpsellModal({
+      open: true,
+      mode:
+        first.reason === 'quota_reached'
+          ? userPlan === 'solo'
+            ? 'solo_quota_approaching'
+            : 'free_quota_reached'
+          : 'feature_locked',
+    });
+    return null;
+  };
 
   useEffect(() => {
     if (!showExportMenu) return;
@@ -1010,7 +1084,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
    * - les éléments d'interface (poignées, repères, sélection) sont exclus ;
    * - les zones floutées sont floutées sur l'image elle-même (le flou d'affichage ne s'exporte pas).
    */
-  const renderSceneCanvas = async (width: number, height: number): Promise<HTMLCanvasElement> => {
+  const renderSceneCanvas = async (width: number, height: number, hideWatermark = false): Promise<HTMLCanvasElement> => {
     const node = sceneRef.current;
     if (!node) throw new Error('Scène introuvable');
     // Retirer la sélection à l'écran AVANT la copie de la scène (rendu React immédiat)
@@ -1030,7 +1104,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       canvasHeight: height,
       imagePlaceholder: EXPORT_IMAGE_PLACEHOLDER,
       style: { transform: 'none' },
-      filter: (el) => !(el instanceof Element && el.hasAttribute('data-export-hide')),
+      filter: (el) =>
+        !(el instanceof Element && (el.hasAttribute('data-export-hide') || (hideWatermark && el.hasAttribute('data-watermark')))),
     });
 
     const blurs = (config.annotations || []).filter((a) => a.kind === 'blur');
@@ -1065,9 +1140,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   };
 
   /** Rend la scène aux dimensions exactes du format choisi. */
-  const renderScene = async (format: ExportFormat, preset: FramePresetOption, quality: ExportQuality): Promise<string> => {
+  const renderScene = async (
+    format: ExportFormat,
+    preset: FramePresetOption,
+    quality: ExportQuality,
+    hideWatermark = false
+  ): Promise<string> => {
     const { width, height } = getExportSize(preset, quality);
-    const canvas = await renderSceneCanvas(width, height);
+    const canvas = await renderSceneCanvas(width, height, hideWatermark);
     if (format === 'jpg') {
       // Fond blanc sous les zones transparentes (le JPG n'a pas de transparence)
       const flat = document.createElement('canvas');
@@ -1105,8 +1185,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     setExportSuccess(false);
 
     try {
-      const dataUrl = await renderScene(exportFormat, currentFramePreset, effectiveQuality);
-      const { width, height } = getExportSize(currentFramePreset, effectiveQuality);
+      const auth = await authorizeExport('image', exportQuality);
+      if (!auth) return;
+      const dataUrl = await renderScene(exportFormat, currentFramePreset, auth.quality, !auth.watermark);
+      const { width, height } = getExportSize(currentFramePreset, auth.quality);
       downloadDataUrl(dataUrl, `${fileBaseName}-${width}x${height}.${exportFormat}`);
 
       setExportSuccess(true);
@@ -1116,29 +1198,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       // Cross-sell discret après export réussi
       setShowCrossSellBanner(true);
 
-      // Détection des seuils d'upsell
-      try {
-        const todayKey = `omnimockup_exports_${new Date().toISOString().split('T')[0]}`;
-        const currentCount = parseInt(localStorage.getItem(todayKey) || '0', 10) + 1;
-        localStorage.setItem(todayKey, currentCount.toString());
-
-        if (userPlan === 'free' && currentCount >= 3 && !sessionStorage.getItem('upsell_free_shown')) {
-          sessionStorage.setItem('upsell_free_shown', 'true');
-          setUpsellModal({ open: true, mode: 'free_quota_reached' });
-        } else if (userPlan === 'solo' && !sessionStorage.getItem('upsell_solo_shown')) {
-          sessionStorage.setItem('upsell_solo_shown', 'true');
-          setUpsellModal({ open: true, mode: 'solo_quota_approaching' });
-        } else if (
-          (profile?.credit_balance ?? 0) > 0 &&
-          (profile?.credit_balance ?? 0) <= 2 &&
-          !sessionStorage.getItem('upsell_credits_shown')
-        ) {
-          sessionStorage.setItem('upsell_credits_shown', 'true');
-          setUpsellModal({ open: true, mode: 'low_credits' });
-        }
-      } catch {
-        // Mode silencieux
-      }
     } catch (err) {
       console.error('Erreur export image:', err);
       alert("Erreur lors de l'exportation de l'image. Veuillez réessayer.");
@@ -1154,8 +1213,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     setCopySuccess(false);
 
     try {
-      const size = getExportSize(currentFramePreset, effectiveQuality);
-      const copyCanvas = await renderSceneCanvas(size.width, size.height);
+      const auth = await authorizeExport('image', exportQuality);
+      if (!auth) return;
+      const size = getExportSize(currentFramePreset, auth.quality);
+      const copyCanvas = await renderSceneCanvas(size.width, size.height, !auth.watermark);
       const blob = await new Promise<Blob | null>((resolve) => copyCanvas.toBlob(resolve, 'image/png'));
 
       if (!blob) throw new Error('Impossible de générer le blob');
@@ -1178,8 +1239,13 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     setIsExportingVideo(true);
 
     try {
-      const videoBase = getExportSize(currentFramePreset, effectiveQuality);
-      const basePngUrl = (await renderSceneCanvas(videoBase.width, videoBase.height)).toDataURL('image/png');
+      const auth = await authorizeExport('video', exportQuality === '4k' ? 'hd' : exportQuality);
+      if (!auth) {
+        setIsExportingVideo(false);
+        return;
+      }
+      const videoBase = getExportSize(currentFramePreset, auth.quality);
+      const basePngUrl = (await renderSceneCanvas(videoBase.width, videoBase.height, !auth.watermark)).toDataURL('image/png');
       const img = new Image();
       img.src = basePngUrl;
       await new Promise((r) => {
@@ -1473,14 +1539,16 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       .filter((fp): fp is FramePresetOption => !!fp);
 
     try {
+      const auth = await authorizeExport('pack', exportQuality === '4k' ? 'hd' : exportQuality);
+      if (!auth) return;
       for (let i = 0; i < packPresets.length; i++) {
         const preset = packPresets[i];
         setPackProgress(`${i + 1}/${packPresets.length}`);
         selectFramePreset(preset);
         // Laisser le canevas prendre sa nouvelle forme avant le rendu
         await new Promise((r) => setTimeout(r, 500));
-        const quality: ExportQuality = canExportHd ? 'hd' : 'standard';
-        const dataUrl = await renderScene(exportFormat, preset, quality);
+        const quality: ExportQuality = auth.quality;
+        const dataUrl = await renderScene(exportFormat, preset, quality, !auth.watermark);
         const { width, height } = getExportSize(preset, quality);
         const label = `${preset.category}-${preset.name}`.replace(/[^a-zA-Z0-9_-]+/g, '_');
         downloadDataUrl(dataUrl, `${fileBaseName}-${label}-${width}x${height}.${exportFormat}`);
@@ -1809,14 +1877,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           <button
                             key={q.id}
                             type="button"
-                            onClick={() => {
-                              if (!q.allowed) {
-                                setShowExportMenu(false);
-                                setUpsellModal({ open: true, mode: 'free_quota_reached' });
-                                return;
-                              }
-                              setExportQuality(q.id);
-                            }}
+                            onClick={() => setExportQuality(q.id)}
                             aria-pressed={active}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all ${
                               active
@@ -1830,7 +1891,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             </span>
                             <span className="font-mono text-[10px] text-zinc-400">
                               {size.width} × {size.height}
-                              {!q.allowed && <span className="ml-1.5 text-amber-400 font-sans font-bold">Plan {q.plan}</span>}
+                              {!q.allowed && (
+                                <span className="ml-1.5 text-amber-400 font-sans font-bold">
+                                  Plan {q.plan} ou {q.id === '4k' ? 2 : 1} crédit{q.id === '4k' ? 's' : ''}
+                                </span>
+                              )}
                             </span>
                           </button>
                         );
@@ -2795,16 +2860,17 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               )}
 
               {/* WATERMARK : FREE vs PRO (Marque blanche) */}
-              {isFreePlan ? (
+              {planWatermark ? (
                 <Link
+                  data-watermark
                   href="/pricing"
                   className="absolute bottom-3 right-3 z-40 px-2.5 py-1 rounded-lg bg-black/65 hover:bg-violet-950/80 backdrop-blur-md text-white/90 hover:text-white text-[10px] font-mono font-semibold flex items-center gap-1.5 shadow-sm border border-white/20 hover:border-violet-400 transition-all select-none group"
                   title="Créé avec OmniMockup. Débloquez le plan Pro pour supprimer le filigrane."
                 >
                   <Layers className="w-3 h-3 text-violet-400 group-hover:scale-110 transition-transform" />
-                  <span>Made with OmniMockup</span>
-                  <span className="text-[9px] bg-violet-600/60 px-1 py-0.5 rounded text-violet-200 group-hover:bg-violet-600 font-sans">
-                    Pro
+                  <span>Réalisé avec OmniMockup</span>
+                  <span data-export-hide className="text-[9px] bg-violet-600/60 px-1 py-0.5 rounded text-violet-200 group-hover:bg-violet-600 font-sans">
+                    Retirer
                   </span>
                 </Link>
               ) : config.customWatermarkUrl ? (
@@ -4854,6 +4920,43 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             handleExportPack();
           }}
         />
+      )}
+
+      {/* ACCORD POUR PAYER UN EXPORT EN CRÉDITS */}
+      {creditOffer && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="credit-offer-title">
+          <div className="w-full max-w-sm bg-[#0c0d14] border border-zinc-800 rounded-2xl p-5 space-y-4 shadow-2xl">
+            <h3 id="credit-offer-title" className="text-sm font-bold text-white">
+              Utiliser {creditOffer.cost} crédit{creditOffer.cost > 1 ? 's' : ''} ?
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              {creditOffer.kind === 'video'
+                ? 'La vidéo n\'est pas incluse dans votre forfait.'
+                : creditOffer.kind === 'pack'
+                ? 'Ce pack dépasse votre forfait.'
+                : 'Cet export dépasse votre forfait.'}{' '}
+              Il peut être payé avec vos crédits : il sera <strong className="text-zinc-200">sans filigrane</strong>.
+              Solde actuel : <strong className="text-zinc-200">{creditOffer.balance}</strong>, après :{' '}
+              <strong className="text-zinc-200">{creditOffer.balance - creditOffer.cost}</strong>.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => creditOffer.resolve(true)}
+                className="flex-1 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold"
+              >
+                Utiliser mes crédits
+              </button>
+              <button
+                type="button"
+                onClick={() => creditOffer.resolve(false)}
+                className="px-4 py-2 rounded-xl text-zinc-400 hover:text-white text-xs font-semibold"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* MODALE UPSELL SELON LES QUOTAS */}

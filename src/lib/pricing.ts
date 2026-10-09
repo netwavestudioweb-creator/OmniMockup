@@ -165,7 +165,7 @@ export const PLANS: Plan[] = [
     features: [
       { name: 'Exports PNG HD 2x & 4K ILLIMITÉS', included: true, highlight: true },
       { name: 'ZÉRO filigrane (rendus 100 % neutres)', included: true, highlight: true },
-      { name: '10 exports Vidéo MP4 60fps / mois', included: true, highlight: true },
+      { name: '10 exports Vidéo MP4 / mois', included: true, highlight: true },
       { name: 'IA Pitch Kit (5 générations / mois)', included: true, highlight: true },
       { name: '50+ templates exclusifs Pro & Social Media', included: true },
       { name: 'Support email 24h', included: true },

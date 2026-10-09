@@ -1101,7 +1101,7 @@ export default function HomePage() {
                     features: [
                       { name: 'Exports PNG HD 2x & 4K ILLIMITÉS', included: true },
                       { name: 'ZÉRO filigrane (rendus neutres)', included: true },
-                      { name: '10 exports Vidéo MP4 60fps / mois', included: true },
+                      { name: '10 exports Vidéo MP4 / mois', included: true },
                       { name: 'IA Pitch Kit (5 générations / mois)', included: true },
                       { name: 'Templates Pro & réseaux sociaux', included: true },
                     ],

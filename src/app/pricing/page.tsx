@@ -670,7 +670,7 @@ export default function PricingPage() {
               </div>
               <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
                 <div className="font-bold text-stone-900">3 Crédits</div>
-                <div className="text-[11px] text-stone-500 mt-0.5">Vidéo MP4 60fps</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">Vidéo MP4 animée (3 s)</div>
               </div>
               <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
                 <div className="font-bold text-stone-900">4 Crédits</div>

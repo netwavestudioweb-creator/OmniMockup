@@ -244,6 +244,16 @@ const TRUST_BADGES: { type: SocialProofBadgeType; label: string; icon: string; p
 const EXPORT_IMAGE_PLACEHOLDER =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
+/** Format vidéo enregistrable par ce navigateur : MP4 si possible, sinon WebM. */
+function getVideoFormat(): { mimeType: string; extension: 'mp4' | 'webm' } {
+  if (typeof MediaRecorder !== 'undefined') {
+    for (const t of ['video/mp4;codecs=avc1.42E01E', 'video/mp4;codecs=avc1', 'video/mp4']) {
+      if (MediaRecorder.isTypeSupported(t)) return { mimeType: t, extension: 'mp4' };
+    }
+  }
+  return { mimeType: 'video/webm', extension: 'webm' };
+}
+
 const EXPERT_MODE_STORAGE_KEY = 'omnimockup_studio_expert';
 const HISTORY_LIMIT = 60;
 
@@ -1023,6 +1033,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   const closeCrossSellBanner = useCallback(() => setShowCrossSellBanner(false), []);
 
+  const [videoExtension, setVideoExtension] = useState<'mp4' | 'webm'>('webm');
+  useEffect(() => setVideoExtension(getVideoFormat().extension), []);
+
   const fileBaseName = (captureItem.domainName || 'omnimockup').replace(/[^a-zA-Z0-9_-]/g, '_');
 
   // Export d'une image (format et qualité choisis dans le menu Exporter)
@@ -1120,7 +1133,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       if (!ctx) throw new Error('Contexte canvas 2D indisponible');
 
       const stream = canvas.captureStream(30);
-      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      // MP4 quand le navigateur sait l'enregistrer (Chrome, Edge, Safari récents), sinon WebM
+      const { mimeType, extension } = getVideoFormat();
+      const recorder = new MediaRecorder(stream, { mimeType });
       const chunks: Blob[] = [];
 
       recorder.ondataavailable = (e) => {
@@ -1128,11 +1143,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
+        const blob = new Blob(chunks, { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `mockup-animation-${videoPreset}.webm`;
+        a.download = `${fileBaseName}-video-3s.${extension}`;
         a.click();
         URL.revokeObjectURL(url);
         setIsExportingVideo(false);
@@ -1745,7 +1760,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       {isExportingVideo ? <RefreshCw className="w-4 h-4 animate-spin text-amber-400" /> : <Video className="w-4 h-4 text-amber-400" />}
                       <span className="flex-1">
                         <span className="font-semibold block">Vidéo animée 3 s</span>
-                        <span className="text-[10px] text-zinc-500">Zoom lent, format WebM</span>
+                        <span className="text-[10px] text-zinc-500">
+                          Zoom lent, format {videoExtension.toUpperCase()}
+                          {videoExtension === 'webm' && ' (MP4 avec Chrome, Edge ou Safari)'}
+                        </span>
                       </span>
                     </button>
                   </div>

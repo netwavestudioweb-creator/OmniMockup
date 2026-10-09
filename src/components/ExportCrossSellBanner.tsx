@@ -71,7 +71,7 @@ export const ExportCrossSellBanner: React.FC<ExportCrossSellBannerProps> = ({
             <Video className="w-3.5 h-3.5 text-amber-400" />
             Vidéo 3 s
           </span>
-          <span className="block text-[10px] text-zinc-400 mt-0.5">Zoom animé (WebM)</span>
+          <span className="block text-[10px] text-zinc-400 mt-0.5">Zoom animé de 3 s</span>
         </button>
       </div>
 

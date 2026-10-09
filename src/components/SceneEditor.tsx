@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { toPng, toBlob } from 'html-to-image';
+import { toPng, toBlob, toJpeg, toCanvas } from 'html-to-image';
 import {
   CaptureItemResult,
   MockupType,
@@ -80,6 +80,10 @@ import {
   Crown,
   TrendingUp,
   Bot,
+  Undo2,
+  Redo2,
+  Lock,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { TechStackPicker, AVAILABLE_TECHS } from './TechStackPicker';
 import { DeveloperSalesKitModal } from './DeveloperSalesKitModal';
@@ -201,14 +205,33 @@ const GRADIENT_PRESETS = [
   },
 ];
 
-const RATIO_PRESETS: { id: SceneAspectRatio; label: string; ratioClass: string; desc: string }[] = [
-  { id: '16:9', label: '16:9', ratioClass: 'aspect-[16/9]', desc: 'Product Hunt & Twitter (16:9)' },
-  { id: '1:1', label: '1:1', ratioClass: 'aspect-square', desc: 'Instagram & LinkedIn (1:1)' },
-  { id: '4:3', label: '4:3', ratioClass: 'aspect-[4/3]', desc: 'Dribbble & Portfolio (4:3)' },
-  { id: '9:16', label: '9:16', ratioClass: 'aspect-[9/16]', desc: 'Stories, Reels & Mobile (9:16)' },
-  { id: '1.91:1', label: '1.91:1', ratioClass: 'aspect-[191/100]', desc: 'Bannière LinkedIn Pro (1.91:1)' },
-  { id: 'libre', label: '16:10', ratioClass: 'aspect-[16/10]', desc: 'Écran Web Libre (16:10)' },
+type ExportFormat = 'png' | 'jpg' | 'webp';
+type ExportQuality = 'standard' | 'hd' | '4k';
+
+/** Dimensions réelles du fichier exporté pour un format de canevas et une qualité. */
+function getExportSize(preset: FramePresetOption, quality: ExportQuality): { width: number; height: number } {
+  const longSide = Math.max(preset.width, preset.height);
+  const factor = quality === '4k' ? 2 : quality === 'hd' ? 1 : Math.min(1, 1280 / longSide);
+  return { width: Math.round(preset.width * factor), height: Math.round(preset.height * factor) };
+}
+
+// Formats du pack réseaux sociaux (un fichier par format, dimensions officielles)
+const SOCIAL_PACK_PRESET_IDS = ['geo-16-9', 'li-post', 'ig-post', 'ig-portrait', 'ig-story'];
+
+// Badges de confiance : aucun chiffre pré-rempli, l'utilisateur saisit SES vraies données
+const TRUST_BADGES: { type: SocialProofBadgeType; label: string; icon: string; placeholder: string; hint: string }[] = [
+  { type: 'trustpilot', label: 'Note clients', icon: '★', placeholder: 'Votre note (ex. 4,8/5)', hint: 'Note moyenne réelle de vos avis' },
+  { type: 'stripe-mrr', label: 'Chiffre clé', icon: '📈', placeholder: 'Votre chiffre clé', hint: 'Un résultat vérifiable du projet' },
+  { type: 'product-hunt', label: 'Distinction', icon: '🏆', placeholder: 'Votre distinction', hint: 'Prix ou classement réellement obtenu' },
+  { type: 'uptime', label: 'Disponibilité', icon: '🟢', placeholder: 'Votre disponibilité', hint: 'Taux mesuré par votre outil de suivi' },
 ];
+
+// Image transparente utilisée si une image de la scène ne peut pas être chargée pendant l'export
+const EXPORT_IMAGE_PLACEHOLDER =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+const EXPERT_MODE_STORAGE_KEY = 'omnimockup_studio_expert';
+const HISTORY_LIMIT = 60;
 
 export const SceneEditor: React.FC<SceneEditorProps> = ({
   captureItem,
@@ -323,13 +346,65 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   // ══ ONGLETS PRINCIPAUX DU STUDIO (MOCKUP vs FRAME style Shots.so) ══
   const [activeMainTab, setActiveMainTab] = useState<'mockup' | 'frame'>('mockup');
   const [showFrameSizePopover, setShowFrameSizePopover] = useState<boolean>(false);
-  const [currentFramePreset, setCurrentFramePreset] = useState<FramePresetOption>(FRAME_PRESETS[2]); // Default 4:3
+  const [currentFramePreset, setCurrentFramePreset] = useState<FramePresetOption>(FRAME_PRESETS[0]); // 16:9 1920 × 1080
   const [showAllSolidColors, setShowAllSolidColors] = useState<boolean>(false);
   const [sceneOverlay, setSceneOverlay] = useState<SceneOverlayPreset>('none');
   const [portraitBlur, setPortraitBlur] = useState<boolean>(false);
   const [vfxGlow, setVfxGlow] = useState<boolean>(false);
   const [uiScale, setUiScale] = useState<number>(100);
   const [magicPresetIdx, setMagicPresetIdx] = useState<number>(0);
+
+  // ══ FORMAT UNIQUE DU CANEVAS ══
+  // Source unique : currentFramePreset (dimensions réelles). config.aspectRatio suit toujours.
+  const selectFramePreset = useCallback((preset: FramePresetOption) => {
+    setCurrentFramePreset(preset);
+    setConfig((p) => ({ ...p, aspectRatio: preset.ratioId }));
+  }, []);
+
+  // ══ EXPORT ══
+  const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('png');
+  const [exportQuality, setExportQuality] = useState<ExportQuality>('hd');
+  const exportMenuRef = useRef<HTMLDivElement | null>(null);
+  // Qualités autorisées selon le forfait (contrôle d'affichage ; le contrôle serveur viendra au Lot 2)
+  const canExportHd = userPlan !== 'free';
+  const canExport4k = userPlan === 'pro' || userPlan === 'agence';
+  const effectiveQuality: ExportQuality =
+    exportQuality === '4k' && !canExport4k ? (canExportHd ? 'hd' : 'standard') : exportQuality === 'hd' && !canExportHd ? 'standard' : exportQuality;
+
+  useEffect(() => {
+    if (!showExportMenu) return;
+    const close = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) setShowExportMenu(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [showExportMenu]);
+
+  // ══ MODE SIMPLE / EXPERT (mémorisé dans le navigateur) ══
+  const [expertMode, setExpertMode] = useState<boolean>(false);
+  useEffect(() => {
+    try {
+      setExpertMode(localStorage.getItem(EXPERT_MODE_STORAGE_KEY) === '1');
+    } catch {
+      // stockage indisponible : mode Simple
+    }
+  }, []);
+  useEffect(() => {
+    if (!expertMode && (activeTab === 'callouts' || activeTab === 'content')) setActiveTab('mockup');
+  }, [expertMode, activeTab]);
+
+  const toggleExpertMode = () => {
+    setExpertMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(EXPERT_MODE_STORAGE_KEY, next ? '1' : '0');
+      } catch {
+        // ignorer
+      }
+      return next;
+    });
+  };
 
   // ══ MODE PRÉSENTATION & PANNEAU INSPECTEUR (STUDIO FIGMA/DAVINCI) ══
   const [presentationMode, setPresentationMode] = useState<boolean>(false);
@@ -375,6 +450,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     if (matchingPreset) {
       setCurrentFramePreset(matchingPreset);
     }
+    setShowTemplatesModal(false);
   };
 
   // Naviguer dans les Magic Presets auto-extraits (< >)
@@ -405,6 +481,17 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   // Références DOM
   const sceneRef = useRef<HTMLDivElement>(null);
+  const canvasAreaRef = useRef<HTMLDivElement>(null);
+  const [canvasArea, setCanvasArea] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = canvasAreaRef.current;
+    if (!el) return;
+    const update = () => setCanvasArea({ w: el.clientWidth, h: el.clientHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const replaceImgInputRef = useRef<HTMLInputElement>(null);
   const bgImgInputRef = useRef<HTMLInputElement>(null);
@@ -573,6 +660,144 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     };
   }, [draggingTarget, handlePointerMove, handlePointerUp]);
 
+  // ══ ANNULER / RÉTABLIR ══
+  // Instantané de tout ce qui change le rendu ; les glissements de curseur sont regroupés (400 ms).
+  type SceneSnapshot = {
+    config: SceneConfig;
+    browserStyle: typeof browserStyle;
+    customAddressBar: string;
+    shadowType: typeof shadowType;
+    shadowOpacity: number;
+    shadowLightAngle: number;
+    sceneOverlay: SceneOverlayPreset;
+    portraitBlur: boolean;
+    vfxGlow: boolean;
+    uiScale: number;
+    framePresetId: string;
+    selectedTechIds: string[];
+    techPosition: typeof techPosition;
+    techThemeStyle: typeof techThemeStyle;
+    mockupHidden: boolean;
+  };
+  const snapshot: SceneSnapshot = {
+    config,
+    browserStyle,
+    customAddressBar,
+    shadowType,
+    shadowOpacity,
+    shadowLightAngle,
+    sceneOverlay,
+    portraitBlur,
+    vfxGlow,
+    uiScale,
+    framePresetId: currentFramePreset.id,
+    selectedTechIds,
+    techPosition,
+    techThemeStyle,
+    mockupHidden,
+  };
+  const snapshotKey = JSON.stringify(snapshot);
+  const historyRef = useRef<{ past: SceneSnapshot[]; future: SceneSnapshot[]; last: SceneSnapshot | null; lastKey: string }>({
+    past: [],
+    future: [],
+    last: null,
+    lastKey: '',
+  });
+  const restoringRef = useRef(false);
+  const [historyVersion, setHistoryVersion] = useState(0);
+
+  useEffect(() => {
+    const h = historyRef.current;
+    if (restoringRef.current) {
+      restoringRef.current = false;
+      h.last = snapshot;
+      h.lastKey = snapshotKey;
+      return;
+    }
+    if (!h.last) {
+      h.last = snapshot;
+      h.lastKey = snapshotKey;
+      return;
+    }
+    if (snapshotKey === h.lastKey || draggingTarget) return;
+    const t = setTimeout(() => {
+      if (h.last && snapshotKey !== h.lastKey) {
+        h.past.push(h.last);
+        if (h.past.length > HISTORY_LIMIT) h.past.shift();
+        h.future = [];
+        h.last = JSON.parse(snapshotKey) as SceneSnapshot;
+        h.lastKey = snapshotKey;
+        setHistoryVersion((v) => v + 1);
+      }
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshotKey, draggingTarget]);
+
+  const applySnapshot = (snap: SceneSnapshot) => {
+    restoringRef.current = true;
+    setConfig(snap.config);
+    setBrowserStyle(snap.browserStyle);
+    setCustomAddressBar(snap.customAddressBar);
+    setShadowType(snap.shadowType);
+    setShadowOpacity(snap.shadowOpacity);
+    setShadowLightAngle(snap.shadowLightAngle);
+    setSceneOverlay(snap.sceneOverlay);
+    setPortraitBlur(snap.portraitBlur);
+    setVfxGlow(snap.vfxGlow);
+    setUiScale(snap.uiScale);
+    const preset = FRAME_PRESETS.find((fp) => fp.id === snap.framePresetId);
+    if (preset) setCurrentFramePreset(preset);
+    setSelectedTechIds(snap.selectedTechIds);
+    setTechPosition(snap.techPosition);
+    setTechThemeStyle(snap.techThemeStyle);
+    setMockupHidden(snap.mockupHidden);
+  };
+
+  const canUndo = historyRef.current.past.length > 0;
+  const canRedo = historyRef.current.future.length > 0;
+  void historyVersion; // force le rafraîchissement des boutons
+
+  const handleUndo = () => {
+    const h = historyRef.current;
+    const prev = h.past.pop();
+    if (!prev || !h.last) return;
+    h.future.push(h.last);
+    applySnapshot(prev);
+    setHistoryVersion((v) => v + 1);
+  };
+
+  const handleRedo = () => {
+    const h = historyRef.current;
+    const next = h.future.pop();
+    if (!next || !h.last) return;
+    h.past.push(h.last);
+    applySnapshot(next);
+    setHistoryVersion((v) => v + 1);
+  };
+
+  // Raccourcis clavier : Ctrl+Z, Ctrl+Y / Ctrl+Maj+Z, E (exporter), T (modèles)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typing = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable);
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && !typing && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if (mod && !typing && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+      } else if (!mod && !typing && !e.altKey && e.key.toLowerCase() === 'e') {
+        setShowExportMenu((v) => !v);
+      } else if (!mod && !typing && !e.altKey && e.key.toLowerCase() === 't') {
+        setShowTemplatesModal(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   // Réinitialiser la vue 3D
   const handleReset3D = () => {
     setUiScale(100);
@@ -587,33 +812,59 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }));
   };
 
-  // Export Haute Définition PNG
-  const handleExportPng = async () => {
+  /** Rend la scène aux dimensions exactes du format choisi. */
+  const renderScene = async (format: ExportFormat, preset: FramePresetOption, quality: ExportQuality): Promise<string> => {
+    const node = sceneRef.current;
+    if (!node) throw new Error('Scène introuvable');
+    const { width, height } = getExportSize(preset, quality);
+    // Le rendu est redimensionné aux dimensions exactes du format (aucun pixel perdu à l'arrondi)
+    const opts = {
+      cacheBust: true,
+      pixelRatio: 1,
+      canvasWidth: width,
+      canvasHeight: height,
+      imagePlaceholder: EXPORT_IMAGE_PLACEHOLDER,
+      // La scène est réduite à l'écran (transform) : la copie exportée est rendue à sa taille de référence
+      style: { transform: 'none' },
+    };
+    if (format === 'jpg') return toJpeg(node, { ...opts, quality: 0.92, backgroundColor: '#ffffff' });
+    if (format === 'webp') {
+      const canvas = await toCanvas(node, opts);
+      return canvas.toDataURL('image/webp', 0.9);
+    }
+    return toPng(node, opts);
+  };
+
+  const downloadDataUrl = (dataUrl: string, filename: string) => {
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = dataUrl;
+    link.click();
+  };
+
+  const closeCrossSellBanner = useCallback(() => setShowCrossSellBanner(false), []);
+
+  const fileBaseName = (captureItem.domainName || 'omnimockup').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+  // Export d'une image (format et qualité choisis dans le menu Exporter)
+  const handleExportImage = async () => {
     if (!sceneRef.current) return;
     setIsExporting(true);
     setExportSuccess(false);
 
     try {
-      const dataUrl = await toPng(sceneRef.current, {
-        cacheBust: true,
-        pixelRatio: config.exportScale || 2,
-      });
-
-      const cleanName = (captureItem.domainName || 'omnimockup').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const filename = `${cleanName}-${config.aspectRatio}-${config.exportScale || 2}x.png`;
-
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = dataUrl;
-      link.click();
+      const dataUrl = await renderScene(exportFormat, currentFramePreset, effectiveQuality);
+      const { width, height } = getExportSize(currentFramePreset, effectiveQuality);
+      downloadDataUrl(dataUrl, `${fileBaseName}-${width}x${height}.${exportFormat}`);
 
       setExportSuccess(true);
       setTimeout(() => setExportSuccess(false), 3000);
+      setShowExportMenu(false);
 
-      // Étape 5 : Cross-sell discret après export PNG réussi
+      // Cross-sell discret après export réussi
       setShowCrossSellBanner(true);
 
-      // Étape 5 : Détection des seuils d'upsell
+      // Détection des seuils d'upsell
       try {
         const todayKey = `omnimockup_exports_${new Date().toISOString().split('T')[0]}`;
         const currentCount = parseInt(localStorage.getItem(todayKey) || '0', 10) + 1;
@@ -654,6 +905,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       const blob = await toBlob(sceneRef.current, {
         cacheBust: true,
         pixelRatio: 2,
+        imagePlaceholder: EXPORT_IMAGE_PLACEHOLDER,
+        style: { transform: 'none' },
       });
 
       if (!blob) throw new Error('Impossible de générer le blob');
@@ -676,7 +929,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     setIsExportingVideo(true);
 
     try {
-      const basePngUrl = await toPng(sceneRef.current, { pixelRatio: 1.5, cacheBust: true });
+      const basePngUrl = await toPng(sceneRef.current, { pixelRatio: 1.5, cacheBust: true, imagePlaceholder: EXPORT_IMAGE_PLACEHOLDER, style: { transform: 'none' } });
       const img = new Image();
       img.src = basePngUrl;
       await new Promise((r) => {
@@ -784,14 +1037,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   // Ajout & gestion de Callouts de vente
   const handleAddCallout = (
-    text = '✨ IA Intégrée',
-    badge = 'IA',
-    colorTheme: 'violet' | 'emerald' | 'amber' | 'rose' = 'violet'
+    text = 'Votre argument clé',
+    colorTheme: NonNullable<FeatureCallout['colorTheme']> = 'violet'
   ) => {
     const newCallout: FeatureCallout = {
       id: `callout_${Date.now()}`,
       text,
-      badge,
       x: 50,
       y: 40,
       colorTheme,
@@ -802,6 +1053,13 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       callouts: [...(prev.callouts || []), newCallout],
     }));
     setSelectedCalloutId(newCallout.id);
+  };
+
+  const handleUpdateSocialBadge = (id: string, updates: Partial<SceneSocialBadge>) => {
+    setConfig((prev) => ({
+      ...prev,
+      socialBadges: (prev.socialBadges || []).map((b) => (b.id === id ? { ...b, ...updates } : b)),
+    }));
   };
 
   const handleUpdateCallout = (id: string, updates: Partial<FeatureCallout>) => {
@@ -833,10 +1091,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         const newBadge: SceneSocialBadge = {
           id: `badge_${Date.now()}`,
           type,
-          x: type === 'product-hunt' ? 22 : type === 'stripe-mrr' ? 76 : 50,
-          y: type === 'product-hunt' ? 14 : type === 'stripe-mrr' ? 84 : 86,
+          x: type === 'product-hunt' ? 22 : type === 'stripe-mrr' ? 76 : type === 'uptime' ? 24 : 50,
+          y: type === 'product-hunt' ? 14 : type === 'stripe-mrr' ? 84 : type === 'uptime' ? 86 : 86,
           visible: true,
-          customText: type === 'stripe-mrr' ? '$24,500 MRR' : undefined,
+          customText: TRUST_BADGES.find((b) => b.type === type)?.placeholder,
         };
         return {
           ...prev,
@@ -846,50 +1104,36 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     });
   };
 
-  // Export Pack Réseaux Sociaux 1-Click (5 formats consécutifs)
+  // Pack réseaux sociaux : 5 fichiers aux dimensions officielles de chaque réseau
   const handleExportPack = async () => {
     if (!sceneRef.current || isExportingPack) return;
     setIsExportingPack(true);
-    const originalRatio = config.aspectRatio;
+    const originalPreset = currentFramePreset;
+    const packPresets = SOCIAL_PACK_PRESET_IDS
+      .map((id) => FRAME_PRESETS.find((fp) => fp.id === id))
+      .filter((fp): fp is FramePresetOption => !!fp);
 
     try {
-      const PACK_FORMATS: { ratio: SceneAspectRatio; label: string }[] = [
-        { ratio: '16:9', label: 'Twitter_ProductHunt_16-9' },
-        { ratio: '1:1', label: 'Instagram_LinkedIn_1-1' },
-        { ratio: '9:16', label: 'Stories_Reels_9-16' },
-        { ratio: '1.91:1', label: 'LinkedIn_Banner_1.91-1' },
-        { ratio: '4:3', label: 'Dribbble_Portfolio_4-3' },
-      ];
-
-      for (let i = 0; i < PACK_FORMATS.length; i++) {
-        const item = PACK_FORMATS[i];
-        setPackProgress(`${i + 1}/${PACK_FORMATS.length}`);
-
-        setConfig((prev) => ({ ...prev, aspectRatio: item.ratio }));
-        await new Promise((r) => setTimeout(r, 450));
-
-        if (sceneRef.current) {
-          const dataUrl = await toPng(sceneRef.current, {
-            cacheBust: true,
-            pixelRatio: 2,
-          });
-          const link = document.createElement('a');
-          const cleanName = (captureItem.domainName || 'omnimockup').replace(/[^a-zA-Z0-9_-]/g, '_');
-          link.download = `${cleanName}-${item.label}.png`;
-          link.href = dataUrl;
-          link.click();
-          await new Promise((r) => setTimeout(r, 250));
-        }
+      for (let i = 0; i < packPresets.length; i++) {
+        const preset = packPresets[i];
+        setPackProgress(`${i + 1}/${packPresets.length}`);
+        selectFramePreset(preset);
+        // Laisser le canevas prendre sa nouvelle forme avant le rendu
+        await new Promise((r) => setTimeout(r, 500));
+        const quality: ExportQuality = canExportHd ? 'hd' : 'standard';
+        const dataUrl = await renderScene(exportFormat, preset, quality);
+        const { width, height } = getExportSize(preset, quality);
+        const label = `${preset.category}-${preset.name}`.replace(/[^a-zA-Z0-9_-]+/g, '_');
+        downloadDataUrl(dataUrl, `${fileBaseName}-${label}-${width}x${height}.${exportFormat}`);
+        await new Promise((r) => setTimeout(r, 250));
       }
-
-      setConfig((prev) => ({ ...prev, aspectRatio: originalRatio }));
       setPackProgress('Fait !');
       setTimeout(() => setPackProgress(''), 3000);
     } catch (err) {
       console.error('Erreur export pack:', err);
       alert('Une erreur est survenue lors du téléchargement du pack.');
-      setConfig((prev) => ({ ...prev, aspectRatio: originalRatio }));
     } finally {
+      selectFramePreset(originalPreset);
       setIsExportingPack(false);
     }
   };
@@ -959,7 +1203,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     e.target.value = '';
   };
 
-  const activeRatioConfig = RATIO_PRESETS.find((r) => r.id === config.aspectRatio) || RATIO_PRESETS[0];
+  // Taille affichée du canevas : la plus grande possible dans la zone, en gardant la proportion exacte
+  const presetRatio = currentFramePreset.width / currentFramePreset.height;
+  const maxCanvasW = Math.max(160, Math.min(1024, canvasArea.w));
+  const maxCanvasH = Math.max(160, canvasArea.h - 72); // place pour la barre du bas
+  const canvasDisplayW = canvasArea.w ? Math.round(Math.min(maxCanvasW, maxCanvasH * presetRatio)) : undefined;
+  const canvasDisplayH = canvasDisplayW ? Math.round(canvasDisplayW / presetRatio) : undefined;
+  // La scène est toujours dessinée à la même taille de référence (côté long = 1000 px) puis réduite :
+  // le rendu et l'export sont identiques quel que soit l'écran (téléphone, portable, grand écran).
+  const SCENE_LONG_SIDE = 1000;
+  const sceneLogicalW = presetRatio >= 1 ? SCENE_LONG_SIDE : Math.round(SCENE_LONG_SIDE * presetRatio);
+  const sceneLogicalH = presetRatio >= 1 ? Math.round(SCENE_LONG_SIDE / presetRatio) : SCENE_LONG_SIDE;
+  const sceneDisplayScale = canvasDisplayW ? canvasDisplayW / sceneLogicalW : 1;
   const activeText = config.texts.find((t) => t.id === selectedTextId);
 
   // Calcul du drop shadow 3D en fonction du type, de l'opacité et de l'angle de lumière
@@ -984,128 +1239,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {/* 1. TOP BAR PRO (Shots.so / Rotato App Header)                         */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* TEMPLATES DRAWER (Shots.so style)                                   */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {showTemplatesDrawer && (
-        <div className="fixed inset-0 z-[100] flex">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowTemplatesDrawer(false)}
-          />
-          {/* Drawer Panel */}
-          <div className="relative z-10 w-[340px] h-full bg-[#141418] border-r border-zinc-800 flex flex-col shadow-2xl overflow-hidden animate-slideInLeft">
-            {/* Header */}
-            <div className="p-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <Layout className="w-4 h-4 text-violet-400" />
-                <span className="text-sm font-bold text-white">Templates</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowTemplatesDrawer(false)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            {/* Filtres */}
-            <div className="px-4 pt-3 pb-2 flex items-center gap-2 shrink-0">
-              {['Tous', 'Image', 'Animé'].map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  className="px-3 py-1 rounded-full text-[11px] font-semibold border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-violet-600 hover:text-white hover:border-violet-500 transition-all"
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-            {/* Liste des catégories */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-5">
-              {[
-                {
-                  cat: 'Product Promotion',
-                  items: [
-                    { label: 'Solo Browser', device: 'browser' as MockupType, bg: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', ratio: '16:9' as SceneAspectRatio },
-                    { label: 'Hero iPhone', device: 'iphone' as MockupType, bg: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', ratio: '9:16' as SceneAspectRatio },
-                  ],
-                },
-                {
-                  cat: 'Realistic Desktop',
-                  items: [
-                    { label: 'MacBook Pro', device: 'macbook' as MockupType, bg: 'linear-gradient(135deg, #065f46 0%, #047857 100%)', ratio: '16:9' as SceneAspectRatio },
-                    { label: 'iMac Display', device: 'imac' as MockupType, bg: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)', ratio: '4:3' as SceneAspectRatio },
-                  ],
-                },
-                {
-                  cat: 'Shadow Overlays',
-                  items: [
-                    { label: 'iPhone Dark', device: 'iphone' as MockupType, bg: 'linear-gradient(135deg, #09090b 0%, #18181b 100%)', ratio: '9:16' as SceneAspectRatio },
-                    { label: 'iPad Ombre', device: 'ipad' as MockupType, bg: 'linear-gradient(135deg, #18181b 0%, #27272a 100%)', ratio: '4:3' as SceneAspectRatio },
-                  ],
-                },
-                {
-                  cat: 'UI Showcase',
-                  items: [
-                    { label: 'Flat Clair', device: 'flat' as MockupType, bg: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', ratio: '1:1' as SceneAspectRatio },
-                    { label: 'Duo Mac+Phone', device: 'browser' as MockupType, bg: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', ratio: '16:9' as SceneAspectRatio },
-                  ],
-                },
-                {
-                  cat: 'Abstract Shapes',
-                  items: [
-                    { label: 'Aurora iPhone', device: 'iphone' as MockupType, bg: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%)', ratio: '9:16' as SceneAspectRatio },
-                    { label: 'Mesh Browser', device: 'browser' as MockupType, bg: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #8b5cf6 100%)', ratio: '1:1' as SceneAspectRatio },
-                  ],
-                },
-                {
-                  cat: 'Retro Futuristic',
-                  items: [
-                    { label: 'Cyberpunk Watch', device: 'watch' as MockupType, bg: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)', ratio: '1:1' as SceneAspectRatio },
-                    { label: 'Neon MacBook', device: 'macbook' as MockupType, bg: 'linear-gradient(135deg, #7c3aed 0%, #db2777 100%)', ratio: '16:9' as SceneAspectRatio },
-                  ],
-                },
-              ].map(({ cat, items }) => (
-                <div key={cat} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider">{cat}</span>
-                    <button type="button" className="text-[10px] text-violet-400 hover:text-violet-300">Voir tout</button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {items.map((tpl) => (
-                      <button
-                        key={tpl.label}
-                        type="button"
-                        onClick={() => {
-                          setConfig((p) => ({
-                            ...p,
-                            mockupType: tpl.device,
-                            bgType: 'gradient',
-                            bgValue: tpl.bg,
-                            bgTransparent: false,
-                            aspectRatio: tpl.ratio,
-                          }));
-                          setShowTemplatesDrawer(false);
-                        }}
-                        className="group relative h-20 rounded-xl border border-zinc-700 overflow-hidden hover:border-violet-500 hover:ring-2 hover:ring-violet-500/40 transition-all"
-                        style={{ background: tpl.bg }}
-                      >
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
-                        <span className="absolute bottom-1.5 left-2 text-[10px] font-semibold text-white drop-shadow-md">{tpl.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {!presentationMode && (
-        <header className="h-14 sm:h-16 px-3 sm:px-5 lg:px-6 border-b border-zinc-800/90 bg-[#08090e]/95 backdrop-blur-2xl flex items-center justify-between gap-2.5 z-30 shrink-0 relative select-none">
+        <header className="h-14 sm:h-16 px-2 sm:px-5 lg:px-6 border-b border-zinc-800/90 bg-[#08090e]/95 backdrop-blur-2xl flex items-center justify-between gap-2.5 z-30 shrink-0 relative select-none">
           {/* Ligne d'accentuation subtile en haut */}
           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent pointer-events-none" />
 
@@ -1119,7 +1254,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 title="Quitter le studio et revenir à l'accueil"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Quitter</span>
+                <span className="hidden lg:inline">Quitter</span>
               </button>
             )}
 
@@ -1127,7 +1262,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-violet-500 text-white flex items-center justify-center shadow-lg shadow-violet-600/30 ring-1 ring-white/15 shrink-0">
                 <Sparkles className="w-4 h-4 text-amber-200" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 hidden sm:block">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs sm:text-sm font-black tracking-tight text-white truncate">
                     Omni<span className="text-violet-400">Mockup</span>
@@ -1161,197 +1296,259 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               type="button"
               onClick={() => setShowTemplatesModal(true)}
               className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-750 hover:border-zinc-650 text-zinc-200 hover:text-white text-xs font-semibold transition-all active:scale-95 shrink-0 shadow-xs"
-              title="Ouvrir la bibliothèque de templates (T)"
+              title="Modèles de mise en scène prêts à l'emploi (raccourci : T)"
             >
               <Layout className="w-3.5 h-3.5 text-violet-400" />
-              <span>Templates</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 font-mono">18</span>
+              <span>Modèles</span>
             </button>
           </div>
 
-          {/* ── CENTRE : Sélecteur de Mode (Solo / Duo / Trio) & Résolution ── */}
-          <div className="hidden xl:flex items-center gap-2.5">
-            {/* Capsule Disposition */}
-            <div className="flex items-center bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800 shadow-inner">
+          {/* ── CENTRE : Disposition (Solo / Duo / Trio) ── */}
+          <div className="hidden lg:flex items-center bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800 shadow-inner" role="group" aria-label="Disposition">
+            {([
+              { id: 'single', label: 'Solo', title: 'Un seul appareil' },
+              { id: 'dual-stacked', label: 'Duo', title: 'Ordinateur + téléphone' },
+              { id: 'trio-ecosystem', label: 'Trio', title: 'Ordinateur + tablette + téléphone' },
+            ] as const).map((l) => (
               <button
+                key={l.id}
                 type="button"
-                onClick={() => setConfig((p) => ({ ...p, layoutMode: 'single' }))}
-                className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all ${
-                  (config.layoutMode || 'single') === 'single'
+                onClick={() => setConfig((p) => ({ ...p, layoutMode: l.id }))}
+                aria-pressed={(config.layoutMode || 'single') === l.id}
+                className={`px-3.5 py-1 rounded-xl text-xs font-semibold transition-all ${
+                  (config.layoutMode || 'single') === l.id
                     ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
                     : 'text-zinc-400 hover:text-zinc-200'
                 }`}
+                title={l.title}
               >
-                Solo
+                {l.label}
               </button>
-              <button
-                type="button"
-                onClick={() => setConfig((p) => ({ ...p, layoutMode: 'dual-stacked' }))}
-                className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  config.layoutMode === 'dual-stacked'
-                    ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                <span>Duo</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfig((p) => ({ ...p, layoutMode: 'trio-ecosystem' }))}
-                className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  config.layoutMode === 'trio-ecosystem'
-                    ? 'bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 text-white shadow-md shadow-violet-600/40 ring-1 ring-violet-400/40'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-                title="Trio Écosystème : MacBook + iPad + iPhone en 3D"
-              >
-                <span>Trio Pro</span>
-                <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
-              </button>
-            </div>
-
-            {/* Capsule Résolution d'export */}
-            <div className="flex items-center bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800 shadow-inner">
-              {([1, 2, 4] as const).map((scale) => (
-                <button
-                  key={scale}
-                  type="button"
-                  onClick={() => setConfig((p) => ({ ...p, exportScale: scale }))}
-                  className={`px-2 py-0.5 rounded-lg text-xs font-mono font-bold transition-all ${
-                    (config.exportScale || 2) === scale
-                      ? 'bg-zinc-800 text-violet-300 border border-violet-500/40 shadow-xs'
-                      : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-                  title={`Résolution d'export ${scale}x (${scale === 4 ? 'Ultra HD Retina' : scale === 2 ? 'HD' : 'Standard'})`}
-                >
-                  {scale}x
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
 
-          {/* ── DROITE : Outils Créatifs, Export Hub & Profil Compte ── */}
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Pitch & Vente IA */}
+          {/* ── DROITE : Annuler/Rétablir, outils, Exporter, compte ── */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Annuler / Rétablir */}
+            <div className="flex items-center bg-zinc-900/90 rounded-xl border border-zinc-750">
+              <button
+                type="button"
+                onClick={handleUndo}
+                disabled={!canUndo}
+                className="p-2 rounded-l-xl text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                title="Annuler (Ctrl+Z)"
+                aria-label="Annuler"
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+              </button>
+              <div className="w-px h-4 bg-zinc-750" />
+              <button
+                type="button"
+                onClick={handleRedo}
+                disabled={!canRedo}
+                className="p-2 rounded-r-xl text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                title="Rétablir (Ctrl+Y)"
+                aria-label="Rétablir"
+              >
+                <Redo2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Pitch IA */}
             <button
               type="button"
               onClick={() => setSalesKitOpen(true)}
               className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-950/40 hover:bg-violet-900/60 border border-violet-500/40 hover:border-violet-400 text-violet-200 hover:text-white text-xs font-bold transition-all shadow-xs active:scale-95"
-              title="Générer des arguments de vente et pitch client avec l'IA"
+              title="Rédiger un post LinkedIn, une proposition commerciale et une étude de cas avec l'IA"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               <span className="hidden xl:inline">Pitch IA</span>
             </button>
 
-            {/* Mode Plein Écran / Présentation */}
+            {/* Présentation plein écran */}
             <button
               type="button"
               onClick={() => setPresentationMode(true)}
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-750 text-xs font-semibold transition-all active:scale-95"
-              title="Passer en mode Présentation plein écran (Échap pour quitter)"
+              className="hidden lg:flex items-center justify-center p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-750 transition-all active:scale-95"
+              title="Présentation plein écran (Échap pour quitter)"
+              aria-label="Présentation plein écran"
             >
-              <Maximize2 className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="hidden 2xl:inline">Présentation</span>
+              <Maximize2 className="w-3.5 h-3.5" />
             </button>
 
-            {/* Pack OmniExport 5 Formats 1-Click */}
-            <button
-              type="button"
-              onClick={handleExportPack}
-              disabled={isExportingPack}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 hover:border-emerald-400 text-emerald-200 hover:text-white text-xs font-bold transition-all shadow-xs active:scale-95 disabled:opacity-50"
-              title="Télécharger les 5 formats réseaux sociaux en 1 clic (Twitter, Insta, Stories, LinkedIn, Dribbble)"
-            >
-              {isExportingPack ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
-                  <span>{packProgress}</span>
-                </>
-              ) : packProgress === 'Fait !' ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-300 stroke-[3]" />
-                  <span>Prêt !</span>
-                </>
-              ) : (
-                <>
-                  <Layers className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="hidden xl:inline">Pack OmniExport</span>
-                  <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">5</span>
-                </>
+            {/* Exporter : un seul bouton, toutes les options dans le menu */}
+            <div className="relative" ref={exportMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowExportMenu((v) => !v)}
+                disabled={isExporting || isExportingPack}
+                aria-expanded={showExportMenu}
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-violet-600/30 ring-1 ring-white/20 transition-all active:scale-95 disabled:opacity-60"
+                title="Exporter l'image, la vidéo ou le pack réseaux sociaux (raccourci : E)"
+              >
+                {isExporting || isExportingPack ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>{isExportingPack ? `Pack ${packProgress}` : 'Rendu…'}</span>
+                  </>
+                ) : exportSuccess || packProgress === 'Fait !' ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    <span>Téléchargé</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>Exporter</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+                  </>
+                )}
+              </button>
+
+              {showExportMenu && (
+                <div className="absolute right-0 mt-2.5 w-[min(20rem,calc(100vw-1.5rem))] bg-[#0c0d14] border border-zinc-800 rounded-2xl shadow-2xl shadow-black/80 p-4 z-50 animate-slide-up text-xs space-y-4">
+                  {/* Format de fichier */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Format du fichier</span>
+                    <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
+                      {([
+                        { id: 'png', label: 'PNG', hint: 'Qualité maximale, fond transparent possible' },
+                        { id: 'jpg', label: 'JPG', hint: 'Fichier léger, idéal pour WhatsApp et e-mail' },
+                        { id: 'webp', label: 'WebP', hint: 'Très léger, idéal pour un site web' },
+                      ] as const).map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setExportFormat(f.id)}
+                          aria-pressed={exportFormat === f.id}
+                          title={f.hint}
+                          className={`py-1.5 rounded-lg font-bold transition-all ${
+                            exportFormat === f.id ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Qualité (dimensions réelles du fichier) */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Qualité</span>
+                    <div className="space-y-1">
+                      {([
+                        { id: 'standard', label: 'Standard', allowed: true, plan: '' },
+                        { id: 'hd', label: 'HD', allowed: canExportHd, plan: 'Solo' },
+                        { id: '4k', label: '4K', allowed: canExport4k, plan: 'Pro' },
+                      ] as const).map((q) => {
+                        const size = getExportSize(currentFramePreset, q.id);
+                        const active = effectiveQuality === q.id;
+                        return (
+                          <button
+                            key={q.id}
+                            type="button"
+                            onClick={() => {
+                              if (!q.allowed) {
+                                setShowExportMenu(false);
+                                setUpsellModal({ open: true, mode: 'free_quota_reached' });
+                                return;
+                              }
+                              setExportQuality(q.id);
+                            }}
+                            aria-pressed={active}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all ${
+                              active
+                                ? 'bg-violet-600/15 border-violet-500/60 text-white'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                            }`}
+                          >
+                            <span className="font-bold flex items-center gap-1.5">
+                              {!q.allowed && <Lock className="w-3 h-3 text-amber-400" />}
+                              {q.label}
+                            </span>
+                            <span className="font-mono text-[10px] text-zinc-400">
+                              {size.width} × {size.height}
+                              {!q.allowed && <span className="ml-1.5 text-amber-400 font-sans font-bold">Plan {q.plan}</span>}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-zinc-500">
+                      Format du canevas : {currentFramePreset.name} ({currentFramePreset.ratioLabel}). Modifiable en bas de l&apos;écran.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleExportImage}
+                    disabled={isExporting}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-violet-600/30 disabled:opacity-60"
+                  >
+                    {isExporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    <span>Télécharger l&apos;image</span>
+                  </button>
+
+                  {/* Autres exports */}
+                  <div className="pt-3 border-t border-zinc-800 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Autres exports</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleCopyToClipboard();
+                        setShowExportMenu(false);
+                      }}
+                      disabled={isCopying}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left disabled:opacity-50"
+                    >
+                      {copySuccess ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-zinc-400" />}
+                      <span className="flex-1">
+                        <span className="font-semibold block">{copySuccess ? 'Copié !' : 'Copier l\'image'}</span>
+                        <span className="text-[10px] text-zinc-500">À coller dans un e-mail, Slack, WhatsApp Web…</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleExportPack();
+                        setShowExportMenu(false);
+                      }}
+                      disabled={isExportingPack}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left disabled:opacity-50"
+                    >
+                      <Layers className="w-4 h-4 text-emerald-400" />
+                      <span className="flex-1">
+                        <span className="font-semibold block">Pack réseaux sociaux (5 fichiers)</span>
+                        <span className="text-[10px] text-zinc-500">16:9, LinkedIn, Instagram carré et portrait, Story / statut WhatsApp</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleExportVideo();
+                        setShowExportMenu(false);
+                      }}
+                      disabled={isExportingVideo}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left disabled:opacity-50"
+                    >
+                      {isExportingVideo ? <RefreshCw className="w-4 h-4 animate-spin text-amber-400" /> : <Video className="w-4 h-4 text-amber-400" />}
+                      <span className="flex-1">
+                        <span className="font-semibold block">Vidéo animée 3 s</span>
+                        <span className="text-[10px] text-zinc-500">Zoom lent, format WebM</span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
               )}
-            </button>
+            </div>
 
-            {/* Copier dans le presse-papier */}
-            <button
-              type="button"
-              onClick={handleCopyToClipboard}
-              disabled={isCopying}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-750 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
-              title="Copier l'image directement dans le presse-papier"
-            >
-              {isCopying ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-400" />
-              ) : copySuccess ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
-                  <span className="text-emerald-400 font-bold hidden sm:inline">Copié</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-zinc-400" />
-                  <span className="hidden sm:inline">Copier</span>
-                </>
-              )}
-            </button>
-
-            {/* Vidéo 3s */}
-            <button
-              type="button"
-              onClick={handleExportVideo}
-              disabled={isExportingVideo}
-              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-amber-300 hover:text-amber-200 border border-zinc-750 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
-              title="Générer une vidéo d'animation 3s (.webm 60fps)"
-            >
-              {isExportingVideo ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
-              ) : (
-                <Video className="w-3.5 h-3.5 text-amber-400" />
-              )}
-              <span className="hidden xl:inline">Vidéo 3s</span>
-            </button>
-
-            {/* Bouton Télécharger PNG Principal (Primary CTA) */}
-            <button
-              type="button"
-              onClick={handleExportPng}
-              disabled={isExporting}
-              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-violet-600/30 ring-1 ring-white/20 transition-all active:scale-95 disabled:opacity-50"
-            >
-              {isExporting ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Rendu {config.exportScale || 2}x...</span>
-                </>
-              ) : exportSuccess ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
-                  <span>Téléchargé !</span>
-                </>
-              ) : (
-                <>
-                  <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-                  <span>Télécharger</span>
-                </>
-              )}
-            </button>
-
-            {/* Toggle Panneau Inspecteur */}
+            {/* Afficher / masquer le panneau de réglages */}
             <button
               type="button"
               onClick={() => setShowRightPanel((p) => !p)}
-              className="flex items-center justify-center p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-750 text-zinc-400 hover:text-white transition-all"
-              title={showRightPanel ? "Masquer le panneau d'inspection" : "Afficher le panneau d'inspection"}
+              className="hidden sm:flex items-center justify-center p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-750 text-zinc-400 hover:text-white transition-all"
+              title={showRightPanel ? 'Masquer les réglages' : 'Afficher les réglages'}
+              aria-label={showRightPanel ? 'Masquer les réglages' : 'Afficher les réglages'}
             >
               {showRightPanel ? (
                 <PanelRightClose className="w-4 h-4 text-zinc-400" />
@@ -1382,7 +1579,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                 {/* Badge du forfait */}
                 <span
-                  className={`hidden sm:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                  className={`hidden lg:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
                     userPlan === 'agence'
                       ? 'bg-amber-400/15 text-amber-300 border-amber-400/30'
                       : userPlan === 'pro'
@@ -1459,15 +1656,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   {/* Quota & Statut des exports */}
                   <div className="p-3 mx-3 my-2 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-300 space-y-1.5">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-zinc-400">Qualité Export PNG :</span>
+                      <span className="text-zinc-400">Qualité d&apos;export :</span>
                       <span className="font-mono font-bold text-white">
-                        {userPlan === 'free' ? '1x (Filigrane)' : '2x & 4K Illimités'}
+                        {userPlan === 'free' ? 'Standard (filigrane)' : userPlan === 'solo' ? 'HD' : 'HD et 4K'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-zinc-400">Vidéos MP4 60fps :</span>
+                      <span className="text-zinc-400">Filigrane :</span>
                       <span className="font-bold text-white">
-                        {userPlan === 'free' ? 'Version démo' : 'Incluses'}
+                        {userPlan === 'free' || userPlan === 'solo' ? 'Oui' : 'Non'}
                       </span>
                     </div>
 
@@ -1562,185 +1759,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {/* 2. ESPACE DE TRAVAIL PRINCIPAL (Toolbar Gauche + Canvas + Inspecteur)   */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
-      <div className="flex-1 w-full flex flex-row overflow-hidden relative">
-        {/* ── BARRE D'OUTILS VERTICALE GAUCHE (FIGMA / PHOTOSHOP STYLE) ── */}
-        {!presentationMode && (
-          <aside className="w-14 sm:w-16 h-full bg-[#07080c] border-r border-zinc-850/80 flex flex-col items-center justify-between py-3.5 px-1.5 shrink-0 z-30 select-none">
-            {/* Outils Supérieurs */}
-            <div className="flex flex-col items-center gap-2 w-full">
-              {/* Quitter */}
-              {onClose && (
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-850/80 transition-all"
-                  title="Quitter le studio"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-              )}
-
-              <div className="w-6 h-px bg-zinc-850 my-0.5" />
-
-              {/* Templates */}
-              <button
-                type="button"
-                onClick={() => setShowTemplatesModal(true)}
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-violet-300 hover:bg-zinc-850/80 transition-all group"
-                title="Templates de Scènes"
-              >
-                <Layout className="w-4 h-4" />
-              </button>
-
-              {/* Appareil & Modèle */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveMainTab('mockup');
-                  setActiveTab('mockup');
-                  setShowRightPanel(true);
-                }}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                  activeMainTab === 'mockup' && activeTab === 'mockup' && showRightPanel
-                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-850/80'
-                }`}
-                title="Choix de l'Appareil & Layout"
-              >
-                <Monitor className="w-4 h-4" />
-              </button>
-
-              {/* Studio 3D & Perspectives */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveMainTab('mockup');
-                  setActiveTab('3d');
-                  setShowRightPanel(true);
-                }}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                  activeMainTab === 'mockup' && activeTab === '3d' && showRightPanel
-                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-850/80'
-                }`}
-                title="3D Tilt & Orientation"
-              >
-                <Sliders className="w-4 h-4" />
-              </button>
-
-              {/* Canvas & Wallpapers */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveMainTab('frame');
-                  setShowRightPanel(true);
-                }}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                  activeMainTab === 'frame' && showRightPanel
-                    ? 'bg-gradient-to-tr from-pink-600 to-violet-600 text-white shadow-lg shadow-pink-600/30'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-850/80'
-                }`}
-                title="Fonds & Wallpapers de Scène"
-              >
-                <Palette className="w-4 h-4" />
-              </button>
-
-              {/* Callouts Vente & Preuve Sociale */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveMainTab('mockup');
-                  setActiveTab('callouts');
-                  setShowRightPanel(true);
-                }}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                  activeMainTab === 'mockup' && activeTab === 'callouts' && showRightPanel
-                    ? 'bg-gradient-to-tr from-amber-500 to-violet-600 text-white shadow-lg shadow-amber-500/30'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-850/80'
-                }`}
-                title="Callouts Vente & Preuve Sociale (Product Hunt, Stripe, Avis)"
-              >
-                <Tag className="w-4 h-4" />
-              </button>
-
-              {/* Textes & Logos */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveMainTab('mockup');
-                  setActiveTab('branding');
-                  setShowRightPanel(true);
-                }}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                  activeMainTab === 'mockup' && activeTab === 'branding' && showRightPanel
-                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-850/80'
-                }`}
-                title="Calques Textes & Logos"
-              >
-                <Layers className="w-4 h-4" />
-              </button>
-
-              {/* Stack Développeur */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveMainTab('mockup');
-                  setActiveTab('content');
-                  setShowRightPanel(true);
-                }}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                  activeMainTab === 'mockup' && activeTab === 'content' && showRightPanel
-                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-850/80'
-                }`}
-                title="Badges Stack Technique"
-              >
-                <Flame className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Outils Inférieurs */}
-            <div className="flex flex-col items-center gap-2 w-full">
-              {/* Pitch IA */}
-              <button
-                type="button"
-                onClick={() => setSalesKitOpen(true)}
-                className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-tr from-violet-600 to-indigo-600 text-amber-300 hover:scale-105 transition-all shadow-md shadow-violet-600/30"
-                title="Générateur de Pitch Vente IA"
-              >
-                <Sparkles className="w-4 h-4" />
-              </button>
-
-              {/* Plein Écran / Présentation */}
-              <button
-                type="button"
-                onClick={() => setPresentationMode(true)}
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-emerald-400 hover:bg-zinc-850/80 transition-all"
-                title="Mode Plein Écran / Présentation"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </button>
-
-              {/* Toggle Panneau Droit */}
-              <button
-                type="button"
-                onClick={() => setShowRightPanel((p) => !p)}
-                className="hidden lg:flex w-10 h-10 rounded-xl items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-850/80 transition-all"
-                title={showRightPanel ? "Masquer l'inspecteur" : "Afficher l'inspecteur"}
-              >
-                {showRightPanel ? (
-                  <PanelRightClose className="w-4 h-4" />
-                ) : (
-                  <PanelRightOpen className="w-4 h-4 text-violet-400" />
-                )}
-              </button>
-            </div>
-          </aside>
-        )}
-
+      <div className="flex-1 min-h-0 w-full flex flex-col lg:flex-row overflow-hidden relative">
         {/* ── ZONE DE PRÉVISUALISATION CENTRALE (CANVAS FLUIDE GÉANT) ── */}
-        <main className="flex-1 h-full relative flex flex-col items-center justify-center p-4 sm:p-8 bg-[#090a0f] overflow-hidden select-none">
+        <main className="flex-1 min-h-[260px] lg:h-full relative flex flex-col items-center justify-center p-3 sm:p-8 bg-[#090a0f] overflow-hidden select-none">
           {/* Mode Présentation: Flottant 'Quitter la présentation (Échap)' */}
           {presentationMode && (
             <div className="absolute top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2 rounded-full bg-[#07080c]/90 backdrop-blur-xl border border-zinc-800 text-white shadow-2xl animate-fade-in select-none">
@@ -1771,25 +1792,34 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
           {/* CONTENEUR DE ZOOM DU CANVAS */}
           <div
+            ref={canvasAreaRef}
             className="w-full h-full flex items-center justify-center transition-transform duration-200"
             style={{ transform: `scale(${canvasZoom / 100})` }}
           >
-            {/* CANVAS DE LA SCÈNE RENDU */}
+            {/* CADRE D'AFFICHAGE (taille à l'écran) */}
+            <div
+              data-studio-canvas
+              className="relative shrink-0 rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_25px_70px_rgba(0,0,0,0.6)] transition-[width,height] duration-300"
+              style={{ width: canvasDisplayW, height: canvasDisplayH }}
+            >
+            {/* CANVAS DE LA SCÈNE RENDU (taille de référence, réduite par transform) */}
             <div
               ref={sceneRef}
-              className={`w-full max-w-5xl max-h-[76vh] relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_25px_70px_rgba(0,0,0,0.6)] transition-all duration-300 flex items-center justify-center touch-none ${activeRatioConfig.ratioClass}`}
+              className="absolute top-0 left-0 overflow-hidden flex items-center justify-center touch-none"
               style={{
-                aspectRatio: `${currentFramePreset.width} / ${currentFramePreset.height}`,
-                background: config.bgTransparent
-                  ? 'transparent'
-                  : config.bgType === 'blurred-image'
-                  ? '#121214'
-                  : config.bgValue,
-                backgroundImage: config.bgTransparent
-                  ? `linear-gradient(45deg, #27272a 25%, transparent 25%), linear-gradient(-45deg, #27272a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #27272a 75%), linear-gradient(-45deg, transparent 75%, #27272a 75%)`
-                  : undefined,
-                backgroundSize: config.bgTransparent ? '16px 16px' : undefined,
-                backgroundPosition: config.bgTransparent ? '0 0, 0 8px, 8px -8px, -8px 0px' : undefined,
+                width: sceneLogicalW,
+                height: sceneLogicalH,
+                transform: `scale(${sceneDisplayScale})`,
+                transformOrigin: 'top left',
+                // Ne jamais mélanger « background » et des propriétés de fond vides : React les remettrait
+                // à zéro et effacerait le dégradé (le fond restait noir).
+                ...(config.bgTransparent
+                  ? {
+                      backgroundImage: `linear-gradient(45deg, #27272a 25%, transparent 25%), linear-gradient(-45deg, #27272a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #27272a 75%), linear-gradient(-45deg, transparent 75%, #27272a 75%)`,
+                      backgroundSize: '16px 16px',
+                      backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
+                    }
+                  : { background: config.bgType === 'blurred-image' ? '#121214' : config.bgValue }),
               }}
               onClick={() => {
                 setSelectedTextId(null);
@@ -1812,7 +1842,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               {/* OVERLAY MOTIF DE FOND (Grille / Points / Noise / Mesh) */}
               {config.bgPattern === 'grid' && !config.bgTransparent && (
                 <div
-                  className="absolute inset-0 pointer-events-none opacity-20 z-5"
+                  className="absolute inset-0 pointer-events-none opacity-20 z-[5]"
                   style={{
                     backgroundImage: `linear-gradient(to right, rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.4) 1px, transparent 1px)`,
                     backgroundSize: '28px 28px',
@@ -1822,7 +1852,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
               {config.bgPattern === 'dots' && !config.bgTransparent && (
                 <div
-                  className="absolute inset-0 pointer-events-none opacity-25 z-5"
+                  className="absolute inset-0 pointer-events-none opacity-25 z-[5]"
                   style={{
                     backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.5) 1.5px, transparent 1.5px)`,
                     backgroundSize: '24px 24px',
@@ -1832,7 +1862,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
               {config.bgPattern === 'mesh' && !config.bgTransparent && (
                 <div
-                  className="absolute inset-0 pointer-events-none opacity-35 mix-blend-soft-light z-5"
+                  className="absolute inset-0 pointer-events-none opacity-35 mix-blend-soft-light z-[5]"
                   style={{
                     backgroundImage: `radial-gradient(at 20% 20%, rgba(168, 85, 247, 0.4) 0px, transparent 50%), radial-gradient(at 80% 80%, rgba(59, 130, 246, 0.4) 0px, transparent 50%), radial-gradient(at 50% 50%, rgba(236, 72, 153, 0.3) 0px, transparent 50%)`,
                   }}
@@ -1851,7 +1881,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               {/* FILTRES CINÉMATIQUES EN OVERLAY */}
               {config.filterType === 'grain' && (
                 <div
-                  className="absolute inset-0 pointer-events-none mix-blend-overlay z-15"
+                  className="absolute inset-0 pointer-events-none mix-blend-overlay z-[15]"
                   style={{
                     opacity: ((config.filterIntensity || 40) / 100) * 0.5,
                     backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
@@ -1861,7 +1891,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
               {config.filterType === 'vhs' && (
                 <div
-                  className="absolute inset-0 pointer-events-none z-15"
+                  className="absolute inset-0 pointer-events-none z-[15]"
                   style={{
                     opacity: ((config.filterIntensity || 40) / 100) * 0.6,
                     background: `repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px), linear-gradient(90deg, rgba(255,0,0,0.04), rgba(0,255,0,0.02), rgba(0,0,255,0.04))`,
@@ -1871,7 +1901,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
               {config.filterType === 'glitch' && (
                 <div
-                  className="absolute inset-0 pointer-events-none mix-blend-screen z-15 overflow-hidden"
+                  className="absolute inset-0 pointer-events-none mix-blend-screen z-[15] overflow-hidden"
                   style={{
                     opacity: ((config.filterIntensity || 40) / 100) * 0.5,
                     backgroundImage: `repeating-linear-gradient(90deg, rgba(255,0,80,0.1) 0px, rgba(0,255,255,0.1) 4px, transparent 4px, transparent 12px)`,
@@ -1882,7 +1912,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               {/* EFFET PORTRAIT (Flou de profondeur de champ) */}
               {portraitBlur && (
                 <div
-                  className="absolute inset-0 pointer-events-none z-15 backdrop-blur-[5px]"
+                  className="absolute inset-0 pointer-events-none z-[15] backdrop-blur-[5px]"
                   style={{
                     maskImage: 'radial-gradient(ellipse at center, transparent 38%, black 82%)',
                     WebkitMaskImage: 'radial-gradient(ellipse at center, transparent 38%, black 82%)',
@@ -1985,9 +2015,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     <div
                       className="absolute z-10 transition-transform"
                       style={{
-                        width: '58%',
-                        left: '21%',
-                        top: '4%',
+                        width: '62%',
+                        left: '19%',
+                        top: '2%',
                         filter: config.shadowEnabled ? `drop-shadow(${dynamicShadow})` : undefined,
                       }}
                     >
@@ -2010,11 +2040,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     <div
                       className="absolute z-20 transition-transform"
                       style={{
-                        width: '32%',
-                        left: '2%',
-                        bottom: '2%',
-                        filter: config.shadowEnabled ? 'drop-shadow(0 20px 35px rgba(0,0,0,0.65))' : undefined,
-                        transform: 'rotateZ(-3deg)',
+                        width: '34%',
+                        left: '0%',
+                        bottom: '6%',
+                        filter: config.shadowEnabled ? 'drop-shadow(0 20px 35px rgba(0,0,0,0.55))' : undefined,
                       }}
                     >
                       <MockupFrame
@@ -2035,11 +2064,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     <div
                       className="absolute z-30 transition-transform"
                       style={{
-                        width: '24%',
-                        right: '3%',
-                        bottom: '0%',
-                        filter: config.shadowEnabled ? 'drop-shadow(0 25px 40px rgba(0,0,0,0.70))' : undefined,
-                        transform: 'rotateZ(3deg)',
+                        width: '14%',
+                        right: '6%',
+                        bottom: '4%',
+                        filter: config.shadowEnabled ? 'drop-shadow(0 25px 40px rgba(0,0,0,0.60))' : undefined,
                       }}
                     >
                       <MockupFrame
@@ -2234,53 +2262,36 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 <div
                   key={badge.id}
                   onPointerDown={(e) => handlePointerDown(e, { type: 'socialBadge', id: badge.id })}
-                  className="absolute cursor-move select-none z-35 touch-none hover:ring-1 hover:ring-white/40 rounded-2xl p-0.5"
+                  className="absolute cursor-move select-none z-[35] touch-none hover:ring-1 hover:ring-white/40 rounded-2xl p-0.5"
                   style={{
                     left: `${badge.x}%`,
                     top: `${badge.y}%`,
                     transform: 'translate(-50%, -50%)',
                   }}
                 >
-                  {badge.type === 'product-hunt' && (
-                    <div className="px-3 py-1.5 rounded-2xl bg-gradient-to-r from-[#da552f] to-[#ea532b] text-white flex items-center gap-2 shadow-xl border border-white/20">
-                      <span className="w-5 h-5 rounded-full bg-white text-[#da552f] flex items-center justify-center font-black text-xs">P</span>
-                      <div>
-                        <div className="text-[9px] font-semibold uppercase tracking-wider text-white/80">Product Hunt</div>
-                        <div className="text-xs font-black">#1 Product of the Day</div>
-                      </div>
-                    </div>
-                  )}
-                  {badge.type === 'stripe-mrr' && (
-                    <div className="px-3.5 py-2 rounded-2xl bg-[#0a2540] text-white flex items-center gap-2.5 shadow-xl border border-[#635bff]/40">
-                      <div className="w-5 h-5 rounded-lg bg-[#635bff] flex items-center justify-center font-bold text-xs text-white">S</div>
-                      <div>
-                        <div className="text-[9px] font-medium text-emerald-400 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                          Verified Revenue
+                  {(() => {
+                    const tb = TRUST_BADGES.find((t) => t.type === badge.type || (badge.type === 'producthunt' && t.type === 'product-hunt') || (badge.type === 'sla-enterprise' && t.type === 'uptime'));
+                    if (!tb) return null;
+                    const text = (badge.customText ?? '').trim() || tb.placeholder;
+                    return (
+                      <div className="px-3.5 py-2 rounded-2xl bg-zinc-950/90 text-white flex items-center gap-2 shadow-xl border border-white/15 backdrop-blur-md">
+                        <span className={tb.type === 'trustpilot' ? 'text-amber-300 text-sm' : 'text-sm'} aria-hidden>
+                          {tb.type === 'trustpilot' ? '★' : tb.icon}
+                        </span>
+                        <div className="leading-tight">
+                          <div className="text-[9px] font-semibold uppercase tracking-wider text-zinc-400">{tb.label}</div>
+                          <div className="text-xs font-bold">{text}</div>
                         </div>
-                        <div className="text-xs font-mono font-bold">{badge.customText || '$24,500 MRR'}</div>
                       </div>
-                    </div>
-                  )}
-                  {badge.type === 'trustpilot' && (
-                    <div className="px-3.5 py-1.5 rounded-2xl bg-zinc-950/90 text-white flex items-center gap-2 shadow-xl border border-emerald-500/30">
-                      <span className="text-emerald-400 font-bold text-sm">★ ★ ★ ★ ★</span>
-                      <span className="text-xs font-bold text-zinc-200">4.9/5 Trustpilot</span>
-                    </div>
-                  )}
-                  {badge.type === 'uptime' && (
-                    <div className="px-3 py-1.5 rounded-2xl bg-emerald-950/80 text-emerald-200 flex items-center gap-2 shadow-xl border border-emerald-500/30 text-xs font-mono font-bold">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>99.99% Uptime SLA</span>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               ))}
 
               {/* BADGES TECH STACK DÉVELOPPEUR SUR LA SCÈNE */}
               {selectedTechIds.length > 0 && (
                 <div
-                  className={`absolute z-35 transition-all duration-300 pointer-events-none select-none flex items-center ${
+                  className={`absolute z-[35] transition-all duration-300 pointer-events-none select-none flex items-center ${
                     techPosition === 'top'
                       ? 'top-4 left-1/2 -translate-x-1/2'
                       : techPosition === 'bottom'
@@ -2343,7 +2354,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
               {/* EFFET VFX HALO LUMINEUX */}
               {vfxGlow && (
-                <div className="absolute inset-0 pointer-events-none z-15 flex items-center justify-center">
+                <div className="absolute inset-0 pointer-events-none z-[15] flex items-center justify-center">
                   <div className="w-[82%] h-[75%] rounded-full bg-violet-600/30 blur-3xl animate-pulse" />
                 </div>
               )}
@@ -2351,31 +2362,46 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               {/* SHADOW OVERLAY DE SCÈNE (Stores vénitiens, Feuilles, Palmier, Fenêtre) */}
               <SceneShadowOverlay type={sceneOverlay || config.sceneOverlay || 'none'} opacity={shadowOpacity / 100} />
             </div>
+            </div>
           </div>
 
           {/* ── BARRE DE CONTRÔLES FLOTTANTE AU BAS DU CANVAS (STYLE SHOTS.SO) ── */}
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-40 bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl px-3 py-1.5 shadow-2xl flex items-center gap-3 text-xs select-none">
-            {/* Sélecteur de Ratios */}
+          <div className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100%-1rem)] overflow-x-auto no-scrollbar bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl px-3 py-1.5 shadow-2xl flex items-center gap-3 text-xs select-none whitespace-nowrap">
+            {/* Formats rapides (même réglage que « Format du canevas ») */}
             <div className="flex items-center gap-1">
-              {RATIO_PRESETS.slice(0, 5).map((rp) => (
-                <button
-                  key={rp.id}
-                  type="button"
-                  onClick={() => {
-                    setConfig((p) => ({ ...p, aspectRatio: rp.id }));
-                    const found = FRAME_PRESETS.find((fp) => fp.ratioId === rp.id);
-                    if (found) setCurrentFramePreset(found);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                    config.aspectRatio === rp.id
-                      ? 'bg-violet-600 text-white shadow-xs'
-                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-                  }`}
-                  title={rp.desc}
-                >
-                  {rp.label}
-                </button>
-              ))}
+              {(['geo-16-9', 'geo-4-3', 'geo-1-1', 'ig-portrait', 'geo-9-16'] as const).map((id) => {
+                const fp = FRAME_PRESETS.find((p) => p.id === id);
+                if (!fp) return null;
+                const active = currentFramePreset.id === fp.id;
+                return (
+                  <button
+                    key={fp.id}
+                    type="button"
+                    onClick={() => selectFramePreset(fp)}
+                    aria-pressed={active}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                      active ? 'bg-violet-600 text-white shadow-xs' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                    }`}
+                    title={`${fp.desc} — ${fp.width} × ${fp.height}`}
+                  >
+                    {fp.ratioLabel}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setShowFrameSizePopover(true)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                  !['geo-16-9', 'geo-4-3', 'geo-1-1', 'ig-portrait', 'geo-9-16'].includes(currentFramePreset.id)
+                    ? 'bg-violet-600 text-white'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                }`}
+                title="Tous les formats : Instagram, LinkedIn, YouTube, Pinterest, App Store…"
+              >
+                {['geo-16-9', 'geo-4-3', 'geo-1-1', 'ig-portrait', 'geo-9-16'].includes(currentFramePreset.id)
+                  ? 'Plus…'
+                  : currentFramePreset.name}
+              </button>
             </div>
 
             <div className="w-px h-4 bg-zinc-750" />
@@ -2418,32 +2444,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               type="button"
               onClick={handleReset3D}
               className="flex items-center gap-1 px-2 py-1 text-[11px] text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors font-medium"
-              title="Réinitialiser l'orientation 3D (0°)"
+              title="Remettre l'appareil droit et centré"
             >
               <RotateCcw className="w-3 h-3 text-violet-400" />
-              <span>0°</span>
+              <span>Recentrer</span>
             </button>
 
-            <div className="w-px h-4 bg-zinc-750" />
-
-            {/* Mode Plein Écran HUD */}
-            <button
-              type="button"
-              onClick={() => setPresentationMode(!presentationMode)}
-              className={`flex items-center gap-1 px-2 py-1 text-[11px] rounded-lg transition-all font-medium ${
-                presentationMode
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
-              }`}
-              title={presentationMode ? 'Quitter la présentation' : 'Mode Plein Écran'}
-            >
-              {presentationMode ? (
-                <Minimize2 className="w-3 h-3 text-emerald-400" />
-              ) : (
-                <Maximize2 className="w-3 h-3 text-emerald-400" />
-              )}
-              <span className="hidden sm:inline">Plein Écran</span>
-            </button>
           </div>
         </main>
 
@@ -2451,7 +2457,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         {/* 3. PANNEAU LATÉRAL D'INSPECTION (STYLE DAVINCI / RESOLVE / FIGMA) */}
         {/* ═════════════════════════════════════════════════════════════════ */}
         {showRightPanel && !presentationMode && (
-          <aside className="w-full lg:w-[380px] xl:w-[410px] h-full bg-[#0a0b10] border-t lg:border-t-0 lg:border-l border-zinc-850/80 flex flex-col shrink-0 z-20 overflow-hidden shadow-2xl">
+          <aside className={`w-full lg:w-[380px] xl:w-[410px] ${mobileSheetOpen ? 'max-h-[55%]' : 'max-h-12'} lg:max-h-none lg:h-full bg-[#0a0b10] border-t lg:border-t-0 lg:border-l border-zinc-850/80 flex flex-col shrink-0 z-20 overflow-hidden shadow-2xl`}>
           {/* Header Mobile Déplier / Replier */}
           <button
             type="button"
@@ -2467,64 +2473,74 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {mobileSheetOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
 
-          {/* BARRE SUPÉRIEURE DE NAVIGATION NETWAVE & TEMPLATES */}
-          <div className="px-4 py-2.5 border-b border-zinc-850/80 bg-[#08090d] flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
-              <span className="text-xs font-bold text-zinc-200 tracking-tight uppercase font-mono">
-                {activeMainTab === 'mockup' ? 'Propriétés Mockup' : 'Propriétés Frame'}
-              </span>
-            </div>
-
+          {/* EN-TÊTE : mode Simple / Expert */}
+          <div className={`${mobileSheetOpen ? 'flex' : 'hidden lg:flex'} px-4 py-2.5 border-b border-zinc-850/80 bg-[#08090d] items-center justify-between shrink-0`}>
+            <span className="text-xs font-bold text-zinc-200">Réglages</span>
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => setShowTemplatesModal(true)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-[11px] font-semibold transition-all"
-                title="Choisir un template"
+                onClick={toggleExpertMode}
+                aria-pressed={expertMode}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
+                  expertMode
+                    ? 'bg-violet-600/20 border-violet-500/50 text-violet-200'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white'
+                }`}
+                title={expertMode ? 'Revenir aux réglages essentiels' : 'Afficher tous les réglages avancés'}
               >
-                <Layout className="w-3 h-3 text-violet-400" />
-                <span>Templates</span>
+                <SlidersHorizontal className="w-3 h-3" />
+                <span>{expertMode ? 'Mode Expert' : 'Mode Simple'}</span>
               </button>
-
               <button
                 type="button"
                 onClick={() => setShowRightPanel(false)}
-                className="p-1 rounded-lg hover:bg-zinc-850 text-zinc-400 hover:text-white transition-colors"
-                title="Masquer le volet"
+                className="hidden lg:block p-1 rounded-lg hover:bg-zinc-850 text-zinc-400 hover:text-white transition-colors"
+                title="Masquer les réglages"
+                aria-label="Masquer les réglages"
               >
                 <PanelRightClose className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* SÉLECTEUR DES 2 ONGLETS MAJEURS DU STUDIO */}
-          <div className="p-3 border-b border-zinc-850/80 bg-[#090a0f] shrink-0">
-            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-zinc-900/90 border border-zinc-800 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => setActiveMainTab('mockup')}
-                className={`py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2 ${
-                  activeMainTab === 'mockup'
-                    ? 'bg-zinc-800 text-white shadow-md ring-1 ring-white/10 font-black'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <Monitor className="w-4 h-4 text-violet-400" />
-                <span>Mockup</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveMainTab('frame')}
-                className={`py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2 ${
-                  activeMainTab === 'frame'
-                    ? 'bg-zinc-800 text-white shadow-md ring-1 ring-white/10 font-black'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <Palette className="w-4 h-4 text-pink-400" />
-                <span>Frame</span>
-              </button>
+          {/* ONGLETS (un seul niveau) */}
+          <div className={`${mobileSheetOpen ? 'block' : 'hidden lg:block'} px-3 py-2.5 border-b border-zinc-850/80 bg-[#090a0f] shrink-0`}>
+            <div className={`grid ${expertMode ? 'grid-cols-6' : 'grid-cols-4'} gap-1 p-1 rounded-xl bg-zinc-900/90 border border-zinc-800`} role="tablist">
+              {([
+                { key: 'mockup', main: 'mockup', label: 'Appareil', icon: Monitor, expert: false },
+                { key: '3d', main: 'mockup', label: 'Angle', icon: Box, expert: false },
+                { key: 'frame', main: 'frame', label: 'Fond', icon: Palette, expert: false },
+                { key: 'branding', main: 'mockup', label: 'Textes', icon: Type, expert: false },
+                { key: 'callouts', main: 'mockup', label: 'Badges', icon: Tag, expert: true },
+                { key: 'content', main: 'mockup', label: 'Image', icon: ImageIcon, expert: true },
+              ] as const)
+                .filter((t) => expertMode || !t.expert)
+                .map((t) => {
+                  const active = t.main === 'frame' ? activeMainTab === 'frame' : activeMainTab === 'mockup' && activeTab === t.key;
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => {
+                        if (t.main === 'frame') {
+                          setActiveMainTab('frame');
+                        } else {
+                          setActiveMainTab('mockup');
+                          setActiveTab(t.key);
+                        }
+                      }}
+                      className={`flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                        active ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-200'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{t.label}</span>
+                    </button>
+                  );
+                })}
             </div>
           </div>
 
@@ -2532,49 +2548,20 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           <div
             className={`${
               mobileSheetOpen ? 'flex' : 'hidden lg:flex'
-            } flex-col flex-1 p-4 sm:p-5 space-y-6 overflow-y-auto studio-scrollbar max-h-[calc(100vh-120px)]`}
+            } flex-col flex-1 min-h-0 p-4 sm:p-5 space-y-6 overflow-y-auto studio-scrollbar lg:max-h-[calc(100vh-120px)]`}
           >
             {/* ══════════ ONGLET PRINCIPAL MOCKUP ══════════ */}
             {activeMainTab === 'mockup' && (
               <div className="space-y-0 animate-fade-in">
-                {/* Sous-onglets : Appareil | 3D | Contenu | Branding | Callouts Vente ✨ */}
-                <div className="flex gap-1 mb-4 p-1 bg-zinc-900 rounded-xl border border-zinc-800">
-                  {([
-                    { id: 'mockup', label: 'Appareil' },
-                    { id: '3d', label: '3D' },
-                    { id: 'content', label: 'Contenu' },
-                    { id: 'branding', label: 'Branding' },
-                    { id: 'callouts', label: 'Callouts ✨' },
-                  ] as const).map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setActiveTab(t.id)}
-                      className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${
-                        activeTab === t.id
-                          ? 'bg-zinc-700 text-white'
-                          : 'text-zinc-500 hover:text-zinc-200'
-                      }`}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-
             {/* ══════════ ONGLET 1 : APPAREIL & MODÈLES ══════════ */}
             {activeTab === 'mockup' && (
 
               <div className="space-y-5 animate-fade-in">
                 {/* Disposition Solo vs Duo vs Trio */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
-                      Mode de Disposition (Layout)
-                    </label>
-                    <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                      Multi-Device Ready
-                    </span>
-                  </div>
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                    Disposition
+                  </label>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
@@ -2586,7 +2573,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       }`}
                     >
                       <div className="font-bold text-xs text-white">Solo</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">1 Appareil</div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5">1 appareil</div>
                     </button>
                     <button
                       type="button"
@@ -2597,11 +2584,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
                       }`}
                     >
-                      <span className="absolute top-1.5 right-1.5 px-1 py-0.2 rounded bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[8px] font-bold">
-                        DUO
-                      </span>
                       <div className="font-bold text-xs text-white">Duo</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">Mac + iPhone</div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5">Ordinateur + téléphone</div>
                     </button>
                     <button
                       type="button"
@@ -2612,11 +2596,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
                       }`}
                     >
-                      <span className="absolute top-1.5 right-1.5 px-1 py-0.2 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[8px] font-bold">
-                        TRIO ✨
-                      </span>
-                      <div className="font-bold text-xs text-white">Trio Pro</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">Mac+iPad+Phone</div>
+                      <div className="font-bold text-xs text-white">Trio</div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5">+ tablette</div>
                     </button>
                   </div>
                 </div>
@@ -2729,6 +2710,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   </div>
                 </div>
 
+                {expertMode && (<>
                 {/* ── STYLE NAVIGATEUR (Shots.so) ── */}
                 {(config.mockupType === 'browser' || config.mockupType === 'macbook' || config.mockupType === 'imac') && (
                   <div className="space-y-2">
@@ -3024,6 +3006,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   {mockupHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   {mockupHidden ? 'Afficher le Mockup' : 'Masquer le Mockup'}
                 </button>
+                </>)}
               </div>
             )}
 
@@ -3076,6 +3059,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   </div>
                 </div>
 
+                {expertMode && (<>
                 {/* Sliders de Perspective 3D */}
                 <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-4">
                   <div className="space-y-1.5">
@@ -3124,6 +3108,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   </div>
                 </div>
 
+                </>)}
                 {/* Échelle / Taille */}
                 <div className="space-y-2 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
                   <div className="flex items-center justify-between text-xs font-mono">
@@ -3140,6 +3125,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   />
                 </div>
 
+                {expertMode && (<>
                 {/* Ombre portée 3D */}
                 <div className="space-y-2 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
                   <div className="flex items-center justify-between">
@@ -3162,6 +3148,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     />
                   )}
                 </div>
+                </>)}
               </div>
             )}
 
@@ -3349,120 +3336,73 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {/* ══════════ ONGLET 5 : CALLOUTS DE VENTE & PREUVE SOCIALE ✨ ══════════ */}
             {activeTab === 'callouts' && (
               <div className="space-y-6 animate-fade-in">
-                {/* 1. Badges de Preuve Sociale */}
+                {/* 1. Badges de confiance (données réelles saisies par l'utilisateur) */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                      <span>Badges de Preuve Sociale</span>
-                    </label>
-                    <span className="text-[10px] text-zinc-400 font-mono">Glisser-déposer libre</span>
-                  </div>
+                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Badges de confiance</span>
+                  </label>
                   <p className="text-[11px] text-zinc-400 leading-relaxed">
-                    Ajoutez ces stickers de confiance directement sur votre maquette pour rassurer vos prospects et booster la conversion.
+                    Mettez en avant un résultat <strong className="text-zinc-200">réel</strong> du projet. Ajoutez un badge, puis remplacez le texte par vos vraies données. Faites-le glisser sur l&apos;image pour le placer.
                   </p>
-                  
+
                   <div className="grid grid-cols-2 gap-2">
-                    {/* Badge Product Hunt */}
-                    {(() => {
-                      const isActive = (config.socialBadges || []).some((b) => b.type === 'producthunt');
+                    {TRUST_BADGES.map((tb) => {
+                      const existing = (config.socialBadges || []).find((b) => b.type === tb.type);
+                      const isActive = !!existing?.visible;
                       return (
                         <button
+                          key={tb.type}
                           type="button"
-                          onClick={() => handleToggleSocialBadge('producthunt')}
-                          className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all ${
-                            isActive
-                              ? 'bg-amber-500/15 border-amber-500/60 ring-1 ring-amber-500/30'
-                              : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1">
-                              😸 Product Hunt
-                            </span>
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-amber-400 animate-pulse' : 'bg-zinc-700'}`} />
-                          </div>
-                          <div className="text-[11px] font-bold text-white">#1 Product of Day</div>
-                          <div className="text-[9px] text-zinc-400 font-mono">{isActive ? '✓ Affiché sur scène' : '+ Cliquer pour ajouter'}</div>
-                        </button>
-                      );
-                    })()}
-
-                    {/* Badge Stripe MRR */}
-                    {(() => {
-                      const isActive = (config.socialBadges || []).some((b) => b.type === 'stripe-mrr');
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => handleToggleSocialBadge('stripe-mrr')}
+                          onClick={() => handleToggleSocialBadge(tb.type)}
+                          aria-pressed={isActive}
                           className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all ${
                             isActive
                               ? 'bg-emerald-500/15 border-emerald-500/60 ring-1 ring-emerald-500/30'
                               : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850'
                           }`}
+                          title={tb.hint}
                         >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
-                              💳 Stripe Verified
-                            </span>
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-700'}`} />
-                          </div>
-                          <div className="text-[11px] font-bold text-white">$48,200 MRR</div>
-                          <div className="text-[9px] text-zinc-400 font-mono">{isActive ? '✓ Affiché sur scène' : '+ Cliquer pour ajouter'}</div>
+                          <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
+                            <span>{tb.icon}</span>
+                            {tb.label}
+                          </span>
+                          <span className="text-[9px] text-zinc-400 font-mono">{isActive ? '✓ Sur l\'image (cliquer pour retirer)' : '+ Ajouter'}</span>
                         </button>
                       );
-                    })()}
-
-                    {/* Badge Trustpilot */}
-                    {(() => {
-                      const isActive = (config.socialBadges || []).some((b) => b.type === 'trustpilot');
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => handleToggleSocialBadge('trustpilot')}
-                          className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all ${
-                            isActive
-                              ? 'bg-emerald-500/15 border-emerald-500/60 ring-1 ring-emerald-500/30'
-                              : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1">
-                              ★ Trustpilot
-                            </span>
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-700'}`} />
-                          </div>
-                          <div className="text-[11px] font-bold text-white">4.9 / 5 (1,200+)</div>
-                          <div className="text-[9px] text-zinc-400 font-mono">{isActive ? '✓ Affiché sur scène' : '+ Cliquer pour ajouter'}</div>
-                        </button>
-                      );
-                    })()}
-
-                    {/* Badge SLA Enterprise */}
-                    {(() => {
-                      const isActive = (config.socialBadges || []).some((b) => b.type === 'sla-enterprise');
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => handleToggleSocialBadge('sla-enterprise')}
-                          className={`p-2.5 rounded-xl border text-left flex flex-col gap-1 transition-all ${
-                            isActive
-                              ? 'bg-blue-500/15 border-blue-500/60 ring-1 ring-blue-500/30'
-                              : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-blue-400 flex items-center gap-1">
-                              ⚡ SLA Garanti
-                            </span>
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-blue-400 animate-pulse' : 'bg-zinc-700'}`} />
-                          </div>
-                          <div className="text-[11px] font-bold text-white">99.99% Uptime</div>
-                          <div className="text-[9px] text-zinc-400 font-mono">{isActive ? '✓ Affiché sur scène' : '+ Cliquer pour ajouter'}</div>
-                        </button>
-                      );
-                    })()}
+                    })}
                   </div>
+
+                  {(config.socialBadges || []).filter((b) => b.visible).length > 0 && (
+                    <div className="space-y-2">
+                      {(config.socialBadges || []).filter((b) => b.visible).map((b) => {
+                        const tb = TRUST_BADGES.find((t) => t.type === b.type);
+                        if (!tb) return null;
+                        return (
+                          <div key={b.id} className="flex items-center gap-2">
+                            <span className="w-6 text-center text-sm" aria-hidden>{tb.icon}</span>
+                            <input
+                              type="text"
+                              value={b.customText ?? ''}
+                              onChange={(e) => handleUpdateSocialBadge(b.id, { customText: e.target.value })}
+                              placeholder={tb.placeholder}
+                              aria-label={`Texte du badge ${tb.label}`}
+                              maxLength={48}
+                              className="flex-1 px-2.5 py-1.5 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white focus:outline-none focus:border-emerald-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleToggleSocialBadge(b.type)}
+                              className="p-1.5 text-zinc-500 hover:text-rose-400 rounded-lg hover:bg-zinc-800 transition-colors"
+                              title="Retirer ce badge"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* 2. Bulles d'annotations / Callouts de vente */}
@@ -3470,51 +3410,48 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
                       <Tag className="w-4 h-4 text-violet-400" />
-                      <span>Bulles Callouts de Vente</span>
+                      <span>Bulles d&apos;explication</span>
                     </label>
-                    <span className="text-[10px] text-violet-400 font-bold bg-violet-500/10 px-2 py-0.5 rounded-full border border-violet-500/20">
-                      Flèches Pointées
-                    </span>
                   </div>
                   <p className="text-[11px] text-zinc-400 leading-relaxed">
-                    Pointez les fonctionnalités clés de votre produit (IA, Vitesse, Checkout, ROI) directement sur l&apos;écran pour capter l&apos;attention de l&apos;acheteur.
+                    Pointez une fonctionnalité du site directement sur l&apos;image pour l&apos;expliquer à votre client.
                   </p>
 
                   {/* Presets rapides en 1 clic */}
                   <div className="space-y-1.5">
-                    <span className="text-[10px] font-mono uppercase text-zinc-400">Ajout rapide en 1 clic :</span>
+                    <span className="text-[10px] font-mono uppercase text-zinc-400">Exemples (modifiables) :</span>
                     <div className="grid grid-cols-2 gap-1.5">
                       <button
                         type="button"
-                        onClick={() => handleAddCallout('⚡ +300% de Conversion', 'emerald')}
+                        onClick={() => handleAddCallout('📱 Adapté au mobile', 'emerald')}
                         className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-emerald-400 hover:border-emerald-500/50 transition-all flex items-center gap-1.5"
                       >
-                        <span>⚡</span>
-                        <span className="truncate">+300% Conversion</span>
+                        <span>📱</span>
+                        <span className="truncate">Adapté au mobile</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleAddCallout('🤖 IA Native Générative', 'violet')}
+                        onClick={() => handleAddCallout('⚡ Chargement rapide', 'violet')}
                         className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-violet-400 hover:border-violet-500/50 transition-all flex items-center gap-1.5"
                       >
-                        <span>🤖</span>
-                        <span className="truncate">IA Native Instantanée</span>
+                        <span>⚡</span>
+                        <span className="truncate">Chargement rapide</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleAddCallout('💳 Paiement 1-Clic Sans Friction', 'amber')}
+                        onClick={() => handleAddCallout('💳 Paiement en ligne', 'amber')}
                         className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-amber-400 hover:border-amber-500/50 transition-all flex items-center gap-1.5"
                       >
                         <span>💳</span>
-                        <span className="truncate">Paiement 1-Clic</span>
+                        <span className="truncate">Paiement en ligne</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleAddCallout('🔒 Sécurité Bancaire 256-bit', 'blue')}
+                        onClick={() => handleAddCallout('🔒 Espace client sécurisé', 'blue')}
                         className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-blue-400 hover:border-blue-500/50 transition-all flex items-center gap-1.5"
                       >
                         <span>🔒</span>
-                        <span className="truncate">Sécurité Bancaire</span>
+                        <span className="truncate">Espace sécurisé</span>
                       </button>
                     </div>
                   </div>
@@ -3522,18 +3459,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   {/* Bouton création d'un callout personnalisé */}
                   <button
                     type="button"
-                    onClick={() => handleAddCallout('Nouvel argument clé ✨', 'violet')}
+                    onClick={() => handleAddCallout('Votre texte', 'violet')}
                     className="w-full py-2.5 px-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-violet-600/20 transition-all"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>Créer un callout personnalisé</span>
+                    <span>Ajouter une bulle</span>
                   </button>
 
                   {/* Liste des callouts actifs pour édition */}
                   {(config.callouts || []).length > 0 && (
                     <div className="space-y-2 pt-2">
                       <span className="text-[10px] font-mono uppercase text-zinc-400">
-                        Callouts sur la maquette ({(config.callouts || []).length}) :
+                        Bulles sur l&apos;image ({(config.callouts || []).length}) :
                       </span>
                       <div className="space-y-2">
                         {(config.callouts || []).map((c) => (
@@ -3581,9 +3518,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                                       <button
                                         key={color}
                                         type="button"
-                                        onClick={() => handleUpdateCallout(c.id, { color })}
+                                        onClick={() => handleUpdateCallout(c.id, { colorTheme: color })}
                                         className={`w-3.5 h-3.5 rounded-full ${colorMap[color]} transition-transform ${
-                                          (c.color || 'violet') === color ? 'scale-125 ring-2 ring-white/60' : 'opacity-60 hover:opacity-100'
+                                          (c.colorTheme || c.color || 'violet') === color ? 'scale-125 ring-2 ring-white/60' : 'opacity-60 hover:opacity-100'
                                         }`}
                                       />
                                     );
@@ -3618,7 +3555,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-300 leading-relaxed flex items-start gap-2">
                     <span className="text-base leading-none">💡</span>
                     <span>
-                      <strong>Astuce Pro :</strong> Cliquez et faites glisser n&apos;importe quelle bulle ou badge directement sur le canevas central pour la placer au pixel près !
+                      <strong>Astuce :</strong> faites glisser une bulle ou un badge directement sur l&apos;image pour le placer.
                     </span>
                   </div>
                 </div>
@@ -3661,6 +3598,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   </button>
                 </div>
 
+                {expertMode && (<>
                 {/* 2. Effets & Watermark (FrameCapture.PNG) */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
@@ -3810,6 +3748,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   </div>
                 </div>
 
+                </>)}
                 {/* 4. Arrière-Plans (FrameCapture.PNG, Frame1.PNG, Frame2.PNG) */}
                 <div className="space-y-4 pt-1">
                   <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
@@ -4010,6 +3949,16 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               </div>
             )}
 
+            {!expertMode && (
+              <button
+                type="button"
+                onClick={toggleExpertMode}
+                className="w-full p-3 rounded-xl border border-dashed border-zinc-800 text-[11px] text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+              >
+                Besoin de plus de réglages (ombres, style du navigateur, effets, badges…) ? <span className="font-bold text-violet-300">Passer en Mode Expert</span>
+              </button>
+            )}
+
             {/* Inputs fichiers cachés pour l'upload d'image et de fond */}
             <input
               ref={replaceImgInputRef}
@@ -4084,7 +4033,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       {/* BANNIÈRE CROSS-SELL POST-EXPORT */}
       {showCrossSellBanner && (
         <ExportCrossSellBanner
-          onClose={() => setShowCrossSellBanner(false)}
+          onClose={closeCrossSellBanner}
+          showUpgrade={isFreePlan}
           onOpenVideoExport={() => {
             setShowCrossSellBanner(false);
             handleExportVideo();

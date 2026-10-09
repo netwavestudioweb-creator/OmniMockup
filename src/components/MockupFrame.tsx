@@ -51,8 +51,9 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
   }, [domainName, url]);
 
   const faviconSrc = React.useMemo(() => {
-    if (faviconUrl) return faviconUrl;
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(cleanDomain)}&sz=64`;
+    // Toujours servie depuis notre domaine : une image d'un autre domaine fait échouer l'export
+    if (faviconUrl && !faviconUrl.includes('google.com/s2/favicons')) return faviconUrl;
+    return `/api/favicon?domain=${encodeURIComponent(cleanDomain)}`;
   }, [faviconUrl, cleanDomain]);
 
   // Détermination du rayon d'angle

@@ -135,7 +135,7 @@ export const BACKGROUND_CATEGORIES: {
 // ══ 3. FORMATS DE FRAME & RATIOS (Frame2Capture, Frame3Capture, Frame5Capture, Frame6Capture) ══
 export interface FramePresetOption {
   id: string;
-  category: 'Geometric' | 'Instagram' | 'Twitter' | 'YouTube' | 'Pinterest' | 'Dribbble' | 'App Store' | 'Custom';
+  category: 'Geometric' | 'Instagram' | 'LinkedIn' | 'Twitter' | 'YouTube' | 'Pinterest' | 'Dribbble' | 'App Store' | 'Custom';
   name: string;
   ratioLabel: string;
   ratioId: SceneAspectRatio;
@@ -161,6 +161,10 @@ export const FRAME_PRESETS: FramePresetOption[] = [
   { id: 'ig-post', category: 'Instagram', name: 'Post', ratioLabel: '1:1', ratioId: '1:1', width: 1080, height: 1080, ratioClass: 'aspect-square', desc: 'Feed carré Instagram' },
   { id: 'ig-portrait', category: 'Instagram', name: 'Portrait', ratioLabel: '4:5', ratioId: '4:5', width: 1080, height: 1350, ratioClass: 'aspect-[4/5]', desc: 'Feed vertical optimal Instagram' },
   { id: 'ig-story', category: 'Instagram', name: 'Story / Reel', ratioLabel: '9:16', ratioId: '9:16', width: 1080, height: 1920, ratioClass: 'aspect-[9/16]', desc: 'Stories & Reels plein écran' },
+
+  // LINKEDIN
+  { id: 'li-post', category: 'LinkedIn', name: 'Post lien', ratioLabel: '1.91:1', ratioId: '1.91:1', width: 1200, height: 627, ratioClass: 'aspect-[1200/627]', desc: 'Image de partage LinkedIn' },
+  { id: 'li-square', category: 'LinkedIn', name: 'Post carré', ratioLabel: '1:1', ratioId: '1:1', width: 1200, height: 1200, ratioClass: 'aspect-square', desc: 'Publication carrée LinkedIn' },
 
   // TWITTER / X
   { id: 'tw-tweet', category: 'Twitter', name: 'Tweet Image', ratioLabel: '16:9', ratioId: '16:9', width: 1200, height: 675, ratioClass: 'aspect-[16/9]', desc: 'Partage de post sur X / Twitter' },

@@ -31,7 +31,8 @@ export function extractDomainName(urlStr: string): string {
 
 export function getFaviconUrl(urlStr: string): string {
   const domain = extractDomainName(urlStr);
-  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+  // Servie depuis notre domaine (/api/favicon) pour que l'export d'image fonctionne
+  return `/api/favicon?domain=${encodeURIComponent(domain)}`;
 }
 
 export interface CaptureOptions {

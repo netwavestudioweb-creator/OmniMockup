@@ -47,6 +47,7 @@ export const FrameSizePopover: React.FC<FrameSizePopoverProps> = ({
 
   const geometricPresets = FRAME_PRESETS.filter((p) => p.category === 'Geometric');
   const instagramPresets = FRAME_PRESETS.filter((p) => p.category === 'Instagram');
+  const linkedinPresets = FRAME_PRESETS.filter((p) => p.category === 'LinkedIn');
   const twitterPresets = FRAME_PRESETS.filter((p) => p.category === 'Twitter');
   const youtubePresets = FRAME_PRESETS.filter((p) => p.category === 'YouTube');
   const pinterestPresets = FRAME_PRESETS.filter((p) => p.category === 'Pinterest');
@@ -167,6 +168,31 @@ export const FrameSizePopover: React.FC<FrameSizePopoverProps> = ({
                   <ImageIcon className="w-4 h-4 text-pink-500/80 mb-1" />
                   <span className="text-xs font-bold text-zinc-200">{preset.name}</span>
                   <span className="text-[10px] text-zinc-500 font-mono">{preset.ratioLabel}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 2b. LINKEDIN */}
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-2 text-zinc-300 font-bold text-xs">
+              <Monitor className="w-4 h-4 text-blue-400" />
+              <span>LinkedIn</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {linkedinPresets.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => {
+                    onSelectPreset(preset);
+                    onClose();
+                  }}
+                  className="p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:bg-zinc-850 hover:border-zinc-700 text-center transition-all flex flex-col items-center justify-center gap-1"
+                >
+                  <Monitor className="w-4 h-4 text-blue-400/80 mb-0.5" />
+                  <span className="text-xs font-bold text-zinc-200">{preset.name}</span>
+                  <span className="text-[10px] text-zinc-500 font-mono">{preset.width} × {preset.height}</span>
                 </button>
               ))}
             </div>

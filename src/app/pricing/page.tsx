@@ -39,7 +39,6 @@ import {
   Crown,
   Percent,
   Clock,
-  Smartphone,
   CreditCard,
   Globe,
   Coins,
@@ -52,24 +51,12 @@ import {
 export default function PricingPage() {
   const router = useRouter();
   const { user, profile } = useUser();
-  const { currency, setCurrency } = useCurrency();
+  const { currency } = useCurrency();
 
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'momo'>(
-    currency === 'XOF' ? 'momo' : 'stripe'
-  );
   const [isAnnual, setIsAnnual] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [paymentSuccessMessage, setPaymentSuccessMessage] = useState<string | null>(null);
-
-  // Synchronisation du moyen de paiement par défaut quand la devise change
-  useEffect(() => {
-    if (currency === 'XOF') {
-      setPaymentMethod('momo');
-    } else {
-      setPaymentMethod('stripe');
-    }
-  }, [currency]);
 
   // Étape 6 : Modal Order Bump avant redirection Checkout Stripe
   const [bumpModalPlan, setBumpModalPlan] = useState<Plan | null>(null);
@@ -79,18 +66,6 @@ export default function PricingPage() {
   // Étape 5 : Modal Downsell Exit-Intent sur /pricing
   const [showExitDownsell, setShowExitDownsell] = useState(false);
 
-  // Modal Mobile Money (FedaPay)
-  const [momoItem, setMomoItem] = useState<{
-    id: string;
-    name: string;
-    amountFcfa: number;
-    isSubscription: boolean;
-    isCreditPack?: boolean;
-    credits?: number;
-  } | null>(null);
-  const [momoPhoneNumber, setMomoPhoneNumber] = useState('');
-  const [isMomoSubmitting, setIsMomoSubmitting] = useState(false);
-
   // Tracking pricing_view au chargement
   useEffect(() => {
     trackEvent('pricing_view', { is_annual_default: true });
@@ -98,16 +73,7 @@ export default function PricingPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('success') === 'true') {
-        const provider = params.get('provider');
-        if (provider === 'fedapay') {
-          setPaymentSuccessMessage(
-            '🎉 Félicitations ! Votre paiement MTN Mobile Money Bénin a été validé avec succès. Vos fonctionnalités sont débloquées immédiatement !'
-          );
-        } else {
-          setPaymentSuccessMessage(
-            '🎉 Paiement validé avec succès ! Votre compte a été mis à niveau.'
-          );
-        }
+        setPaymentSuccessMessage('🎉 Paiement validé avec succès ! Votre compte a été mis à niveau.');
       } else if (params.get('canceled') === 'true') {
         setCheckoutError('Le paiement a été annulé. Vous pouvez réessayer à tout moment.');
       }
@@ -147,19 +113,7 @@ export default function PricingPage() {
       return;
     }
 
-    if (paymentMethod === 'momo') {
-      const amount = isAnnual ? plan.annualFcfa : plan.monthlyFcfa;
-      setMomoItem({
-        id: plan.id,
-        name: `Abonnement ${plan.name} (${isAnnual ? 'Annuel' : 'Mensuel'})`,
-        amountFcfa: amount,
-        isSubscription: true,
-      });
-      setCheckoutError(null);
-      return;
-    }
-
-    // Pour Stripe : ouvrir l'étape d'Order Bump
+    // Ouvrir l'étape d'Order Bump avant le checkout Stripe
     setBumpAccepted(false);
     setBumpModalPlan(plan);
   };
@@ -213,19 +167,6 @@ export default function PricingPage() {
       return;
     }
 
-    if (paymentMethod === 'momo') {
-      setMomoItem({
-        id: pack.id,
-        name: `${pack.name} (${pack.credits} Crédits)`,
-        amountFcfa: pack.priceFcfa,
-        isSubscription: false,
-        isCreditPack: true,
-        credits: pack.credits,
-      });
-      setCheckoutError(null);
-      return;
-    }
-
     setLoadingPlan(pack.id);
     setCheckoutError(null);
 
@@ -251,45 +192,6 @@ export default function PricingPage() {
       const e = err as { message?: string };
       setCheckoutError(e?.message || 'Erreur paiement crédits.');
       setLoadingPlan(null);
-    }
-  };
-
-  // Validation formulaire MTN MoMo Bénin
-  const handleMomoCheckout = async () => {
-    if (!momoItem) return;
-
-    const cleanedNumber = momoPhoneNumber.replace(/\s+/g, '');
-    if (!cleanedNumber || cleanedNumber.length < 8) {
-      setCheckoutError('Veuillez saisir un numéro de téléphone valide à 8 chiffres (sans indicatif).');
-      return;
-    }
-
-    setIsMomoSubmitting(true);
-    setCheckoutError(null);
-
-    try {
-      const res = await fetch('/api/payments/fedapay/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan: momoItem.id,
-          billingCycle: isAnnual ? 'annual' : 'monthly',
-          phoneNumber: `+229${cleanedNumber}`,
-          isCreditPack: momoItem.isCreditPack,
-          credits: momoItem.credits,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success || !data.checkoutUrl) {
-        throw new Error(data.error || 'Impossible d’initialiser le paiement MTN MoMo via FedaPay.');
-      }
-
-      window.location.href = data.checkoutUrl;
-    } catch (err: unknown) {
-      const e = err as { message?: string };
-      setCheckoutError(e?.message || 'Erreur lors du traitement FedaPay.');
-      setIsMomoSubmitting(false);
     }
   };
 
@@ -344,62 +246,16 @@ export default function PricingPage() {
 
         {/* SÉLECTEUR DE MOYEN DE PAIEMENT, DEVISE & TOGGLE ANNUEL/MENSUEL */}
         <div className="max-w-5xl mx-auto mb-10 flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-3xl bg-white border border-sand-200 shadow-sm">
-          {/* Moyen de paiement adapté à la devise */}
-          <div className="flex items-center gap-1 p-1 bg-sand-100 rounded-2xl border border-sand-200 w-full md:w-auto">
-            {currency === 'XOF' ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('momo')}
-                  className={`flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition-all ${
-                    paymentMethod === 'momo'
-                      ? 'bg-amber-400 text-stone-950 shadow-xs font-black'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <Smartphone className="w-4 h-4 text-stone-950" />
-                  <span>Mobile Money (FedaPay)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('stripe')}
-                  className={`flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition-all ${
-                    paymentMethod === 'stripe'
-                      ? 'bg-white text-stone-900 shadow-xs'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <CreditCard className="w-4 h-4 text-violet-600" />
-                  <span>Carte bancaire (Stripe)</span>
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('stripe')}
-                  className={`flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition-all ${
-                    paymentMethod === 'stripe'
-                      ? 'bg-white text-stone-900 shadow-xs'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <CreditCard className="w-4 h-4 text-violet-600" />
-                  <span>Carte bancaire (Stripe)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurrency('XOF');
-                    setPaymentMethod('momo');
-                  }}
-                  className="flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold text-stone-600 hover:text-stone-900 transition-all"
-                  title="Bascule vers la facturation en FCFA et Mobile Money"
-                >
-                  <Smartphone className="w-4 h-4 text-stone-600" />
-                  <span>Mobile Money (FCFA)</span>
-                </button>
-              </>
+          {/* Moyen de paiement */}
+          <div className="flex flex-col items-center md:items-start gap-1 w-full md:w-auto">
+            <div className="flex items-center gap-2 py-2 px-3.5 rounded-xl bg-sand-100 border border-sand-200 text-xs font-bold text-stone-900">
+              <CreditCard className="w-4 h-4 text-violet-600" />
+              <span>Carte bancaire (Stripe)</span>
+            </div>
+            {currency === 'XOF' && (
+              <p className="text-[11px] text-stone-500 text-center md:text-left">
+                Prix affichés en FCFA à titre indicatif : le paiement par carte est débité en euros.
+              </p>
             )}
           </div>
 
@@ -576,9 +432,7 @@ export default function PricingPage() {
                     onClick={() => handlePlanClick(plan)}
                     disabled={loadingPlan !== null}
                     className={`w-full py-3.5 px-4 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.99] disabled:opacity-60 ${
-                      paymentMethod === 'momo'
-                        ? 'bg-amber-400 hover:bg-amber-300 text-stone-950 border-2 border-stone-950 font-black'
-                        : isTarget
+                      isTarget
                         ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-violet-500/30'
                         : 'bg-stone-900 hover:bg-stone-800 text-white'
                     }`}
@@ -863,8 +717,7 @@ export default function PricingPage() {
                 Quels sont les moyens de paiement acceptés selon ma région ?
               </h4>
               <p className="leading-relaxed text-stone-500">
-                <strong>International (Europe, États-Unis, Canada &amp; reste du monde) :</strong> Carte bancaire Visa, Mastercard, American Express via Stripe sécurisé 3D Secure.<br />
-                <strong>Bénin &amp; Afrique de l&apos;Ouest (zone FCFA / UEMOA) :</strong> MTN Mobile Money, Moov Money et Wave via FedaPay avec validation PIN sur votre mobile. La carte bancaire internationale reste également disponible.
+                Carte bancaire Visa, Mastercard ou American Express, partout dans le monde, via Stripe (3D Secure). Le paiement est débité en euros ou en dollars selon la devise choisie.
               </p>
             </div>
 
@@ -1057,123 +910,6 @@ export default function PricingPage() {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* MODAL PAIEMENT MTN MOBILE MONEY BÉNIN / AFRIQUE (FEDAPAY) */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {momoItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-sand-300 relative space-y-5 animate-scale-up">
-              <button
-                type="button"
-                onClick={() => {
-                  setMomoItem(null);
-                  setIsMomoSubmitting(false);
-                }}
-                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-sand-100 transition-colors"
-              >
-                <XIcon className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-amber-400 text-stone-950 flex items-center justify-center font-black text-xl shadow-md border-2 border-stone-950">
-                  MoMo
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base">🇧🇯</span>
-                    <h3 className="font-black text-stone-900 text-base sm:text-lg">
-                      Paiement MTN MoMo Bénin
-                    </h3>
-                  </div>
-                  <p className="text-xs text-stone-500">
-                    Règlement : <strong>{momoItem.name}</strong>
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-extrabold uppercase tracking-wider text-amber-900">
-                    Montant total à régler
-                  </p>
-                  <p className="text-xs text-stone-600 mt-0.5">
-                    {momoItem.isSubscription
-                      ? isAnnual
-                        ? 'Facturation annuelle (2 mois offerts)'
-                        : 'Facturation mensuelle'
-                      : 'Achat unique sans engagement'}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-2xl font-black text-stone-950 font-mono">
-                    {momoItem.amountFcfa.toLocaleString('fr-FR')}
-                  </span>
-                  <span className="text-xs font-bold text-stone-700 ml-1">FCFA</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-stone-800">
-                  Votre Numéro de Téléphone MTN Mobile Money :
-                </label>
-                <div className="flex rounded-xl border border-sand-300 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-400/40 overflow-hidden shadow-2xs">
-                  <span className="inline-flex items-center px-3.5 bg-sand-100 text-stone-700 text-xs font-bold border-r border-sand-300 select-none">
-                    🇧🇯 +229
-                  </span>
-                  <input
-                    type="tel"
-                    value={momoPhoneNumber}
-                    onChange={(e) => setMomoPhoneNumber(e.target.value)}
-                    placeholder="97 00 00 00"
-                    className="flex-1 px-3.5 py-2.5 text-sm font-mono text-stone-900 focus:outline-none"
-                    autoFocus
-                  />
-                </div>
-                <p className="text-[11px] text-stone-500 leading-relaxed">
-                  💡 Indiquez votre numéro MTN Bénin. Une notification sécurisée sera immédiatement envoyée sur votre téléphone pour valider avec votre code PIN.
-                </p>
-              </div>
-
-              {checkoutError && (
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>{checkoutError}</span>
-                </div>
-              )}
-
-              <div className="pt-2 flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={handleMomoCheckout}
-                  disabled={isMomoSubmitting}
-                  className="w-full py-3.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-black text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.99] border-2 border-stone-950"
-                >
-                  {isMomoSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin text-stone-950" />
-                      <span>Connexion à MTN Mobile Money...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Smartphone className="w-4 h-4 text-stone-950" />
-                      <span>Valider & Débiter sur mon MoMo</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setMomoItem(null)}
-                  disabled={isMomoSubmitting}
-                  className="w-full py-2.5 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors"
-                >
-                  Annuler
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
 
       <Footer />

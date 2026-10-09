@@ -1295,12 +1295,12 @@ export default function HomePage() {
                     a: 'Déposez simplement votre propre capture d\'écran (PNG, JPG ou WebP) : vous profitez de la même mise en scène.',
                   },
                   {
-                    q: 'Puis-je payer en euros, en dollars ou par Mobile Money ?',
-                    a: 'Oui. Le paiement par carte est disponible partout, en euros ou en dollars. En Afrique de l\'Ouest, vous pouvez aussi payer en FCFA par Mobile Money.',
+                    q: 'Comment puis-je payer ?',
+                    a: 'Par carte bancaire (Visa, Mastercard, American Express), partout dans le monde, en euros ou en dollars.',
                   },
                   {
                     q: 'Puis-je annuler à tout moment ?',
-                    a: 'Oui, sans engagement. Un abonnement par carte se résilie en un clic depuis votre espace membre et reste actif jusqu\'à la fin de la période payée. Un paiement Mobile Money couvre 1 mois ou 1 an, sans renouvellement automatique.',
+                    a: 'Oui, sans engagement. Un abonnement par carte se résilie en un clic depuis votre espace membre et reste actif jusqu\'à la fin de la période payée.',
                   },
                 ].map((faq, i) => (
                   <div

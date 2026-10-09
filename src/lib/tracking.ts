@@ -4,7 +4,7 @@
  * Événements supportés :
  * - pricing_view : affichage de la page de tarification
  * - plan_click : clic sur un CTA de plan ou pack de crédits
- * - checkout_start : ouverture du checkout Stripe / FedaPay
+ * - checkout_start : ouverture du checkout Stripe
  * - bump_accepted : acceptation de l'order bump (Kit IA Pitch +2€)
  * - downsell_shown : affichage d'une modale de downsell (exit-intent, rétention)
  * - downsell_accepted : conversion suite à un downsell

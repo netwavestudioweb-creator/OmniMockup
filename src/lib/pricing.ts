@@ -64,8 +64,8 @@ export interface Plan {
 // PAYS ET DÉTECTION GÉOGRAPHIQUE
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Pays couverts par FedaPay (UEMOA / Mobile Money)
-export const FEDAPAY_COUNTRIES = ['BJ', 'CI', 'SN', 'TG', 'ML', 'BF', 'NE', 'GW'] as const;
+// Pays de la zone FCFA (UEMOA) : affichage des prix en FCFA
+export const XOF_COUNTRIES = ['BJ', 'CI', 'SN', 'TG', 'ML', 'BF', 'NE', 'GW'] as const;
 
 // Pays zone Euro + Europe principale
 export const EUR_COUNTRIES = [
@@ -75,16 +75,10 @@ export const EUR_COUNTRIES = [
   'AD', 'MC', 'SM', 'VA',
 ] as const;
 
-export function isFedaPayCountry(countryCode?: string | null): boolean {
-  if (!countryCode) return false;
-  const upper = countryCode.toUpperCase();
-  return (FEDAPAY_COUNTRIES as readonly string[]).includes(upper);
-}
-
 export function detectCurrencyFromCountry(countryCode?: string | null): Currency {
   if (!countryCode) return 'USD';
   const upper = countryCode.toUpperCase();
-  if ((FEDAPAY_COUNTRIES as readonly string[]).includes(upper)) return 'XOF';
+  if ((XOF_COUNTRIES as readonly string[]).includes(upper)) return 'XOF';
   if ((EUR_COUNTRIES as readonly string[]).includes(upper)) return 'EUR';
   return 'USD';
 }

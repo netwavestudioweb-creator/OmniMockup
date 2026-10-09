@@ -53,7 +53,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data) {
-        // Un plan Mobile Money expiré est affiché comme "free"
+        // Un plan à durée fixe expiré est affiché comme "free"
         const p = data as Profile;
         setProfile({ ...p, plan: getEffectivePlan(p) });
       }

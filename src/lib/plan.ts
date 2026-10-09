@@ -5,7 +5,7 @@ const VALID_PLANS: PlanId[] = ['free', 'solo', 'pro', 'agence'];
 /**
  * Plan réellement actif d'un utilisateur.
  *
- * Les plans payés par Mobile Money (FedaPay) sont des paiements uniques de
+ * Les plans payés en une fois (hors abonnement Stripe) sont des paiements uniques de
  * 1 mois ou 1 an : ils ont une date de fin (plan_expires_at). Une fois cette
  * date passée, l'utilisateur repasse en "free", même si la base n'a pas encore
  * été nettoyée. Les abonnements Stripe n'ont pas de date de fin ici : c'est

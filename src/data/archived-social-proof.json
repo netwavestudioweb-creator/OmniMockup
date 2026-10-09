@@ -1,0 +1,49 @@
+{
+  "_notice": "Contenus de preuve sociale archivés conformément à l'étape 7 (honnêteté de la preuve sociale au lancement). Non affichés dans l'application.",
+  "metrics": {
+    "creatorsCount": "plus de 2 400 créateurs",
+    "productHuntRank": "Product Hunt #1",
+    "productHuntBadge": "Top 3 Product Hunt"
+  },
+  "testimonials": [
+    {
+      "q": "OmniMockup nous fait gagner plusieurs heures chaque semaine sur nos présentations clients. Le rendu 3D impressionne immédiatement dès le premier coup d'œil.",
+      "name": "Thomas R.",
+      "role": "Lead Designer · NovaStudio",
+      "initials": "TR",
+      "color": "#7c3aed"
+    },
+    {
+      "q": "J'ai préparé tous les visuels de notre lancement Product Hunt avec OmniMockup en quelques minutes. Résultat : Top 3 du jour et plus de 2 000 inscriptions.",
+      "name": "Sarah M.",
+      "role": "Fondatrice · MetricFlow SaaS",
+      "initials": "SM",
+      "color": "#6366f1"
+    },
+    {
+      "q": "La copie instantanée dans le presse-papier est un bonheur au quotidien. URL, choix de l'iPhone, Ctrl+V sur Twitter : visuel posté en 30 secondes chrono.",
+      "name": "Alexandre B.",
+      "role": "Développeur Fullstack · Freelance",
+      "initials": "AB",
+      "color": "#a855f7"
+    },
+    {
+      "q": "La précision des textures aluminium et des reflets vitrés sur MacBook Pro et iPhone 16 est bluffante. On a complètement abandonné nos vieux templates Figma.",
+      "name": "Camille D.",
+      "role": "Directrice Artistique · Studio Kroma",
+      "initials": "CD",
+      "color": "#ec4899"
+    },
+    {
+      "q": "Idéal pour nos campagnes publicitaires Meta et LinkedIn. On teste 10 déclinaisons de mockups d'une même page en 2 minutes sans graphiste.",
+      "name": "Marc V.",
+      "role": "Growth Marketer · ScaleFast",
+      "initials": "MV",
+      "color": "#10b981"
+    }
+  ],
+  "showcaseTestimonial": {
+    "quote": "J’ai préparé tous les visuels de mon lancement Product Hunt avec OmniMockup en 10 minutes. Résultat : Top 3 du jour et plus de 2 000 inscriptions.",
+    "author": "Sarah M., Fondatrice SaaS"
+  }
+}

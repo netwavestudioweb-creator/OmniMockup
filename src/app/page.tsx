@@ -532,7 +532,7 @@ export default function HomePage() {
           <section className="border-y border-white/5 bg-zinc-900/40 py-5 overflow-hidden">
             <div className="max-w-5xl mx-auto px-4 flex flex-wrap items-center justify-center gap-6 sm:gap-10">
               {[
-                { icon: Rocket, label: 'Product Hunt #1' },
+                { icon: Rocket, label: 'Lancé en octobre 2026' },
                 { icon: ScanLine, label: 'Export 4K Retina' },
                 { icon: Smartphone, label: 'iPhone 16 Pro' },
                 { icon: Monitor, label: 'MacBook Pro M3' },
@@ -867,8 +867,8 @@ export default function HomePage() {
                     icon: Rocket,
                     title: 'Fondateurs SaaS',
                     sub: 'Optimisez vos conversions',
-                    desc: 'Préparez tous vos visuels Product Hunt, bannières Twitter/X et posts LinkedIn en moins de 60 secondes, sans attendre la disponibilité d\'un graphiste.',
-                    badge: 'Top 3 Product Hunt',
+                    desc: 'Préparez tous vos visuels de lancement, bannières Twitter/X et posts LinkedIn en moins de 60 secondes, sans attendre la disponibilité d\'un graphiste.',
+                    badge: 'Conversion Boostée',
                     badgeClass: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/25',
                     gradient: 'from-indigo-600 to-fuchsia-600',
                   },
@@ -936,8 +936,8 @@ export default function HomePage() {
                       icon: Rocket,
                       title: 'Fondateurs SaaS',
                       sub: 'Optimisez vos conversions',
-                      desc: 'Préparez tous vos visuels Product Hunt, bannières Twitter/X et posts LinkedIn en moins de 60 secondes, sans attendre la disponibilité d\'un graphiste.',
-                      badge: 'Top 3 Product Hunt',
+                      desc: 'Préparez tous vos visuels de lancement, bannières Twitter/X et posts LinkedIn en moins de 60 secondes, sans attendre la disponibilité d\'un graphiste.',
+                      badge: 'Conversion Boostée',
                       badgeClass: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/25',
                       gradient: 'from-indigo-600 to-fuchsia-600',
                     },
@@ -1034,98 +1034,61 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* ═══════════ TESTIMONIALS ═══════════ */}
+          {/* ═══════════ LANCEMENT & PREMIERS RETOURS ═══════════ */}
           <section className="bg-zinc-950 py-20 sm:py-28">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center max-w-3xl mx-auto mb-14">
-                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Retours d&apos;Expérience</p>
+                <span className="inline-block text-[11px] font-black uppercase tracking-[0.2em] text-violet-400 bg-violet-950/60 border border-violet-800/60 px-3.5 py-1 rounded-full mb-3">
+                  Lancé en octobre 2026
+                </span>
                 <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-4">
-                  Approuvé par plus de <span className="shimmer-text">2 400 créateurs</span>
+                  Les premiers retours <span className="shimmer-text">arrivent bientôt</span>
                 </h2>
                 <p className="text-zinc-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-                  Découvrez comment nos utilisateurs créent des présentations qui font la différence au quotidien.
+                  OmniMockup Studio vient d&apos;ouvrir ses portes. Participez aux premières créations, partagez vos impressions et aidez-nous à façonner les prochains templates et formats.
                 </p>
               </div>
 
-              {/* Défilé continu automatique de témoignages (sans boutons, défilement fluide infini) */}
-              {(() => {
-                const testimonials = [
-                  {
-                    q: 'OmniMockup nous fait gagner plusieurs heures chaque semaine sur nos présentations clients. Le rendu 3D impressionne immédiatement dès le premier coup d\'œil.',
-                    name: 'Thomas R.',
-                    role: 'Lead Designer · NovaStudio',
-                    initials: 'TR',
-                    color: '#7c3aed',
-                  },
-                  {
-                    q: 'J\'ai préparé tous les visuels de notre lancement Product Hunt avec OmniMockup en quelques minutes. Résultat : Top 3 du jour et plus de 2 000 inscriptions.',
-                    name: 'Sarah M.',
-                    role: 'Fondatrice · MetricFlow SaaS',
-                    initials: 'SM',
-                    color: '#6366f1',
-                  },
-                  {
-                    q: 'La copie instantanée dans le presse-papier est un bonheur au quotidien. URL, choix de l\'iPhone, Ctrl+V sur Twitter : visuel posté en 30 secondes chrono.',
-                    name: 'Alexandre B.',
-                    role: 'Développeur Fullstack · Freelance',
-                    initials: 'AB',
-                    color: '#a855f7',
-                  },
-                  {
-                    q: 'La précision des textures aluminium et des reflets vitrés sur MacBook Pro et iPhone 16 est bluffante. On a complètement abandonné nos vieux templates Figma.',
-                    name: 'Camille D.',
-                    role: 'Directrice Artistique · Studio Kroma',
-                    initials: 'CD',
-                    color: '#ec4899',
-                  },
-                  {
-                    q: 'Idéal pour nos campagnes publicitaires Meta et LinkedIn. On teste 10 déclinaisons de mockups d\'une même page en 2 minutes sans graphiste.',
-                    name: 'Marc V.',
-                    role: 'Growth Marketer · ScaleFast',
-                    initials: 'MV',
-                    color: '#10b981',
-                  },
-                ];
-
-                return (
-                  <div className="flex flex-col gap-4">
-                    <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] py-2">
-                      <div className="animate-marquee flex gap-5 py-2">
-                        {[...testimonials, ...testimonials].map((t, i) => (
-                          <div
-                            key={i}
-                            className="w-[300px] sm:w-[360px] shrink-0 p-6 rounded-2xl bg-zinc-900/90 border border-zinc-800 flex flex-col justify-between gap-4 shadow-xl hover:border-violet-500/50 hover:bg-zinc-900 transition-all text-left"
-                          >
-                            <div className="flex gap-1">
-                              {[...Array(5)].map((_, s) => (
-                                <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                              ))}
-                            </div>
-                            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">&ldquo;{t.q}&rdquo;</p>
-                            <div className="flex items-center gap-3 pt-3 border-t border-zinc-800/80">
-                              <div
-                                className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-md"
-                                style={{ background: t.color }}
-                              >
-                                {t.initials}
-                              </div>
-                              <div>
-                                <p className="text-xs font-bold text-white">{t.name}</p>
-                                <p className="text-[10px] text-zinc-500">{t.role}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <p className="text-center text-[11px] text-zinc-500 flex items-center justify-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>Défilement continu automatique · Survolez ou touchez pour marquer une pause</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex flex-col justify-between gap-4">
+                  <div className="space-y-2.5">
+                    <span className="text-2xl">🚀</span>
+                    <h3 className="text-base font-bold text-white">Rendu 3D Temps Réel 60fps</h3>
+                    <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+                      Moteur WebGL haute fidélité : contrôlez la rotation, l&apos;angle de caméra, l&apos;éclairage et les ombres directement depuis votre navigateur.
                     </p>
                   </div>
-                );
-              })()}
+                  <div className="pt-3 border-t border-zinc-800 text-[11px] font-bold text-violet-400">
+                    Sans plugin ni installation
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex flex-col justify-between gap-4">
+                  <div className="space-y-2.5">
+                    <span className="text-2xl">💎</span>
+                    <h3 className="text-base font-bold text-white">Qualité Studio 4K & Vidéo</h3>
+                    <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+                      Exports Retina Ultra-HD sans filigrane, animations vidéo 60fps prêtes pour vos lancements sur Twitter/X, LinkedIn et Product Hunt.
+                    </p>
+                  </div>
+                  <div className="pt-3 border-t border-zinc-800 text-[11px] font-bold text-violet-400">
+                    Standard Apple & Airbnb
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 flex flex-col justify-between gap-4">
+                  <div className="space-y-2.5">
+                    <span className="text-2xl">🤝</span>
+                    <h3 className="text-base font-bold text-white">Construit avec la Communauté</h3>
+                    <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+                      Chaque retour ou suggestion de nouveau mockup est analysé directement par notre équipe pour les mises à jour hebdomadaires.
+                    </p>
+                  </div>
+                  <div className="pt-3 border-t border-zinc-800 text-[11px] font-bold text-violet-400">
+                    Support réactif sous 24h
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -1146,55 +1109,56 @@ export default function HomePage() {
               <div className="hidden md:grid md:grid-cols-3 gap-5 items-stretch">
                 {[
                   {
-                    name: 'Découverte',
-                    price: '0€',
-                    period: 'pour toujours',
-                    desc: 'Accès illimité au studio pour tester et concevoir sans carte bancaire.',
-                    cta: 'Commencer gratuitement',
-                    href: '/signup',
+                    name: 'Solo',
+                    price: '5€',
+                    period: 'par mois (50€/an)',
+                    desc: 'Pour les créateurs occasionnels. 20 exports HD/mois avec filigrane discret.',
+                    cta: 'Choisir Solo',
+                    href: '/pricing',
                     highlighted: false,
                     badge: null,
                     features: [
-                      '3 exports PNG par jour (qualité 1x)',
-                      'Studio complet (MacBook, iPhone, Duo, Trio)',
-                      'Contrôles 3D, rotation & ombrages',
-                      'Callouts & Badges de vente (découverte)',
+                      '20 exports PNG HD 2x / mois',
+                      'Filigrane discret (non intrusif)',
+                      'Studio complet 3D (MacBook, iPhone)',
+                      '3 analyses IA par mois',
+                      '50+ templates inclus',
                     ],
                   },
                   {
-                    name: 'Pro Développeur',
-                    price: '5€',
-                    period: 'par mois (4€/mois en annuel)',
-                    desc: 'Pour les freelances, devs et créateurs qui veulent des mockups impeccables sans filigrane.',
+                    name: 'Pro',
+                    price: '9€',
+                    period: 'par mois (7,50€ en annuel)',
+                    desc: 'Exports illimités HD & 4K, ZÉRO filigrane, vidéo animée et kit IA. Le meilleur choix.',
                     cta: 'Débloquer le forfait Pro',
                     href: '/pricing',
                     highlighted: true,
                     badge: 'Populaire',
                     features: [
-                      'Layouts Solo, Duo & Trio Écosystème',
-                      'Bulles Callouts & Badges Vente (Stripe, PH)',
                       'Exports PNG HD 2x & 4K ILLIMITÉS',
-                      'ZÉRO filigrane sur tous les exports',
+                      'ZÉRO filigrane (rendus 100% neutres)',
                       '10 exports Vidéo MP4 60fps / mois',
                       'IA Pitch Kit (5 générations / mois)',
+                      'Analyses IA illimitées Directeur Artistique',
+                      'Historique cloud 30 jours & Partage',
                     ],
                   },
                   {
-                    name: 'Studio Agence',
-                    price: '25€',
-                    period: 'par mois (20€/mois en annuel)',
-                    desc: 'La suite complète pour les agences web, équipes produit et studios créatifs.',
-                    cta: 'Choisir Studio Agence',
+                    name: 'Agence',
+                    price: '29€',
+                    period: 'par mois (290€/an)',
+                    desc: 'La suite complète : marque blanche totale, 5 sièges, vidéo illimitée et support WhatsApp.',
+                    cta: 'Choisir Agence',
                     href: '/pricing',
                     highlighted: false,
                     badge: null,
                     features: [
-                      'Tout le forfait Pro Développeur inclus',
-                      'Pack OmniExport 1-Click (5 ratios en 1 sec)',
-                      'Kit Vente & Proposition Devis Client IA',
+                      'Tout le forfait Pro inclus',
                       '5 sièges collaborateurs inclus',
-                      'Exports Vidéo MP4 ILLIMITÉS',
                       'Marque blanche totale (White Label)',
+                      'Exports Vidéo MP4 ILLIMITÉS',
+                      'Pack OmniExport 1-Click (5 formats)',
+                      'Support WhatsApp direct 7j/7',
                     ],
                   },
                 ].map((plan, i) => (
@@ -1251,57 +1215,53 @@ export default function HomePage() {
                   const plans = [
                     {
                       id: 0,
-                      name: 'Découverte',
-                      price: '0€',
-                      period: 'pour toujours',
-                      desc: 'Accès illimité au studio pour tester et concevoir sans carte bancaire.',
-                      cta: 'Commencer gratuitement',
-                      href: '/signup',
+                      name: 'Solo',
+                      price: '5€',
+                      period: 'par mois',
+                      desc: '20 exports HD/mois avec filigrane discret.',
+                      cta: 'Choisir Solo',
+                      href: '/pricing',
                       highlighted: false,
                       badge: null,
                       features: [
-                        '3 exports PNG par jour (qualité 1x)',
-                        'Studio complet (MacBook, iPhone, Duo, Trio)',
-                        'Contrôles 3D, rotation & ombrages',
-                        'Callouts & Badges de vente (découverte)',
+                        '20 exports PNG HD 2x / mois',
+                        'Filigrane discret (non intrusif)',
+                        'Studio complet 3D',
+                        '3 analyses IA par mois',
                       ],
                     },
                     {
                       id: 1,
-                      name: 'Pro Développeur',
-                      price: '5€',
-                      period: 'par mois (4€/mois en annuel)',
-                      desc: 'Pour les freelances, devs et créateurs qui veulent des mockups impeccables sans filigrane.',
-                      cta: 'Débloquer le forfait Pro',
+                      name: 'Pro',
+                      price: '9€',
+                      period: 'par mois (7,50€ en annuel)',
+                      desc: 'Exports illimités HD/4K, ZÉRO filigrane et vidéo.',
+                      cta: 'Débloquer Pro',
                       href: '/pricing',
                       highlighted: true,
                       badge: 'Recommandé',
                       features: [
-                        'Layouts Solo, Duo & Trio Écosystème',
-                        'Bulles Callouts & Badges Vente (Stripe, PH)',
                         'Exports PNG HD 2x & 4K ILLIMITÉS',
-                        'ZÉRO filigrane sur tous les exports',
-                        '10 exports Vidéo MP4 60fps / mois',
-                        'IA Pitch Kit (5 générations / mois)',
+                        'ZÉRO filigrane',
+                        '10 exports Vidéo MP4 / mois',
+                        'IA Pitch Kit inclus',
                       ],
                     },
                     {
                       id: 2,
-                      name: 'Studio Agence',
-                      price: '25€',
-                      period: 'par mois (20€/mois en annuel)',
-                      desc: 'La suite complète pour les agences web, équipes produit et studios créatifs.',
-                      cta: 'Choisir Studio Agence',
+                      name: 'Agence',
+                      price: '29€',
+                      period: 'par mois',
+                      desc: 'Suite complète avec marque blanche et 5 sièges.',
+                      cta: 'Choisir Agence',
                       href: '/pricing',
                       highlighted: false,
                       badge: null,
                       features: [
-                        'Tout le forfait Pro Développeur inclus',
-                        'Pack OmniExport 1-Click (5 ratios en 1 sec)',
-                        'Kit Vente & Proposition Devis Client IA',
-                        '5 sièges collaborateurs inclus',
-                        'Exports Vidéo MP4 ILLIMITÉS',
-                        'Marque blanche totale (White Label)',
+                        'Tout le forfait Pro inclus',
+                        'Marque blanche totale',
+                        '5 sièges collaborateurs',
+                        'Vidéos MP4 ILLIMITÉES',
                       ],
                     },
                   ];
@@ -1311,8 +1271,8 @@ export default function HomePage() {
                       {/* Sélecteur d'onglets mobile */}
                       <div className="flex p-1.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 max-w-sm mx-auto w-full shadow-inner">
                         {[
-                          { id: 0, label: 'Gratuit' },
-                          { id: 1, label: '★ Recommandé' },
+                          { id: 0, label: 'Solo' },
+                          { id: 1, label: '★ Pro' },
                           { id: 2, label: 'Agence' },
                         ].map((tab) => (
                           <button

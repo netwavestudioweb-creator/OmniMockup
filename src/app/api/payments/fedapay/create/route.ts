@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     // Calcul du montant selon le cycle
     const amount =
       billingCycle === 'annual'
-        ? planConfig.annualPrice * 12
+        ? planConfig.annualTotal
         : planConfig.monthlyPrice;
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';

@@ -37,8 +37,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const planName = profile?.plan === 'studio' ? 'Studio' : profile?.plan === 'agence' ? 'Agence' : profile?.plan === 'pro' ? 'Pro' : 'Free';
-  const isPremium = profile?.plan === 'pro' || profile?.plan === 'agence' || profile?.plan === 'studio';
+  const planName = profile?.plan === 'agence' ? 'Agence' : profile?.plan === 'pro' ? 'Pro' : profile?.plan === 'solo' ? 'Solo' : 'Free';
+  const isPremium = profile?.plan === 'pro' || profile?.plan === 'agence';
 
   return (
     <header className="sticky top-0 z-50 border-b border-sand-200 bg-sand-50/95 backdrop-blur-md w-full max-w-full">

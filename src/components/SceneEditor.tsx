@@ -78,6 +78,8 @@ import {
   Shield,
   Zap,
   Crown,
+  TrendingUp,
+  Bot,
 } from 'lucide-react';
 import { TechStackPicker, AVAILABLE_TECHS } from './TechStackPicker';
 import { DeveloperSalesKitModal } from './DeveloperSalesKitModal';
@@ -92,6 +94,8 @@ import { SceneShadowOverlay } from './SceneShadowOverlay';
 import { FrameSizePopover } from './FrameSizePopover';
 import { TemplatesModal } from './TemplatesModal';
 import { SceneOverlayPreset } from '@/types/analyzer';
+import { ExportCrossSellBanner } from './ExportCrossSellBanner';
+import { PlanUpsellModal, UpsellMode } from './PlanUpsellModal';
 
 interface SceneEditorProps {
   captureItem: CaptureItemResult;
@@ -144,9 +148,9 @@ function extractMagicGradients(base64Image: string): Promise<{ name: string; val
         const c3 = `rgb(${tertiaryRgb})`;
 
         resolve([
-          { name: '✨ Magique : Harmonieux', value: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)` },
-          { name: '✨ Magique : Éclatant', value: `linear-gradient(135deg, ${c2} 0%, ${c3} 50%, ${c1} 100%)` },
-          { name: '✨ Magique : Ambiance', value: `radial-gradient(circle, ${c1} 0%, ${c3} 100%)` },
+          { name: 'Magique : Harmonieux', value: `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)` },
+          { name: 'Magique : Éclatant', value: `linear-gradient(135deg, ${c2} 0%, ${c3} 50%, ${c1} 100%)` },
+          { name: 'Magique : Ambiance', value: `radial-gradient(circle, ${c1} 0%, ${c3} 100%)` },
         ]);
       } catch {
         resolve([]);
@@ -310,6 +314,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   // Drawer des templates & Modal Shots.so
   const [showTemplatesDrawer, setShowTemplatesDrawer] = useState<boolean>(false);
   const [showTemplatesModal, setShowTemplatesModal] = useState<boolean>(false);
+  const [showCrossSellBanner, setShowCrossSellBanner] = useState<boolean>(false);
+  const [upsellModal, setUpsellModal] = useState<{ open: boolean; mode: UpsellMode }>({
+    open: false,
+    mode: 'free_quota_reached',
+  });
 
   // ══ ONGLETS PRINCIPAUX DU STUDIO (MOCKUP vs FRAME style Shots.so) ══
   const [activeMainTab, setActiveMainTab] = useState<'mockup' | 'frame'>('mockup');
@@ -600,6 +609,33 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
       setExportSuccess(true);
       setTimeout(() => setExportSuccess(false), 3000);
+
+      // Étape 5 : Cross-sell discret après export PNG réussi
+      setShowCrossSellBanner(true);
+
+      // Étape 5 : Détection des seuils d'upsell
+      try {
+        const todayKey = `omnimockup_exports_${new Date().toISOString().split('T')[0]}`;
+        const currentCount = parseInt(localStorage.getItem(todayKey) || '0', 10) + 1;
+        localStorage.setItem(todayKey, currentCount.toString());
+
+        if (userPlan === 'free' && currentCount >= 3 && !sessionStorage.getItem('upsell_free_shown')) {
+          sessionStorage.setItem('upsell_free_shown', 'true');
+          setUpsellModal({ open: true, mode: 'free_quota_reached' });
+        } else if (userPlan === 'solo' && !sessionStorage.getItem('upsell_solo_shown')) {
+          sessionStorage.setItem('upsell_solo_shown', 'true');
+          setUpsellModal({ open: true, mode: 'solo_quota_approaching' });
+        } else if (
+          (profile?.credit_balance ?? 0) > 0 &&
+          (profile?.credit_balance ?? 0) <= 2 &&
+          !sessionStorage.getItem('upsell_credits_shown')
+        ) {
+          sessionStorage.setItem('upsell_credits_shown', 'true');
+          setUpsellModal({ open: true, mode: 'low_credits' });
+        }
+      } catch {
+        // Mode silencieux
+      }
     } catch (err) {
       console.error('Erreur export image:', err);
       alert("Erreur lors de l'exportation de l'image. Veuillez réessayer.");
@@ -1347,14 +1383,16 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* Badge du forfait */}
                 <span
                   className={`hidden sm:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                    userPlan === 'studio'
+                    userPlan === 'agence'
                       ? 'bg-amber-400/15 text-amber-300 border-amber-400/30'
                       : userPlan === 'pro'
                       ? 'bg-violet-500/20 text-violet-300 border-violet-500/40'
+                      : userPlan === 'solo'
+                      ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                       : 'bg-zinc-800 text-zinc-400 border-zinc-700'
                   }`}
                 >
-                  {userPlan === 'studio' ? (
+                  {userPlan === 'agence' ? (
                     <>
                       <Crown className="w-2.5 h-2.5 text-amber-300" />
                       <span>Agence</span>
@@ -1364,6 +1402,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       <Zap className="w-2.5 h-2.5 text-violet-400" />
                       <span>Pro</span>
                     </>
+                  ) : userPlan === 'solo' ? (
+                    <span>Solo</span>
                   ) : (
                     <span>Gratuit</span>
                   )}
@@ -1390,15 +1430,23 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     <div className="mt-2 flex items-center justify-between">
                       <span
                         className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
-                          userPlan === 'studio'
+                          userPlan === 'agence'
                             ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
                             : userPlan === 'pro'
                             ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                            : userPlan === 'solo'
+                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                             : 'bg-zinc-800 text-zinc-300 border border-zinc-700'
                         }`}
                       >
-                        {userPlan === 'studio' ? <Crown className="w-3 h-3 text-amber-300" /> : userPlan === 'pro' ? <Zap className="w-3 h-3 text-violet-400" /> : <Shield className="w-3 h-3 text-zinc-400" />}
-                        Plan {userPlan === 'studio' ? 'Studio Agence' : userPlan === 'pro' ? 'Pro Développeur' : 'Gratuit Découverte'}
+                        {userPlan === 'agence' ? (
+                          <Crown className="w-3 h-3 text-amber-300" />
+                        ) : userPlan === 'pro' ? (
+                          <Zap className="w-3 h-3 text-violet-400" />
+                        ) : (
+                          <Shield className="w-3 h-3 text-zinc-400" />
+                        )}
+                        Plan {userPlan === 'agence' ? 'Agence' : userPlan === 'pro' ? 'Pro' : userPlan === 'solo' ? 'Solo' : 'Gratuit'}
                       </span>
 
                       <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
@@ -4032,6 +4080,28 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           onClose={() => setShowTemplatesModal(false)}
         />
       )}
+
+      {/* BANNIÈRE CROSS-SELL POST-EXPORT */}
+      {showCrossSellBanner && (
+        <ExportCrossSellBanner
+          onClose={() => setShowCrossSellBanner(false)}
+          onOpenVideoExport={() => {
+            setShowCrossSellBanner(false);
+            handleExportVideo();
+          }}
+          onOpenOmniExport={() => {
+            setShowCrossSellBanner(false);
+            handleExportPack();
+          }}
+        />
+      )}
+
+      {/* MODALE UPSELL SELON LES QUOTAS */}
+      <PlanUpsellModal
+        isOpen={upsellModal.open}
+        mode={upsellModal.mode}
+        onClose={() => setUpsellModal((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 };

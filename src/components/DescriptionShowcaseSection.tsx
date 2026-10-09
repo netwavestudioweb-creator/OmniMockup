@@ -556,40 +556,59 @@ export const DescriptionShowcaseSection: React.FC<DescriptionShowcaseSectionProp
           </div>
         </div>
 
-        {/* 5. TÉMOIGNAGES & PREUVE SOCIALE */}
+        {/* 5. LANCEMENT & PREMIERS RETOURS */}
         <div className="bg-sand-50/70 rounded-3xl border border-sand-200 p-6 sm:p-10 space-y-8">
           <div className="text-center max-w-xl mx-auto space-y-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-violet-600 bg-violet-100 px-3 py-1 rounded-full border border-violet-200 inline-block">
+              Lancé en octobre 2026
+            </span>
             <h3 className="text-xl sm:text-2xl font-extrabold text-stone-900">
-              Recommandé par les créateurs &amp; agences
+              Les premiers retours arrivent bientôt
             </h3>
             <p className="text-xs text-stone-500">
-              Des centaines de mockups générés chaque jour pour booster la conversion.
+              OmniMockup Studio vient d&apos;être lancé. Testez le studio et partagez vos impressions pour façonner les prochaines fonctionnalités.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((t, i) => (
-              <div
-                key={i}
-                className="p-5 rounded-2xl bg-white border border-sand-200 shadow-xs space-y-3 flex flex-col justify-between"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1 text-amber-400">
-                    {[...Array(t.stars)].map((_, s) => (
-                      <Star key={s} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-xs text-stone-700 italic leading-relaxed">
-                    &ldquo;{t.quote}&rdquo;
-                  </p>
-                </div>
-
-                <div className="pt-2 border-t border-sand-100">
-                  <p className="text-xs font-bold text-stone-900">{t.author}</p>
-                  <p className="text-[11px] text-stone-500">{t.role}</p>
-                </div>
+            <div className="p-5 rounded-2xl bg-white border border-sand-200 shadow-xs space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <span className="text-base">🚀</span>
+                <h4 className="text-sm font-bold text-stone-900">Moteur 3D Temps Réel 60fps</h4>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Rendu WebGL haute précision : ajustez les angles, les ombrages et les reflets instantanément sur MacBook Pro et iPhone 16.
+                </p>
               </div>
-            ))}
+              <div className="pt-2 border-t border-sand-100 text-[11px] font-semibold text-violet-700">
+                100% interactif dans votre navigateur
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white border border-sand-200 shadow-xs space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <span className="text-base">✨</span>
+                <h4 className="text-sm font-bold text-stone-900">Exports 4K Retina & Vidéo</h4>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Exportez en qualité ultra-haute fidélité sans filigrane, ou générez une vidéo animée prête pour vos posts sur les réseaux sociaux.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-sand-100 text-[11px] font-semibold text-violet-700">
+                Format prêt pour Twitter/X & LinkedIn
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white border border-sand-200 shadow-xs space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <span className="text-base">💬</span>
+                <h4 className="text-sm font-bold text-stone-900">Développé avec vos suggestions</h4>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Vous avez une idée de mockup, d&apos;appareil ou d&apos;effet ? Notre équipe prend en compte chaque retour pour les mises à jour hebdomadaires.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-sand-100 text-[11px] font-semibold text-violet-700">
+                Support réactif & direct
+              </div>
+            </div>
           </div>
         </div>
 

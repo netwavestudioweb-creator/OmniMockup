@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentMonth } from '@/lib/usage';
+import { PLANS } from '@/lib/pricing';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,32 +26,40 @@ export async function GET() {
     // 1. Récupération du profil utilisateur
     const { data: profile } = await admin
       .from('profiles')
-      .select('plan, stripe_customer_id, stripe_subscription_id, created_at')
+      .select('plan, credit_balance, subscription_status, billing_cycle, stripe_customer_id, stripe_subscription_id, created_at')
       .eq('id', user.id)
       .maybeSingle();
 
     const plan = profile?.plan || 'free';
-    const limit = (plan === 'pro' || plan === 'agence') ? 999999 : 3;
+    const planDef = PLANS.find((p) => p.id === plan);
+    const aiLimit = planDef?.quotas.aiAnalysesPerMonth ?? (plan === 'pro' || plan === 'agence' ? 999999 : 3);
+    const pngLimit = planDef?.quotas.pngExportsPerMonth ?? (plan === 'pro' || plan === 'agence' ? 999999 : 20);
 
     // 2. Récupération de la consommation du mois
     const { data: usageData } = await admin
       .from('usage')
-      .select('analyses_ia_count, exports_count')
+      .select('analyses_ia_count, exports_count, png_exports_count')
       .eq('user_id', user.id)
       .eq('month', month)
       .maybeSingle();
 
-    const currentUsage = usageData?.analyses_ia_count || 0;
+    const analysesIaCount = usageData?.analyses_ia_count || 0;
     const exportsCount = usageData?.exports_count || 0;
+    const pngExportsCount = usageData?.png_exports_count || 0;
 
     return NextResponse.json({
       success: true,
       email: user.email,
       plan,
+      credit_balance: profile?.credit_balance ?? 0,
+      subscription_status: profile?.subscription_status || 'active',
+      billing_cycle: profile?.billing_cycle || 'monthly',
       month,
-      analyses_ia_count: currentUsage,
-      limit,
+      analyses_ia_count: analysesIaCount,
+      limit: aiLimit,
       exports_count: exportsCount,
+      png_exports_count: pngExportsCount,
+      png_limit: pngLimit,
       hasStripeCustomer: Boolean(profile?.stripe_customer_id),
       createdAt: profile?.created_at || user.created_at,
     });

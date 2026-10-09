@@ -20,19 +20,33 @@ export async function GET(req: NextRequest) {
     if (transaction.status === 'approved' || transaction.status === 'transferred') {
       const metadata = transaction.custom_metadata || {};
       const userId = metadata.userId || metadata.user_id;
-      const plan = (metadata.plan || 'pro') as 'starter' | 'creator' | 'pro' | 'agence';
+      const plan = (metadata.plan || 'pro') as 'solo' | 'pro' | 'agence';
+      const isCreditPack = metadata.isCreditPack === true || String(metadata.isCreditPack) === 'true';
+      const credits = Number(metadata.credits || 0);
 
       if (userId) {
         const admin = createAdminClient();
-        await admin
-          .from('profiles')
-          .update({
-            plan,
+        if (isCreditPack && credits > 0) {
+          // Créditer les crédits achetés
+          const { data: prof } = await admin.from('profiles').select('credit_balance').eq('id', userId).maybeSingle();
+          const currentBal = prof?.credit_balance ?? 0;
+          await admin.from('profiles').update({
+            credit_balance: currentBal + credits,
             payment_provider: 'fedapay',
             fedapay_transaction_id: String(transactionId),
             updated_at: new Date().toISOString(),
-          })
-          .eq('id', userId);
+          }).eq('id', userId);
+        } else {
+          await admin
+            .from('profiles')
+            .update({
+              plan,
+              payment_provider: 'fedapay',
+              fedapay_transaction_id: String(transactionId),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', userId);
+        }
       }
 
       return NextResponse.redirect(

@@ -1,11 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { useUser } from '@/context/UserContext';
+import {
+  PLANS,
+  CREDIT_PACKS,
+  ORDER_BUMP,
+  monthlyEquivalentFromAnnual,
+  annualSavings,
+  Plan,
+  CreditPack,
+  PlanId,
+} from '@/lib/pricing';
+import { trackEvent } from '@/lib/tracking';
 import {
   Check,
   X as XIcon,
@@ -13,12 +24,10 @@ import {
   ArrowRight,
   ShieldCheck,
   Building2,
-  ArrowLeft,
   Loader2,
   AlertCircle,
   Flame,
   CheckCircle2,
-  Gift,
   Crown,
   Percent,
   Clock,
@@ -27,216 +36,45 @@ import {
   Globe,
   Coins,
   Video,
-  FileImage,
+  Layers,
+  HelpCircle,
+  Zap,
 } from 'lucide-react';
-
-export interface PricingPlan {
-  id: 'free' | 'pro' | 'studio';
-  name: string;
-  badge?: string;
-  badgeIcon?: React.ElementType;
-  badgeColor?: string;
-  monthlyPriceEur: number;
-  annualPriceEur: number;
-  monthlyPriceFcfa: number;
-  annualPriceFcfa: number; // facturé annuellement
-  description: string;
-  isPopular?: boolean;
-  ctaText: string;
-  savingsAnnuallyFcfa: string;
-  savingsAnnuallyEur: string;
-  features: {
-    name: string;
-    included: boolean;
-    highlight?: boolean;
-    badge?: string;
-  }[];
-}
-
-const PLANS: PricingPlan[] = [
-  {
-    id: 'free',
-    name: 'Découverte',
-    badge: '100% Gratuit',
-    badgeIcon: Sparkles,
-    badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-    monthlyPriceEur: 0,
-    annualPriceEur: 0,
-    monthlyPriceFcfa: 0,
-    annualPriceFcfa: 0,
-    savingsAnnuallyFcfa: 'Sans frais',
-    savingsAnnuallyEur: 'Sans engagement',
-    description: 'Accès illimité au studio pour tester et concevoir sans sortir de carte bancaire.',
-    isPopular: false,
-    ctaText: 'Commencer gratuitement',
-    features: [
-      { name: 'Studio complet (MacBook, iPhone, Duo, Trio)', included: true },
-      { name: 'Templates de base (6 catégories)', included: true },
-      { name: 'Contrôles 3D, rotation & ombrages', included: true },
-      { name: 'Callouts & Badges de vente (découverte)', included: true },
-      { name: '3 exports PNG par jour (qualité 1x)', included: true },
-      { name: 'Filigrane discret "Made with OmniMockup"', included: true },
-      { name: 'Exports HD 2x & 4K Retina', included: false },
-      { name: 'Export Vidéo animée MP4 60fps', included: false },
-      { name: 'Pack OmniExport 1-Click (5 formats)', included: false },
-      { name: 'Marque blanche & Multi-comptes', included: false },
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro Développeur',
-    badge: 'Recommandé — Populaire',
-    badgeIcon: Flame,
-    badgeColor: 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-violet-500 shadow-violet-500/30',
-    monthlyPriceEur: 5,
-    annualPriceEur: 4,
-    monthlyPriceFcfa: 3900,
-    annualPriceFcfa: 3250, // 39 000 FCFA / an
-    savingsAnnuallyFcfa: 'Économisez 7 800 FCFA (2 mois offerts)',
-    savingsAnnuallyEur: 'Économisez 12€ / an (2 mois offerts)',
-    description: 'Pour les freelances, devs et créateurs qui veulent des mockups impeccables sans filigrane.',
-    isPopular: true,
-    ctaText: 'Débloquer le forfait Pro',
-    features: [
-      { name: 'Layouts Solo, Duo & Trio Écosystème (Mac+iPad+Phone)', included: true, highlight: true },
-      { name: 'Bulles Callouts & Badges Preuve Sociale (Stripe, PH)', included: true, highlight: true },
-      { name: 'Exports PNG HD 2x & 4K ILLIMITÉS', included: true, highlight: true },
-      { name: 'ZÉRO filigrane (Rendus 100% neutres)', included: true, highlight: true },
-      { name: '10 exports Vidéo animée MP4 60fps / mois', included: true, highlight: true },
-      { name: '50+ Templates exclusifs Pro & Social Media', included: true },
-      { name: 'IA Pitch Kit (5 générations / mois)', included: true },
-      { name: 'Historique cloud de vos créations (30 jours)', included: true },
-      { name: 'Partage par lien public haute fidélité', included: true },
-      { name: 'Support prioritaire par email en 24h', included: true },
-    ],
-  },
-  {
-    id: 'studio',
-    name: 'Studio Agence',
-    badge: 'Agences & Startups',
-    badgeIcon: Building2,
-    badgeColor: 'bg-stone-900 text-white border-stone-800',
-    monthlyPriceEur: 25,
-    annualPriceEur: 20,
-    monthlyPriceFcfa: 12900,
-    annualPriceFcfa: 10750, // 129 000 FCFA / an
-    savingsAnnuallyFcfa: 'Économisez 25 800 FCFA (2 mois offerts)',
-    savingsAnnuallyEur: 'Économisez 60€ / an (2 mois offerts)',
-    description: 'La suite complète pour les agences web, équipes produit et studios créatifs.',
-    isPopular: false,
-    ctaText: 'Choisir Studio Agence',
-    features: [
-      { name: 'Tout le forfait Pro Développeur inclus', included: true },
-      { name: 'Pack OmniExport 1-Click (5 formats réseaux en 1 seconde)', included: true, highlight: true },
-      { name: 'Kit Vente & Proposition Devis Client IA', included: true, highlight: true },
-      { name: '5 sièges collaborateurs inclus', included: true, highlight: true },
-      { name: 'Exports Vidéo animée MP4 ILLIMITÉS', included: true, highlight: true },
-      { name: 'Marque blanche totale (White Label complet)', included: true, highlight: true },
-      { name: 'Pack App Store & Play Store (5 écrans en 1 clic)', included: true },
-      { name: 'Historique cloud permanent (1 an)', included: true },
-      { name: 'Partage client avec révision & commentaires', included: true },
-      { name: 'Support direct WhatsApp VIP 7j/7', included: true, highlight: true },
-    ],
-  },
-];
-
-interface PayPerUseCredit {
-  id: string;
-  name: string;
-  description: string;
-  priceFcfa: number;
-  priceEur: number;
-  tag?: string;
-  icon: React.ElementType;
-}
-
-const PAY_PER_USE_CREDITS: PayPerUseCredit[] = [
-  {
-    id: 'credit_export_hd',
-    name: '1 Export PNG HD sans filigrane',
-    description: 'Rendu 2x ultra-net pour vos portfolios et posts réseaux.',
-    priceFcfa: 490,
-    priceEur: 0.5,
-    tag: 'Populaire',
-    icon: FileImage,
-  },
-  {
-    id: 'credit_omniexport_pack',
-    name: 'Pack OmniExport 5 Ratios (1 Clic)',
-    description: 'Export groupé instantané en 16:9, 1:1, 9:16, 1.91:1 et 4:3.',
-    priceFcfa: 1900,
-    priceEur: 2.0,
-    tag: 'Nouveau',
-    icon: Sparkles,
-  },
-  {
-    id: 'credit_export_4k',
-    name: '1 Export Ultra-HD 4K Retina',
-    description: 'Résolution maximale pour affiches, print ou présentations géantes.',
-    priceFcfa: 990,
-    priceEur: 1.0,
-    icon: Sparkles,
-  },
-  {
-    id: 'credit_export_video',
-    name: '1 Export Vidéo MP4 Animée',
-    description: 'Animation 60fps fluide de votre mockup pour Instagram ou TikTok.',
-    priceFcfa: 1490,
-    priceEur: 1.5,
-    tag: 'Tendance',
-    icon: Video,
-  },
-  {
-    id: 'credit_pitch_kit',
-    name: '1 Kit IA Pitch Deck & Copywriting',
-    description: 'Génération IA des textes de vente et arguments clés de votre site.',
-    priceFcfa: 990,
-    priceEur: 1.0,
-    icon: Crown,
-  },
-  {
-    id: 'credit_pack_10',
-    name: 'Pack 10 Crédits Polyvalents',
-    description: 'Utilisables sur tous les types d’exports sans date d’expiration.',
-    priceFcfa: 3900,
-    priceEur: 4.0,
-    tag: 'Économique',
-    icon: Coins,
-  },
-  {
-    id: 'credit_pack_50',
-    name: 'Pack 50 Crédits Studio',
-    description: 'Pour freelances actifs. Soit seulement 298 FCFA par export.',
-    priceFcfa: 14900,
-    priceEur: 15.0,
-    tag: 'Meilleur Tarif (-35%)',
-    icon: Flame,
-  },
-];
 
 export default function PricingPage() {
   const router = useRouter();
   const { user, profile } = useUser();
 
-  const [paymentMethod, setPaymentMethod] = useState<'momo' | 'stripe' | 'flutterwave'>('stripe');
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'momo'>('stripe');
   const [isAnnual, setIsAnnual] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [showDownsellBanner, setShowDownsellBanner] = useState(true);
   const [paymentSuccessMessage, setPaymentSuccessMessage] = useState<string | null>(null);
 
-  // Modal Mobile Money (gère plan ou pack de crédit)
+  // Étape 6 : Modal Order Bump avant redirection Checkout Stripe
+  const [bumpModalPlan, setBumpModalPlan] = useState<Plan | null>(null);
+  const [bumpAccepted, setBumpAccepted] = useState(false);
+  const [isSubmittingCheckout, setIsSubmittingCheckout] = useState(false);
+
+  // Étape 5 : Modal Downsell Exit-Intent sur /pricing
+  const [showExitDownsell, setShowExitDownsell] = useState(false);
+
+  // Modal Mobile Money (FedaPay)
   const [momoItem, setMomoItem] = useState<{
     id: string;
     name: string;
     amountFcfa: number;
     isSubscription: boolean;
+    isCreditPack?: boolean;
+    credits?: number;
   } | null>(null);
   const [momoPhoneNumber, setMomoPhoneNumber] = useState('');
   const [isMomoSubmitting, setIsMomoSubmitting] = useState(false);
 
-  // Vérification retour de paiement
-  React.useEffect(() => {
+  // Tracking pricing_view au chargement
+  useEffect(() => {
+    trackEvent('pricing_view', { is_annual_default: true });
+
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('success') === 'true') {
@@ -256,8 +94,24 @@ export default function PricingPage() {
     }
   }, []);
 
-  const handlePlanClick = async (plan: PricingPlan) => {
-    // Plan gratuit : redirection directe vers le studio
+  // Détection exit-intent pour le Downsell (une seule fois par session)
+  useEffect(() => {
+    const handleMouseLeave = (e: MouseEvent) => {
+      if (e.clientY <= 10 && !sessionStorage.getItem('downsell_pricing_shown')) {
+        sessionStorage.setItem('downsell_pricing_shown', 'true');
+        setShowExitDownsell(true);
+        trackEvent('downsell_shown', { trigger: 'exit_intent' });
+      }
+    };
+
+    document.addEventListener('mouseleave', handleMouseLeave);
+    return () => document.removeEventListener('mouseleave', handleMouseLeave);
+  }, []);
+
+  // Déclencheur clic sur un plan d'abonnement
+  const handlePlanClick = (plan: Plan) => {
+    trackEvent('plan_click', { plan_id: plan.id, billing: isAnnual ? 'annual' : 'monthly' });
+
     if (plan.id === 'free') {
       router.push('/');
       return;
@@ -273,13 +127,8 @@ export default function PricingPage() {
       return;
     }
 
-    if (paymentMethod === 'flutterwave') {
-      setCheckoutError('Flutterwave est en cours de déploiement pour la zone anglophone. Veuillez utiliser MTN Mobile Money ou Carte Bancaire.');
-      return;
-    }
-
     if (paymentMethod === 'momo') {
-      const amount = isAnnual ? plan.annualPriceFcfa * 12 : plan.monthlyPriceFcfa;
+      const amount = isAnnual ? plan.annualFcfa : plan.monthlyFcfa;
       setMomoItem({
         id: plan.id,
         name: `Abonnement ${plan.name} (${isAnnual ? 'Annuel' : 'Mensuel'})`,
@@ -290,17 +139,31 @@ export default function PricingPage() {
       return;
     }
 
-    // Stripe checkout
-    setLoadingPlan(plan.id);
+    // Pour Stripe : ouvrir l'étape d'Order Bump
+    setBumpAccepted(false);
+    setBumpModalPlan(plan);
+  };
+
+  // Exécution du checkout Stripe avec ou sans Order Bump
+  const proceedStripeCheckout = async (plan: Plan, withBump: boolean) => {
+    setIsSubmittingCheckout(true);
     setCheckoutError(null);
+    setLoadingPlan(plan.id);
 
     try {
+      trackEvent('checkout_start', {
+        plan_id: plan.id,
+        billing: isAnnual ? 'annual' : 'monthly',
+        with_bump: withBump,
+      });
+
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan: plan.id,
           billing: isAnnual ? 'annual' : 'monthly',
+          withBump,
         }),
       });
 
@@ -315,34 +178,65 @@ export default function PricingPage() {
       const e = err as { message?: string };
       setCheckoutError(e?.message || 'Erreur lors de la redirection vers Stripe.');
       setLoadingPlan(null);
+      setIsSubmittingCheckout(false);
+      setBumpModalPlan(null);
     }
   };
 
-  const handleCreditBuy = (credit: PayPerUseCredit) => {
+  // Achat d'un pack de crédits
+  const handleCreditBuy = async (pack: CreditPack) => {
+    trackEvent('plan_click', { pack_id: pack.id, type: 'credits' });
+
     if (!user) {
-      router.push(`/signup?redirect=${encodeURIComponent('/pricing')}`);
+      router.push(`/signup?redirect=${encodeURIComponent('/pricing#credits')}`);
       return;
     }
 
     if (paymentMethod === 'momo') {
       setMomoItem({
-        id: credit.id,
-        name: credit.name,
-        amountFcfa: credit.priceFcfa,
+        id: pack.id,
+        name: `${pack.name} (${pack.credits} Crédits)`,
+        amountFcfa: pack.priceFcfa,
         isSubscription: false,
+        isCreditPack: true,
+        credits: pack.credits,
       });
       setCheckoutError(null);
       return;
     }
 
-    setCheckoutError(`Le paiement par carte pour les micro-crédits sera disponible sous peu. Vous pouvez régler immédiatement via MTN MoMo (${credit.priceFcfa} FCFA).`);
+    setLoadingPlan(pack.id);
+    setCheckoutError(null);
+
+    try {
+      trackEvent('checkout_start', { pack_id: pack.id, type: 'credits' });
+
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pack: pack.id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.url) {
+        throw new Error(data.error || 'Erreur initialisation session crédits.');
+      }
+
+      window.location.href = data.url;
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setCheckoutError(e?.message || 'Erreur paiement crédits.');
+      setLoadingPlan(null);
+    }
   };
 
+  // Validation formulaire MTN MoMo Bénin
   const handleMomoCheckout = async () => {
     if (!momoItem) return;
 
-    if (!momoPhoneNumber.trim() || momoPhoneNumber.trim().length < 8) {
-      setCheckoutError('Veuillez renseigner un numéro de téléphone valide à 8 chiffres minimum.');
+    const cleanedNumber = momoPhoneNumber.replace(/\s+/g, '');
+    if (!cleanedNumber || cleanedNumber.length < 8) {
+      setCheckoutError('Veuillez saisir un numéro de téléphone valide à 8 chiffres (sans indicatif).');
       return;
     }
 
@@ -356,370 +250,275 @@ export default function PricingPage() {
         body: JSON.stringify({
           plan: momoItem.id,
           billingCycle: isAnnual ? 'annual' : 'monthly',
-          phoneNumber: momoPhoneNumber.trim(),
+          phoneNumber: `+229${cleanedNumber}`,
+          isCreditPack: momoItem.isCreditPack,
+          credits: momoItem.credits,
         }),
       });
 
       const data = await res.json();
-
       if (!res.ok || !data.success || !data.checkoutUrl) {
-        throw new Error(data.error || 'Impossible de lancer le paiement MTN MoMo.');
+        throw new Error(data.error || 'Impossible d’initialiser le paiement MTN MoMo via FedaPay.');
       }
 
-      // Redirection vers le guichet sécurisé FedaPay (Bénin / Afrique)
       window.location.href = data.checkoutUrl;
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setCheckoutError(e?.message || 'Erreur lors de la connexion à MTN Mobile Money.');
+      setCheckoutError(e?.message || 'Erreur lors du traitement FedaPay.');
       setIsMomoSubmitting(false);
     }
   };
+
+  // Filtrer les plans payants pour la grille principale (Solo, Pro, Agence)
+  const paidPlans = PLANS.filter((p) => p.id !== 'free');
 
   return (
     <div className="min-h-screen bg-sand-50 text-stone-900 flex flex-col selection:bg-violet-100 selection:text-violet-900">
       <Navbar showPricingLink={false} />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14">
-        {/* Navigation retour */}
-        <div className="mb-6 flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-sand-100 text-stone-600 hover:text-stone-900 border border-sand-200 text-xs font-medium transition-all shadow-2xs"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-stone-500" />
-            <span>Retour à l&apos;accueil</span>
-          </Link>
-
-          <div className="hidden sm:flex items-center gap-2 text-xs text-stone-500">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Paiement sécurisé instantané</span>
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        {/* EN-TÊTE DE PAGE */}
+        <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-100 text-violet-800 border border-violet-200 text-xs font-black tracking-wide uppercase mb-4 shadow-2xs">
+            <Sparkles className="w-3.5 h-3.5 text-violet-600" />
+            <span>Tarification Transparente & Sans Surprise</span>
           </div>
+
+          <h1 className="text-3xl sm:text-5xl font-black text-stone-900 tracking-tight leading-tight">
+            Des mockups 3D qui convertissent.{' '}
+            <span className="bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              Le juste prix.
+            </span>
+          </h1>
+
+          <p className="mt-4 text-sm sm:text-base text-stone-600 leading-relaxed max-w-2xl mx-auto">
+            Exports 4K sans filigrane, vidéo animée et kit IA. Choisissez l&apos;abonnement adapté à votre rythme ou achetez vos crédits à la carte.
+          </p>
         </div>
 
-        {/* BANNIÈRE DE BIENVENUE & CODE PROMO */}
-        {showDownsellBanner && (
-          <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-stone-900 via-violet-950 to-stone-900 text-white shadow-xl relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-4 border border-violet-800/40 animate-fade-in">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-violet-600/30 border border-violet-500/40 text-violet-300 flex items-center justify-center shrink-0 shadow-xs">
-                <Gift className="w-5 h-5 text-amber-300" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-md border border-amber-400/30 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-300" />
-                    Offre de Lancement Pro
-                  </span>
-                  <span className="text-xs text-stone-300 hidden md:flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-violet-300" /> Accès immédiat
-                  </span>
-                </div>
-                <h4 className="text-xs sm:text-sm font-semibold text-white mt-1">
-                  Passez au plan Pro à <span className="text-amber-300 font-extrabold">5€ / mois</span> seulement (ou 4€/mois en annuel), ou commencez gratuitement sans carte !
-                </h4>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => handlePlanClick(PLANS.find((p) => p.id === 'pro')!)}
-                className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs sm:text-sm shadow-md transition-all flex items-center gap-1.5"
-              >
-                <span>Choisir le Pro</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowDownsellBanner(false)}
-                className="p-2 text-stone-400 hover:text-white rounded-lg transition-colors"
-                title="Fermer"
-              >
-                <XIcon className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ALERTE SUCCÈS PAIEMENT */}
+        {/* NOTIFICATIONS & MESSAGES */}
         {paymentSuccessMessage && (
-          <div className="max-w-2xl mx-auto mb-8 p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-sm flex items-center gap-3 shadow-lg animate-fade-in">
-            <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-            <div className="flex-1 font-medium">{paymentSuccessMessage}</div>
-            <button
-              onClick={() => setPaymentSuccessMessage(null)}
-              className="p-1 text-emerald-700 hover:text-emerald-950 rounded-lg"
-            >
-              <XIcon className="w-4 h-4" />
-            </button>
+          <div className="max-w-3xl mx-auto mb-8 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm flex items-start gap-3 shadow-sm animate-fade-in">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-bold">{paymentSuccessMessage}</p>
+              <div className="mt-2">
+                <Link href="/" className="inline-flex items-center gap-1 font-bold text-emerald-700 underline">
+                  Lancer le studio et exporter dès maintenant →
+                </Link>
+              </div>
+            </div>
           </div>
         )}
 
         {checkoutError && (
-          <div className="max-w-xl mx-auto mb-8 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2.5 animate-shake">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span className="flex-1 font-medium">{checkoutError}</span>
-            <button
-              onClick={() => setCheckoutError(null)}
-              className="p-1 text-rose-600 hover:text-rose-900"
-            >
-              <XIcon className="w-3.5 h-3.5" />
-            </button>
+          <div className="max-w-3xl mx-auto mb-8 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs sm:text-sm flex items-start gap-3 shadow-sm animate-shake">
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <p className="flex-1 font-medium">{checkoutError}</p>
           </div>
         )}
 
-        {/* HEADER & TITRE */}
-        <div className="text-center max-w-3xl mx-auto space-y-4 mb-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-violet-100 border border-violet-200 text-violet-900 text-xs font-bold shadow-2xs">
-            <ShieldCheck className="w-3.5 h-3.5 text-violet-600" />
-            <span>Tarification Transparente & Modèle Freemium Popcorn</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-stone-900 leading-tight">
-            Des mockups dignes d&apos;Apple.{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-indigo-600 to-amber-600">
-              Pour tous les budgets.
-            </span>
-          </h1>
-
-          <p className="text-stone-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-            Créez librement sur le studio sans payer. Passez au Pro pour supprimer le filigrane et débloquer les vidéos 4K, ou achetez des crédits à la pièce.
-          </p>
-
-          {/* SÉLECTEUR DE MÉTHODE DE PAIEMENT */}
-          <div className="pt-2 flex flex-col items-center justify-center gap-3">
-            <div className="p-1.5 rounded-2xl bg-white border border-sand-300 shadow-xs flex flex-wrap items-center justify-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('stripe')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                  paymentMethod === 'stripe'
-                    ? 'bg-stone-900 text-white shadow-md ring-2 ring-violet-500/30 scale-[1.02]'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                <CreditCard className="w-4 h-4 text-current" />
-                <span>Carte Bancaire &amp; Stripe (Euro)</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-violet-600 text-white font-black">
-                  €
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('momo')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                  paymentMethod === 'momo'
-                    ? 'bg-amber-400 text-stone-950 shadow-md ring-2 ring-amber-400/40 scale-[1.02]'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                <span className="text-base">🇧🇯</span>
-                <Smartphone className="w-4 h-4 text-stone-950" />
-                <span>MTN Mobile Money Afrique</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-stone-900 text-amber-300 font-black">
-                  FCFA
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('flutterwave')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  paymentMethod === 'flutterwave'
-                    ? 'bg-orange-600 text-white shadow-md'
-                    : 'text-stone-500 hover:text-stone-800'
-                }`}
-              >
-                <Globe className="w-3.5 h-3.5" />
-                <span>Pan-Afrique (Flutterwave)</span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-bold border border-amber-200">
-                  Bientôt
-                </span>
-              </button>
-            </div>
-          </div>
-
-          {/* TOGGLE MENSUEL / ANNUEL */}
-          <div className="pt-2 flex items-center justify-center gap-3">
-            <span
-              className={`text-xs sm:text-sm font-semibold cursor-pointer transition-colors ${
-                !isAnnual ? 'text-stone-900' : 'text-stone-400'
+        {/* SÉLECTEUR DE MOYEN DE PAIEMENT & TOGGLE ANNUEL/MENSUEL */}
+        <div className="max-w-3xl mx-auto mb-10 flex flex-col sm:flex-row items-center justify-between gap-5 p-4 rounded-3xl bg-white border border-sand-200 shadow-sm">
+          {/* Moyen de paiement */}
+          <div className="flex items-center gap-1 p-1 bg-sand-100 rounded-2xl border border-sand-200 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('stripe')}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all ${
+                paymentMethod === 'stripe'
+                  ? 'bg-white text-stone-900 shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900'
               }`}
-              onClick={() => setIsAnnual(false)}
             >
-              Facturation mensuelle
+              <CreditCard className="w-4 h-4 text-violet-600" />
+              <span>Carte bancaire (Stripe)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('momo')}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-bold transition-all ${
+                paymentMethod === 'momo'
+                  ? 'bg-amber-400 text-stone-950 shadow-xs font-black'
+                  : 'text-stone-600 hover:text-stone-900'
+              }`}
+            >
+              <Smartphone className="w-4 h-4 text-stone-950" />
+              <span>MTN MoMo Bénin (FCFA)</span>
+            </button>
+          </div>
+
+          {/* Toggle Facturation Annuel / Mensuel (Annuel par défaut avec 2 mois offerts) */}
+          <div className="flex items-center gap-3">
+            <span
+              onClick={() => setIsAnnual(false)}
+              className={`text-xs font-bold cursor-pointer transition-colors ${
+                !isAnnual ? 'text-stone-900 font-extrabold' : 'text-stone-400 hover:text-stone-600'
+              }`}
+            >
+              Mensuel
             </span>
 
             <button
               type="button"
+              role="switch"
+              aria-checked={isAnnual}
               onClick={() => setIsAnnual(!isAnnual)}
-              className="relative w-14 h-7 rounded-full bg-stone-900 p-1 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
-              aria-label="Changer de cycle de facturation"
-            >
-              <div
-                className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-300 flex items-center justify-center ${
-                  isAnnual ? 'translate-x-7 bg-violet-600' : 'translate-x-0'
-                }`}
-              >
-                {isAnnual && <Percent className="w-3 h-3 text-violet-600 stroke-[3]" />}
-              </div>
-            </button>
-
-            <div
-              className="flex items-center gap-1.5 cursor-pointer"
-              onClick={() => setIsAnnual(true)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2 ${
+                isAnnual ? 'bg-violet-600' : 'bg-stone-300'
+              }`}
             >
               <span
-                className={`text-xs sm:text-sm font-semibold transition-colors ${
-                  isAnnual ? 'text-violet-700 font-bold' : 'text-stone-400'
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  isAnnual ? 'translate-x-5' : 'translate-x-0'
                 }`}
-              >
-                Facturation annuelle
+              />
+            </button>
+
+            <span
+              onClick={() => setIsAnnual(true)}
+              className={`text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-colors ${
+                isAnnual ? 'text-violet-900 font-extrabold' : 'text-stone-400 hover:text-stone-600'
+              }`}
+            >
+              <span>Annuel</span>
+              <span className="px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-black tracking-wide shadow-2xs">
+                2 mois offerts (-17 %)
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
-                <Sparkles className="w-3 h-3 text-emerald-600" />
-                2 mois offerts (-16%)
-              </span>
-            </div>
+            </span>
           </div>
         </div>
 
-        {/* GRILLE DES 3 PLANS PRINCIPAUX */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch max-w-6xl mx-auto mb-16">
-          {PLANS.map((plan) => {
-            const isFcfa = paymentMethod === 'momo';
-            const priceToShow = isFcfa
-              ? plan.monthlyPriceFcfa === 0
-                ? '0 FCFA'
-                : isAnnual
-                ? `${plan.annualPriceFcfa.toLocaleString('fr-FR')} FCFA`
-                : `${plan.monthlyPriceFcfa.toLocaleString('fr-FR')} FCFA`
-              : plan.monthlyPriceEur === 0
-              ? '0€'
-              : `${isAnnual ? plan.annualPriceEur : plan.monthlyPriceEur}€`;
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* GRILLE DES 3 PLANS PAYANTS (Solo, Pro ⭐, Agence) — EFFET LEURRE POPCORN */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto mb-16 items-stretch">
+          {paidPlans.map((plan) => {
+            const isTarget = plan.isPopular; // Pro
+            const isAnchor = plan.isAnchor;  // Agence
+            const eq = monthlyEquivalentFromAnnual(plan);
+            const savings = annualSavings(plan);
 
-            const savingsToShow = isFcfa ? plan.savingsAnnuallyFcfa : plan.savingsAnnuallyEur;
-            const BadgeIcon = plan.badgeIcon || Sparkles;
+            const displayPriceEur = isAnnual ? eq.eur : plan.monthlyEur;
+            const displayPriceFcfa = isAnnual ? eq.fcfa : plan.monthlyFcfa;
 
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-3xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 border ${
-                  plan.isPopular
-                    ? 'bg-gradient-to-b from-white via-violet-50/50 to-white border-violet-500 shadow-2xl shadow-violet-500/20 ring-2 ring-violet-500/40 md:scale-105 z-10'
-                    : 'bg-white border-sand-200 shadow-xs hover:border-sand-300 hover:shadow-md'
+                className={`relative rounded-3xl p-6 sm:p-8 flex flex-col justify-between transition-all duration-300 ${
+                  isTarget
+                    ? 'bg-white border-2 border-violet-600 shadow-xl shadow-violet-500/10 lg:-translate-y-2 lg:scale-[1.02] z-10'
+                    : 'bg-white/80 border border-sand-200 shadow-md hover:border-violet-300 hover:shadow-lg'
                 }`}
               >
-                {/* Badge top */}
+                {/* Badge supérieur */}
                 {plan.badge && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-full text-center px-2">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                     <span
-                      className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-sm border ${
-                        plan.badgeColor || 'bg-stone-900 text-white'
+                      className={`px-3.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5 ${
+                        isTarget
+                          ? 'bg-violet-600 text-white shadow-violet-500/30 ring-2 ring-violet-400/40'
+                          : 'bg-stone-900 text-white'
                       }`}
                     >
-                      <BadgeIcon className="w-3.5 h-3.5" />
+                      {isTarget && <Flame className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />}
+                      {isAnchor && <Crown className="w-3.5 h-3.5 text-amber-300" />}
                       <span>{plan.badge}</span>
                     </span>
                   </div>
                 )}
 
                 <div>
-                  {/* Titre & Description */}
-                  <div className="space-y-1.5 mt-2">
-                    <h3 className="text-xl font-black text-stone-900 flex items-center gap-1.5">
-                      {plan.name}
-                    </h3>
-                    <p className="text-xs text-stone-500 min-h-[36px] leading-relaxed">
+                  {/* Titre et description */}
+                  <div className="mb-6 pt-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
+                        {plan.name}
+                      </h3>
+                      {isTarget && (
+                        <span className="text-[11px] font-bold text-violet-600 bg-violet-50 px-2.5 py-0.5 rounded-full border border-violet-200">
+                          Pack Cible
+                        </span>
+                      )}
+                      {isAnchor && (
+                        <span className="text-[11px] font-bold text-stone-600 bg-sand-100 px-2.5 py-0.5 rounded-full border border-sand-300">
+                          Sans Limite
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-stone-500 mt-2 leading-relaxed min-h-[36px]">
                       {plan.description}
                     </p>
                   </div>
 
-                  {/* Highlight sur le plan Pro */}
-                  {plan.id === 'pro' && (
-                    <div className="my-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-xs font-semibold leading-tight flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
-                      <span>Exports illimités HD + Vidéo MP4 60fps sans filigrane !</span>
-                    </div>
-                  )}
-
                   {/* Prix */}
-                  <div className="my-5 pb-5 border-b border-sand-100 flex items-baseline gap-1.5 flex-wrap">
-                    <span className="text-3xl sm:text-4xl font-black tracking-tight text-stone-900 font-mono">
-                      {priceToShow}
-                    </span>
-                    {plan.id === 'free' ? (
-                      <span className="text-xs font-semibold text-stone-500 font-sans">
-                        / pour toujours
+                  <div className="p-4 rounded-2xl bg-sand-50/80 border border-sand-200/80 mb-6">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl sm:text-5xl font-black text-stone-950 font-mono tracking-tight">
+                        {paymentMethod === 'momo'
+                          ? displayPriceFcfa.toLocaleString('fr-FR')
+                          : `${displayPriceEur.toFixed(displayPriceEur % 1 === 0 ? 0 : 2)} €`}
                       </span>
-                    ) : (
-                      <span className="text-xs font-semibold text-stone-500 font-sans">
-                        / mois {isAnnual ? (isFcfa ? '(facturé à l’année)' : `(facturé ${plan.annualPriceEur * 12}€ / an)`) : ''}
+                      <span className="text-xs text-stone-500 font-semibold">
+                        {paymentMethod === 'momo' ? 'FCFA / mois' : '/ mois'}
                       </span>
-                    )}
-                  </div>
+                    </div>
 
-                  {isAnnual && plan.id !== 'free' && (
-                    <p className="text-xs font-bold text-emerald-700 -mt-3 mb-4 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>{savingsToShow}</span>
-                    </p>
-                  )}
-
-                  {/* Fonctionnalités */}
-                  <div className="space-y-3">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400 font-mono">
-                      Inclus dans cette formule :
-                    </p>
-
-                    <ul className="space-y-2.5 text-xs">
-                      {plan.features.map((feat, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          {feat.included ? (
-                            <div
-                              className={`p-0.5 rounded-full mt-0.5 shrink-0 ${
-                                feat.highlight
-                                  ? 'bg-violet-100 text-violet-700'
-                                  : 'bg-emerald-100 text-emerald-700'
-                              }`}
-                            >
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            </div>
-                          ) : (
-                            <div className="p-0.5 rounded-full mt-0.5 shrink-0 bg-sand-100 text-stone-400">
-                              <XIcon className="w-3 h-3 stroke-[2]" />
-                            </div>
-                          )}
-
-                          <span
-                            className={`leading-tight ${
-                              feat.included
-                                ? feat.highlight
-                                  ? 'font-bold text-stone-900'
-                                  : 'text-stone-700'
-                                : 'text-stone-400 line-through opacity-70'
-                            }`}
-                          >
-                            {feat.name}
+                    {/* Économie annuelle ou facturation */}
+                    <div className="mt-2 text-[11px] font-semibold text-stone-600 flex flex-col gap-0.5">
+                      {isAnnual ? (
+                        <>
+                          <span className="text-emerald-700 font-bold">
+                            Facturé {paymentMethod === 'momo' ? `${plan.annualFcfa.toLocaleString('fr-FR')} FCFA` : `${plan.annualEur} €`} / an (2 mois offerts)
                           </span>
-                        </li>
-                      ))}
-                    </ul>
+                          <span className="text-stone-400">
+                            Économie : {paymentMethod === 'momo' ? `${savings.fcfa.toLocaleString('fr-FR')} FCFA` : `${savings.eur} €`} par an
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-stone-500">
+                          Facturation mensuelle sans engagement
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Liste des fonctionnalités */}
+                  <ul className="space-y-2.5 text-xs">
+                    {plan.features.map((feat, i) => (
+                      <li
+                        key={i}
+                        className={`flex items-start gap-2.5 ${
+                          feat.included ? 'text-stone-800' : 'text-stone-400 line-through opacity-60'
+                        }`}
+                      >
+                        {feat.included ? (
+                          <Check
+                            className={`w-4 h-4 shrink-0 mt-0.5 ${
+                              feat.highlight ? 'text-violet-600 stroke-[2.5]' : 'text-stone-600'
+                            }`}
+                          />
+                        ) : (
+                          <XIcon className="w-4 h-4 shrink-0 mt-0.5 text-stone-300" />
+                        )}
+                        <span className={feat.highlight ? 'font-bold text-stone-900' : ''}>
+                          {feat.name}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
-                {/* Bouton d'action */}
-                <div className="mt-8 pt-4 border-t border-sand-100">
+                {/* Bouton CTA */}
+                <div className="mt-8 pt-4 border-t border-sand-200">
                   <button
                     type="button"
                     onClick={() => handlePlanClick(plan)}
                     disabled={loadingPlan !== null}
                     className={`w-full py-3.5 px-4 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.99] disabled:opacity-60 ${
-                      plan.id === 'free'
-                        ? 'bg-stone-100 hover:bg-stone-200 text-stone-900 border border-sand-300'
-                        : paymentMethod === 'momo'
-                        ? 'bg-amber-400 hover:bg-amber-300 text-stone-950 shadow-md border-2 border-stone-950 ring-2 ring-amber-400/40'
-                        : plan.isPopular
+                      paymentMethod === 'momo'
+                        ? 'bg-amber-400 hover:bg-amber-300 text-stone-950 border-2 border-stone-950 font-black'
+                        : isTarget
                         ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-violet-500/30'
                         : 'bg-stone-900 hover:bg-stone-800 text-white'
                     }`}
@@ -728,17 +527,6 @@ export default function PricingPage() {
                       <>
                         <Loader2 className="w-4 h-4 animate-spin text-current" />
                         <span>Redirection sécurisée...</span>
-                      </>
-                    ) : plan.id === 'free' ? (
-                      <>
-                        <span>Accéder au Studio Gratuit</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    ) : paymentMethod === 'momo' ? (
-                      <>
-                        <Smartphone className="w-4 h-4 text-stone-950" />
-                        <span>Payer via MTN MoMo</span>
-                        <ArrowRight className="w-4 h-4" />
                       </>
                     ) : (
                       <>
@@ -753,73 +541,113 @@ export default function PricingPage() {
           })}
         </div>
 
-        {/* SECTION POPCORN STRATEGY : CRÉDITS À LA CARTE (PAY-PER-USE) */}
-        <div className="max-w-6xl mx-auto mb-16 p-6 sm:p-10 rounded-3xl bg-white border border-sand-200 shadow-md">
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* BANDEAU PLAN DÉCOUVERTE (FREE) */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        <div className="max-w-4xl mx-auto mb-16 p-6 rounded-3xl bg-white border border-sand-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+          <div className="space-y-1 text-center sm:text-left">
+            <div className="flex items-center gap-2 justify-center sm:justify-start">
+              <span className="font-extrabold text-sm text-stone-900">Vous débutez ? Essayez le plan Découverte</span>
+              <span className="text-[10px] bg-sand-100 text-stone-700 px-2 py-0.5 rounded-full font-bold">100% Gratuit</span>
+            </div>
+            <p className="text-xs text-stone-500">
+              3 exports PNG par jour (1x), filigrane discret, studio complet sans carte bancaire requise.
+            </p>
+          </div>
+          <Link
+            href="/"
+            className="px-5 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-900 text-xs font-bold border border-sand-300 transition-colors shrink-0"
+          >
+            Ouvrir le Studio Gratuit
+          </Link>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* SECTION CRÉDITS À LA CARTE (PAY-PER-USE / STRATÉGIE POPCORN) */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        <div id="credits" className="max-w-6xl mx-auto mb-16 p-6 sm:p-10 rounded-3xl bg-white border border-sand-200 shadow-md">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-100 text-amber-950 text-xs font-black mb-2 border border-amber-200">
                 <Coins className="w-3.5 h-3.5 text-amber-600" />
-                <span>Stratégie Popcorn — Pas d&apos;abonnement, payez à l&apos;unité</span>
+                <span>Stratégie Popcorn — Pas d&apos;abonnement, payez à l&apos;usage</span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-stone-900">
-                Crédits & Exports à la Carte (Pay-per-use)
-              </h3>
+              <h2 className="text-xl sm:text-2xl font-black text-stone-900">
+                Packs de Crédits à la Carte (Pay-per-use)
+              </h2>
               <p className="text-xs sm:text-sm text-stone-500 mt-1 max-w-2xl leading-relaxed">
-                Vous avez un besoin ponctuel pour un seul client ou une seule présentation ? Achetez uniquement ce dont vous avez besoin sans engagement mensuel.
+                Besoin ponctuel pour un pitch client ou une release ? Achetez des crédits valables à vie sans aucun abonnement récurrent.
               </p>
             </div>
 
-            <div className="text-xs text-stone-500 bg-sand-50 px-3.5 py-2 rounded-xl border border-sand-200 shrink-0">
-              💡 <strong>Crédits à vie :</strong> vos achats n&apos;expirent jamais.
+            <div className="text-xs text-stone-600 bg-sand-50 px-3.5 py-2 rounded-xl border border-sand-200 shrink-0">
+              💡 <strong>Crédits à vie :</strong> vos crédits n&apos;expirent jamais.
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {PAY_PER_USE_CREDITS.map((item) => {
-              const IconComp = item.icon;
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {CREDIT_PACKS.map((pack) => {
+              const isTargetPack = pack.isTarget;
               const isFcfa = paymentMethod === 'momo';
               const priceDisplay = isFcfa
-                ? `${item.priceFcfa.toLocaleString('fr-FR')} FCFA`
-                : `${item.priceEur.toFixed(2)}€`;
+                ? `${pack.priceFcfa.toLocaleString('fr-FR')} FCFA`
+                : `${pack.priceEur.toFixed(0)} €`;
+
+              const perCreditDisplay = isFcfa
+                ? `${pack.pricePerCreditFcfa} FCFA / crédit`
+                : `${pack.pricePerCreditEur.toFixed(2)} € / crédit`;
 
               return (
                 <div
-                  key={item.id}
-                  className="p-5 rounded-2xl border border-sand-200 bg-sand-50/50 hover:bg-white hover:border-violet-300 hover:shadow-md transition-all flex flex-col justify-between"
+                  key={pack.id}
+                  className={`p-6 rounded-2xl border flex flex-col justify-between transition-all ${
+                    isTargetPack
+                      ? 'bg-violet-50/50 border-2 border-violet-600 shadow-md relative'
+                      : 'bg-sand-50/50 border-sand-200 hover:bg-white hover:border-violet-300'
+                  }`}
                 >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <div className="p-2.5 rounded-xl bg-white border border-sand-200 text-violet-600 shadow-2xs">
-                        <IconComp className="w-5 h-5" />
-                      </div>
-                      {item.tag && (
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 border border-violet-200">
-                          {item.tag}
-                        </span>
-                      )}
+                  {pack.badge && (
+                    <div className="mb-2">
+                      <span
+                        className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                          isTargetPack
+                            ? 'bg-violet-600 text-white'
+                            : 'bg-stone-200 text-stone-800'
+                        }`}
+                      >
+                        {pack.badge}
+                      </span>
                     </div>
+                  )}
 
-                    <h4 className="text-sm font-bold text-stone-900 leading-snug">
-                      {item.name}
-                    </h4>
-                    <p className="text-xs text-stone-500 mt-1.5 leading-relaxed">
-                      {item.description}
+                  <div>
+                    <h3 className="text-lg font-black text-stone-900">{pack.name}</h3>
+                    <div className="mt-3 flex items-baseline gap-2">
+                      <span className="text-3xl font-black text-stone-950 font-mono">
+                        {priceDisplay}
+                      </span>
+                      <span className="text-xs font-bold text-violet-700 bg-violet-100 px-2 py-0.5 rounded-md">
+                        {pack.credits} crédits
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-stone-500 mt-1">
+                      Soit seulement {perCreditDisplay}
                     </p>
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-sand-200/80 flex items-center justify-between">
-                    <div>
-                      <span className="text-lg font-black text-stone-900 font-mono">
-                        {priceDisplay}
-                      </span>
-                    </div>
-
+                  <div className="mt-6 pt-4 border-t border-sand-200 flex items-center justify-between">
+                    <span className="text-[11px] text-stone-400">Paiement unique</span>
                     <button
                       type="button"
-                      onClick={() => handleCreditBuy(item)}
-                      className="px-3.5 py-1.5 rounded-xl bg-stone-900 hover:bg-violet-600 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1 active:scale-95"
+                      onClick={() => handleCreditBuy(pack)}
+                      disabled={loadingPlan !== null}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs ${
+                        isTargetPack
+                          ? 'bg-violet-600 hover:bg-violet-700 text-white'
+                          : 'bg-stone-900 hover:bg-stone-800 text-white'
+                      }`}
                     >
-                      <span>Acheter</span>
+                      <span>Acheter ce pack</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -827,42 +655,128 @@ export default function PricingPage() {
               );
             })}
           </div>
-        </div>
 
-        {/* SECTION BANNIÈRE : POURQUOI LE MODÈLE FREEMIUM & POPCORN ? */}
-        <div className="max-w-5xl mx-auto mb-16 rounded-3xl bg-gradient-to-br from-violet-900 via-indigo-950 to-stone-950 text-white p-8 sm:p-10 shadow-2xl relative overflow-hidden border border-violet-800/40">
-          <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-violet-500/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -left-10 -top-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-            <div className="md:col-span-2 space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/30 text-violet-200 border border-violet-400/30 text-xs font-bold">
-                <Globe className="w-3.5 h-3.5 text-amber-300" />
-                <span>La Vision OmniMockup pour l&apos;Afrique et le Monde</span>
+          {/* Grille du coût des crédits */}
+          <div className="mt-8 pt-6 border-t border-sand-200">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-3">
+              Coût en crédits par action dans le studio :
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
+                <div className="font-bold text-stone-900">1 Crédit</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">PNG HD 2x sans filigrane</div>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
-                L&apos;excellence du design accessible à chaque développeur
-              </h3>
-              <p className="text-stone-300 text-xs sm:text-sm leading-relaxed">
-                Les grands outils américains facturent souvent 20$ à 40$ par mois en exigeant une carte de crédit internationale. Chez OmniMockup, nous croyons que les créateurs d&apos;Afrique francophone et du monde entier méritent les mêmes standards visuels qu&apos;Apple ou Airbnb, avec un débit direct en FCFA par MTN Mobile Money.
-              </p>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/15 space-y-3 text-center">
-              <p className="text-xs font-extrabold uppercase tracking-wider text-amber-300">
-                Économie Réalisée
-              </p>
-              <div className="text-3xl font-black text-white font-mono">
-                {paymentMethod === 'momo' ? '150 000+ FCFA' : '350€+ / an'}
+              <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
+                <div className="font-bold text-stone-900">2 Crédits</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">Export 4K Retina</div>
               </div>
-              <p className="text-[11px] text-stone-200 leading-tight">
-                vs un graphiste externe ou une agence pour préparer vos captures de pitch.
-              </p>
+              <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
+                <div className="font-bold text-stone-900">3 Crédits</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">Vidéo MP4 60fps</div>
+              </div>
+              <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
+                <div className="font-bold text-stone-900">4 Crédits</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">Pack 5 Ratios en 1-clic</div>
+              </div>
+              <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
+                <div className="font-bold text-stone-900">2 Crédits</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">IA Pitch Kit</div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* SECTION GARANTIE & FAQ */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* TABLEAU COMPARATIF COMPLET DES PLANS */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        <div className="max-w-6xl mx-auto mb-16 rounded-3xl bg-white border border-sand-200 p-6 sm:p-10 shadow-xs">
+          <h2 className="text-xl sm:text-2xl font-black text-stone-900 mb-6 text-center">
+            Tableau Comparatif Détaillé des Fonctionnalités
+          </h2>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-sand-200">
+                  <th className="py-3 px-4 font-bold text-stone-500 uppercase tracking-wider">Fonctionnalité</th>
+                  <th className="py-3 px-4 font-bold text-stone-600 text-center">Découverte (0€)</th>
+                  <th className="py-3 px-4 font-bold text-stone-900 text-center">Solo (5€)</th>
+                  <th className="py-3 px-4 font-bold text-violet-700 text-center bg-violet-50/80 rounded-t-xl">Pro (9€) ⭐</th>
+                  <th className="py-3 px-4 font-bold text-stone-900 text-center">Agence (29€)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-sand-100">
+                <tr>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Exports PNG HD 2x</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">1x uniquement (3/j)</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">20 / mois</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Filigrane</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">Oui</td>
+                  <td className="py-3.5 px-4 text-center text-stone-600">Discret</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-emerald-600 bg-violet-50/50">ZÉRO filigrane</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-emerald-600">ZÉRO filigrane</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Exports 4K Retina</td>
+                  <td className="py-3.5 px-4 text-center text-stone-300">—</td>
+                  <td className="py-3.5 px-4 text-center text-stone-300">—</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Export Vidéo animée MP4</td>
+                  <td className="py-3.5 px-4 text-center text-stone-300">—</td>
+                  <td className="py-3.5 px-4 text-center text-stone-300">—</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">10 / mois</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Analyses IA Directeur Artistique</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">3 / mois</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">3 / mois</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">IA Pitch Kit</td>
+                  <td className="py-3.5 px-4 text-center text-stone-300">—</td>
+                  <td className="py-3.5 px-4 text-center text-stone-300">—</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">5 / mois</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Marque Blanche (White Label)</td>
+                  <td className="py-3.5 px-4 text-center text-stone-300">—</td>
+                  <td className="py-3.5 px-4 text-center text-stone-300">—</td>
+                  <td className="py-3.5 px-4 text-center text-stone-300 bg-violet-50/50">—</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-emerald-600">Inclus</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Sièges collaborateurs</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">1</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">1</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500 bg-violet-50/50">1</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">5 sièges</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Support prioritaire</td>
+                  <td className="py-3.5 px-4 text-center text-stone-400">Communautaire</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">Email</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Email 24h</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-emerald-600">WhatsApp 7j/7</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* SECTION GARANTIE & FAQ MISE À JOUR */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
         <div className="max-w-4xl mx-auto rounded-3xl bg-white border border-sand-200 p-8 sm:p-10 shadow-xs space-y-8">
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-2xl bg-violet-100 text-violet-700">
@@ -891,41 +805,199 @@ export default function PricingPage() {
 
             <div className="space-y-1.5">
               <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-violet-600 shrink-0" />
-                Comment fonctionne le plan gratuit ?
+                <Coins className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+                Les crédits à la carte expirent-ils ?
               </h4>
               <p className="leading-relaxed text-stone-500">
-                Vous pouvez utiliser le studio en illimité, changer de mockup, appliquer des dégradés et exporter jusqu&apos;à 3 images par jour avec un filigrane discret. Aucune carte bancaire n&apos;est requise.
+                Non ! Les crédits achetés à la carte restent disponibles sur votre compte indéfiniment. Utilisez-les à votre propre rythme pour vos livraisons clients.
               </p>
             </div>
 
             <div className="space-y-1.5">
               <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
-                <Coins className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                Les crédits à la carte ont-ils une date d&apos;expiration ?
+                <Clock className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                Puis-je résilier mon abonnement à tout moment ?
               </h4>
               <p className="leading-relaxed text-stone-500">
-                Non ! Vos packs de crédits restent enregistrés sur votre compte sans limitation dans le temps. Vous pouvez les utiliser à votre rythme lorsque vous avez des projets clients à livrer.
+                Absolument. Aucun engagement de durée : vous pouvez suspendre ou résilier votre abonnement en un clic depuis votre espace compte. Vous conservez vos accès jusqu&apos;à la fin de la période facturée.
               </p>
             </div>
 
             <div className="space-y-1.5">
               <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5 text-stone-900 shrink-0" />
-                Qu&apos;est-ce que la Marque Blanche (White Label) du plan Studio ?
+                Qu&apos;est-ce que la Marque Blanche du plan Agence ?
               </h4>
               <p className="leading-relaxed text-stone-500">
-                Elle vous permet de supprimer toute mention d&apos;OmniMockup et d&apos;apposer votre propre logo ou celui de votre agence sur les rendus, présentations et partages clients.
+                Elle vous permet de supprimer toute mention d&apos;OmniMockup et d&apos;apposer votre propre logo ou celui de vos clients sur vos rendus et présentations.
               </p>
             </div>
           </div>
         </div>
 
-        {/* MODAL PAIEMENT MTN MOBILE MONEY BÉNIN / AFRIQUE */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* MODAL ÉTAPE 6 : ORDER BUMP AU PAIEMENT (KIT IA PITCH +2€) */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {bumpModalPlan && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-sand-300 relative space-y-5 animate-scale-up">
+              <button
+                type="button"
+                onClick={() => setBumpModalPlan(null)}
+                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-sand-100 transition-colors"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 text-[10px] font-black uppercase">
+                  Offre exclusive de paiement
+                </div>
+                <h3 className="text-lg font-black text-stone-900">
+                  Souscription : OmniMockup {bumpModalPlan.name}
+                </h3>
+                <p className="text-xs text-stone-500">
+                  {isAnnual ? 'Facturation annuelle' : 'Facturation mensuelle'} — Paiement sécurisé via Stripe
+                </p>
+              </div>
+
+              {/* Box Order Bump avec case à cocher */}
+              <div
+                onClick={() => {
+                  const nextState = !bumpAccepted;
+                  setBumpAccepted(nextState);
+                  if (nextState) {
+                    trackEvent('bump_accepted', { plan_id: bumpModalPlan.id });
+                  }
+                }}
+                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                  bumpAccepted
+                    ? 'border-violet-600 bg-violet-50/70 shadow-sm'
+                    : 'border-sand-300 bg-sand-50/50 hover:border-violet-300'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={bumpAccepted}
+                    onChange={(e) => {
+                      setBumpAccepted(e.target.checked);
+                      if (e.target.checked) {
+                        trackEvent('bump_accepted', { plan_id: bumpModalPlan.id });
+                      }
+                    }}
+                    className="mt-1 w-4 h-4 rounded text-violet-600 focus:ring-violet-500 cursor-pointer"
+                  />
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-stone-900">
+                        {ORDER_BUMP.name}
+                      </span>
+                      <span className="text-xs font-black text-violet-700 font-mono">
+                        +{ORDER_BUMP.priceEur} €
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-600 leading-relaxed">
+                      {ORDER_BUMP.description} (+10 crédits équivalents crédités immédiatement).
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bouton de confirmation */}
+              <div className="pt-2 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => proceedStripeCheckout(bumpModalPlan, bumpAccepted)}
+                  disabled={isSubmittingCheckout}
+                  className="w-full py-3.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {isSubmittingCheckout ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Redirection vers Stripe...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Continuer vers le paiement sécurisé</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBumpModalPlan(null)}
+                  disabled={isSubmittingCheckout}
+                  className="w-full py-2 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* MODAL ÉTAPE 5 : DOWNSELL EXIT-INTENT (PROPOSER PRO FACE À AGENCE) */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {showExitDownsell && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-sand-300 relative space-y-5 animate-scale-up text-center">
+              <button
+                type="button"
+                onClick={() => setShowExitDownsell(false)}
+                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-sand-100 transition-colors"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+
+              <div className="w-12 h-12 rounded-2xl bg-violet-100 text-violet-700 mx-auto flex items-center justify-center font-bold">
+                <Flame className="w-6 h-6 text-violet-600 fill-violet-600" />
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-stone-900">
+                  Vous hésitez sur le plan Agence ?
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Le forfait <strong>Pro</strong> vous offre déjà les exports HD/4K <strong>illimités</strong>, <strong>zéro filigrane</strong> et 10 vidéos par mois pour seulement <strong>9 €/mois</strong> (ou 7,50 € en annuel) !
+                </p>
+              </div>
+
+              <div className="pt-2 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackEvent('downsell_accepted', { offer: 'pro_exit_downsell' });
+                    setShowExitDownsell(false);
+                    const proPlan = PLANS.find((p) => p.id === 'pro');
+                    if (proPlan) handlePlanClick(proPlan);
+                  }}
+                  className="w-full py-3.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <span>Passer au Pro (9 €/mois)</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowExitDownsell(false)}
+                  className="w-full py-2 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors"
+                >
+                  Non merci, je continue de regarder
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════ */}
+        {/* MODAL PAIEMENT MTN MOBILE MONEY BÉNIN / AFRIQUE (FEDAPAY) */}
+        {/* ══════════════════════════════════════════════════════════════════════ */}
         {momoItem && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-sand-300 relative space-y-5 animate-scale-up">
-              {/* Bouton fermer */}
               <button
                 type="button"
                 onClick={() => {
@@ -937,7 +1009,6 @@ export default function PricingPage() {
                 <XIcon className="w-5 h-5" />
               </button>
 
-              {/* En-tête modal */}
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-amber-400 text-stone-950 flex items-center justify-center font-black text-xl shadow-md border-2 border-stone-950">
                   MoMo
@@ -950,12 +1021,11 @@ export default function PricingPage() {
                     </h3>
                   </div>
                   <p className="text-xs text-stone-500">
-                    Souscription : <strong>{momoItem.name}</strong>
+                    Règlement : <strong>{momoItem.name}</strong>
                   </p>
                 </div>
               </div>
 
-              {/* Récapitulatif montant */}
               <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between">
                 <div>
                   <p className="text-[11px] font-extrabold uppercase tracking-wider text-amber-900">
@@ -977,7 +1047,6 @@ export default function PricingPage() {
                 </div>
               </div>
 
-              {/* Saisie du Numéro MoMo Bénin */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-stone-800">
                   Votre Numéro de Téléphone MTN Mobile Money :
@@ -1007,7 +1076,6 @@ export default function PricingPage() {
                 </div>
               )}
 
-              {/* Bouton de confirmation */}
               <div className="pt-2 flex flex-col gap-2">
                 <button
                   type="button"

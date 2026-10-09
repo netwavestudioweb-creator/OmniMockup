@@ -187,76 +187,80 @@ export async function getFedaPayTransaction(
 }
 
 /**
+import { PLANS, CREDIT_PACKS } from '@/lib/pricing';
+
+/**
  * Tarifs officiels en FCFA pour le Bénin / zone UEMOA
+ * Connecté directement à la source unique src/lib/pricing.ts
  */
 export const FEDAPAY_PLANS_FCFA: Record<
   string,
   {
     name: string;
     monthlyPrice: number; // en FCFA
-    annualPrice: number; // en FCFA par mois facturé annuellement
+    annualTotal: number;  // total en FCFA pour l'année
+    annualPrice: number;  // par mois en annuel (compatibilité)
     description: string;
+    isCreditPack?: boolean;
+    credits?: number;
   }
 > = {
-  pro: {
-    name: 'Pro Développeur',
-    monthlyPrice: 3900, // 3 900 FCFA/mois (~$5/mois)
-    annualPrice: 3250, // 39 000 FCFA/an (2 mois offerts)
-    description: 'Exports illimités HD/4K, Vidéo MP4 60fps, sans filigrane, IA Pitch Kit',
+  solo: {
+    name: 'Solo',
+    monthlyPrice: 3280,
+    annualTotal: 32800,
+    annualPrice: 2733,
+    description: '20 exports HD/mois avec filigrane discret',
   },
-  studio: {
-    name: 'Studio Agence',
-    monthlyPrice: 12900, // 12 900 FCFA/mois (~$20/mois)
-    annualPrice: 10750, // 129 000 FCFA/an (2 mois offerts)
-    description: 'Tout le plan Pro, 5 sièges, Marque blanche totale, Vidéo illimitée, Support WhatsApp VIP',
+  pro: {
+    name: 'Pro',
+    monthlyPrice: 5900,
+    annualTotal: 59000,
+    annualPrice: 4917,
+    description: 'Exports illimités HD/4K, Vidéo MP4 60fps, ZÉRO filigrane, IA Pitch Kit',
   },
   agence: {
-    name: 'Studio Agence',
-    monthlyPrice: 12900,
-    annualPrice: 10750,
-    description: 'Tout le plan Pro, 5 sièges, Marque blanche totale, Vidéo illimitée, Support WhatsApp VIP',
+    name: 'Agence',
+    monthlyPrice: 19000,
+    annualTotal: 190000,
+    annualPrice: 15833,
+    description: 'Tout le plan Pro, 5 sièges, Marque blanche totale, Vidéo illimitée, Support WhatsApp 7j/7',
   },
-  starter: {
-    name: 'Starter Découverte',
-    monthlyPrice: 1900,
-    annualPrice: 1500,
-    description: 'Exports HD occasionnels',
+  // Alias studio -> agence pour compatibilité
+  studio: {
+    name: 'Agence',
+    monthlyPrice: 19000,
+    annualTotal: 190000,
+    annualPrice: 15833,
+    description: 'Tout le plan Pro, 5 sièges, Marque blanche totale, Vidéo illimitée, Support WhatsApp 7j/7',
   },
-  creator: {
-    name: 'Créateur Solo',
-    monthlyPrice: 2900,
-    annualPrice: 2400,
-    description: 'Exports HD réguliers',
+  // Packs de crédits
+  credit_petit: {
+    name: 'Petit Pack (10 crédits)',
+    monthlyPrice: 2600,
+    annualTotal: 2600,
+    annualPrice: 2600,
+    description: '10 crédits sans expiration',
+    isCreditPack: true,
+    credits: 10,
   },
-  // Crédits à la carte (Pay-per-use / Popcorn)
-  credit_export_hd: {
-    name: '1 Export PNG HD sans filigrane',
-    monthlyPrice: 490,
-    annualPrice: 490,
-    description: '1 export immédiat en haute résolution sans filigrane',
+  credit_moyen: {
+    name: 'Pack Moyen (30 crédits)',
+    monthlyPrice: 6600,
+    annualTotal: 6600,
+    annualPrice: 6600,
+    description: '30 crédits sans expiration',
+    isCreditPack: true,
+    credits: 30,
   },
-  credit_export_4k: {
-    name: '1 Export PNG Ultra-HD 4K',
-    monthlyPrice: 990,
-    annualPrice: 990,
-    description: '1 export Retina 4K sans filigrane',
-  },
-  credit_export_video: {
-    name: '1 Export Vidéo MP4 Animée',
-    monthlyPrice: 1490,
-    annualPrice: 1490,
-    description: '1 export vidéo 60fps pour réseaux sociaux',
-  },
-  credit_pack_10: {
-    name: 'Pack 10 Crédits Polyvalents',
-    monthlyPrice: 3900,
-    annualPrice: 3900,
-    description: 'Pack de 10 crédits utilisables à tout moment sans expiration',
-  },
-  credit_pack_50: {
-    name: 'Pack 50 Crédits Studio',
-    monthlyPrice: 14900,
-    annualPrice: 14900,
-    description: 'Pack de 50 crédits pour freelances et créateurs actifs',
+  credit_grand: {
+    name: 'Grand Pack (75 crédits)',
+    monthlyPrice: 9800,
+    annualTotal: 9800,
+    annualPrice: 9800,
+    description: '75 crédits sans expiration — Meilleure valeur (-50%)',
+    isCreditPack: true,
+    credits: 75,
   },
 };
+

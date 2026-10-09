@@ -1,15 +1,23 @@
-import { createAdminClient } from '@/lib/supabase/admin';
-import { UserPlan } from '@/types/database';
+﻿import { createAdminClient } from '@/lib/supabase/admin';
+import { PlanId } from '@/lib/pricing';
+import { PLANS } from '@/lib/pricing';
 
 export interface QuotaCheckResult {
   allowedFullAnalysis: boolean;
   quotaExceeded: boolean;
   currentUsage: number;
   limit: number;
-  plan: UserPlan;
+  plan: PlanId;
 }
 
-// Récupère le mois actuel au format YYYY-MM
+export interface PngExportQuotaResult {
+  allowed: boolean;
+  quotaExceeded: boolean;
+  currentUsage: number;
+  limit: number | null; // null = illimité
+  plan: PlanId;
+}
+
 export function getCurrentMonth(): string {
   const now = new Date();
   const year = now.getFullYear();
@@ -17,35 +25,26 @@ export function getCurrentMonth(): string {
   return `${year}-${month}`;
 }
 
-// Vérifie les quotas de l'utilisateur ou de l'IP anonyme
+/** Vérifie le quota d'analyses IA */
 export async function checkUsageQuota(
   userId: string | null,
   clientIp: string,
-  userPlan: UserPlan = 'free'
+  userPlan: PlanId = 'free'
 ): Promise<QuotaCheckResult> {
   const month = getCurrentMonth();
   const admin = createAdminClient();
 
-  // Si l'utilisateur est Pro ou Agence : accès illimité
+  // Pro et Agence : illimité
   if (userPlan === 'pro' || userPlan === 'agence') {
-    return {
-      allowedFullAnalysis: true,
-      quotaExceeded: false,
-      currentUsage: 0,
-      limit: 999999,
-      plan: userPlan,
-    };
+    return { allowedFullAnalysis: true, quotaExceeded: false, currentUsage: 0, limit: 999999, plan: userPlan };
   }
 
-  // Limite : 3 analyses/mois pour Free connecté, 1 pour visiteur non connecté
-  const limit = userId ? 3 : 1;
+  // Free et Solo : 3 analyses IA par mois
+  const planDef = PLANS.find((p) => p.id === userPlan);
+  const limit = planDef?.quotas.aiAnalysesPerMonth ?? (userId ? 3 : 1);
 
   try {
-    let query = admin
-      .from('usage')
-      .select('analyses_ia_count')
-      .eq('month', month);
-
+    let query = admin.from('usage').select('analyses_ia_count').eq('month', month);
     if (userId) {
       query = query.eq('user_id', userId);
     } else {
@@ -53,106 +52,108 @@ export async function checkUsageQuota(
     }
 
     const { data, error } = await query.maybeSingle();
-
     if (error) {
-      console.warn('[Usage] Erreur lors de la lecture du quota (fallback tolérant) :', error.message);
-      return {
-        allowedFullAnalysis: true,
-        quotaExceeded: false,
-        currentUsage: 0,
-        limit,
-        plan: userPlan,
-      };
+      console.warn('[Usage] Erreur quota (fallback tolérant) :', error.message);
+      return { allowedFullAnalysis: true, quotaExceeded: false, currentUsage: 0, limit, plan: userPlan };
     }
 
     const currentUsage = data?.analyses_ia_count ?? 0;
     const quotaExceeded = currentUsage >= limit;
-
-    return {
-      allowedFullAnalysis: !quotaExceeded,
-      quotaExceeded,
-      currentUsage,
-      limit,
-      plan: userPlan,
-    };
+    return { allowedFullAnalysis: !quotaExceeded, quotaExceeded, currentUsage, limit, plan: userPlan };
   } catch (err) {
     console.error('[Usage] Erreur imprévue quota :', err);
-    return {
-      allowedFullAnalysis: true,
-      quotaExceeded: false,
-      currentUsage: 0,
-      limit,
-      plan: userPlan,
-    };
+    return { allowedFullAnalysis: true, quotaExceeded: false, currentUsage: 0, limit, plan: userPlan };
   }
 }
 
-// Incrémente le compteur d'analyses IA après une analyse réussie
-export async function incrementUsageCount(
-  userId: string | null,
-  clientIp: string
-): Promise<void> {
+/** Vérifie le quota d'exports PNG pour le plan Solo (20/mois) */
+export async function checkPngExportQuota(
+  userId: string,
+  userPlan: PlanId
+): Promise<PngExportQuotaResult> {
+  const month = getCurrentMonth();
+  const admin = createAdminClient();
+
+  // Pro et Agence : illimité
+  if (userPlan === 'pro' || userPlan === 'agence') {
+    return { allowed: true, quotaExceeded: false, currentUsage: 0, limit: null, plan: userPlan };
+  }
+
+  // Free : 3/jour (gérée séparément côté client)
+  if (userPlan === 'free') {
+    return { allowed: true, quotaExceeded: false, currentUsage: 0, limit: 3, plan: userPlan };
+  }
+
+  // Solo : 20/mois
+  const limit = 20;
+  try {
+    const { data } = await admin
+      .from('usage')
+      .select('png_exports_count')
+      .eq('user_id', userId)
+      .eq('month', month)
+      .maybeSingle();
+
+    const currentUsage = data?.png_exports_count ?? 0;
+    const quotaExceeded = currentUsage >= limit;
+    return { allowed: !quotaExceeded, quotaExceeded, currentUsage, limit, plan: userPlan };
+  } catch (err) {
+    console.error('[Usage] Erreur quota PNG Solo :', err);
+    return { allowed: true, quotaExceeded: false, currentUsage: 0, limit, plan: userPlan };
+  }
+}
+
+/** Incrémente le compteur d'analyses IA */
+export async function incrementUsageCount(userId: string | null, clientIp: string): Promise<void> {
   const month = getCurrentMonth();
   const admin = createAdminClient();
 
   try {
     if (userId) {
-      // Pour utilisateur connecté
       const { data: existing } = await admin
-        .from('usage')
-        .select('id, analyses_ia_count')
-        .eq('user_id', userId)
-        .eq('month', month)
-        .maybeSingle();
+        .from('usage').select('id, analyses_ia_count').eq('user_id', userId).eq('month', month).maybeSingle();
 
       if (existing) {
-        await admin
-          .from('usage')
-          .update({
-            analyses_ia_count: (existing.analyses_ia_count || 0) + 1,
-            updated_at: new Date().toISOString(),
-          })
+        await admin.from('usage')
+          .update({ analyses_ia_count: (existing.analyses_ia_count || 0) + 1, updated_at: new Date().toISOString() })
           .eq('id', existing.id);
       } else {
-        await admin
-          .from('usage')
-          .insert({
-            user_id: userId,
-            month,
-            analyses_ia_count: 1,
-            exports_count: 0,
-          });
+        await admin.from('usage').insert({ user_id: userId, month, analyses_ia_count: 1, exports_count: 0, png_exports_count: 0 });
       }
     } else {
-      // Pour visiteur non connecté (par IP)
       const { data: existing } = await admin
-        .from('usage')
-        .select('id, analyses_ia_count')
-        .is('user_id', null)
-        .eq('client_ip', clientIp)
-        .eq('month', month)
-        .maybeSingle();
+        .from('usage').select('id, analyses_ia_count').is('user_id', null).eq('client_ip', clientIp).eq('month', month).maybeSingle();
 
       if (existing) {
-        await admin
-          .from('usage')
-          .update({
-            analyses_ia_count: (existing.analyses_ia_count || 0) + 1,
-            updated_at: new Date().toISOString(),
-          })
+        await admin.from('usage')
+          .update({ analyses_ia_count: (existing.analyses_ia_count || 0) + 1, updated_at: new Date().toISOString() })
           .eq('id', existing.id);
       } else {
-        await admin
-          .from('usage')
-          .insert({
-            client_ip: clientIp,
-            month,
-            analyses_ia_count: 1,
-            exports_count: 0,
-          });
+        await admin.from('usage').insert({ client_ip: clientIp, month, analyses_ia_count: 1, exports_count: 0, png_exports_count: 0 });
       }
     }
   } catch (err) {
-    console.error('[Usage] Erreur lors de l’incrémentation du quota :', err);
+    console.error('[Usage] Erreur incrémentation quota :', err);
+  }
+}
+
+/** Incrémente le compteur d'exports PNG pour le plan Solo */
+export async function incrementPngExportCount(userId: string): Promise<void> {
+  const month = getCurrentMonth();
+  const admin = createAdminClient();
+
+  try {
+    const { data: existing } = await admin
+      .from('usage').select('id, png_exports_count').eq('user_id', userId).eq('month', month).maybeSingle();
+
+    if (existing) {
+      await admin.from('usage')
+        .update({ png_exports_count: (existing.png_exports_count || 0) + 1, updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+    } else {
+      await admin.from('usage').insert({ user_id: userId, month, analyses_ia_count: 0, exports_count: 0, png_exports_count: 1 });
+    }
+  } catch (err) {
+    console.error('[Usage] Erreur incrémentation exports PNG :', err);
   }
 }

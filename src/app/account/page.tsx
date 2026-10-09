@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { useUser } from '@/context/UserContext';
+import { trackEvent } from '@/lib/tracking';
 import {
   User as UserIcon,
   Zap,
@@ -21,15 +22,24 @@ import {
   Calendar,
   Layers,
   ArrowLeft,
+  Coins,
+  AlertTriangle,
+  HeartHandshake,
+  X,
 } from 'lucide-react';
 
 interface UsageData {
   email: string;
-  plan: 'free' | 'pro' | 'agence';
+  plan: 'free' | 'solo' | 'pro' | 'agence';
+  credit_balance: number;
+  subscription_status: string;
+  billing_cycle: 'monthly' | 'annual';
   month: string;
   analyses_ia_count: number;
   limit: number;
   exports_count: number;
+  png_exports_count: number;
+  png_limit: number;
   hasStripeCustomer: boolean;
   createdAt: string;
 }
@@ -38,12 +48,16 @@ function AccountContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSuccessCheckout = searchParams.get('success') === 'true';
+  const checkoutType = searchParams.get('type');
 
   const { user, profile, isLoading: isUserLoading, signOut, refreshProfile } = useUser();
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [isUsageLoading, setIsUsageLoading] = useState(true);
   const [isPortalLoading, setIsPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
+
+  // Modale de rétention avant Customer Portal
+  const [showRetentionModal, setShowRetentionModal] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -73,7 +87,7 @@ function AccountContent() {
     }
   }, [user, isUserLoading, router, isSuccessCheckout, refreshProfile]);
 
-  const handleOpenBillingPortal = async () => {
+  const handleOpenBillingPortalDirect = async () => {
     setIsPortalLoading(true);
     setPortalError(null);
 
@@ -95,6 +109,16 @@ function AccountContent() {
     }
   };
 
+  const handleOpenBillingPortal = () => {
+    const plan = profile?.plan || usage?.plan || 'free';
+    if (plan === 'pro' || plan === 'agence') {
+      trackEvent('downsell_shown', { source: 'account_cancellation_intent', current_plan: plan });
+      setShowRetentionModal(true);
+    } else {
+      handleOpenBillingPortalDirect();
+    }
+  };
+
   if (isUserLoading || isUsageLoading) {
     return (
       <div className="min-h-screen bg-sand-50 flex items-center justify-center">
@@ -105,11 +129,26 @@ function AccountContent() {
 
   const currentPlan = profile?.plan || usage?.plan || 'free';
   const isPremium = currentPlan === 'pro' || currentPlan === 'agence';
-  const planLabel = currentPlan === 'agence' ? 'Agence' : currentPlan === 'pro' ? 'Pro' : 'Gratuit (Free)';
+  const isSolo = currentPlan === 'solo';
+  const creditBalance = usage?.credit_balance ?? profile?.credit_balance ?? 0;
+  const subscriptionStatus = usage?.subscription_status ?? profile?.subscription_status ?? 'active';
+  const isPastDue = subscriptionStatus === 'past_due';
+
+  const planLabel =
+    currentPlan === 'agence'
+      ? 'Agence'
+      : currentPlan === 'pro'
+      ? 'Pro'
+      : currentPlan === 'solo'
+      ? 'Solo'
+      : 'Gratuit (Découverte)';
 
   const count = usage?.analyses_ia_count ?? 0;
   const maxQuota = isPremium ? 999999 : 3;
   const progressPercent = isPremium ? 100 : Math.min(100, Math.round((count / maxQuota) * 100));
+
+  const pngCount = usage?.png_exports_count ?? 0;
+  const pngLimit = isSolo ? 20 : isPremium ? 999999 : 3;
 
   return (
     <div className="min-h-screen bg-sand-50 text-stone-900 flex flex-col selection:bg-violet-100 selection:text-violet-900">
@@ -127,21 +166,48 @@ function AccountContent() {
           </Link>
         </div>
 
+        {/* Bannière paiement échoué (invoice.payment_failed) */}
+        {isPastDue && (
+          <div className="p-5 rounded-3xl bg-amber-500/10 border-2 border-amber-500 text-amber-950 flex items-start justify-between gap-4 shadow-sm animate-pulse">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-1 text-xs sm:text-sm">
+                <h3 className="font-bold text-amber-950">Action requise : Paiement en attente</h3>
+                <p className="text-amber-800 leading-relaxed">
+                  Le dernier prélèvement sur votre carte bancaire a échoué. Mettez à jour vos coordonnées bancaires pour conserver l&apos;accès illimité sans filigrane.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleOpenBillingPortalDirect}
+              className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 transition-colors"
+            >
+              Mettre à jour
+            </button>
+          </div>
+        )}
+
         {/* Bannière de confirmation Stripe Checkout */}
         {isSuccessCheckout && (
           <div className="p-5 rounded-3xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-start gap-3.5 shadow-sm animate-slide-up">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
             <div className="space-y-1 text-xs sm:text-sm">
-              <h3 className="font-bold text-emerald-950">Félicitations, votre abonnement est actif !</h3>
+              <h3 className="font-bold text-emerald-950">
+                {checkoutType === 'credits'
+                  ? 'Vos crédits ont été ajoutés avec succès !'
+                  : 'Félicitations, votre abonnement est actif !'}
+              </h3>
               <p className="text-emerald-800 leading-relaxed">
-                Vous bénéficiez maintenant d&apos;un accès illimité aux analyses IA complètes avec les avis et justifications détaillées du Directeur Artistique.
+                {checkoutType === 'credits'
+                  ? 'Vos crédits sont immédiatement utilisables dans le studio. Ils n’expirent jamais.'
+                  : 'Vous bénéficiez maintenant d’un accès complet selon votre plan avec exports prioritaires.'}
               </p>
               <div className="pt-2">
                 <Link
                   href="/"
                   className="inline-flex items-center gap-1.5 font-bold text-emerald-700 hover:text-emerald-900 underline"
                 >
-                  Lancer une analyse complète dès maintenant →
+                  Accéder au studio dès maintenant →
                 </Link>
               </div>
             </div>
@@ -170,6 +236,8 @@ function AccountContent() {
                   className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
                     isPremium
                       ? 'bg-violet-600 text-white shadow-xs'
+                      : isSolo
+                      ? 'bg-blue-600 text-white shadow-xs'
                       : 'bg-sand-100 text-stone-700 border border-sand-200'
                   }`}
                 >
@@ -199,118 +267,243 @@ function AccountContent() {
           </button>
         </div>
 
-        {/* Section Quota & Consommation du mois */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-3xl border border-sand-200 p-6 sm:p-8 shadow-xs flex flex-col justify-between space-y-6">
-            <div className="space-y-4">
+        {/* Grille : Quotas & Solde de crédits */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 1. Solde de crédits à vie */}
+          <div className="bg-white rounded-3xl border border-sand-200 p-6 shadow-xs flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-stone-900 font-bold text-sm sm:text-base">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
+                  <Coins className="w-4 h-4 text-amber-600" />
+                  Crédits à la carte
+                </span>
+                <span className="text-[10px] font-semibold text-stone-400">À vie</span>
+              </div>
+              <div className="text-3xl font-black text-stone-900 font-mono">
+                {creditBalance} <span className="text-sm font-sans font-normal text-stone-500">crédit(s)</span>
+              </div>
+              <p className="text-[11px] text-stone-500 leading-relaxed">
+                Utilisables pour les exports HD, 4K, Vidéo et Kits IA sans abonnement.
+              </p>
+            </div>
+            <Link
+              href="/pricing#credits"
+              className="w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold border border-amber-200 text-center transition-colors"
+            >
+              + Recharger des crédits
+            </Link>
+          </div>
+
+          {/* 2. Quota Analyses IA */}
+          <div className="bg-white rounded-3xl border border-sand-200 p-6 shadow-xs flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-violet-700 flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-violet-600" />
-                  <span>Analyses IA du mois ({usage?.month || 'Ce mois'})</span>
-                </div>
-                <span className="text-xs font-mono font-bold text-stone-500">
+                  Analyses IA ({usage?.month || 'Ce mois'})
+                </span>
+                <span className="text-xs font-mono font-bold text-stone-600">
                   {isPremium ? 'Illimité' : `${count} / ${maxQuota}`}
                 </span>
               </div>
-
-              {/* Barre de progression */}
-              <div className="space-y-2">
-                <div className="w-full h-3 bg-sand-100 rounded-full overflow-hidden p-0.5 border border-sand-200">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      isPremium
-                        ? 'bg-violet-600 w-full'
-                        : count >= maxQuota
-                        ? 'bg-rose-500'
-                        : 'bg-violet-600'
-                    }`}
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-stone-400">
-                  <span>{isPremium ? 'Accès Pro débloqué' : `${maxQuota - count} analyse(s) restante(s)`}</span>
-                  <span>{isPremium ? '100% illimité' : `${progressPercent}% utilisé`}</span>
-                </div>
+              <div className="w-full h-2.5 bg-sand-100 rounded-full overflow-hidden p-0.5 border border-sand-200">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    isPremium ? 'bg-violet-600 w-full' : count >= maxQuota ? 'bg-rose-500' : 'bg-violet-600'
+                  }`}
+                  style={{ width: `${progressPercent}%` }}
+                />
               </div>
-
-              {!isPremium && count >= maxQuota && (
-                <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <span>
-                    Vous avez utilisé vos 3 analyses gratuites du mois. Passez à la formule Pro pour débloquer les analyses et justifications illimitées.
-                  </span>
-                </div>
-              )}
+              <p className="text-[11px] text-stone-400">
+                {isPremium ? 'Accès illimité Directeur Artistique' : `${Math.max(0, maxQuota - count)} analyse(s) restante(s)`}
+              </p>
             </div>
-
-            <div className="pt-4 border-t border-sand-100">
+            {!isPremium && (
               <Link
-                href="/"
-                className="inline-flex items-center gap-2 text-xs font-semibold text-violet-700 hover:text-violet-900"
+                href="/pricing"
+                className="w-full py-2 px-3 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-900 text-xs font-bold border border-violet-200 text-center transition-colors"
               >
-                <Layers className="w-3.5 h-3.5 text-violet-600" />
-                <span>Analyser une nouvelle page</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                Passer au Pro (9 €)
               </Link>
-            </div>
+            )}
           </div>
 
-          {/* Section Facturation / Formule */}
-          <div className="bg-white rounded-3xl border border-sand-200 p-6 sm:p-8 shadow-xs flex flex-col justify-between space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-stone-900 font-bold text-sm sm:text-base">
-                <CreditCard className="w-4 h-4 text-violet-600" />
-                <span>Abonnement & Facturation</span>
+          {/* 3. Quota Exports PNG */}
+          <div className="bg-white rounded-3xl border border-sand-200 p-6 shadow-xs flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-stone-700 flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-stone-600" />
+                  Exports PNG ({isSolo ? 'Mois' : 'Jour'})
+                </span>
+                <span className="text-xs font-mono font-bold text-stone-600">
+                  {isPremium ? 'Illimité' : `${pngCount} / ${pngLimit}`}
+                </span>
               </div>
+              <div className="w-full h-2.5 bg-sand-100 rounded-full overflow-hidden p-0.5 border border-sand-200">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    isPremium ? 'bg-stone-900 w-full' : pngCount >= pngLimit ? 'bg-rose-500' : 'bg-stone-900'
+                  }`}
+                  style={{ width: `${isPremium ? 100 : Math.min(100, Math.round((pngCount / pngLimit) * 100))}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-stone-400">
+                {isPremium ? 'Zéro filigrane, HD 2x & 4K' : isSolo ? '20 exports HD/mois' : '3 exports/jour (1x)'}
+              </p>
+            </div>
+            {currentPlan === 'solo' && (
+              <Link
+                href="/pricing"
+                className="w-full py-2 px-3 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold text-center transition-colors"
+              >
+                +4 € pour Pro illimité
+              </Link>
+            )}
+          </div>
+        </div>
 
-              <div className="p-4 rounded-2xl bg-sand-50/80 border border-sand-200/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-stone-500">Formule actuelle</span>
-                  <span className="text-xs font-bold text-stone-900">{planLabel}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-stone-500">Statut du compte</span>
-                  <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    Actif
-                  </span>
-                </div>
+        {/* Section Facturation */}
+        <div className="bg-white rounded-3xl border border-sand-200 p-6 sm:p-8 shadow-xs space-y-6">
+          <div className="flex items-center gap-2 text-stone-900 font-bold text-sm sm:text-base">
+            <CreditCard className="w-4 h-4 text-violet-600" />
+            <span>Gestion de l&apos;Abonnement & Facturation</span>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-sand-50/80 border border-sand-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-stone-900">{planLabel}</span>
+                <span className="text-xs text-stone-500">
+                  ({usage?.billing_cycle === 'annual' ? 'Facturation annuelle' : 'Facturation mensuelle'})
+                </span>
               </div>
+              <p className="text-xs text-stone-500">
+                Statut : <span className={isPastDue ? 'text-amber-700 font-bold' : 'text-emerald-600 font-semibold'}>{isPastDue ? 'Paiement en attente' : 'Actif'}</span>
+              </p>
             </div>
 
-            <div className="pt-4 border-t border-sand-100">
-              {isPremium ? (
+            <div className="flex items-center gap-3">
+              {currentPlan !== 'free' ? (
                 <button
                   type="button"
                   onClick={handleOpenBillingPortal}
                   disabled={isPortalLoading}
-                  className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs text-stone-800 bg-sand-100 hover:bg-sand-200 border border-sand-200 flex items-center justify-center gap-2 transition-all active:scale-[0.99] disabled:opacity-60"
+                  className="py-2.5 px-4 rounded-xl font-semibold text-xs text-stone-800 bg-white hover:bg-sand-100 border border-sand-300 flex items-center justify-center gap-2 transition-all shadow-2xs disabled:opacity-60"
                 >
                   {isPortalLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin text-stone-600" />
-                      <span>Ouverture du portail Stripe...</span>
+                      <span>Chargement...</span>
                     </>
                   ) : (
                     <>
-                      <ExternalLink className="w-4 h-4 text-violet-600" />
-                      <span>Gérer mon abonnement (Factures, Résiliation)</span>
+                      <ExternalLink className="w-4 h-4 text-stone-600" />
+                      <span>Gérer la facturation & Résiliation</span>
                     </>
                   )}
                 </button>
               ) : (
                 <Link
                   href="/pricing"
-                  className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs text-white bg-violet-600 hover:bg-violet-700 flex items-center justify-center gap-2 transition-all shadow-sm shadow-violet-600/20 active:scale-[0.99]"
+                  className="py-2.5 px-5 rounded-xl font-bold text-xs text-white bg-violet-600 hover:bg-violet-700 flex items-center justify-center gap-2 transition-all shadow-sm shadow-violet-600/30"
                 >
                   <Sparkles className="w-4 h-4 text-violet-200" />
-                  <span>Passer à la formule Pro (19€/mois)</span>
+                  <span>Passer au Pro (9 €/mois)</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               )}
             </div>
           </div>
         </div>
+
+        {/* MODALE DE RÉTENTION (DOWNSELL ÉTAPE 5) */}
+        {showRetentionModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-sand-300 relative space-y-6 animate-scale-up">
+              <button
+                type="button"
+                onClick={() => setShowRetentionModal(false)}
+                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-sand-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-amber-100 text-amber-800">
+                  <HeartHandshake className="w-7 h-7 text-amber-700" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-stone-900">
+                    Avant de nous quitter...
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    Avez-vous besoin d&apos;une solution plus économique adaptée à votre rythme ?
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {/* Option 1 : Downsell vers Solo (5€) */}
+                <div className="p-4 rounded-2xl border border-violet-200 bg-violet-50/60 flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-violet-950 block">Passer au forfait Solo</span>
+                    <span className="text-[11px] text-violet-800">Seulement 5 €/mois : 20 exports HD + 3 analyses IA.</span>
+                  </div>
+                  <Link
+                    href="/pricing?switch=solo"
+                    onClick={() => {
+                      trackEvent('downsell_accepted', { offer: 'solo_plan', previous_plan: currentPlan });
+                      setShowRetentionModal(false);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs shrink-0"
+                  >
+                    Choisir Solo (5 €)
+                  </Link>
+                </div>
+
+                {/* Option 2 : Downsell vers Pack crédits (4€) */}
+                <div className="p-4 rounded-2xl border border-sand-300 bg-sand-50/80 flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-stone-900 block">Packs de crédits sans abonnement</span>
+                    <span className="text-[11px] text-stone-600">Achetez 10 crédits à vie pour 4 € sans prélèvement mensuel.</span>
+                  </div>
+                  <Link
+                    href="/pricing#credits"
+                    onClick={() => {
+                      trackEvent('downsell_accepted', { offer: 'credit_pack', previous_plan: currentPlan });
+                      setShowRetentionModal(false);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs shrink-0"
+                  >
+                    Voir crédits (4 €)
+                  </Link>
+                </div>
+              </div>
+
+              {/* Bouton pour continuer quand même */}
+              <div className="pt-2 flex items-center justify-between border-t border-sand-200">
+                <button
+                  type="button"
+                  onClick={() => setShowRetentionModal(false)}
+                  className="text-xs font-semibold text-stone-600 hover:text-stone-900"
+                >
+                  Garder mon abonnement actuel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRetentionModal(false);
+                    handleOpenBillingPortalDirect();
+                  }}
+                  className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline"
+                >
+                  Continuer vers Stripe pour résilier
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />

@@ -49,6 +49,7 @@ import {
   Upload,
   Layers,
   FileText,
+  Link2,
   FilePlus,
   ArrowLeft,
   ExternalLink,
@@ -122,6 +123,7 @@ import { renderCarouselPages, buildLinkedInCarouselPdf } from '@/lib/carousel';
 import { SitePagesPanel, type SitePage } from './SitePagesPanel';
 import { PhotoBackgroundsPanel } from './PhotoBackgroundsPanel';
 import { PhotoScenesPanel } from './PhotoScenesPanel';
+import { ShareDialog } from './ShareDialog';
 import { renderPhotoScene, type PhotoScene } from '@/lib/photoScenes';
 import { buildPresentationPdf, type PresentationMeta, type PresentationSlide } from '@/lib/presentationPdf';
 import type { BrandKit } from '@/lib/brandKit';
@@ -1930,6 +1932,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   // Pack réseaux sociaux : 5 fichiers aux dimensions officielles de chaque réseau
   // ── Présentation client (PDF) ──────────────────────────────────────────
+  const [showShare, setShowShare] = useState(false);
   const [presentationSlides, setPresentationSlides] = useState<PresentationSlide[]>([]);
   const [showPresentation, setShowPresentation] = useState(false);
   const [isAddingSlide, setIsAddingSlide] = useState(false);
@@ -2642,6 +2645,20 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         </span>
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowShare(true);
+                        setShowExportMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left"
+                    >
+                      <Link2 className="w-4 h-4 text-violet-400" />
+                      <span className="flex-1">
+                        <span className="font-semibold block">Lien de partage</span>
+                        <span className="text-[10px] text-zinc-500">Une page pour que votre client voie et télécharge le mockup</span>
+                      </span>
+                    </button>
                     <button
                       type="button"
                       onClick={handleAddToPresentation}
@@ -5813,6 +5830,22 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {showShare && (
+        <ShareDialog
+          loggedIn={!!user}
+          demo={user?.id === 'test-user-id-999'}
+          defaultTitle={captureItem.title || captureItem.domainName || 'Aperçu du site'}
+          renderImage={async () => {
+            // Même qualité et même filigrane qu'un export inclus dans le forfait
+            const quality = canExportHd ? 'hd' : 'standard';
+            const { width, height } = getExportSize(currentFramePreset, quality);
+            const image = await renderScene('jpg', currentFramePreset, quality, !planWatermark);
+            return { image, width, height };
+          }}
+          onClose={() => setShowShare(false)}
+        />
       )}
 
       {showPresentation && (

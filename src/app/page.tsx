@@ -484,7 +484,7 @@ export default function HomePage() {
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src="/images/mockup-al-kareem-boutique.webp"
-                          alt="Mockup iPhone de la boutique en ligne Al Kareem Parfumerie, réalisé avec OmniMockup"
+                          alt="Mockup iPhone de la page Boutique d’Al Kareem Parfumerie, réalisé avec OmniMockup"
                           width={619}
                           height={1233}
                           className="w-[78%] mx-auto h-auto object-contain drop-shadow-[0_30px_60px_rgba(124,58,237,0.45)] animate-float"
@@ -494,7 +494,7 @@ export default function HomePage() {
                         <div className="mt-4 flex justify-center">
                           <div className="bg-black/80 backdrop-blur-sm border border-zinc-700/60 text-[10px] font-semibold text-zinc-300 px-3 py-1.5 rounded-full shadow-xl flex items-center gap-1.5 text-center">
                             <Sparkles className="w-3 h-3 text-violet-400 shrink-0" />
-                            Boutique Al Kareem Parfumerie · réalisé avec OmniMockup
+                            Page Boutique d’Al Kareem Parfumerie · réalisé avec OmniMockup
                           </div>
                         </div>
                       </div>

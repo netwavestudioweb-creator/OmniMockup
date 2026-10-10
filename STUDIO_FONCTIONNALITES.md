@@ -14,7 +14,19 @@ Rédigé le 9 octobre 2026. Base : inventaire du code (`SceneEditor.tsx`, `Mocku
 |---|---|---|
 | Lot 1 | ✅ en ligne (commit `4dea094`) | B1 à B10, H1, I2. 30/30 contrôles automatiques. |
 | Lot 2 | ✅ en ligne (commit `07dfa0a`) | C1, C3, C4, D1, D2, D3, E1, E2, E4, E5, F1, G1, H2 (MP4), H3, B11, B12, I3. Migrations appliquées. |
-| Lot 3 | ✅ codé et testé (branche `studio-lot3`, non mise en ligne) | F5, F2, F4, F3, G2, C6, E3, C2, D4, H5, C5. Aucune migration. **I1 (anglais) non commencé : périmètre à décider.** |
+| Lot 3 | ✅ en ligne (commit `ba1280c`) | F5, F2, F4, F3, G2, C6, E3, C2, D4, H5, C5. **I1 (anglais) reporté à un lot séparé.** |
+| Lot 4 | ✅ codé et testé (branche `studio-lot4`, non mise en ligne) | C7, F6, G3, H4, H6. Migration `shared_mockups` appliquée en production le 10/10/2026. |
+
+**Lot 4, ce qui a été fait :**
+- Scènes photo réalistes : 5 ordinateurs sur un bureau, 3 téléphones en main (photos Unsplash, écran mesuré, capture en perspective pixel par pixel, vraie version mobile pour les téléphones)
+- Lien de partage : page publique `/p/<id>` (téléchargement, aperçu WhatsApp, non indexée) ; comptes uniquement, 5 liens actifs en gratuit
+- Dossiers par client dans Mes projets (limite portée à 50 projets)
+- GIF animé (720 px, 12 i/s) pour les 4 animations
+- Packs App Store et Google Play aux tailles officielles (vérifiées sur les pages d'Apple et de Google), en JPG
+
+**Corrigé pendant le Lot 4 :** message de quota du forfait gratuit affiché à un client Pro au bout de ses 10 vidéos ; plantage du studio à l'ouverture d'un projet aux réglages incomplets ; tailles « officielles » fausses (Mac 1920 × 1200) et formats Google Play annoncés mais absents ; appareil minuscule en format vertical et coupé dans une bannière ; rendu légèrement différent selon la taille de l'écran du visiteur.
+
+**Limites connues du Lot 4 :** un GIF prend 30 à 40 s à créer ; les scènes photo dépendent du CDN d'Unsplash au moment du choix ; les dossiers et projets restent sur l'appareil.
 
 **Lot 3, ce qui a été fait :**
 - Directeur artistique IA rebranché (onglet Appareil) : sections notées avec justification, « Mettre en scène », analyses restantes affichées

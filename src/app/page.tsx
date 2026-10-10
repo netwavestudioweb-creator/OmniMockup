@@ -484,7 +484,7 @@ export default function HomePage() {
                         {/* Vraie image photoréaliste iPhone 16 Pro Max */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src="/images/iphone16-promax-netwave.jpg"
+                          src="/images/iphone16-promax-netwave.webp"
                           alt="iPhone 16 Pro Max affichant le site Netwave Studio"
                           className="w-full h-auto object-contain drop-shadow-[0_30px_60px_rgba(124,58,237,0.5)] animate-float"
                           loading="eager"

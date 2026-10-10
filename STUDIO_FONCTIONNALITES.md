@@ -13,7 +13,19 @@ Rédigé le 9 octobre 2026. Base : inventaire du code (`SceneEditor.tsx`, `Mocku
 | Lot | État | Détail |
 |---|---|---|
 | Lot 1 | ✅ en ligne (commit `4dea094`) | B1 à B10, H1, I2. 30/30 contrôles automatiques. |
-| Lot 2 | ✅ codé et testé (branche `studio-lot2`, non mise en ligne) | C1, C3, C4, D1, D2, D3, E1, E2, E4, E5, F1, G1, H2 (MP4), H3, B11, B12, I3. 2 migrations à appliquer. |
+| Lot 2 | ✅ en ligne (commit `07dfa0a`) | C1, C3, C4, D1, D2, D3, E1, E2, E4, E5, F1, G1, H2 (MP4), H3, B11, B12, I3. Migrations appliquées. |
+| Lot 3 | ✅ codé et testé (branche `studio-lot3`, non mise en ligne) | F5, F2, F4, F3, G2, C6, E3, C2, D4, H5, C5. Aucune migration. **I1 (anglais) non commencé : périmètre à décider.** |
+
+**Lot 3, ce qui a été fait :**
+- Directeur artistique IA rebranché (onglet Appareil) : sections notées avec justification, « Mettre en scène », analyses restantes affichées
+- Présentation client en PDF (A4) et carrousel LinkedIn (PDF 4:5) / Instagram (JPG 1080×1350) — compte comme un export « pack »
+- Plusieurs pages d'un même site : détection des liens du menu, jusqu'à 5 pages, ajout groupé à la présentation
+- Mes projets : historique sur l'appareil (30 plus récents), rouvrir, dupliquer, renommer, supprimer
+- Options de capture : délai (2 ou 5 s) et version sombre du site
+- Loupe (×2, ×3, ×4) ; ordinateur portable Windows sans marque ; 15 fonds photo Unsplash
+- Vidéos : rotation 3D, entrée, défilement de la page entière dans l'écran (en plus du zoom lent)
+
+**Limites connues du Lot 3 :** projets non synchronisés entre appareils (nécessiterait une migration et un stockage) ; les captures faites depuis le studio (pages du site, version mobile) n'utilisent pas le délai ni le mode sombre ; vidéos rotation et entrée limitées à 1280 px de large ; la vidéo de défilement présente l'appareil de face.
 
 **Lot 2, ce qui a été fait :**
 - Android + 5 couleurs d'appareil ; vraie capture mobile du site dans les téléphones (Solo, Duo, Trio)

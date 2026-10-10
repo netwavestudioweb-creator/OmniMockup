@@ -3529,15 +3529,16 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   )}
                 </div>
 
-                {/* Modèle d'appareil (7 options) */}
+                {/* Modèle d'appareil (9 options) */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
                     Modèle d&apos;Appareil
                   </label>
-                  <div className="grid grid-cols-4 gap-1.5">
+                  <div className="grid grid-cols-3 gap-1.5">
                     {[
                       { type: 'browser' as MockupType, label: 'Web', icon: Monitor },
                       { type: 'macbook' as MockupType, label: 'MacBook', icon: Laptop },
+                      { type: 'laptop' as MockupType, label: 'PC portable', icon: Laptop },
                       { type: 'imac' as MockupType, label: 'iMac', icon: Tv },
                       { type: 'ipad' as MockupType, label: 'iPad', icon: Tablet },
                       { type: 'iphone' as MockupType, label: 'iPhone', icon: Smartphone },
@@ -3741,7 +3742,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                 {expertMode && (<>
                 {/* ── STYLE NAVIGATEUR (Shots.so) ── */}
-                {(config.mockupType === 'browser' || config.mockupType === 'macbook' || config.mockupType === 'imac') && (
+                {(config.mockupType === 'browser' || config.mockupType === 'macbook' || config.mockupType === 'laptop' || config.mockupType === 'imac') && (
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Style Navigateur</label>
                     <div className="grid grid-cols-3 gap-1.5">
@@ -3782,7 +3783,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 )}
 
                 {/* ── BARRE D'ADRESSE PERSONNALISÉE ── */}
-                {(config.mockupType === 'browser' || config.mockupType === 'macbook' || config.mockupType === 'imac') && (
+                {(config.mockupType === 'browser' || config.mockupType === 'macbook' || config.mockupType === 'laptop' || config.mockupType === 'imac') && (
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Barre d&apos;Adresse</label>
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 focus-within:border-violet-500/60 transition-colors">

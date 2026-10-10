@@ -358,6 +358,27 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
     );
   }
 
+  // 2 bis. Ordinateur portable Windows générique (sans marque)
+  if (type === 'laptop') {
+    return (
+      <div className="w-full flex flex-col items-center select-none">
+        {/* Écran : bordures fines, webcam centrée */}
+        <div className={`w-full bg-[#0b0b0d] border-[5px] sm:border-[8px] border-t-[9px] sm:border-t-[14px] border-[#18181b] rounded-t-lg sm:rounded-t-xl shadow-2xl relative overflow-hidden`}>
+          <div className="absolute -top-[7px] sm:-top-[11px] left-1/2 -translate-x-1/2 z-20 w-1.5 h-1.5 rounded-full bg-zinc-800 border border-zinc-700" />
+          <div className="relative aspect-[16/9] bg-black overflow-hidden cursor-pointer group" onClick={onClickImage}>
+            {renderScreen()}
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-transparent pointer-events-none" />
+          </div>
+        </div>
+        {/* Charnière et base gris anthracite */}
+        <div className="w-[101%] h-1.5 sm:h-2 bg-gradient-to-b from-zinc-700 to-zinc-800" />
+        <div className="w-[108%] h-2.5 sm:h-3.5 bg-gradient-to-b from-zinc-600 via-zinc-700 to-zinc-800 rounded-b-lg sm:rounded-b-xl shadow-xl relative flex items-start justify-center border-t border-zinc-500/60">
+          <div className="w-14 sm:w-20 h-0.5 sm:h-1 bg-zinc-900/70 rounded-b-md" />
+        </div>
+      </div>
+    );
+  }
+
   // 3. Cadre iPad Pro M4
   if (type === 'ipad') {
     return (

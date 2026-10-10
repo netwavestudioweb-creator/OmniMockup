@@ -1,4 +1,4 @@
-export type MockupType = 'browser' | 'macbook' | 'iphone' | 'android' | 'ipad' | 'flat' | 'watch' | 'imac';
+export type MockupType = 'browser' | 'macbook' | 'iphone' | 'android' | 'ipad' | 'flat' | 'watch' | 'imac' | 'laptop';
 /** Couleur du châssis des téléphones, tablettes et montres */
 export type DeviceColor = 'graphite' | 'silver' | 'titanium' | 'midnight' | 'gold';
 export type DeviceTheme = 'light' | 'dark';

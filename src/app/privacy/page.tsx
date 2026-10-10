@@ -60,13 +60,16 @@ export default function PrivacyPage() {
             <p>
               Les URLs soumises pour analyse sont traitées de façon automatisée en mémoire par nos modules de scraping et d&apos;IA afin de générer les captures. Aucune capture d&apos;écran ou donnée privée de votre navigateur n&apos;est revendue à des tiers.
             </p>
+            <p>
+              Vos mockups et projets du studio sont enregistrés dans votre navigateur, sur votre appareil. Lorsque vous créez un lien de partage, l&apos;image partagée est stockée sur nos serveurs jusqu&apos;à ce que vous supprimiez le lien depuis le studio.
+            </p>
 
             <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-violet-600" />
               3. Sous-traitants & Sécurité
             </h2>
             <p>
-              Vos données sont sécurisées et hébergées auprès d&apos;acteurs de confiance conformes au RGPD : Supabase (Gestion des données et authentification), Stripe (Traitements de paiements sécurisés PCI-DSS) et Google Cloud (Inférence IA Generative).
+              Vos données sont hébergées et traitées par les prestataires suivants : Vercel (hébergement du site), Supabase (base de données, comptes et images des liens de partage), Stripe (paiements par carte, certifié PCI-DSS), SasPay (paiements Mobile Money et carte en FCFA), Google (analyse IA des pages et textes de vente) et Microlink (capture de secours de certaines pages). Les photos des scènes et des fonds du studio proviennent d&apos;Unsplash : votre navigateur les charge directement depuis leurs serveurs.
             </p>
 
             <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">

@@ -334,7 +334,7 @@ function LoginForm() {
                 <li>✓ Mise en scène sur MacBook, iPhone et iPad</li>
                 <li>✓ Formats prêts pour présentation, LinkedIn et Instagram</li>
                 <li>✓ Exports HD et 4K sans filigrane dès le plan Pro</li>
-                <li>✓ Marque blanche avec le logo de votre agence (plan Agence)</li>
+                <li>✓ Lien de partage pour vos clients, à votre marque avec le plan Agence</li>
               </ul>
             </div>
 

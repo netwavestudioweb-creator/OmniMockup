@@ -56,6 +56,12 @@ import {
   Users,
   BadgeCheck,
   Watch,
+  Camera,
+  Bot,
+  FileText,
+  Video,
+  PenLine,
+  FolderOpen,
 } from 'lucide-react';
 
 const AGENCY_USES = [
@@ -281,7 +287,7 @@ export default function HomePage() {
               <div className="animate-fade-in delay-400 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-xs sm:text-sm text-zinc-400 font-medium mb-6">
                 <span className="flex items-center gap-1.5">
                   <Zap className="w-4 h-4 text-violet-400" />
-                  Résultat en moins de 5 secondes
+                  Résultat en quelques secondes
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-700 hidden sm:block" />
                 <span className="flex items-center gap-1.5">
@@ -682,7 +688,7 @@ export default function HomePage() {
                     'Les bannières cookies et popups sont masquées automatiquement',
                     'Mise en scène sur MacBook, iPhone et iPad, angle et fond réglables',
                     'Tous les formats (présentation, LinkedIn, Instagram) en quelques clics',
-                    'Vos mockups avec le logo de votre agence (marque blanche, plan Agence)',
+                    'Un lien de partage pour votre client, à votre marque avec le plan Agence',
                   ].map((sol, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-1 shrink-0" />
@@ -714,7 +720,7 @@ export default function HomePage() {
                     step: '01',
                     icon: Link2,
                     title: 'Collez votre URL',
-                    desc: 'Entrez l\'adresse web de votre choix ou glissez une capture d\'écran. Le moteur capture la page en haute définition.',
+                    desc: "Entrez l\'adresse web de votre choix ou glissez une capture d\'écran. Le moteur capture la page en haute définition.",
                     gradient: 'from-violet-600 to-indigo-600',
                     glow: 'shadow-violet-600/20',
                   },
@@ -722,15 +728,15 @@ export default function HomePage() {
                     step: '02',
                     icon: Palette,
                     title: 'Personnalisez en 3D',
-                    desc: 'Sélectionnez un MacBook Pro, iPhone 16 ou iPad, réglez l\'angle de perspective et admirez le rendu en temps réel.',
+                    desc: "Sélectionnez un MacBook Pro, iPhone 16 ou iPad, réglez l\'angle de perspective et admirez le rendu en temps réel.",
                     gradient: 'from-indigo-600 to-fuchsia-600',
                     glow: 'shadow-indigo-600/20',
                   },
                   {
                     step: '03',
                     icon: Download,
-                    title: 'Exportez en 4K',
-                    desc: 'Téléchargez votre mockup en résolution 4K Retina ou copiez-le d\'un clic pour l\'insérer dans vos présentations.',
+                    title: 'Exportez et partagez',
+                    desc: "Téléchargez votre mockup jusqu'en 4K, en vidéo ou en PDF, ou envoyez un lien à votre client.",
                     gradient: 'from-fuchsia-600 to-rose-600',
                     glow: 'shadow-fuchsia-600/20',
                   },
@@ -779,7 +785,7 @@ export default function HomePage() {
                       step: '01',
                       icon: Link2,
                       title: 'Collez votre URL',
-                      desc: 'Entrez l\'adresse web de votre choix ou glissez une capture d\'écran. Le moteur capture la page en haute définition.',
+                      desc: "Entrez l\'adresse web de votre choix ou glissez une capture d\'écran. Le moteur capture la page en haute définition.",
                       gradient: 'from-violet-600 to-indigo-600',
                       glow: 'shadow-violet-600/30',
                     },
@@ -787,15 +793,15 @@ export default function HomePage() {
                       step: '02',
                       icon: Palette,
                       title: 'Personnalisez en 3D',
-                      desc: 'Sélectionnez un MacBook Pro, iPhone 16 ou iPad, réglez l\'angle de perspective et admirez le rendu en temps réel.',
+                      desc: "Sélectionnez un MacBook Pro, iPhone 16 ou iPad, réglez l\'angle de perspective et admirez le rendu en temps réel.",
                       gradient: 'from-indigo-600 to-fuchsia-600',
                       glow: 'shadow-indigo-600/30',
                     },
                     {
                       step: '03',
                       icon: Download,
-                      title: 'Exportez en 4K',
-                      desc: 'Téléchargez votre mockup en résolution 4K Retina ou copiez-le d\'un clic pour l\'insérer dans vos présentations.',
+                      title: 'Exportez et partagez',
+                      desc: "Téléchargez votre mockup jusqu'en 4K, en vidéo ou en PDF, ou envoyez un lien à votre client.",
                       gradient: 'from-fuchsia-600 to-rose-600',
                       glow: 'shadow-fuchsia-600/30',
                     },
@@ -862,51 +868,75 @@ export default function HomePage() {
                 {[
                   {
                     icon: Monitor,
-                    title: '7 Appareils Réels',
-                    desc: 'MacBook Pro M3, iPhone 16 Pro, iPad Pro, iMac, Apple Watch, Safari macOS et Flat.',
+                    title: '9 appareils',
+                    desc: 'MacBook, PC portable, iMac, iPad, iPhone, Android, montre, navigateur seul et cadre plat.',
                     gradient: 'from-violet-600 to-indigo-600',
                   },
                   {
-                    icon: Aperture,
-                    title: 'Studio 3D Temps Réel',
-                    desc: 'Ajustez l\'orientation 3D, l\'inclinaison, les ombres portées et les reflets en direct.',
-                    gradient: 'from-indigo-600 to-fuchsia-600',
-                  },
-                  {
-                    icon: ScanLine,
-                    title: 'Export 4K & Presse-Papier',
-                    desc: 'Téléchargement PNG haute résolution jusqu\'en 4K et copie instantanée en 1 clic.',
-                    gradient: 'from-fuchsia-600 to-rose-600',
-                  },
-                  {
-                    icon: Zap,
-                    title: 'Capture Intelligente',
-                    desc: 'Moteur de capture automatique avec masquage des bannières cookies et popups.',
-                    gradient: 'from-amber-500 to-orange-500',
-                  },
-                  {
-                    icon: Wand2,
-                    title: 'Fonds Couleurs Magiques',
-                    desc: 'Extraction automatique des couleurs dominantes de votre site, dégradés mesh et transparence.',
-                    gradient: 'from-rose-600 to-pink-600',
-                  },
-                  {
-                    icon: ImagePlus,
-                    title: 'Import de Captures',
-                    desc: 'Site local ou privé ? Importez directement une capture PNG, JPG ou WebP de votre choix.',
-                    gradient: 'from-cyan-600 to-indigo-600',
-                  },
-                  {
-                    icon: Layout,
-                    title: 'Ratios Multi-Canaux',
-                    desc: 'Prêt pour Product Hunt, Twitter/X, LinkedIn (16:9), Instagram (1:1) et Stories (9:16).',
+                    icon: Camera,
+                    title: 'Scènes photo réalistes',
+                    desc: 'Votre site en perspective sur un bureau ou dans une main, avec la vraie version mobile.',
                     gradient: 'from-emerald-600 to-cyan-600',
                   },
                   {
-                    icon: Palette,
-                    title: 'Calques Textes & Filtres',
-                    desc: 'Ajoutez vos titres, slogans, logos et appliquez des filtres (grain cinéma, VHS, glitch).',
+                    icon: Bot,
+                    title: 'Directeur artistique IA',
+                    desc: "L'IA analyse la page et vous dit quelle section mettre en avant, et pourquoi.",
+                    gradient: 'from-indigo-600 to-fuchsia-600',
+                  },
+                  {
+                    icon: FileText,
+                    title: 'Présentation client PDF',
+                    desc: 'Plusieurs mockups et vos textes dans un PDF prêt à joindre à un devis.',
+                    gradient: 'from-fuchsia-600 to-rose-600',
+                  },
+                  {
+                    icon: Link2,
+                    title: 'Lien de partage',
+                    desc: 'Une page pour votre client : il voit le mockup et le télécharge, sans créer de compte.',
+                    gradient: 'from-amber-500 to-orange-500',
+                  },
+                  {
+                    icon: Video,
+                    title: 'Vidéos et GIF animés',
+                    desc: "Rotation 3D, entrée, zoom, ou défilement de la page entière dans l'écran.",
+                    gradient: 'from-rose-600 to-pink-600',
+                  },
+                  {
+                    icon: Layout,
+                    title: 'Tous les formats',
+                    desc: 'LinkedIn, Instagram, statut WhatsApp, carrousels, App Store et Google Play.',
+                    gradient: 'from-cyan-600 to-indigo-600',
+                  },
+                  {
+                    icon: Zap,
+                    title: 'Capture intelligente',
+                    desc: 'Plusieurs pages du site, version mobile, version sombre, bannières cookies masquées.',
                     gradient: 'from-violet-600 to-fuchsia-600',
+                  },
+                  {
+                    icon: PenLine,
+                    title: 'Annotations et flou',
+                    desc: 'Flèches, cadres, étapes, loupe, et vrai floutage des informations privées.',
+                    gradient: 'from-orange-500 to-rose-600',
+                  },
+                  {
+                    icon: Palette,
+                    title: 'Kit de marque',
+                    desc: 'Votre logo, vos couleurs et votre police appliqués en un clic sur chaque mockup.',
+                    gradient: 'from-pink-600 to-violet-600',
+                  },
+                  {
+                    icon: FolderOpen,
+                    title: 'Mes projets',
+                    desc: 'Chaque mockup est enregistré : rouvrez-le, dupliquez-le, rangez-le par client.',
+                    gradient: 'from-indigo-600 to-cyan-600',
+                  },
+                  {
+                    icon: Aperture,
+                    title: 'Studio 3D en direct',
+                    desc: 'Angle, inclinaison, ombres, fonds dégradés, photos et motifs, réglés en temps réel.',
+                    gradient: 'from-emerald-600 to-teal-600',
                   },
                 ].map((feature, i) => (
                   <div key={i} className="group p-3.5 sm:p-5 rounded-2xl bg-zinc-800/40 border border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800/70 transition-all flex flex-col items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3">
@@ -1008,7 +1038,7 @@ export default function HomePage() {
 
               <p className="mt-8 text-center text-sm text-zinc-400">
                 <BadgeCheck className="inline w-4 h-4 text-violet-400 mr-1.5 -mt-0.5" />
-                Marque blanche : vos mockups avec le logo de votre agence (plan Agence).
+                Marque blanche (plan Agence) : vos pages de partage portent le nom et le logo de votre agence, sans mention d&apos;OmniMockup.
               </p>
             </div>
           </section>
@@ -1072,80 +1102,56 @@ export default function HomePage() {
 
               {/* Plans Homepage configurés dynamiquement avec la source unique src/lib/pricing.ts */}
               {(() => {
+                // Descriptions et avantages repris de la liste officielle des forfaits (src/lib/pricing.ts)
                 const homepagePlans = [
                   {
                     id: 0,
                     name: 'Découverte',
                     price: formatPrice(0, currency),
                     period: 'Gratuit à vie',
-                    desc: 'Studio complet sans carte bancaire requise. Testez et concevez librement.',
+                    desc: PLANS[0].description,
                     cta: 'Commencer gratuitement',
                     href: '#',
                     onCtaClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
                     highlighted: false,
                     badge: '100% Gratuit',
-                    features: [
-                      { name: 'Studio complet (MacBook, iPhone)', included: true },
-                      { name: '3 exports PNG par jour (1x)', included: true },
-                      { name: 'Filigrane discret OmniMockup', included: true },
-                      { name: 'Exports 4K Retina', included: false },
-                      { name: 'Export Vidéo MP4', included: false },
-                    ],
+                    features: PLANS[0].features,
                   },
                   {
                     id: 1,
                     name: 'Solo',
                     price: formatPrice(getPlanMonthlyPrice(PLANS[1], currency), currency),
                     period: 'par mois',
-                    desc: 'Pour les créateurs occasionnels. 20 exports HD/mois avec filigrane discret.',
+                    desc: PLANS[1].description,
                     cta: 'Choisir Solo',
                     href: '/pricing',
                     highlighted: false,
                     badge: null,
-                    features: [
-                      { name: 'Studio complet 3D', included: true },
-                      { name: '20 exports PNG HD 2x / mois', included: true },
-                      { name: 'Filigrane discret (non intrusif)', included: true },
-                      { name: 'Exports 4K Retina', included: false },
-                      { name: 'Export Vidéo MP4', included: false },
-                    ],
+                    features: PLANS[1].features,
                   },
                   {
                     id: 2,
                     name: 'Pro',
                     price: formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency),
                     period: `par mois (${formatPrice(getPlanMonthlyEquivalent(PLANS[2], currency), currency)} en annuel)`,
-                    desc: 'Exports illimités HD & 4K, ZÉRO filigrane, vidéo animée et kit IA. Le meilleur choix.',
+                    desc: PLANS[2].description,
                     cta: 'Débloquer Pro',
                     href: '/pricing',
                     highlighted: true,
                     badge: 'Populaire',
-                    features: [
-                      { name: 'Exports PNG HD 2x & 4K ILLIMITÉS', included: true },
-                      { name: 'ZÉRO filigrane (rendus neutres)', included: true },
-                      { name: '10 exports Vidéo MP4 / mois', included: true },
-                      { name: 'IA Pitch Kit (5 générations / mois)', included: true },
-                      { name: 'Templates Pro & réseaux sociaux', included: true },
-                    ],
+                    features: PLANS[2].features,
                   },
                   {
                     id: 3,
                     name: 'Agence',
                     price: formatPrice(getPlanMonthlyPrice(PLANS[3], currency), currency),
                     period: 'par mois',
-                    desc: 'La suite complète : marque blanche totale, vidéo illimitée, kit de vente IA et support WhatsApp.',
+                    desc: PLANS[3].description,
                     cta: 'Choisir Agence',
                     href: '/pricing',
                     highlighted: false,
                     badge: null,
-                    features: [
-                      { name: 'Tout le forfait Pro inclus', included: true },
-                      { name: 'Kit Vente & Devis IA', included: true },
-                      { name: 'Marque blanche totale (White Label)', included: true },
-                      { name: 'Exports Vidéo MP4 ILLIMITÉS', included: true },
-                      { name: 'Pack OmniExport 1-Click (5 formats)', included: true },
-                      { name: 'Support WhatsApp direct 7j/7', included: true },
-                    ],
+                    features: PLANS[3].features,
                   },
                 ];
 
@@ -1349,11 +1355,11 @@ export default function HomePage() {
                   },
                   {
                     q: 'Comment fonctionne la marque blanche ?',
-                    a: 'Avec le plan Agence, la mention OmniMockup disparaît et vous pouvez ajouter le logo de votre agence sur vos rendus. Vos clients voient uniquement votre marque.',
+                    a: 'Dès le plan Pro, vos images, vidéos et PDF ne portent plus aucun filigrane. Avec le plan Agence, les pages de partage envoyées à vos clients affichent aussi le nom et le logo de votre agence (votre kit de marque), sans aucune mention d\'OmniMockup.',
                   },
                   {
                     q: 'Que deviennent les captures des sites de mes clients ?',
-                    a: 'La page est chargée par notre moteur de capture, puis l\'image est envoyée directement à votre navigateur. Nous ne conservons pas les captures sur nos serveurs.',
+                    a: 'La page est chargée par notre moteur de capture, puis l\'image est envoyée directement à votre navigateur. Nous ne conservons pas les captures sur nos serveurs, sauf si vous créez un lien de partage : l\'image est alors hébergée jusqu\'à ce que vous supprimiez le lien.',
                   },
                   {
                     q: 'Faut-il créer un compte pour tester ?',

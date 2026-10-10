@@ -273,7 +273,7 @@ export default function PricingPage() {
           </h1>
 
           <p className="mt-4 text-sm sm:text-base text-stone-600 leading-relaxed max-w-2xl mx-auto">
-            Exports 4K sans filigrane, vidéo animée et kit IA. Choisissez l&apos;abonnement adapté à votre rythme ou achetez vos crédits à la carte.
+            Exports 4K sans filigrane, vidéos et GIF animés, Pitch IA. Choisissez l&apos;abonnement adapté à votre rythme ou achetez vos crédits à la carte.
           </p>
         </div>
 
@@ -572,7 +572,7 @@ export default function PricingPage() {
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-100 text-amber-950 text-xs font-black mb-2 border border-amber-200">
                 <Coins className="w-3.5 h-3.5 text-amber-600" />
-                <span>Stratégie Popcorn — Pas d&apos;abonnement, payez à l&apos;usage</span>
+                <span>Sans abonnement : payez à l&apos;usage</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-stone-900">
                 Packs de Crédits à la Carte (Pay-per-use)
@@ -662,23 +662,23 @@ export default function PricingPage() {
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
               <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
                 <div className="font-bold text-stone-900">1 Crédit</div>
-                <div className="text-[11px] text-stone-500 mt-0.5">PNG HD 2x sans filigrane</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">Image HD sans filigrane</div>
               </div>
               <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
                 <div className="font-bold text-stone-900">2 Crédits</div>
-                <div className="text-[11px] text-stone-500 mt-0.5">Export 4K Retina</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">Image 4K</div>
               </div>
               <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
                 <div className="font-bold text-stone-900">3 Crédits</div>
-                <div className="text-[11px] text-stone-500 mt-0.5">Vidéo MP4 animée (3 s)</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">Vidéo ou GIF animé</div>
               </div>
               <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
                 <div className="font-bold text-stone-900">4 Crédits</div>
-                <div className="text-[11px] text-stone-500 mt-0.5">Pack 5 Ratios en 1-clic</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">Pack de formats (réseaux, App Store, Google Play)</div>
               </div>
               <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
                 <div className="font-bold text-stone-900">2 Crédits</div>
-                <div className="text-[11px] text-stone-500 mt-0.5">IA Pitch Kit</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">Pitch IA (texte de vente)</div>
               </div>
             </div>
           </div>
@@ -713,9 +713,9 @@ export default function PricingPage() {
               </thead>
               <tbody className="divide-y divide-sand-100">
                 <tr>
-                  <td className="py-3.5 px-4 font-medium text-stone-800">Exports PNG HD 2x</td>
-                  <td className="py-3.5 px-4 text-center text-stone-500">1x uniquement (3/j)</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">20 / mois</td>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Exports d&apos;images</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">3 / jour (Standard)</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">20 / mois (HD)</td>
                   <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Illimité</td>
                   <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
                 </tr>
@@ -727,14 +727,14 @@ export default function PricingPage() {
                   <td className="py-3.5 px-4 text-center font-bold text-emerald-600">ZÉRO filigrane</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-medium text-stone-800">Exports 4K Retina</td>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Qualité 4K</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
                   <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Illimité</td>
                   <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-medium text-stone-800">Export Vidéo animée MP4</td>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Vidéos et GIF animés</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
                   <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">10 / mois</td>
@@ -748,32 +748,32 @@ export default function PricingPage() {
                   <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-medium text-stone-800">IA Pitch Kit</td>
-                  <td className="py-3.5 px-4 text-center text-stone-300">—</td>
-                  <td className="py-3.5 px-4 text-center text-stone-300">—</td>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Pitch IA (textes de vente)</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">2 crédits</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">2 crédits</td>
                   <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">5 / mois</td>
                   <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-medium text-stone-800">Marque Blanche (White Label)</td>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Marque blanche (pages de partage à votre marque)</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
                   <td className="py-3.5 px-4 text-center text-stone-300 bg-violet-50/50">—</td>
                   <td className="py-3.5 px-4 text-center font-bold text-emerald-600">Inclus</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-medium text-stone-800">Sièges collaborateurs <span className="text-[10px] font-semibold text-violet-600">(bientôt)</span></td>
-                  <td className="py-3.5 px-4 text-center text-stone-500">1</td>
-                  <td className="py-3.5 px-4 text-center text-stone-500">1</td>
-                  <td className="py-3.5 px-4 text-center text-stone-500 bg-violet-50/50">1</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">5 sièges</td>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Liens de partage pour vos clients</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">5 actifs</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-medium text-stone-800">Support prioritaire</td>
-                  <td className="py-3.5 px-4 text-center text-stone-400">Communautaire</td>
-                  <td className="py-3.5 px-4 text-center text-stone-500">Email</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Email 24h</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-emerald-600">WhatsApp 7j/7</td>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Support</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">E-mail</td>
+                  <td className="py-3.5 px-4 text-center text-stone-500">E-mail</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">E-mail</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-emerald-600">WhatsApp prioritaire</td>
                 </tr>
               </tbody>
             </table>

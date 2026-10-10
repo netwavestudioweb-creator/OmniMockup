@@ -121,6 +121,8 @@ import { PresentationDialog, MAX_PRESENTATION_SLIDES, type PresentationOutput } 
 import { renderCarouselPages, buildLinkedInCarouselPdf } from '@/lib/carousel';
 import { SitePagesPanel, type SitePage } from './SitePagesPanel';
 import { PhotoBackgroundsPanel } from './PhotoBackgroundsPanel';
+import { PhotoScenesPanel } from './PhotoScenesPanel';
+import { renderPhotoScene, type PhotoScene } from '@/lib/photoScenes';
 import { buildPresentationPdf, type PresentationMeta, type PresentationSlide } from '@/lib/presentationPdf';
 import type { BrandKit } from '@/lib/brandKit';
 import { STUDIO_FONTS, STUDIO_FONT_VARIABLES, studioFontFamily } from '@/lib/studioFonts';
@@ -664,7 +666,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const [mobileCaptureState, setMobileCaptureState] = useState<'idle' | 'loading' | 'done' | 'error'>(
     initialMobileScreenshot ? 'done' : 'idle'
   );
+  // Scène photo réaliste active (la capture est placée dans l'écran d'une vraie photo)
+  const [photoScene, setPhotoScene] = useState<PhotoScene | null>(null);
+  const [photoSceneLoading, setPhotoSceneLoading] = useState<string | null>(null);
+  const [photoSceneError, setPhotoSceneError] = useState('');
+  // Scène téléphone choisie avant que la version mobile du site soit prête : composée dès son arrivée
+  const [pendingPhotoScene, setPendingPhotoScene] = useState<PhotoScene | null>(null);
   const phoneVisible =
+    photoScene?.kind === 'phone' ||
+    pendingPhotoScene?.kind === 'phone' ||
     config.mockupType === 'iphone' ||
     config.mockupType === 'android' ||
     config.layoutMode === 'dual-stacked' ||
@@ -2147,6 +2157,109 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     reader.readAsDataURL(file);
     e.target.value = '';
   };
+
+  // ══ SCÈNES PHOTO RÉALISTES ══
+  const photoScenePrevRef = useRef<{
+    bgType: SceneConfig['bgType'];
+    bgValue: string;
+    bgTransparent: boolean;
+    mockupHidden: boolean;
+    preset: FramePresetOption;
+  } | null>(null);
+  const lastSceneShotRef = useRef('');
+
+  const applyPhotoScene = async (scene: PhotoScene) => {
+    if (
+      scene.kind === 'phone' &&
+      !mobileScreenshot &&
+      canCaptureMobile &&
+      config.phoneScreen !== 'desktop' &&
+      mobileCaptureState !== 'error'
+    ) {
+      // Attendre la vraie version téléphone du site (10 à 20 s) plutôt que d'y mettre la version ordinateur
+      setPendingPhotoScene(scene);
+      setPhotoSceneLoading(scene.id);
+      setPhotoSceneError('');
+      return;
+    }
+    const shot = scene.kind === 'phone' ? mobileScreenshot || currentScreenshot : currentScreenshot;
+    if (!shot) return;
+    setPhotoSceneLoading(scene.id);
+    setPhotoSceneError('');
+    try {
+      const img = await renderPhotoScene(scene, shot);
+      lastSceneShotRef.current = shot;
+      if (!photoScenePrevRef.current) {
+        photoScenePrevRef.current = {
+          bgType: config.bgType,
+          bgValue: config.bgValue,
+          bgTransparent: !!config.bgTransparent,
+          mockupHidden,
+          preset: currentFramePreset,
+        };
+      }
+      // Le canevas prend exactement le format de la photo
+      setCurrentFramePreset({
+        id: `scene-${scene.id}`,
+        name: `Scène photo (${scene.width}×${scene.height})`,
+        category: 'Custom',
+        ratioId: 'libre',
+        ratioLabel: `${scene.width}:${scene.height}`,
+        width: scene.width,
+        height: scene.height,
+        ratioClass: 'aspect-auto',
+      });
+      setConfig((p) => ({
+        ...p,
+        aspectRatio: 'libre',
+        bgType: 'texture',
+        bgValue: `url(${img}) center/cover no-repeat`,
+        bgTransparent: false,
+      }));
+      setMockupHidden(true);
+      setPhotoScene(scene);
+    } catch {
+      setPhotoSceneError('Photo indisponible pour le moment. Vérifiez la connexion et réessayez.');
+    } finally {
+      setPhotoSceneLoading(null);
+    }
+  };
+
+  const exitPhotoScene = () => {
+    const prev = photoScenePrevRef.current;
+    if (prev) {
+      setConfig((p) => ({
+        ...p,
+        bgType: prev.bgType,
+        bgValue: prev.bgValue,
+        bgTransparent: prev.bgTransparent,
+        aspectRatio: prev.preset.ratioId,
+      }));
+      setMockupHidden(prev.mockupHidden);
+      setCurrentFramePreset(prev.preset);
+    }
+    photoScenePrevRef.current = null;
+    lastSceneShotRef.current = '';
+    setPhotoScene(null);
+  };
+
+  useEffect(() => {
+    if (!pendingPhotoScene || (!mobileScreenshot && mobileCaptureState !== 'error')) return;
+    const scene = pendingPhotoScene;
+    setPendingPhotoScene(null);
+    setPhotoSceneLoading(null);
+    applyPhotoScene(scene);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPhotoScene, mobileScreenshot, mobileCaptureState]);
+
+  // La scène est recomposée quand la capture change (version mobile reçue, autre page du site…)
+  useEffect(() => {
+    if (!photoScene || photoSceneLoading) return;
+    const shot = photoScene.kind === 'phone' ? mobileScreenshot || currentScreenshot : currentScreenshot;
+    if (!shot || shot === lastSceneShotRef.current) return;
+    applyPhotoScene(photoScene);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoScene, mobileScreenshot, currentScreenshot]);
 
   // Taille affichée du canevas : la plus grande possible dans la zone, en gardant la proportion exacte
   const presetRatio = currentFramePreset.width / currentFramePreset.height;
@@ -3891,6 +4004,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   )}
                 </div>
 
+                <PhotoScenesPanel
+                  activeId={photoScene?.id || null}
+                  loadingId={photoSceneLoading}
+                  error={photoSceneError}
+                  onPick={applyPhotoScene}
+                  onExit={exitPhotoScene}
+                />
+
                 {/* Modèle d'appareil (9 options) */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
@@ -3914,14 +4035,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <button
                           key={item.type}
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
+                            if (photoScene) exitPhotoScene();
                             setConfig((p) => ({
                               ...p,
                               mockupType: item.type,
                               // Le téléphone choisi est aussi utilisé en Duo et en Trio
                               phoneModel: item.type === 'android' ? 'android' : item.type === 'iphone' ? 'iphone' : p.phoneModel,
-                            }))
-                          }
+                            }));
+                          }}
                           className={`py-2 px-1.5 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1.5 transition-all ${
                             isSelected
                               ? 'bg-violet-600 text-white border-violet-500 shadow-md font-bold'

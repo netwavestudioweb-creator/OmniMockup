@@ -1556,6 +1556,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         ? { id, kind, x: 30 + ((existingSteps * 12) % 50), y: 30, color: annotationColor, label: String(existingSteps + 1) }
         : kind === 'blur'
         ? { id, kind, x: 38, y: 40, w: 24, h: 12, color: '#000000' }
+        : kind === 'loupe'
+        ? { id, kind, x: 66, y: 12, w: 18, h: Math.round(((18 * sceneLogicalW) / sceneLogicalH) * 10) / 10, color: '#ffffff', srcX: 30, srcY: 4, zoom: 2 }
         : { id, kind, x: 36, y: 36, w: 28, h: 18, color: annotationColor };
     setConfig((prev) => ({ ...prev, annotations: [...(prev.annotations || []), base] }));
     setSelectedAnnotationId(id);
@@ -3135,6 +3137,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   sceneRef={sceneRef}
                   snap={snapToCenter}
                   onDragEnd={clearSnapGuides}
+                  loupeImage={currentScreenshot}
                 />
               )}
 
@@ -4183,13 +4186,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               <div className="space-y-5 animate-fade-in">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Ajouter</label>
-                  <div className="grid grid-cols-5 gap-1.5">
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                     {([
                       { kind: 'arrow', label: 'Flèche', icon: MoveUpRight },
                       { kind: 'rect', label: 'Cadre', icon: Square },
                       { kind: 'ellipse', label: 'Cercle', icon: Circle },
                       { kind: 'number', label: 'Étape', icon: Hash },
                       { kind: 'blur', label: 'Flouter', icon: BlurIcon },
+                      { kind: 'loupe', label: 'Loupe', icon: ZoomIn },
                     ] as const).map((tool) => {
                       const Icon = tool.icon;
                       return (
@@ -4198,7 +4202,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           type="button"
                           onClick={() => handleAddAnnotation(tool.kind)}
                           className="py-2 rounded-xl border bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:border-violet-500/60 text-[10px] font-semibold flex flex-col items-center gap-1 transition-all"
-                          title={tool.kind === 'blur' ? 'Cacher une information sensible (e-mail, nom, chiffre…)' : `Ajouter : ${tool.label}`}
+                          title={tool.kind === 'blur' ? 'Cacher une information sensible (e-mail, nom, chiffre…)' : tool.kind === 'loupe' ? 'Agrandir un détail de la page dans un cercle' : `Ajouter : ${tool.label}`}
                         >
                           <Icon className="w-4 h-4" />
                           {tool.label}
@@ -4241,6 +4245,52 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   </div>
                 </div>
 
+                {(() => {
+                  const loupe = (config.annotations || []).find((a) => a.id === selectedAnnotationId && a.kind === 'loupe');
+                  if (!loupe || !currentScreenshot) return null;
+                  return (
+                    <div className="space-y-2 p-3 rounded-xl bg-zinc-900 border border-zinc-800">
+                      <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Loupe : détail à agrandir</label>
+                      <p className="text-[11px] text-zinc-500">Cliquez sur la page à l&apos;endroit à montrer.</p>
+                      <div className="max-h-56 overflow-y-auto rounded-lg border border-zinc-800">
+                        <div
+                          className="relative cursor-crosshair"
+                          role="button"
+                          aria-label="Choisir le détail à agrandir"
+                          onClick={(e) => {
+                            const r = e.currentTarget.getBoundingClientRect();
+                            handleUpdateAnnotation(loupe.id, {
+                              srcX: Math.round(((e.clientX - r.left) / r.width) * 1000) / 10,
+                              srcY: Math.round(((e.clientY - r.top) / r.height) * 1000) / 10,
+                            });
+                          }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={currentScreenshot} alt="" className="w-full block select-none pointer-events-none" />
+                          <span
+                            className="absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-2 border-violet-400 bg-violet-500/30 pointer-events-none"
+                            style={{ left: `${loupe.srcX ?? 50}%`, top: `${loupe.srcY ?? 10}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-zinc-950 border border-zinc-800" role="radiogroup" aria-label="Niveau de zoom">
+                        {[2, 3, 4].map((z) => (
+                          <button
+                            key={z}
+                            type="button"
+                            role="radio"
+                            aria-checked={(loupe.zoom ?? 2) === z}
+                            onClick={() => handleUpdateAnnotation(loupe.id, { zoom: z })}
+                            className={`py-1.5 rounded-lg text-xs font-bold ${(loupe.zoom ?? 2) === z ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+                          >
+                            ×{z}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {(config.annotations || []).length > 0 ? (
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
@@ -4260,7 +4310,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             className="flex-1 flex items-center gap-2 text-left text-xs text-zinc-200"
                           >
                             <span className="w-3 h-3 rounded-full border border-white/30 shrink-0" style={{ background: a.kind === 'blur' ? 'transparent' : a.color }} />
-                            {a.kind === 'arrow' ? 'Flèche' : a.kind === 'rect' ? 'Cadre' : a.kind === 'ellipse' ? 'Cercle' : a.kind === 'blur' ? 'Zone floutée' : `Étape ${a.label}`}
+                            {a.kind === 'arrow' ? 'Flèche' : a.kind === 'rect' ? 'Cadre' : a.kind === 'ellipse' ? 'Cercle' : a.kind === 'blur' ? 'Zone floutée' : a.kind === 'loupe' ? 'Loupe' : `Étape ${a.label}`}
                           </button>
                           {a.kind === 'number' && (
                             <input

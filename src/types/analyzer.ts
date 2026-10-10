@@ -46,7 +46,7 @@ export interface SceneSocialBadge {
 /** Annotation dessinée sur la scène (coordonnées en % de la scène) */
 export interface SceneAnnotation {
   id: string;
-  kind: 'arrow' | 'rect' | 'ellipse' | 'number' | 'blur';
+  kind: 'arrow' | 'rect' | 'ellipse' | 'number' | 'blur' | 'loupe';
   x: number;
   y: number;
   /** Flèche : point d'arrivée */
@@ -58,6 +58,10 @@ export interface SceneAnnotation {
   color: string;
   /** Étape numérotée */
   label?: string;
+  /** Loupe : point agrandi (en % de la capture) et niveau de zoom */
+  srcX?: number;
+  srcY?: number;
+  zoom?: number;
 }
 
 export interface SceneConfig {

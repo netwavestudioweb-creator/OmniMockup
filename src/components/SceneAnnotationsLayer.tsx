@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { SceneAnnotation } from '@/types/analyzer';
 
 interface SceneAnnotationsLayerProps {
@@ -16,6 +16,8 @@ interface SceneAnnotationsLayerProps {
   /** Magnétisme : renvoie la position aimantée et signale les repères affichés */
   snap?: (xPercent: number, yPercent: number) => { x: number; y: number };
   onDragEnd?: () => void;
+  /** Capture affichée dans la loupe */
+  loupeImage?: string;
 }
 
 type DragMode = 'move' | 'start' | 'end' | 'resize';
@@ -38,7 +40,16 @@ export const SceneAnnotationsLayer: React.FC<SceneAnnotationsLayerProps> = ({
   sceneRef,
   snap,
   onDragEnd,
+  loupeImage,
 }) => {
+  // Proportions de la capture (hauteur / largeur) pour cadrer la loupe
+  const [imgRatio, setImgRatio] = useState(1);
+  useEffect(() => {
+    if (!loupeImage) return;
+    const img = new Image();
+    img.onload = () => img.naturalWidth && setImgRatio(img.naturalHeight / img.naturalWidth);
+    img.src = loupeImage;
+  }, [loupeImage]);
   const dragRef = useRef<{ id: string; mode: DragMode; startX: number; startY: number; orig: SceneAnnotation } | null>(null);
 
   const toPercentDelta = (dxClient: number, dyClient: number) => {
@@ -81,6 +92,10 @@ export const SceneAnnotationsLayer: React.FC<SceneAnnotationsLayerProps> = ({
       onChange(d.id, { x: round1(clamp(o.x + dx, 0, 100)), y: round1(clamp(o.y + dy, 0, 100)) });
     } else if (d.mode === 'end') {
       onChange(d.id, { x2: round1(clamp((o.x2 ?? o.x) + dx, 0, 100)), y2: round1(clamp((o.y2 ?? o.y) + dy, 0, 100)) });
+    } else if (d.mode === 'resize' && o.kind === 'loupe') {
+      // La loupe reste ronde
+      const w = round1(clamp((o.w ?? 18) + dx, 6, 60));
+      onChange(d.id, { w, h: round1((w * width) / height) });
     } else if (d.mode === 'resize') {
       onChange(d.id, { w: round1(clamp((o.w ?? 10) + dx, 2, 100)), h: round1(clamp((o.h ?? 10) + dy, 2, 100)) });
     }
@@ -130,6 +145,54 @@ export const SceneAnnotationsLayer: React.FC<SceneAnnotationsLayerProps> = ({
           </div>
         ))}
 
+      {/* Loupes : détail de la capture agrandi dans un cercle */}
+      {loupeImage &&
+        annotations
+          .filter((a) => a.kind === 'loupe')
+          .map((a) => {
+            const D = px(a.w ?? 18, width);
+            // Part de la largeur de la capture visible dans la loupe (≈ la taille de l'appareil divisée par le zoom)
+            const frac = clamp((a.w ?? 18) / 60 / (a.zoom ?? 2), 0.03, 1);
+            const bgW = D / frac;
+            const bgH = bgW * imgRatio;
+            const offX = clamp(((a.srcX ?? 50) / 100) * bgW - D / 2, 0, Math.max(0, bgW - D));
+            const offY = clamp(((a.srcY ?? 10) / 100) * bgH - D / 2, 0, Math.max(0, bgH - D));
+            return (
+              <div
+                key={a.id}
+                onPointerDown={(e) => startDrag(e, a, 'move')}
+                onPointerMove={onMove}
+                onPointerUp={endDrag}
+                className="absolute z-[38] cursor-move touch-none rounded-full"
+                style={{
+                  left: `${a.x}%`,
+                  top: `${a.y}%`,
+                  width: D,
+                  height: D,
+                  border: `${stroke}px solid ${a.color}`,
+                  boxShadow: '0 12px 30px rgba(0,0,0,0.45)',
+                  backgroundColor: '#fff',
+                  backgroundImage: `url(${loupeImage})`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: `${bgW}px ${bgH}px`,
+                  backgroundPosition: `-${offX}px -${offY}px`,
+                }}
+                title="Loupe (glisser pour déplacer)"
+              >
+                {selectedId === a.id && (
+                  <>
+                    <span data-export-hide className="absolute -inset-2 rounded-full ring-2 ring-violet-400 pointer-events-none" />
+                    <span
+                      data-export-hide
+                      onPointerDown={(e) => startDrag(e, a, 'resize')}
+                      className="absolute right-0 bottom-0 w-4 h-4 rounded-full bg-violet-500 border-2 border-white cursor-nwse-resize"
+                    />
+                  </>
+                )}
+              </div>
+            );
+          })}
+
       <svg
         className="absolute inset-0 z-[37] overflow-visible"
         width="100%"
@@ -160,7 +223,7 @@ export const SceneAnnotationsLayer: React.FC<SceneAnnotationsLayerProps> = ({
 
         {annotations.map((a) => {
           const selected = selectedId === a.id;
-          if (a.kind === 'blur') return null;
+          if (a.kind === 'blur' || a.kind === 'loupe') return null;
 
           if (a.kind === 'arrow') {
             const x1 = px(a.x, width);

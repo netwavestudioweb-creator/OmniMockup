@@ -3,7 +3,7 @@
 import React from 'react';
 import { usePrices } from '@/lib/usePrices';
 import Link from 'next/link';
-import { Sparkles, Flame, Check, X, ArrowRight, Coins, Zap } from 'lucide-react';
+import { Sparkles, Flame, Check, X, Coins, Zap } from 'lucide-react';
 import { trackEvent } from '@/lib/tracking';
 
 export type UpsellMode = 'free_quota_reached' | 'solo_quota_approaching' | 'low_credits' | 'feature_locked' | 'video_quota_reached';

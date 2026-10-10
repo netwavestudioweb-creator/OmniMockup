@@ -1,4 +1,5 @@
 import React from 'react';
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import Link from 'next/link';
 import { Layers } from 'lucide-react';
 import { CurrencySwitcher } from './CurrencySwitcher';
@@ -36,7 +37,7 @@ export const Footer: React.FC = () => {
           <Link href="/privacy" className="hover:text-violet-700 transition-colors">
             Confidentialité (RGPD)
           </Link>
-          <a href="mailto:support@omnimockup.com" className="hover:text-violet-700 transition-colors">
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-violet-700 transition-colors">
             Contact Support
           </a>
         </div>

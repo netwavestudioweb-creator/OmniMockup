@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { PaymentResultPanel, type PaymentResult } from '@/components/PaymentResultPanel';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
@@ -21,8 +22,6 @@ import {
   getOrderBumpPrice,
   Plan,
   CreditPack,
-  PlanId,
-  Currency,
 } from '@/lib/pricing';
 import { trackEvent } from '@/lib/tracking';
 import {
@@ -31,22 +30,15 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
-  Building2,
   Loader2,
   AlertCircle,
   Flame,
-  CheckCircle2,
   Crown,
-  Percent,
   Clock,
   Smartphone,
   CreditCard,
   Globe,
   Coins,
-  Video,
-  Layers,
-  HelpCircle,
-  Zap,
 } from 'lucide-react';
 
 export default function PricingPage() {
@@ -59,7 +51,7 @@ export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [paymentSuccessMessage, setPaymentSuccessMessage] = useState<string | null>(null);
+  const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
 
   useEffect(() => {
     setPaymentMethod(mobileMoneyRegion ? 'saspay' : 'stripe');
@@ -79,19 +71,12 @@ export default function PricingPage() {
 
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('success') === 'true') {
-        setPaymentSuccessMessage('🎉 Paiement validé avec succès ! Votre compte a été mis à niveau.');
-      } else if (params.get('canceled') === 'true') {
-        setCheckoutError('Le paiement a été annulé. Vous pouvez réessayer à tout moment.');
-      } else if (params.get('pending') === 'true') {
-        setPaymentSuccessMessage(
-          'Paiement en cours de confirmation. Votre compte sera mis à jour automatiquement dès que l’opérateur l’aura validé.'
-        );
-      } else if (params.get('error') === 'verification_failed') {
-        setCheckoutError(
-          'Nous n’avons pas pu confirmer ce paiement. Si vous avez été débité, contactez-nous : il sera appliqué manuellement.'
-        );
-      }
+      if (params.get('success') === 'true') setPaymentResult('success');
+      else if (params.get('canceled') === 'true') setPaymentResult('canceled');
+      else if (params.get('failed') === 'true') setPaymentResult('failed');
+      else if (params.get('expired') === 'true') setPaymentResult('expired');
+      else if (params.get('pending') === 'true') setPaymentResult('pending');
+      else if (params.get('error') === 'verification_failed') setPaymentResult('verification');
     }
   }, []);
 
@@ -276,18 +261,21 @@ export default function PricingPage() {
         </div>
 
         {/* NOTIFICATIONS & MESSAGES */}
-        {paymentSuccessMessage && (
-          <div className="max-w-3xl mx-auto mb-8 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm flex items-start gap-3 shadow-sm animate-fade-in">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-bold">{paymentSuccessMessage}</p>
-              <div className="mt-2">
-                <Link href="/" className="inline-flex items-center gap-1 font-bold text-emerald-700 underline">
-                  Lancer le studio et exporter dès maintenant →
-                </Link>
-              </div>
-            </div>
-          </div>
+        {paymentResult && (
+          <PaymentResultPanel
+            result={paymentResult}
+            paymentMethod={paymentMethod}
+            onRetry={() => {
+              setPaymentResult(null);
+              document.getElementById('formules')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            onSwitchMethod={() => {
+              setPaymentMethod((m) => (m === 'saspay' ? 'stripe' : 'saspay'));
+              setPaymentResult(null);
+              document.getElementById('formules')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            onClose={() => setPaymentResult(null)}
+          />
         )}
 
         {checkoutError && (
@@ -383,7 +371,7 @@ export default function PricingPage() {
         {/* ══════════════════════════════════════════════════════════════════════ */}
         {/* GRILLE DES 3 PLANS PAYANTS (Solo, Pro ⭐, Agence) — EFFET LEURRE POPCORN */}
         {/* ══════════════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto mb-16 items-stretch">
+        <div id="formules" className="scroll-mt-24 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto mb-16 items-stretch">
           {paidPlans.map((plan) => {
             const isTarget = plan.isPopular; // Pro
             const isAnchor = plan.isAnchor;  // Agence
@@ -428,16 +416,6 @@ export default function PricingPage() {
                       <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
                         {plan.name}
                       </h3>
-                      {isTarget && (
-                        <span className="text-[11px] font-bold text-violet-600 bg-violet-50 px-2.5 py-0.5 rounded-full border border-violet-200">
-                          Pack Cible
-                        </span>
-                      )}
-                      {isAnchor && (
-                        <span className="text-[11px] font-bold text-stone-600 bg-sand-100 px-2.5 py-0.5 rounded-full border border-sand-300">
-                          Sans Limite
-                        </span>
-                      )}
                     </div>
                     <p className="text-xs text-stone-500 mt-2 leading-relaxed min-h-[36px]">
                       {plan.description}

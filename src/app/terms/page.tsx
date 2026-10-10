@@ -1,4 +1,5 @@
 import React from 'react';
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -77,7 +78,7 @@ export default function TermsPage() {
               5. Contact & Support
             </h2>
             <p>
-              Pour toute question relative aux présentes conditions ou à l&apos;utilisation du service, vous pouvez contacter notre équipe à l&apos;adresse : <span className="font-semibold text-stone-900">support@omnimockup.com</span>.
+              Pour toute question relative aux présentes conditions ou à l&apos;utilisation du service, vous pouvez contacter notre équipe à l&apos;adresse : <span className="font-semibold text-stone-900">{SUPPORT_EMAIL}</span>.
             </p>
           </section>
         </div>

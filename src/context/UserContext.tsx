@@ -110,7 +110,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const currentUser = session?.user ?? null;
           setUser(currentUser);
           if (currentUser) {
-            await fetchProfile(currentUser.id);
+            // Profil au plus 4 s : la page s'affiche même si la base répond lentement
+            await Promise.race([fetchProfile(currentUser.id), new Promise((r) => setTimeout(r, 4000))]);
           } else {
             setProfile(null);
           }

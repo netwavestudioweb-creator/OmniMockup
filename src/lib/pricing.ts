@@ -254,7 +254,8 @@ export function getPlanAnnualSavings(plan: Plan, currency: Currency): number {
 
 export function formatPrice(amount: number, currency: Currency, showUnit = true): string {
   if (currency === 'EUR') {
-    const formatted = amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2);
+    // Écriture française : virgule décimale (4,17 €)
+    const formatted = (amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2)).replace('.', ',');
     return showUnit ? `${formatted} €` : formatted;
   }
   if (currency === 'USD') {

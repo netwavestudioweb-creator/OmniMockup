@@ -30,8 +30,14 @@ export async function GET(req: NextRequest) {
         return NextResponse.redirect(`${siteUrl}/account?success=true&provider=saspay`);
       case 'pending':
         return NextResponse.redirect(`${siteUrl}/pricing?pending=true`);
-      default:
+      default: {
+        // Annulé, expiré ou refusé : rien n'a été débité ; sinon vérification impossible (contact)
+        const reason = result.status === 'failed' ? result.reason : '';
+        if (/cancelled/.test(reason)) return NextResponse.redirect(`${siteUrl}/pricing?canceled=true`);
+        if (/expired/.test(reason)) return NextResponse.redirect(`${siteUrl}/pricing?expired=true`);
+        if (reason === 'payment_failed') return NextResponse.redirect(`${siteUrl}/pricing?failed=true`);
         return NextResponse.redirect(`${siteUrl}/pricing?error=verification_failed`);
+      }
     }
   } catch (err) {
     console.error('[SasPay] Retour de paiement :', err);

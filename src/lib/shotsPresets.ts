@@ -183,11 +183,15 @@ export const FRAME_PRESETS: FramePresetOption[] = [
   // DRIBBBLE
   { id: 'dribbble-shot', category: 'Dribbble', name: 'Dribbble Shot', ratioLabel: '4:3', ratioId: '4:3', width: 1600, height: 1200, ratioClass: 'aspect-[4/3]', desc: 'Format officiel Dribbble Pro' },
 
-  // APP STORE
-  { id: 'app-iphone-65', category: 'App Store', name: 'iPhone 6.5"', ratioLabel: '1284:2778', ratioId: '9:16', width: 1284, height: 2778, ratioClass: 'aspect-[1284/2778]', desc: 'iPhone Pro Max officiel App Store' },
-  { id: 'app-iphone-55', category: 'App Store', name: 'iPhone 5.5"', ratioLabel: '1242:2208', ratioId: '9:16', width: 1242, height: 2208, ratioClass: 'aspect-[1242/2208]', desc: 'iPhone 8 Plus officiel' },
-  { id: 'app-ipad-129', category: 'App Store', name: 'iPad Pro 12.9"', ratioLabel: '2048:2732', ratioId: '3:4', width: 2048, height: 2732, ratioClass: 'aspect-[2048/2732]', desc: 'iPad Pro officiel App Store' },
-  { id: 'app-mac', category: 'App Store', name: 'MacBook', ratioLabel: '16:10', ratioId: 'libre', width: 1920, height: 1200, ratioClass: 'aspect-[16/10]', desc: 'Écran Mac 16:10 officiel' },
+  // APP STORE & GOOGLE PLAY — tailles officielles (vérifiées le 10/10/2026 sur les pages d'Apple et de Google)
+  { id: 'app-iphone-63', category: 'App Store', name: 'iPhone 6,3"', ratioLabel: '1206:2622', ratioId: '9:16', width: 1206, height: 2622, ratioClass: 'aspect-[1206/2622]', desc: 'iPhone 14 Pro à 17 : taille obligatoire sur l’App Store' },
+  { id: 'app-iphone-69', category: 'App Store', name: 'iPhone 6,9"', ratioLabel: '1320:2868', ratioId: '9:16', width: 1320, height: 2868, ratioClass: 'aspect-[1320/2868]', desc: 'iPhone Pro Max récents (App Store)' },
+  { id: 'app-iphone-65', category: 'App Store', name: 'iPhone 6,5"', ratioLabel: '1284:2778', ratioId: '9:16', width: 1284, height: 2778, ratioClass: 'aspect-[1284/2778]', desc: 'iPhone 11 Pro Max à 14 Plus (App Store)' },
+  { id: 'app-ipad-129', category: 'App Store', name: 'iPad 13"', ratioLabel: '2048:2732', ratioId: '3:4', width: 2048, height: 2732, ratioClass: 'aspect-[2048/2732]', desc: 'iPad 13 pouces (App Store, obligatoire pour les apps iPad)' },
+  { id: 'app-mac', category: 'App Store', name: 'Mac', ratioLabel: '16:10', ratioId: 'libre', width: 2880, height: 1800, ratioClass: 'aspect-[16/10]', desc: 'Mac App Store (2880 × 1800)' },
+  { id: 'play-phone', category: 'App Store', name: 'Play téléphone', ratioLabel: '9:16', ratioId: '9:16', width: 1080, height: 1920, ratioClass: 'aspect-[9/16]', desc: 'Google Play : capture téléphone 1080 × 1920' },
+  { id: 'play-tablet', category: 'App Store', name: 'Play tablette', ratioLabel: '9:16', ratioId: '9:16', width: 1440, height: 2560, ratioClass: 'aspect-[9/16]', desc: 'Google Play : capture tablette 1440 × 2560' },
+  { id: 'play-feature', category: 'App Store', name: 'Play bannière', ratioLabel: '1024:500', ratioId: 'libre', width: 1024, height: 500, ratioClass: 'aspect-[1024/500]', desc: 'Google Play : image de présentation 1024 × 500' },
 ];
 
 // ══ 4. TEMPLATES PRÉDÉFINIS INSPIRÉS DES CAPTURES ══

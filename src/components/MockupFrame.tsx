@@ -15,6 +15,8 @@ import { Lock, ExternalLink, Globe, RotateCw, ArrowLeft, ArrowRight, Plus } from
 
 interface MockupFrameProps {
   type: MockupType;
+  /** L'appareil remplit toute la largeur disponible (pas de taille maximale fixe) : mode Solo */
+  fill?: boolean;
   screenshotBase64: string;
   url: string;
   title?: string;
@@ -43,6 +45,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
   cropOffsetY = 0,
   onClickImage,
   deviceColor = 'graphite',
+  fill = false,
 }) => {
   const chassis = DEVICE_BODY[deviceColor] || DEVICE_BODY.graphite;
   const [imageError, setImageError] = React.useState(false);
@@ -384,7 +387,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
     return (
       <div className="w-full flex justify-center select-none py-1">
         <div
-          className={`w-full max-w-[560px] relative rounded-[28px] sm:rounded-[36px] p-[8px] sm:p-[12px] shadow-2xl border ${chassis.body}`}
+          className={`w-full ${fill ? 'max-w-none' : 'max-w-[560px]'} relative rounded-[28px] sm:rounded-[36px] p-[8px] sm:p-[12px] shadow-2xl border ${chassis.body}`}
         >
           {/* Caméra avant iPad */}
           <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 w-2 h-2 rounded-full bg-stone-950 border border-stone-700 flex items-center justify-center">
@@ -409,7 +412,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
   if (type === 'iphone') {
     return (
       <div className="w-full flex justify-center select-none py-2">
-        <div className={`w-full max-w-[270px] sm:max-w-[290px] relative rounded-[44px] sm:rounded-[48px] p-[7px] sm:p-[9px] shadow-2xl border ${chassis.body}`}>
+        <div className={`w-full ${fill ? 'max-w-none' : 'max-w-[270px] sm:max-w-[290px]'} relative rounded-[44px] sm:rounded-[48px] p-[7px] sm:p-[9px] shadow-2xl border ${chassis.body}`}>
           {/* Boutons latéraux iPhone */}
           <div className={`absolute -left-[3px] top-24 w-[3px] h-9 rounded-l-sm ${chassis.button}`} />
           <div className={`absolute -left-[3px] top-36 w-[3px] h-9 rounded-l-sm ${chassis.button}`} />
@@ -443,7 +446,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
   if (type === 'android') {
     return (
       <div className="w-full flex justify-center select-none py-2">
-        <div className={`w-full max-w-[270px] sm:max-w-[290px] relative rounded-[34px] p-[5px] shadow-2xl border ${chassis.body}`}>
+        <div className={`w-full ${fill ? 'max-w-none' : 'max-w-[270px] sm:max-w-[290px]'} relative rounded-[34px] p-[5px] shadow-2xl border ${chassis.body}`}>
           {/* Boutons latéraux (volume + alimentation à droite) */}
           <div className={`absolute -right-[3px] top-24 w-[3px] h-14 rounded-r-sm ${chassis.button}`} />
           <div className={`absolute -right-[3px] top-44 w-[3px] h-8 rounded-r-sm ${chassis.button}`} />
@@ -501,7 +504,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
   if (type === 'watch') {
     return (
       <div className="w-full flex justify-center select-none py-2">
-        <div className="w-full max-w-[230px] sm:max-w-[250px] flex flex-col items-center">
+        <div className={`w-full ${fill ? 'max-w-none' : 'max-w-[230px] sm:max-w-[250px]'} flex flex-col items-center`}>
           {/* Attache bracelet haut */}
           <div className="w-28 sm:w-32 h-3 sm:h-4 bg-gradient-to-b from-stone-800 to-stone-700 rounded-t-lg shadow-sm border-t border-stone-600" />
 

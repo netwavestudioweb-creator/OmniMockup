@@ -250,6 +250,9 @@ function getExportSize(preset: FramePresetOption, quality: ExportQuality): { wid
 
 // Formats du pack réseaux sociaux (un fichier par format, dimensions officielles)
 const SOCIAL_PACK_PRESET_IDS = ['geo-16-9', 'li-post', 'ig-post', 'ig-portrait', 'ig-story'];
+// Packs magasins d'applications : tailles exactes exigées, en JPG (Apple et Google refusent la transparence)
+const APP_STORE_PACK_PRESET_IDS = ['app-iphone-63', 'app-iphone-69', 'app-ipad-129'];
+const PLAY_STORE_PACK_PRESET_IDS = ['play-phone', 'play-tablet', 'play-feature'];
 
 // Badges de confiance : aucun chiffre pré-rempli, l'utilisateur saisit SES vraies données
 const TRUST_BADGES: { type: SocialProofBadgeType; label: string; icon: string; placeholder: string; hint: string }[] = [
@@ -1959,17 +1962,26 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }
   };
 
-  const handleExportPack = async () => {
+  /**
+   * Pack de plusieurs formats (un fichier par format). Les packs magasins sortent toujours
+   * à la taille exacte exigée (qualité HD) et en JPG.
+   */
+  const handleExportPack = async (pack: 'social' | 'appstore' | 'play' = 'social') => {
     if (!sceneRef.current || isExportingPack) return;
     setIsExportingPack(true);
     const originalPreset = currentFramePreset;
-    const packPresets = SOCIAL_PACK_PRESET_IDS
+    const store = pack !== 'social';
+    const ids = pack === 'appstore' ? APP_STORE_PACK_PRESET_IDS : pack === 'play' ? PLAY_STORE_PACK_PRESET_IDS : SOCIAL_PACK_PRESET_IDS;
+    const packPresets = ids
       .map((id) => FRAME_PRESETS.find((fp) => fp.id === id))
       .filter((fp): fp is FramePresetOption => !!fp);
 
     try {
-      const auth = await authorizeExport('pack', exportQuality === '4k' ? 'hd' : exportQuality);
+      const auth = await authorizeExport('pack', store ? 'hd' : exportQuality === '4k' ? 'hd' : exportQuality);
       if (!auth) return;
+      // Un magasin refuse une image plus petite que la taille officielle
+      if (store && auth.quality !== 'hd') return;
+      const format: ExportFormat = store ? 'jpg' : exportFormat;
       for (let i = 0; i < packPresets.length; i++) {
         const preset = packPresets[i];
         setPackProgress(`${i + 1}/${packPresets.length}`);
@@ -1977,10 +1989,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         // Laisser le canevas prendre sa nouvelle forme avant le rendu
         await new Promise((r) => setTimeout(r, 500));
         const quality: ExportQuality = auth.quality;
-        const dataUrl = await renderScene(exportFormat, preset, quality, !auth.watermark);
+        const dataUrl = await renderScene(format, preset, quality, !auth.watermark);
         const { width, height } = getExportSize(preset, quality);
         const label = `${preset.category}-${preset.name}`.replace(/[^a-zA-Z0-9_-]+/g, '_');
-        downloadDataUrl(dataUrl, `${fileBaseName}-${label}-${width}x${height}.${exportFormat}`);
+        downloadDataUrl(dataUrl, `${fileBaseName}-${label}-${width}x${height}.${format}`);
         await new Promise((r) => setTimeout(r, 250));
       }
       setPackProgress('Fait !');
@@ -2068,6 +2080,24 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const maxCanvasH = Math.max(160, canvasArea.h - 72); // place pour la barre du bas
   const canvasDisplayW = canvasArea.w ? Math.round(Math.min(maxCanvasW, maxCanvasH * presetRatio)) : undefined;
   const canvasDisplayH = canvasDisplayW ? Math.round(canvasDisplayW / presetRatio) : undefined;
+  // Largeur de l'appareil seul : plus grand dans un format vertical, et jamais plus haut que l'image
+  // (proportions hauteur / largeur mesurées sur chaque cadre d'appareil)
+  const SOLO_DEVICE_ASPECT: Record<string, number> = {
+    browser: 0.72, macbook: 0.68, laptop: 0.64, imac: 0.77, ipad: 0.79, iphone: 2.09, android: 2.23, watch: 1.47, flat: 0.63,
+  };
+  const portraitScene = currentFramePreset.height > currentFramePreset.width * 1.15;
+  const soloBasePct =
+    config.mockupType === 'iphone' || config.mockupType === 'android'
+      ? portraitScene ? 62 : 42
+      : config.mockupType === 'watch'
+      ? portraitScene ? 46 : 25
+      : config.mockupType === 'ipad'
+      ? portraitScene ? 82 : 56
+      : 82;
+  const soloFitPct =
+    (98 * currentFramePreset.height) / ((SOLO_DEVICE_ASPECT[config.mockupType] || 0.7) * currentFramePreset.width);
+  const soloDeviceWidthPct = Math.round(Math.min(soloBasePct, soloFitPct) * 10) / 10;
+
   // La scène est toujours dessinée à la même taille de référence (côté long = 1000 px) puis réduite :
   // le rendu et l'export sont identiques quel que soit l'écran (téléphone, portable, grand écran).
   const SCENE_LONG_SIDE = 1000;
@@ -2404,6 +2434,27 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <span className="text-[10px] text-zinc-500">16:9, LinkedIn, Instagram carré et portrait, Story / statut WhatsApp</span>
                       </span>
                     </button>
+                    {([
+                      { id: 'appstore', label: 'Pack App Store (3 fichiers)', hint: 'iPhone 6,3" et 6,9", iPad 13" : tailles exactes, JPG' },
+                      { id: 'play', label: 'Pack Google Play (3 fichiers)', hint: 'Téléphone, tablette et bannière 1024 × 500, JPG' },
+                    ] as const).map((pk) => (
+                      <button
+                        key={pk.id}
+                        type="button"
+                        onClick={() => {
+                          handleExportPack(pk.id);
+                          setShowExportMenu(false);
+                        }}
+                        disabled={isExportingPack}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left disabled:opacity-50"
+                      >
+                        <Smartphone className="w-4 h-4 text-sky-400" />
+                        <span className="flex-1">
+                          <span className="font-semibold block">{pk.label}</span>
+                          <span className="text-[10px] text-zinc-500">{pk.hint}</span>
+                        </span>
+                      </button>
+                    ))}
                     <button
                       type="button"
                       onClick={handleAddToPresentation}
@@ -3075,16 +3126,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 ) : (
                   /* ── MODE SOLO : APPAREIL UNIQUE CENTRÉ ── */
                   <div
-                    className={`absolute cursor-move transition-all duration-150 touch-none z-20 ${
-                      config.mockupType === 'iphone' || config.mockupType === 'android'
-                        ? 'w-[42%]'
-                        : config.mockupType === 'watch'
-                        ? 'w-[34%]'
-                        : config.mockupType === 'ipad'
-                        ? 'w-[68%]'
-                        : 'w-[82%]'
-                    }`}
+                    className="absolute cursor-move transition-all duration-150 touch-none z-20"
                     style={{
+                      width: `${soloDeviceWidthPct}%`,
                       left: '50%',
                       top: '50%',
                       perspective: '1200px',
@@ -3101,6 +3145,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     {currentScreenshot && (
                       <MockupFrame
                         type={config.mockupType}
+                        fill
                         screenshotBase64={
                           config.mockupType === 'iphone' || config.mockupType === 'android' || config.mockupType === 'watch'
                             ? phoneScreenshot

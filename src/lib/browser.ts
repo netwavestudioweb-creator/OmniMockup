@@ -86,6 +86,8 @@ export async function captureWebPage(
   // TIER 1 : Playwright (Ultra-rapide avec arguments optimisés)
   // -------------------------------------------------------------
   try {
+    // Sur Vercel, le navigateur Playwright n'est pas installé : on passe directement au Tier 2
+    if (process.env.VERCEL) throw new Error('Tier 1 ignoré sur Vercel (navigateur non installé)');
     const { chromium } = await import('playwright');
     const browser = await chromium.launch({
       headless: true,
@@ -173,9 +175,9 @@ export async function captureWebPage(
 
     const executablePath = await mod.executablePath();
     const browser = await puppeteer.default.launch({
-      args: mod.args || ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      args: await puppeteer.default.defaultArgs({ args: mod.args, headless: 'shell' }),
       executablePath,
-      headless: mod.headless === 'new' ? true : Boolean(mod.headless),
+      headless: 'shell',
     });
 
     try {

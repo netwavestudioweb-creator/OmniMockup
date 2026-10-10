@@ -76,15 +76,18 @@ export async function captureWebPage(
   const delayMs = Math.max(0, Math.min(8000, Math.round(options.delayMs || 0)));
   const colorScheme = options.colorScheme === 'dark' ? 'dark' : 'light';
 
-  // Sur Vercel, le service de capture en ligne est le plus rapide (7 s contre 15 à 20 s pour notre
-  // navigateur sur le serveur) : on l'essaie d'abord, et notre moteur prend le relais s'il échoue
+  // Sur Vercel, pour la version ordinateur, le service de capture en ligne est le plus rapide (5 à 7 s
+  // contre 15 à 20 s pour notre navigateur sur le serveur) : on l'essaie d'abord, et notre moteur
+  // prend le relais s'il échoue. Pour la version téléphone, notre moteur est plus fiable : il passe en premier.
   let cloudTried = false;
-  if (process.env.VERCEL) {
+  if (process.env.VERCEL && !mobile) {
     cloudTried = true;
     try {
-      return await captureWebPageCloudFallback(targetUrl, options, 25000);
+      return await captureWebPageCloudFallback(targetUrl, options, 15000);
     } catch (cloudErr) {
-      console.warn('[Capture Engine] Service en ligne indisponible, bascule sur notre moteur :', (cloudErr as Error)?.message || cloudErr);
+      const message = (cloudErr as Error)?.message || String(cloudErr);
+      if (cloudErr instanceof SiteUnreachableError) throw cloudErr;
+      console.warn('[Capture Engine] Service en ligne indisponible, bascule sur notre moteur :', message);
     }
   }
 
@@ -256,7 +259,16 @@ export async function captureWebPage(
       `Impossible de capturer le site "${targetUrl}". Vérifiez que le site est accessible publiquement ou importez directement une capture d'écran.`
     );
   }
-  return await captureWebPageCloudFallback(targetUrl, options);
+  // Sur Vercel la fonction a 60 s au total : le secours ne doit pas dépasser 25 s
+  return await captureWebPageCloudFallback(targetUrl, options, process.env.VERCEL ? 25000 : 45000);
+}
+
+/** Adresse dont le nom de domaine n'existe pas : inutile d'essayer un autre moteur */
+class SiteUnreachableError extends Error {
+  constructor(targetUrl: string) {
+    super(`Le site "${extractDomainName(targetUrl)}" est introuvable. Vérifiez l'adresse (une faute de frappe ?).`);
+    this.name = 'SiteUnreachableError';
+  }
 }
 
 /**
@@ -289,6 +301,20 @@ async function captureWebPageCloudFallback(
   const width = mobile ? MOBILE_VIEWPORT.width : options.viewport?.width || 1440;
   const height = mobile ? MOBILE_VIEWPORT.height : options.viewport?.height || 900;
   const fullPage = options.fullPage ?? true;
+
+  // Lecture directe de la page en parallèle : sert aux titres de sections et à repérer un site introuvable
+  const htmlPromise = fetch(targetUrl, {
+    signal: AbortSignal.timeout(8000),
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    },
+  })
+    .then(async (res) => ({ ok: res.ok, text: res.ok ? await res.text() : '', notFound: false }))
+    .catch((err) => {
+      const code = (err as { cause?: { code?: string } })?.cause?.code;
+      return { ok: false, text: '', notFound: code === 'ENOTFOUND' };
+    });
 
   let screenshotBase64 = '';
   let pageTitle = domainName;
@@ -339,6 +365,10 @@ async function captureWebPageCloudFallback(
     console.warn('[Capture Engine Cloud] Erreur Microlink API :', err);
   }
 
+  if ((await htmlPromise).notFound) {
+    throw new SiteUnreachableError(targetUrl);
+  }
+
   // Si aucun moteur n'a réussi à capturer le site, on lève une erreur explicite plutôt qu'un pixel vert trompeur
   if (!screenshotBase64) {
     throw new Error(
@@ -346,25 +376,9 @@ async function captureWebPageCloudFallback(
     );
   }
 
-  // Fetch du HTML direct pour isoler les en-têtes et créer les candidats de section
-  let candidates: ExtractedSectionCandidate[] = [];
-  try {
-    const htmlRes = await fetch(targetUrl, {
-      // Les titres de sections sont un bonus : on n'attend pas plus de 8 s
-      signal: AbortSignal.timeout(8000),
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      },
-    });
-
-    if (htmlRes.ok) {
-      const htmlText = await htmlRes.text();
-      candidates = parseSectionsFromHtmlText(htmlText);
-    }
-  } catch (htmlErr) {
-    console.warn('[Capture Engine Cloud] Erreur fetch HTML :', htmlErr);
-  }
+  // Titres de sections tirés du HTML lu en parallèle
+  const html = await htmlPromise;
+  let candidates: ExtractedSectionCandidate[] = html.ok ? parseSectionsFromHtmlText(html.text) : [];
 
   if (candidates.length === 0) {
     candidates = generateDefaultSectionGrid();

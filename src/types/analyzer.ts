@@ -205,6 +205,10 @@ export interface CaptureSettings {
   viewportWidth: number;
   viewportHeight: number;
   deviceScaleFactor?: number;
+  /** Attente avant la capture, en secondes */
+  delaySeconds?: number;
+  /** Capturer la version sombre du site */
+  darkMode?: boolean;
 }
 
 export interface CaptureResponse {

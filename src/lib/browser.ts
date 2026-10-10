@@ -41,6 +41,10 @@ export interface CaptureOptions {
   hideBanners?: boolean;
   /** Capture la version téléphone du site (390 px, mode mobile, écran Retina) */
   mobile?: boolean;
+  /** Attente supplémentaire avant la capture (animations, chargements lents), 8 s au plus */
+  delayMs?: number;
+  /** Version claire ou sombre du site (préférence système simulée) */
+  colorScheme?: 'light' | 'dark';
 }
 
 const DESKTOP_UA =
@@ -69,6 +73,8 @@ export async function captureWebPage(
   const viewportWidth = mobile ? MOBILE_VIEWPORT.width : options.viewport?.width || 1440;
   const viewportHeight = mobile ? MOBILE_VIEWPORT.height : options.viewport?.height || 900;
   const hideBanners = options.hideBanners ?? true;
+  const delayMs = Math.max(0, Math.min(8000, Math.round(options.delayMs || 0)));
+  const colorScheme = options.colorScheme === 'dark' ? 'dark' : 'light';
 
   const cookieBannerCSS = `
     [id*="cookie" i], [class*="cookie" i], [id*="consent" i], [class*="consent" i],
@@ -108,12 +114,13 @@ export async function captureWebPage(
         deviceScaleFactor: mobile ? 2 : 1,
         isMobile: mobile,
         hasTouch: mobile,
+        colorScheme,
       });
       const page = await context.newPage();
       page.setDefaultTimeout(30000);
 
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(500 + delayMs);
 
       if (hideBanners) {
         await page.addStyleTag({ content: cookieBannerCSS }).catch(() => {});
@@ -182,8 +189,9 @@ export async function captureWebPage(
         hasTouch: mobile,
       });
       await page.setUserAgent(mobile ? MOBILE_UA : DESKTOP_UA);
+      await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: colorScheme }]);
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 500 + delayMs));
 
       if (hideBanners) {
         await page.addStyleTag({ content: cookieBannerCSS }).catch(() => {});
@@ -251,7 +259,9 @@ async function captureWebPageCloudFallback(
       mobile ? '&viewport.isMobile=true&viewport.hasTouch=true&viewport.deviceScaleFactor=2' : ''
     }${
       fullPage && !mobile ? '&screenshot.fullPage=true' : ''
-    }`;
+    }${options.colorScheme === 'dark' ? '&colorScheme=dark' : ''}${
+      options.delayMs ? `&waitForTimeout=${Math.max(0, Math.min(8000, Math.round(options.delayMs)))}` : ''
+    }${options.hideBanners === false ? '&adblock=false' : ''}`;
 
     const response = await fetch(microlinkUrl, {
       headers: { Accept: 'application/json' },

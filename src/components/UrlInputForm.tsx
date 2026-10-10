@@ -61,6 +61,8 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
   const [showOptions, setShowOptions] = useState(false);
   const [fullPage, setFullPage] = useState(true);
   const [hideBanners, setHideBanners] = useState(true);
+  const [delaySeconds, setDelaySeconds] = useState(0);
+  const [darkMode, setDarkMode] = useState(false);
   const [selectedPresetId, setSelectedPresetId] = useState('desktop');
   const [customWidth, setCustomWidth] = useState(1440);
   const [customHeight, setCustomHeight] = useState(900);
@@ -85,6 +87,8 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
       hideBanners,
       viewportWidth: width,
       viewportHeight: height,
+      delaySeconds,
+      darkMode,
     };
   };
 
@@ -279,6 +283,46 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
                   >
                     <span>Masquer Bannières &amp; Cookies</span>
                     {hideBanners && <Check className="w-4 h-4 text-violet-400 stroke-[3]" />}
+                  </button>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-zinc-800/60 border border-zinc-700/60 space-y-2">
+                  <span className="text-xs font-bold text-zinc-200 block">Délai avant la capture</span>
+                  <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Délai avant la capture">
+                    {[0, 2, 5].map((sec) => (
+                      <button
+                        key={sec}
+                        type="button"
+                        role="radio"
+                        aria-checked={delaySeconds === sec}
+                        onClick={() => setDelaySeconds(sec)}
+                        className={`py-2 rounded-lg text-xs font-semibold transition-all ${
+                          delaySeconds === sec
+                            ? 'bg-violet-600 text-white shadow-md'
+                            : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white'
+                        }`}
+                      >
+                        {sec === 0 ? 'Aucun' : `${sec} s`}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-[11px] text-zinc-500 block">Utile si le site a des animations ou charge lentement.</span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-zinc-800/60 border border-zinc-700/60 space-y-2">
+                  <span className="text-xs font-bold text-zinc-200 block">Apparence du site</span>
+                  <button
+                    type="button"
+                    onClick={() => setDarkMode(!darkMode)}
+                    aria-pressed={darkMode}
+                    className={`w-full py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-between transition-all ${
+                      darkMode
+                        ? 'bg-violet-600/20 text-violet-300 border border-violet-500/40 shadow-sm'
+                        : 'bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    <span>Version sombre (si le site en a une)</span>
+                    {darkMode && <Check className="w-4 h-4 text-violet-400 stroke-[3]" />}
                   </button>
                 </div>
               </div>

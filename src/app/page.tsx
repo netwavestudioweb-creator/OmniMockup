@@ -146,6 +146,8 @@ export default function HomePage() {
           viewport: settings
             ? { width: settings.viewportWidth, height: settings.viewportHeight }
             : { width: 1440, height: 900 },
+          delayMs: (settings?.delaySeconds ?? 0) * 1000,
+          colorScheme: settings?.darkMode ? 'dark' : 'light',
         }),
       });
 

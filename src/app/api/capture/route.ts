@@ -86,13 +86,15 @@ export async function POST(req: NextRequest) {
   const hideBanners = typeof body?.hideBanners === 'boolean' ? body.hideBanners : true;
   const viewport = body?.viewport as { width: number; height: number } | undefined;
   const mobile = body?.mobile === true;
+  const delayMs = typeof body?.delayMs === 'number' ? Math.max(0, Math.min(8000, body.delayMs)) : 0;
+  const colorScheme = body?.colorScheme === 'dark' ? 'dark' : 'light';
 
   const results: CaptureItemResult[] = [];
 
   for (const target of targetsToProcess) {
     const itemStartTime = Date.now();
     try {
-      const captureRes = await captureWebPage(target.url, { fullPage, hideBanners, viewport, mobile });
+      const captureRes = await captureWebPage(target.url, { fullPage, hideBanners, viewport, mobile, delayMs, colorScheme });
       results.push({
         url: target.url,
         title: target.label || captureRes.pageTitle || target.url,

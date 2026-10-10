@@ -20,5 +20,9 @@ export function createAdminClient() {
       persistSession: false,
       autoRefreshToken: false,
     },
+    // Jamais de cache Next.js : forfaits, quotas, paiements et liens doivent toujours être lus à jour
+    global: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, cache: 'no-store' }),
+    },
   });
 }

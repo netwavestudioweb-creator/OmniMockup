@@ -28,5 +28,9 @@ export function createClient() {
         }
       },
     },
+    // Jamais de cache Next.js : la session et le profil doivent toujours être lus à jour
+    global: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, cache: 'no-store' }),
+    },
   });
 }

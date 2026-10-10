@@ -5,6 +5,14 @@ import { ArrowDown, ArrowUp, FileText, Loader2, Trash2, X } from 'lucide-react';
 import { loadBrandKit } from '@/lib/brandKit';
 import type { PresentationMeta, PresentationSlide } from '@/lib/presentationPdf';
 
+export type PresentationOutput = 'pdf' | 'linkedin' | 'instagram';
+
+const OUTPUTS: { id: PresentationOutput; label: string; hint: string }[] = [
+  { id: 'pdf', label: 'PDF client', hint: 'A4 paysage, à joindre à un devis' },
+  { id: 'linkedin', label: 'Carrousel LinkedIn', hint: 'Un PDF 4:5 à publier comme document' },
+  { id: 'instagram', label: 'Carrousel Instagram', hint: 'Images JPG 1080 × 1350, une par page' },
+];
+
 interface PresentationDialogProps {
   slides: PresentationSlide[];
   defaultTitle: string;
@@ -14,7 +22,7 @@ interface PresentationDialogProps {
   onRemove: (id: string) => void;
   onMove: (id: string, direction: -1 | 1) => void;
   onCaption: (id: string, caption: string) => void;
-  onGenerate: (meta: PresentationMeta) => void;
+  onGenerate: (meta: PresentationMeta, output: PresentationOutput) => void;
 }
 
 export const MAX_PRESENTATION_SLIDES = 12;
@@ -37,6 +45,8 @@ export const PresentationDialog: React.FC<PresentationDialogProps> = ({
   const [author, setAuthor] = useState('');
   const [accent, setAccent] = useState('#7c3aed');
   const [logo, setLogo] = useState<string | null>(null);
+  const [output, setOutput] = useState<PresentationOutput>('pdf');
+  const outputInfo = OUTPUTS.find((o) => o.id === output) || OUTPUTS[0];
 
   // Le kit de marque pré-remplit l'auteur, la couleur et le logo
   useEffect(() => {
@@ -73,7 +83,7 @@ export const PresentationDialog: React.FC<PresentationDialogProps> = ({
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
           <div className="flex items-center gap-2 text-sm font-bold text-white">
             <FileText className="w-4 h-4 text-violet-400" />
-            Présentation client (PDF)
+            Présentation client et carrousel
           </div>
           <button
             type="button"
@@ -169,17 +179,33 @@ export const PresentationDialog: React.FC<PresentationDialogProps> = ({
         </div>
 
         <div className="px-5 py-4 border-t border-zinc-800 space-y-2">
+          <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800" role="radiogroup" aria-label="Type de document">
+            {OUTPUTS.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                role="radio"
+                aria-checked={output === o.id}
+                onClick={() => setOutput(o.id)}
+                className={`py-1.5 px-1 rounded-lg text-[11px] font-bold leading-tight transition-all ${
+                  output === o.id ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
-            onClick={() => onGenerate({ title, client, intro, author, accent, logo })}
+            onClick={() => onGenerate({ title, client, intro, author, accent, logo }, output)}
             disabled={generating || slides.length === 0}
             className="w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-            Télécharger le PDF ({slides.length + 1} page{slides.length ? 's' : ''} avec la couverture)
+            {output === 'instagram' ? 'Télécharger les images' : 'Télécharger le PDF'} ({slides.length + 1} page{slides.length ? 's' : ''} avec la couverture)
           </button>
           <p className="text-[10px] text-zinc-500 text-center">
-            Compte comme un export « pack ». Les pages restent ici tant que le studio est ouvert.
+            {outputInfo.hint}. Compte comme un export « pack ». Les pages restent ici tant que le studio est ouvert.
           </p>
         </div>
       </div>

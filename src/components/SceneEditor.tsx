@@ -117,7 +117,8 @@ import { BrandKitPanel } from './BrandKitPanel';
 import { SavedStylesPanel } from './SavedStylesPanel';
 import { StudioTour } from './StudioTour';
 import { AiDirectorPanel } from './AiDirectorPanel';
-import { PresentationDialog, MAX_PRESENTATION_SLIDES } from './PresentationDialog';
+import { PresentationDialog, MAX_PRESENTATION_SLIDES, type PresentationOutput } from './PresentationDialog';
+import { renderCarouselPages, buildLinkedInCarouselPdf } from '@/lib/carousel';
 import { SitePagesPanel, type SitePage } from './SitePagesPanel';
 import { buildPresentationPdf, type PresentationMeta, type PresentationSlide } from '@/lib/presentationPdf';
 import type { BrandKit } from '@/lib/brandKit';
@@ -1703,7 +1704,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       return next;
     });
 
-  const handleGeneratePdf = async (meta: PresentationMeta) => {
+  const handleGeneratePdf = async (meta: PresentationMeta, output: PresentationOutput = 'pdf') => {
     if (!presentationSlides.length || isBuildingPdf) return;
     setIsBuildingPdf(true);
     try {
@@ -1714,15 +1715,29 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         setShowPresentation(false);
         return;
       }
-      const blob = await buildPresentationPdf(meta, presentationSlides, auth.watermark);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${fileBaseName}-presentation.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      const saveBlob = (blob: Blob, filename: string) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      };
+      if (output === 'pdf') {
+        saveBlob(await buildPresentationPdf(meta, presentationSlides, auth.watermark), `${fileBaseName}-presentation.pdf`);
+      } else {
+        const pages = await renderCarouselPages(meta, presentationSlides, auth.watermark);
+        if (output === 'linkedin') {
+          saveBlob(await buildLinkedInCarouselPdf(pages), `${fileBaseName}-carrousel-linkedin.pdf`);
+        } else {
+          for (let i = 0; i < pages.length; i++) {
+            downloadDataUrl(pages[i], `${fileBaseName}-carrousel-${String(i + 1).padStart(2, '0')}.jpg`);
+            await new Promise((r) => setTimeout(r, 300));
+          }
+        }
+      }
     } catch (err) {
       console.error('Erreur PDF:', err);
       alert('Une erreur est survenue lors de la création du PDF.');
@@ -2199,12 +2214,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       <FileText className="w-4 h-4 text-violet-400" />
                       <span className="flex-1">
                         <span className="font-semibold block">
-                          Présentation client (PDF)
+                          Présentation client / carrousel
                           {presentationSlides.length > 0 && (
                             <span className="ml-1.5 px-1.5 py-0.5 rounded bg-violet-600 text-white text-[10px]">{presentationSlides.length}</span>
                           )}
                         </span>
-                        <span className="text-[10px] text-zinc-500">Plusieurs mockups + textes, prêt à joindre à un devis</span>
+                        <span className="text-[10px] text-zinc-500">PDF pour un devis, carrousel LinkedIn ou Instagram</span>
                       </span>
                     </button>
                     <button

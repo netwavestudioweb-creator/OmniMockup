@@ -114,6 +114,7 @@ import { SceneAnnotationsLayer } from './SceneAnnotationsLayer';
 import { BrandKitPanel } from './BrandKitPanel';
 import { SavedStylesPanel } from './SavedStylesPanel';
 import { StudioTour } from './StudioTour';
+import { AiDirectorPanel } from './AiDirectorPanel';
 import type { BrandKit } from '@/lib/brandKit';
 import { STUDIO_FONTS, STUDIO_FONT_VARIABLES, studioFontFamily } from '@/lib/studioFonts';
 
@@ -3211,6 +3212,17 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {activeTab === 'mockup' && (
 
               <div className="space-y-5 animate-fade-in">
+                {/* Directeur artistique IA : choisir la meilleure section de la page */}
+                {canCaptureMobile && (
+                  <AiDirectorPanel
+                    url={captureItem.url}
+                    onUseSection={(img) => {
+                      setCurrentScreenshot(img);
+                      setConfig((p) => ({ ...p, cropOffsetY: 0, phoneScreen: 'desktop' }));
+                    }}
+                  />
+                )}
+
                 {/* Disposition Solo vs Duo vs Trio */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">

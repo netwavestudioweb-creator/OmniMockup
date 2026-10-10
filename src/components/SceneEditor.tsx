@@ -120,6 +120,7 @@ import { AiDirectorPanel } from './AiDirectorPanel';
 import { PresentationDialog, MAX_PRESENTATION_SLIDES, type PresentationOutput } from './PresentationDialog';
 import { renderCarouselPages, buildLinkedInCarouselPdf } from '@/lib/carousel';
 import { SitePagesPanel, type SitePage } from './SitePagesPanel';
+import { PhotoBackgroundsPanel } from './PhotoBackgroundsPanel';
 import { buildPresentationPdf, type PresentationMeta, type PresentationSlide } from '@/lib/presentationPdf';
 import type { BrandKit } from '@/lib/brandKit';
 import { STUDIO_FONTS, STUDIO_FONT_VARIABLES, studioFontFamily } from '@/lib/studioFonts';
@@ -5055,6 +5056,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       <span className="text-[10px] block truncate">Flou Web</span>
                     </button>
                   </div>
+
+                  <PhotoBackgroundsPanel
+                    onApply={(bg) => setConfig((p) => ({ ...p, bgType: 'texture', bgValue: bg, bgTransparent: false }))}
+                  />
 
                   {/* ── MAGIC ✨ (Généré par les couleurs réelles de la capture) ── */}
                   {autoGradients.length > 0 && !config.bgTransparent && (

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Sparkles, Flame, Check, X, ArrowRight, Coins, Zap } from 'lucide-react';
 import { trackEvent } from '@/lib/tracking';
 
-export type UpsellMode = 'free_quota_reached' | 'solo_quota_approaching' | 'low_credits' | 'feature_locked';
+export type UpsellMode = 'free_quota_reached' | 'solo_quota_approaching' | 'low_credits' | 'feature_locked' | 'video_quota_reached';
 
 interface PlanUpsellModalProps {
   isOpen: boolean;
@@ -191,6 +191,43 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                 className="flex-1 px-4 py-2.5 rounded-xl border border-stone-300 hover:bg-stone-50 text-stone-800 font-bold text-xs text-center"
               >
                 Acheter des crédits
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* SCÉNARIO 5 : forfait Pro, les 10 vidéos du mois sont utilisées */}
+        {mode === 'video_quota_reached' && (
+          <div className="space-y-4 text-center sm:text-left">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-100 text-violet-800 text-xs font-black uppercase">
+              <Zap className="w-3.5 h-3.5 text-violet-600" />
+              <span>Vidéos du mois utilisées</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">Vos 10 vidéos du mois sont utilisées</h3>
+            <p className="text-xs text-stone-600 leading-relaxed">
+              Le compteur repart à zéro le 1er du mois. D&apos;ici là, chaque vidéo ou GIF supplémentaire coûte{' '}
+              <strong>3 crédits</strong>. Le plan <strong>Agence</strong> inclut les vidéos en illimité.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Link
+                href="/pricing#credits"
+                onClick={() => {
+                  trackEvent('plan_click', { source: 'upsell_video_quota', pack_id: 'credits' });
+                  onClose();
+                }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs text-center"
+              >
+                Acheter des crédits
+              </Link>
+              <Link
+                href="/pricing"
+                onClick={() => {
+                  trackEvent('plan_click', { source: 'upsell_video_quota', plan_id: 'agence' });
+                  onClose();
+                }}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-stone-300 hover:bg-stone-50 text-stone-800 font-bold text-xs text-center"
+              >
+                Voir le plan Agence
               </Link>
             </div>
           </div>

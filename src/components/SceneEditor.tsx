@@ -383,6 +383,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   // État de l'exportation vidéo animée
   const [videoPreset, setVideoPreset] = useState<VideoAnimPreset>('zoomIn');
+  const [videoAsGif, setVideoAsGif] = useState(false);
   // Rendu image par image d'une animation : l'historique « annuler » est mis en pause
   const videoAnimatingRef = useRef(false);
   const [videoProgress, setVideoProgress] = useState('');
@@ -513,7 +514,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     setUpsellModal({
       open: true,
       mode:
-        first.reason === 'quota_reached'
+        first.reason === 'quota_reached' && kind === 'video'
+          ? 'video_quota_reached'
+          : first.reason === 'quota_reached'
           ? userPlan === 'solo'
             ? 'solo_quota_approaching'
             : 'free_quota_reached'
@@ -1376,6 +1379,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     canvas.height = height;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Contexte canvas 2D indisponible');
+    if (videoAsGif) {
+      await encodeGif(canvas, ctx, totalFrames, draw, filename);
+      return;
+    }
     const fps = 30;
     draw(ctx, 0);
     const stream = canvas.captureStream(fps);
@@ -1402,6 +1409,69 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     const a = document.createElement('a');
     a.href = url;
     a.download = `${filename}.${extension}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
+
+  /**
+   * GIF animé : mêmes images que la vidéo, réduites à 720 px de large et à 12 images par seconde
+   * (un GIF reste ainsi léger à envoyer par e-mail ou WhatsApp).
+   */
+  const encodeGif = async (
+    canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
+    totalFrames: number,
+    draw: (ctx: CanvasRenderingContext2D, frame: number) => void,
+    filename: string
+  ) => {
+    const { GIFEncoder, quantize, applyPalette } = await import('gifenc');
+    const k = Math.min(1, 720 / canvas.width);
+    const gw = Math.round(canvas.width * k);
+    const gh = Math.round(canvas.height * k);
+    const small = document.createElement('canvas');
+    small.width = gw;
+    small.height = gh;
+    const sctx = small.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
+    const gif = GIFEncoder();
+    const step = 30 / 12;
+    const count = Math.max(1, Math.floor((totalFrames - 1) / step) + 1);
+    const grab = (f: number) => {
+      draw(ctx, f);
+      sctx.fillStyle = '#ffffff';
+      sctx.fillRect(0, 0, gw, gh);
+      sctx.drawImage(canvas, 0, 0, gw, gh);
+      return sctx.getImageData(0, 0, gw, gh).data;
+    };
+    // Une seule palette, calculée sur le début, le milieu et la fin de l'animation : bien plus rapide
+    const samples = [0, Math.floor(totalFrames / 2), totalFrames - 1].map(grab);
+    const pool = new Uint8Array(Math.ceil(samples[0].length / 16) * 4 * samples.length);
+    let o = 0;
+    for (const d of samples) {
+      for (let i = 0; i < d.length; i += 16) {
+        pool[o++] = d[i];
+        pool[o++] = d[i + 1];
+        pool[o++] = d[i + 2];
+        pool[o++] = 255;
+      }
+    }
+    const palette = quantize(pool.subarray(0, o), 256);
+    for (let i = 0; i < count; i++) {
+      const data = grab(Math.min(totalFrames - 1, Math.round(i * step)));
+      gif.writeFrame(applyPalette(data, palette), gw, gh, { palette, delay: Math.round(1000 / 12) });
+      // Laisser respirer la page pendant l'encodage
+      if (i % 4 === 3) {
+        setVideoProgress(`${Math.round((i / count) * 100)} %`);
+        await new Promise((r) => setTimeout(r, 0));
+      }
+    }
+    gif.finish();
+    const blob = new Blob([gif.bytes() as BlobPart], { type: 'image/gif' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename.replace('-video-', '-gif-')}.gif`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -2492,10 +2562,30 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <span className="flex-1">
                           <span className="font-semibold block">Vidéo animée</span>
                           <span className="text-[10px] text-zinc-500">
-                            {VIDEO_ANIMATIONS.find((v) => v.id === videoPreset)?.hint}, format {videoExtension.toUpperCase()}
-                            {videoExtension === 'webm' && ' (MP4 avec Chrome, Edge ou Safari)'}
+                            {VIDEO_ANIMATIONS.find((v) => v.id === videoPreset)?.hint}
+                            {videoAsGif
+                              ? ', GIF 720 px'
+                              : `, format ${videoExtension.toUpperCase()}${videoExtension === 'webm' ? ' (MP4 avec Chrome, Edge ou Safari)' : ''}`}
                           </span>
                         </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-zinc-950 border border-zinc-800" role="radiogroup" aria-label="Format de l'animation">
+                        {([
+                          { gif: false, label: `Vidéo ${videoExtension.toUpperCase()}` },
+                          { gif: true, label: 'GIF animé' },
+                        ] as const).map((o) => (
+                          <button
+                            key={o.label}
+                            type="button"
+                            role="radio"
+                            aria-checked={videoAsGif === o.gif}
+                            onClick={() => setVideoAsGif(o.gif)}
+                            disabled={isExportingVideo}
+                            className={`py-1 rounded-md text-[11px] font-bold ${videoAsGif === o.gif ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-white'}`}
+                          >
+                            {o.label}
+                          </button>
+                        ))}
                       </div>
                       <div className="grid grid-cols-2 gap-1" role="radiogroup" aria-label="Animation de la vidéo">
                         {VIDEO_ANIMATIONS.map((v) => (
@@ -2523,7 +2613,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         className="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-60"
                       >
                         {isExportingVideo ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Video className="w-3.5 h-3.5" />}
-                        {isExportingVideo ? `Création de la vidéo… ${videoProgress}` : 'Créer la vidéo'}
+                        {isExportingVideo
+                          ? `Création ${videoAsGif ? 'du GIF' : 'de la vidéo'}… ${videoProgress}`
+                          : videoAsGif
+                          ? 'Créer le GIF'
+                          : 'Créer la vidéo'}
                       </button>
                     </div>
                   </div>

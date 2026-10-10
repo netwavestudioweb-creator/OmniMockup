@@ -118,6 +118,7 @@ import { SavedStylesPanel } from './SavedStylesPanel';
 import { StudioTour } from './StudioTour';
 import { AiDirectorPanel } from './AiDirectorPanel';
 import { PresentationDialog, MAX_PRESENTATION_SLIDES } from './PresentationDialog';
+import { SitePagesPanel, type SitePage } from './SitePagesPanel';
 import { buildPresentationPdf, type PresentationMeta, type PresentationSlide } from '@/lib/presentationPdf';
 import type { BrandKit } from '@/lib/brandKit';
 import { STUDIO_FONTS, STUDIO_FONT_VARIABLES, studioFontFamily } from '@/lib/studioFonts';
@@ -1634,6 +1635,16 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const [isBuildingPdf, setIsBuildingPdf] = useState(false);
   const [slideAddedNote, setSlideAddedNote] = useState('');
 
+  /** Rend la scène actuelle comme une page de la présentation. */
+  const renderSlide = async (caption = ''): Promise<PresentationSlide> => {
+    const quality = canExportHd ? 'hd' : 'standard';
+    const { width, height } = getExportSize(currentFramePreset, quality);
+    const image = await renderScene('jpg', currentFramePreset, quality, false);
+    // Version sans filigrane gardée pour un export payé en crédits
+    const cleanImage = planWatermark ? await renderScene('jpg', currentFramePreset, quality, true) : undefined;
+    return { id: `slide_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, image, clean: cleanImage, width, height, quality, caption };
+  };
+
   const handleAddToPresentation = async () => {
     if (!sceneRef.current || isAddingSlide) return;
     if (presentationSlides.length >= MAX_PRESENTATION_SLIDES) {
@@ -1642,15 +1653,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }
     setIsAddingSlide(true);
     try {
-      const quality = canExportHd ? 'hd' : 'standard';
-      const { width, height } = getExportSize(currentFramePreset, quality);
-      const image = await renderScene('jpg', currentFramePreset, quality, false);
-      // Version sans filigrane gardée pour un export payé en crédits
-      const cleanImage = planWatermark ? await renderScene('jpg', currentFramePreset, quality, true) : undefined;
-      setPresentationSlides((prev) => [
-        ...prev,
-        { id: `slide_${Date.now()}`, image, clean: cleanImage, width, height, quality, caption: '' },
-      ]);
+      const slide = await renderSlide();
+      setPresentationSlides((prev) => [...prev, slide]);
       setSlideAddedNote(`Page ${presentationSlides.length + 1} ajoutée`);
       setTimeout(() => setSlideAddedNote(''), 2500);
     } catch (err) {
@@ -1658,6 +1662,34 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       alert("Impossible d'ajouter cette scène à la présentation.");
     } finally {
       setIsAddingSlide(false);
+    }
+  };
+
+  // ── Pages du site (accueil, tarifs, contact…) ──────────────────────────
+  const [sitePages, setSitePages] = useState<SitePage[]>([]);
+  const [isAddingAllPages, setIsAddingAllPages] = useState(false);
+
+  const handleAddPagesToPresentation = async () => {
+    if (isAddingAllPages || !sceneRef.current) return;
+    setIsAddingAllPages(true);
+    const original = currentScreenshot;
+    const list = [{ label: 'Accueil', screenshot: captureItem.screenshotBase64 || '' }, ...sitePages].filter((p) => p.screenshot);
+    try {
+      const slides: PresentationSlide[] = [];
+      for (const page of list.slice(0, MAX_PRESENTATION_SLIDES - presentationSlides.length)) {
+        flushSync(() => setCurrentScreenshot(page.screenshot));
+        // Laisser l'image se décoder dans le cadre avant le rendu
+        await new Promise((r) => setTimeout(r, 400));
+        slides.push(await renderSlide(page.label));
+      }
+      setPresentationSlides((prev) => [...prev, ...slides].slice(0, MAX_PRESENTATION_SLIDES));
+      setShowPresentation(true);
+    } catch (err) {
+      console.error('Erreur ajout des pages:', err);
+      alert("Impossible d'ajouter les pages à la présentation.");
+    } finally {
+      setCurrentScreenshot(original);
+      setIsAddingAllPages(false);
     }
   };
 
@@ -3327,6 +3359,22 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       setCurrentScreenshot(img);
                       setConfig((p) => ({ ...p, cropOffsetY: 0, phoneScreen: 'desktop' }));
                     }}
+                  />
+                )}
+
+                {canCaptureMobile && (
+                  <SitePagesPanel
+                    siteUrl={captureItem.url}
+                    homeScreenshot={captureItem.screenshotBase64 || ''}
+                    activeScreenshot={currentScreenshot}
+                    pages={sitePages}
+                    setPages={setSitePages}
+                    onShow={(img) => {
+                      setCurrentScreenshot(img);
+                      setConfig((p) => ({ ...p, cropOffsetY: 0, phoneScreen: 'desktop' }));
+                    }}
+                    onAddAllToPresentation={handleAddPagesToPresentation}
+                    addingAll={isAddingAllPages}
                   />
                 )}
 

@@ -173,6 +173,7 @@ export async function captureWebPage(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mod: any = sparticuz.default || sparticuz;
 
+    const t0 = Date.now();
     const executablePath = await mod.executablePath();
     const browser = await puppeteer.default.launch({
       args: await puppeteer.default.defaultArgs({ args: mod.args, headless: 'shell' }),
@@ -192,7 +193,9 @@ export async function captureWebPage(
       });
       await page.setUserAgent(mobile ? MOBILE_UA : DESKTOP_UA);
       await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: colorScheme }]);
+      const tLaunch = Date.now();
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+      const tGoto = Date.now();
       await new Promise((r) => setTimeout(r, 500 + delayMs));
 
       if (hideBanners) {
@@ -212,9 +215,13 @@ export async function captureWebPage(
           ? { clip: { x: 0, y: 0, width: viewportWidth, height: mobileClipHeight }, captureBeyondViewport: true }
           : { fullPage }),
       })) as Buffer;
+      const tShot = Date.now();
       const screenshotBase64 = `data:image/jpeg;base64,${screenshotBuffer.toString('base64')}`;
 
       const { candidates, pageSize } = await extractDomSectionsPuppeteer(page);
+      console.log(
+        `[Capture Engine] Tier 2 : lancement ${tLaunch - t0} ms, chargement ${tGoto - tLaunch} ms, capture ${tShot - tGoto} ms, hauteur ${pageSize.height}px, ${Math.round(screenshotBuffer.length / 1024)} Ko`
+      );
 
       await browser.close();
       return { screenshotBase64, pageSize, candidates, pageTitle, domainName, faviconUrl, source: 'puppeteer' };

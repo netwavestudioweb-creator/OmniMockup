@@ -12,6 +12,7 @@ import {
   Share2,
   Award,
 } from 'lucide-react';
+import Link from 'next/link';
 import { AVAILABLE_TECHS } from './TechStackPicker';
 
 interface DeveloperSalesKitModalProps {
@@ -20,7 +21,14 @@ interface DeveloperSalesKitModalProps {
   defaultProjectTitle?: string;
   defaultProjectUrl?: string;
   selectedTechIds?: string[];
+  /** Session de démonstration en développement local */
+  demo?: boolean;
 }
+
+type PitchNotice =
+  | { kind: 'error' | 'login'; text: string }
+  | { kind: 'credits'; text: string; cost: number; balance: number }
+  | { kind: 'upsell'; text: string };
 
 export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
   isOpen,
@@ -28,7 +36,9 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
   defaultProjectTitle = 'Mon Application Web',
   defaultProjectUrl = '',
   selectedTechIds = [],
+  demo = false,
 }) => {
+  const [notice, setNotice] = useState<PitchNotice | null>(null);
   const [projectTitle, setProjectTitle] = useState(defaultProjectTitle);
   const [projectUrl] = useState(defaultProjectUrl);
   const [projectDescription, setProjectDescription] = useState(
@@ -55,8 +65,9 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
     setTimeout(() => setCopiedKey(null), 2500);
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (useCredits = false) => {
     setIsLoading(true);
+    setNotice(null);
     try {
       const techNames = selectedTechIds
         .map((id) => AVAILABLE_TECHS.find((t) => t.id === id)?.name)
@@ -71,15 +82,32 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
           projectDescription,
           techStack: techNames,
           targetAudience,
+          useCredits,
+          demo,
         }),
       });
 
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (json.success && json.data) {
         setSalesData(json.data);
+      } else if (json.reason === 'login_required') {
+        setNotice({ kind: 'login', text: 'Connectez-vous pour utiliser le Pitch IA.' });
+      } else if (json.reason === 'not_included' || json.reason === 'quota_reached') {
+        const intro =
+          json.reason === 'quota_reached'
+            ? `Vos ${json.limit} Pitch IA du mois sont utilisés.`
+            : 'Le Pitch IA est inclus dans les forfaits Pro (5 par mois) et Agence (illimité).';
+        if ((json.balance ?? 0) >= (json.cost ?? 2)) {
+          setNotice({ kind: 'credits', text: intro, cost: json.cost ?? 2, balance: json.balance ?? 0 });
+        } else {
+          setNotice({ kind: 'upsell', text: `${intro} Sinon, chaque génération coûte ${json.cost ?? 2} crédits.` });
+        }
+      } else {
+        setNotice({ kind: 'error', text: json.error || "L'IA n'a pas pu générer le texte. Réessayez dans un instant." });
       }
     } catch (err) {
       console.error('Erreur génération pitch:', err);
+      setNotice({ kind: 'error', text: 'Connexion impossible. Vérifiez votre connexion internet et réessayez.' });
     } finally {
       setIsLoading(false);
     }
@@ -171,7 +199,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
 
               <button
                 type="button"
-                onClick={handleGenerate}
+                onClick={() => handleGenerate(false)}
                 disabled={isLoading}
                 className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-bold text-sm shadow-xl shadow-violet-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.99] disabled:opacity-60"
               >
@@ -187,6 +215,37 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                   </>
                 )}
               </button>
+
+              {notice && (
+                <div
+                  role="alert"
+                  className={`p-3.5 rounded-2xl border text-xs leading-relaxed space-y-2.5 ${
+                    notice.kind === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-violet-50 border-violet-200 text-violet-900'
+                  }`}
+                >
+                  <p>{notice.text}</p>
+                  {notice.kind === 'credits' && (
+                    <button
+                      type="button"
+                      onClick={() => handleGenerate(true)}
+                      disabled={isLoading}
+                      className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold disabled:opacity-60"
+                    >
+                      Utiliser {notice.cost} crédits (solde : {notice.balance})
+                    </button>
+                  )}
+                  {notice.kind === 'login' && (
+                    <Link href="/login" className="inline-flex px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold">
+                      Se connecter
+                    </Link>
+                  )}
+                  {notice.kind === 'upsell' && (
+                    <Link href="/pricing" className="inline-flex px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold">
+                      Voir les forfaits et les crédits
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-4">

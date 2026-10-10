@@ -5733,6 +5733,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         defaultProjectUrl={captureItem.url}
         defaultProjectTitle={captureItem.title}
         selectedTechIds={selectedTechIds}
+        demo={user?.id === 'test-user-id-999'}
       />
 
       {/* POPOVER FORMAT DE FRAME */}

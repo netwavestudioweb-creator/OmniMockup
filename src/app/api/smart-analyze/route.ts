@@ -175,9 +175,9 @@ export async function POST(req: NextRequest) {
     if (isKeyConfigured && isAllowedFullAi) {
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        // Utilisation du modèle actif gemini-3.6-flash (gemini-2.5-flash est déprécié par Google)
+        // Modèle récent en premier ; l'alias « flash-latest » sert de secours (toujours un modèle actif)
         const model = genAI.getGenerativeModel({
-          model: 'gemini-3.6-flash',
+          model: 'gemini-3.8-flash',
           generationConfig: {
             responseMimeType: 'application/json',
             temperature: 0.2,
@@ -256,7 +256,7 @@ Réponds STRICTEMENT au format JSON avec ce schéma :
   }
 }`;
 
-        // Génération avec tentative sur gemini-3.6-flash puis gemini-3.5-flash si nécessaire
+        // Génération avec tentative sur gemini-3.8-flash puis gemini-flash-latest si nécessaire
         let responseText = '';
         try {
           const geminiPromise = model.generateContent([prompt, imagePart]);
@@ -267,12 +267,12 @@ Réponds STRICTEMENT au format JSON avec ce schéma :
             response: { text: () => string };
           };
           responseText = geminiResult.response.text();
-          console.log('[Gemini Vision] Inférence réussie avec succès via gemini-3.6-flash');
+          console.log('[Gemini Vision] Inférence réussie avec succès via gemini-3.8-flash');
         } catch (m1Err: unknown) {
           const m1Msg = (m1Err as { message?: string })?.message || '';
-          console.warn('[Gemini Vision] Échec gemini-3.6-flash, tentative fallback gemini-3.5-flash :', m1Msg);
+          console.warn('[Gemini Vision] Échec gemini-3.8-flash, tentative de secours gemini-flash-latest :', m1Msg);
           const fallbackModel = genAI.getGenerativeModel({
-            model: 'gemini-3.5-flash',
+            model: 'gemini-flash-latest',
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.2,
@@ -286,7 +286,7 @@ Réponds STRICTEMENT au format JSON avec ce schéma :
             response: { text: () => string };
           };
           responseText = fbResult.response.text();
-          console.log('[Gemini Vision] Inférence réussie via le modèle de secours gemini-3.5-flash');
+          console.log('[Gemini Vision] Inférence réussie via le modèle de secours gemini-flash-latest');
         }
 
         interface ParsedSectionItem {

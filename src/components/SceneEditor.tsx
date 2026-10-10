@@ -48,6 +48,8 @@ import {
   Tv,
   Upload,
   Layers,
+  FileText,
+  FilePlus,
   ArrowLeft,
   ExternalLink,
   ZoomIn,
@@ -115,6 +117,8 @@ import { BrandKitPanel } from './BrandKitPanel';
 import { SavedStylesPanel } from './SavedStylesPanel';
 import { StudioTour } from './StudioTour';
 import { AiDirectorPanel } from './AiDirectorPanel';
+import { PresentationDialog, MAX_PRESENTATION_SLIDES } from './PresentationDialog';
+import { buildPresentationPdf, type PresentationMeta, type PresentationSlide } from '@/lib/presentationPdf';
 import type { BrandKit } from '@/lib/brandKit';
 import { STUDIO_FONTS, STUDIO_FONT_VARIABLES, studioFontFamily } from '@/lib/studioFonts';
 
@@ -1623,6 +1627,78 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   };
 
   // Pack réseaux sociaux : 5 fichiers aux dimensions officielles de chaque réseau
+  // ── Présentation client (PDF) ──────────────────────────────────────────
+  const [presentationSlides, setPresentationSlides] = useState<PresentationSlide[]>([]);
+  const [showPresentation, setShowPresentation] = useState(false);
+  const [isAddingSlide, setIsAddingSlide] = useState(false);
+  const [isBuildingPdf, setIsBuildingPdf] = useState(false);
+  const [slideAddedNote, setSlideAddedNote] = useState('');
+
+  const handleAddToPresentation = async () => {
+    if (!sceneRef.current || isAddingSlide) return;
+    if (presentationSlides.length >= MAX_PRESENTATION_SLIDES) {
+      setShowPresentation(true);
+      return;
+    }
+    setIsAddingSlide(true);
+    try {
+      const quality = canExportHd ? 'hd' : 'standard';
+      const { width, height } = getExportSize(currentFramePreset, quality);
+      const image = await renderScene('jpg', currentFramePreset, quality, false);
+      // Version sans filigrane gardée pour un export payé en crédits
+      const cleanImage = planWatermark ? await renderScene('jpg', currentFramePreset, quality, true) : undefined;
+      setPresentationSlides((prev) => [
+        ...prev,
+        { id: `slide_${Date.now()}`, image, clean: cleanImage, width, height, quality, caption: '' },
+      ]);
+      setSlideAddedNote(`Page ${presentationSlides.length + 1} ajoutée`);
+      setTimeout(() => setSlideAddedNote(''), 2500);
+    } catch (err) {
+      console.error('Erreur ajout présentation:', err);
+      alert("Impossible d'ajouter cette scène à la présentation.");
+    } finally {
+      setIsAddingSlide(false);
+    }
+  };
+
+  const moveSlide = (id: string, direction: -1 | 1) =>
+    setPresentationSlides((prev) => {
+      const i = prev.findIndex((s) => s.id === id);
+      const j = i + direction;
+      if (i < 0 || j < 0 || j >= prev.length) return prev;
+      const next = [...prev];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+
+  const handleGeneratePdf = async (meta: PresentationMeta) => {
+    if (!presentationSlides.length || isBuildingPdf) return;
+    setIsBuildingPdf(true);
+    try {
+      const quality = presentationSlides.some((s) => s.quality === 'hd') ? 'hd' : 'standard';
+      const auth = await authorizeExport('pack', quality);
+      if (!auth) {
+        // L'offre s'affiche sous cette fenêtre : on la ferme, les pages restent gardées
+        setShowPresentation(false);
+        return;
+      }
+      const blob = await buildPresentationPdf(meta, presentationSlides, auth.watermark);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${fileBaseName}-presentation.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err) {
+      console.error('Erreur PDF:', err);
+      alert('Une erreur est survenue lors de la création du PDF.');
+    } finally {
+      setIsBuildingPdf(false);
+    }
+  };
+
   const handleExportPack = async () => {
     if (!sceneRef.current || isExportingPack) return;
     setIsExportingPack(true);
@@ -2066,6 +2142,37 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       <span className="flex-1">
                         <span className="font-semibold block">Pack réseaux sociaux (5 fichiers)</span>
                         <span className="text-[10px] text-zinc-500">16:9, LinkedIn, Instagram carré et portrait, Story / statut WhatsApp</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddToPresentation}
+                      disabled={isAddingSlide}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left disabled:opacity-50"
+                    >
+                      {isAddingSlide ? <RefreshCw className="w-4 h-4 animate-spin text-violet-400" /> : <FilePlus className="w-4 h-4 text-violet-400" />}
+                      <span className="flex-1">
+                        <span className="font-semibold block">{slideAddedNote || 'Ajouter à la présentation'}</span>
+                        <span className="text-[10px] text-zinc-500">Garde cette scène comme une page du PDF client</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPresentation(true);
+                        setShowExportMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left"
+                    >
+                      <FileText className="w-4 h-4 text-violet-400" />
+                      <span className="flex-1">
+                        <span className="font-semibold block">
+                          Présentation client (PDF)
+                          {presentationSlides.length > 0 && (
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded bg-violet-600 text-white text-[10px]">{presentationSlides.length}</span>
+                          )}
+                        </span>
+                        <span className="text-[10px] text-zinc-500">Plusieurs mockups + textes, prêt à joindre à un devis</span>
                       </span>
                     </button>
                     <button
@@ -5090,6 +5197,20 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {showPresentation && (
+        <PresentationDialog
+          slides={presentationSlides}
+          defaultTitle={`Proposition : ${captureItem.domainName || 'votre site'}`}
+          userId={user?.id}
+          generating={isBuildingPdf}
+          onClose={() => setShowPresentation(false)}
+          onRemove={(id) => setPresentationSlides((prev) => prev.filter((s) => s.id !== id))}
+          onMove={moveSlide}
+          onCaption={(id, caption) => setPresentationSlides((prev) => prev.map((s) => (s.id === id ? { ...s, caption } : s)))}
+          onGenerate={handleGeneratePdf}
+        />
       )}
 
       {/* MODALE UPSELL SELON LES QUOTAS */}

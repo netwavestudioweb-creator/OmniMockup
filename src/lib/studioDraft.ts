@@ -22,6 +22,8 @@ export interface StudioProject extends StudioDraft {
   /** Miniature JPEG (320 px de large) */
   thumbnail?: string;
   createdAt: number;
+  /** Dossier du client (ex. « Hôtel du Lac ») ; absent = sans dossier */
+  folder?: string;
 }
 
 const DB_NAME = 'omnimockup';
@@ -29,7 +31,7 @@ const LEGACY_STORE = 'drafts';
 const LEGACY_KEY = 'last';
 const STORE = 'projects';
 /** Au-delà, les projets les plus anciens sont retirés pour ne pas saturer le navigateur */
-export const MAX_PROJECTS = 30;
+export const MAX_PROJECTS = 50;
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -151,6 +153,7 @@ export async function saveProject(
       name: options.name || existing?.name || projectDefaultName(draft.captureItem),
       thumbnail: options.thumbnail || existing?.thumbnail,
       createdAt: existing?.createdAt || draft.updatedAt,
+      folder: existing?.folder,
     };
     await run(STORE, 'readwrite', (s) => s.put(project));
     const all = await listProjects();
@@ -168,6 +171,25 @@ export async function renameProject(id: string, name: string): Promise<void> {
   } catch {
     // ignorer
   }
+}
+
+/** Range un projet dans le dossier d'un client (chaîne vide = sans dossier). */
+export async function setProjectFolder(id: string, folder: string): Promise<void> {
+  const p = await getProject(id);
+  if (!p) return;
+  const clean = folder.trim().slice(0, 60);
+  try {
+    await run(STORE, 'readwrite', (s) => s.put({ ...p, folder: clean || undefined }));
+  } catch {
+    // ignorer
+  }
+}
+
+/** Liste des dossiers existants, triés par ordre alphabétique. */
+export function projectFolders(projects: StudioProject[]): string[] {
+  return Array.from(new Set(projects.map((p) => p.folder).filter((f): f is string => !!f))).sort((a, b) =>
+    a.localeCompare(b, 'fr')
+  );
 }
 
 export async function duplicateProject(id: string): Promise<StudioProject | null> {

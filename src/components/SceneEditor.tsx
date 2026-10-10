@@ -1054,7 +1054,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     if (draftRestoredRef.current || !initialSnapshot) return;
     draftRestoredRef.current = true;
     try {
-      applySnapshot(initialSnapshot as SceneSnapshot);
+      // Réglages incomplets (ancien format, sauvegarde interrompue) : on complète avec les réglages
+      // actuels au lieu de planter ; sans réglages de scène valides, on garde les réglages par défaut.
+      const saved = initialSnapshot as Partial<SceneSnapshot>;
+      if (!saved || typeof saved !== 'object' || !saved.config || typeof saved.config !== 'object') return;
+      applySnapshot({ ...snapshot, ...saved, config: { ...config, ...saved.config } } as SceneSnapshot);
     } catch {
       // brouillon d'un ancien format : on garde les réglages par défaut
     }

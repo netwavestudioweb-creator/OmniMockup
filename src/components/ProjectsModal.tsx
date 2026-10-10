@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Copy, FolderOpen, Pencil, Trash2, X } from 'lucide-react';
+import { Copy, Folder, FolderOpen, Pencil, Trash2, X } from 'lucide-react';
 import {
   deleteProject,
   duplicateProject,
   listProjects,
   MAX_PROJECTS,
   renameProject,
+  setProjectFolder,
+  projectFolders,
   type StudioProject,
 } from '@/lib/studioDraft';
 
@@ -24,6 +26,10 @@ export const ProjectsModal: React.FC<ProjectsModalProps> = ({ onClose, onOpen, o
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  // Filtre par dossier client : null = tous, '' = sans dossier
+  const [activeFolder, setActiveFolder] = useState<string | null>(null);
+  const [movingId, setMovingId] = useState<string | null>(null);
+  const [moveValue, setMoveValue] = useState('');
 
   const refresh = async () => {
     const list = await listProjects();
@@ -38,6 +44,27 @@ export const ProjectsModal: React.FC<ProjectsModalProps> = ({ onClose, onOpen, o
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const submitMove = async (id: string) => {
+    await setProjectFolder(id, moveValue);
+    setMovingId(null);
+    refresh();
+  };
+
+  const folders = projectFolders(projects || []);
+  const withoutFolder = (projects || []).filter((p) => !p.folder).length;
+  const visible = (projects || []).filter((p) =>
+    activeFolder === null ? true : activeFolder === '' ? !p.folder : p.folder === activeFolder
+  );
+  // Un dossier vidé disparaît : revenir à « Tous »
+  useEffect(() => {
+    if (activeFolder && !projectFolders(projects || []).includes(activeFolder)) setActiveFolder(null);
+  }, [projects, activeFolder]);
+
+  const chip = (active: boolean) =>
+    `px-2.5 py-1 rounded-lg border text-[11px] font-semibold whitespace-nowrap transition-all ${
+      active ? 'bg-violet-600 border-violet-500 text-white' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+    }`;
 
   const submitRename = async (id: string) => {
     await renameProject(id, renameValue);
@@ -76,8 +103,31 @@ export const ProjectsModal: React.FC<ProjectsModalProps> = ({ onClose, onOpen, o
               Aucun projet pour l&apos;instant. Collez l&apos;adresse d&apos;un site : chaque mockup est enregistré automatiquement ici.
             </p>
           )}
+          {(projects?.length || 0) > 0 && (
+            <div className="flex gap-1.5 overflow-x-auto pb-3 -mx-1 px-1" role="group" aria-label="Dossiers clients">
+              <button type="button" onClick={() => setActiveFolder(null)} aria-pressed={activeFolder === null} className={chip(activeFolder === null)}>
+                Tous ({projects?.length})
+              </button>
+              {folders.map((f) => (
+                <button key={f} type="button" onClick={() => setActiveFolder(f)} aria-pressed={activeFolder === f} className={chip(activeFolder === f)}>
+                  <FolderOpen className="w-3 h-3 inline -mt-0.5 mr-1" />
+                  {f} ({(projects || []).filter((p) => p.folder === f).length})
+                </button>
+              ))}
+              {folders.length > 0 && withoutFolder > 0 && (
+                <button type="button" onClick={() => setActiveFolder('')} aria-pressed={activeFolder === ''} className={chip(activeFolder === '')}>
+                  Sans dossier ({withoutFolder})
+                </button>
+              )}
+            </div>
+          )}
+          <datalist id="project-folders">
+            {folders.map((f) => (
+              <option key={f} value={f} />
+            ))}
+          </datalist>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {projects?.map((p) => (
+            {visible.map((p) => (
               <div key={p.id} className="rounded-2xl bg-zinc-900/70 border border-zinc-800 overflow-hidden flex flex-col">
                 <button type="button" onClick={() => onOpen(p)} className="block" aria-label={`Ouvrir ${p.name}`}>
                   {p.thumbnail ? (
@@ -113,6 +163,36 @@ export const ProjectsModal: React.FC<ProjectsModalProps> = ({ onClose, onOpen, o
                       {p.name}
                     </p>
                   )}
+                  {movingId === p.id ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        submitMove(p.id);
+                      }}
+                      className="flex gap-1.5"
+                    >
+                      <input
+                        autoFocus
+                        list="project-folders"
+                        value={moveValue}
+                        onChange={(e) => setMoveValue(e.target.value)}
+                        maxLength={60}
+                        placeholder="Nom du client"
+                        aria-label="Dossier du client"
+                        className="flex-1 min-w-0 px-2 py-1 rounded-lg bg-zinc-950 border border-zinc-700 text-white text-xs focus:outline-none focus:border-violet-500"
+                      />
+                      <button type="submit" className="px-2 rounded-lg bg-violet-600 text-white text-[11px] font-bold">
+                        OK
+                      </button>
+                    </form>
+                  ) : (
+                    p.folder && (
+                      <p className="text-[10px] text-violet-300 flex items-center gap-1 truncate">
+                        <FolderOpen className="w-3 h-3 shrink-0" />
+                        {p.folder}
+                      </p>
+                    )
+                  )}
                   <p className="text-[10px] text-zinc-500">
                     Modifié le {new Date(p.updatedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
                   </p>
@@ -135,6 +215,18 @@ export const ProjectsModal: React.FC<ProjectsModalProps> = ({ onClose, onOpen, o
                       className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800"
                     >
                       <Copy className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMovingId(p.id);
+                        setMoveValue(p.folder || '');
+                      }}
+                      aria-label={`Ranger ${p.name} dans un dossier`}
+                      title="Ranger dans le dossier d'un client"
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    >
+                      <Folder className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"

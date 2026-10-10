@@ -79,7 +79,7 @@ export async function captureWebPage(
   // Sur Vercel, le service de capture en ligne est le plus rapide (7 s contre 15 à 20 s pour notre
   // navigateur sur le serveur) : on l'essaie d'abord, et notre moteur prend le relais s'il échoue
   let cloudTried = false;
-  if (process.env.VERCEL && false) {
+  if (process.env.VERCEL) {
     cloudTried = true;
     try {
       return await captureWebPageCloudFallback(targetUrl, options, 25000);

@@ -42,3 +42,5 @@ Shots/
 # screenshots
 *.PNG
 *.png
+# Masques des scènes photo du studio : à publier
+!public/scenes/*.png

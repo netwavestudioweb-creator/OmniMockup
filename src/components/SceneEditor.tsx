@@ -264,6 +264,14 @@ const EXPORT_IMAGE_PLACEHOLDER =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
 /** Format vidéo enregistrable par ce navigateur : MP4 si possible, sinon WebM. */
+/** Animations proposées pour l'export vidéo */
+const VIDEO_ANIMATIONS: { id: VideoAnimPreset; label: string; hint: string }[] = [
+  { id: 'zoomIn', label: 'Zoom lent', hint: 'Zoom lent sur la scène, 3 s' },
+  { id: 'rotate3d', label: 'Rotation 3D', hint: "L'appareil pivote en 3D, 3 s" },
+  { id: 'riseIn', label: 'Entrée', hint: "L'appareil glisse vers le haut, 3 s" },
+  { id: 'scroll', label: 'Défilement', hint: 'La page entière défile dans l\'écran, 5 à 13 s' },
+];
+
 function getVideoFormat(): { mimeType: string; extension: 'mp4' | 'webm' } {
   if (typeof MediaRecorder !== 'undefined') {
     for (const t of ['video/mp4;codecs=avc1.42E01E', 'video/mp4;codecs=avc1', 'video/mp4']) {
@@ -371,7 +379,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const [techThemeStyle, setTechThemeStyle] = useState<'dark-glass' | 'light-glass' | 'neon'>('dark-glass');
 
   // État de l'exportation vidéo animée
-  const [videoPreset] = useState<VideoAnimPreset>('zoomIn');
+  const [videoPreset, setVideoPreset] = useState<VideoAnimPreset>('zoomIn');
+  // Rendu image par image d'une animation : l'historique « annuler » est mis en pause
+  const videoAnimatingRef = useRef(false);
+  const [videoProgress, setVideoProgress] = useState('');
   const [isExportingVideo, setIsExportingVideo] = useState(false);
 
   // ══ NOUVELLES OPTIONS SHOTS.SO ══
@@ -962,6 +973,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   useEffect(() => {
     const h = historyRef.current;
+    if (videoAnimatingRef.current) return;
     if (restoringRef.current) {
       restoringRef.current = false;
       h.last = snapshot;
@@ -1348,89 +1360,273 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   };
 
   // Export Vidéo Animé 3s (.webm)
+  /** Enregistre une vidéo en dessinant chaque image dans un canevas (temps réel, 30 i/s). */
+  const recordCanvasVideo = async (
+    width: number,
+    height: number,
+    totalFrames: number,
+    draw: (ctx: CanvasRenderingContext2D, frame: number) => void,
+    filename: string
+  ) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Contexte canvas 2D indisponible');
+    const fps = 30;
+    draw(ctx, 0);
+    const stream = canvas.captureStream(fps);
+    // MP4 quand le navigateur sait l'enregistrer (Chrome, Edge, Safari récents), sinon WebM
+    const { mimeType, extension } = getVideoFormat();
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 });
+    const chunks: Blob[] = [];
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
+    const stopped = new Promise<void>((resolve) => (recorder.onstop = () => resolve()));
+    recorder.start();
+    const t0 = performance.now();
+    for (let f = 0; f < totalFrames; f++) {
+      draw(ctx, f);
+      // Cadence régulière même si un dessin prend du retard
+      const wait = t0 + ((f + 1) * 1000) / fps - performance.now();
+      await new Promise((r) => setTimeout(r, Math.max(0, wait)));
+    }
+    recorder.stop();
+    await stopped;
+    const blob = new Blob(chunks, { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.${extension}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
+
+  const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+
+  /**
+   * Rend la scène plusieurs fois en changeant ses réglages (angle, position…) : vraie 3D,
+   * identique à l'aperçu. Les réglages d'origine sont restaurés ensuite.
+   */
+  const renderSceneKeyframes = async (
+    count: number,
+    at: (t: number, base: SceneConfig) => Partial<SceneConfig>,
+    width: number,
+    height: number,
+    hideWatermark: boolean
+  ): Promise<ImageBitmap[]> => {
+    const original = config;
+    const frames: ImageBitmap[] = [];
+    videoAnimatingRef.current = true;
+    sceneRef.current?.setAttribute('data-video-render', '');
+    try {
+      for (let k = 0; k < count; k++) {
+        setVideoProgress(`${Math.round((k / count) * 100)} %`);
+        flushSync(() => setConfig({ ...original, ...at(k / (count - 1), original) }));
+        await new Promise((r) => requestAnimationFrame(() => r(null)));
+        const c = await renderSceneCanvas(width, height, hideWatermark);
+        frames.push(await createImageBitmap(c));
+      }
+    } finally {
+      sceneRef.current?.removeAttribute('data-video-render');
+      videoAnimatingRef.current = false;
+      restoringRef.current = true;
+      setConfig(original);
+      setVideoProgress('');
+    }
+    return frames;
+  };
+
+  /** Défilement de la page entière dans l'écran de l'appareil (appareil présenté de face). */
+  const renderScrollVideo = async (width: number, height: number, hideWatermark: boolean, filename: string) => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    const original = config;
+    const flat = { mockupTiltX: 0, mockupTiltY: 0, mockupRotation: 0, cropOffsetY: 0 };
+    videoAnimatingRef.current = true;
+    scene.setAttribute('data-video-render', '');
+    let base: HTMLCanvasElement;
+    let chroma: HTMLCanvasElement;
+    const content = new Image();
+    let rect: { x: number; y: number; w: number; h: number };
+    try {
+      flushSync(() => setConfig({ ...original, ...flat }));
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      // L'écran principal : la plus grande capture affichée dans un appareil
+      const shots = new Set([currentScreenshot, phoneScreenshot].filter(Boolean));
+      const screens = Array.from(scene.querySelectorAll('img')).filter((i) => shots.has(i.getAttribute('src') || ''));
+      const screen = screens.sort((a, b) => b.clientWidth * b.clientHeight - a.clientWidth * a.clientHeight)[0];
+      if (!screen) throw new Error('écran introuvable');
+      const sRect = scene.getBoundingClientRect();
+      const iRect = screen.getBoundingClientRect();
+      const kx = width / sRect.width;
+      const ky = height / sRect.height;
+      rect = { x: (iRect.left - sRect.left) * kx, y: (iRect.top - sRect.top) * ky, w: iRect.width * kx, h: iRect.height * ky };
+      content.src = screen.getAttribute('src') || '';
+      await content.decode();
+
+      base = await renderSceneCanvas(width, height, hideWatermark);
+      // Écran rempli d'une couleur témoin : indique exactement la partie visible de l'écran
+      const parent = screen.parentElement as HTMLElement;
+      const prevVis = screen.style.visibility;
+      const prevBg = parent.style.background;
+      screen.style.visibility = 'hidden';
+      parent.style.background = '#ff00ff';
+      try {
+        chroma = await renderSceneCanvas(width, height, hideWatermark);
+      } finally {
+        screen.style.visibility = prevVis;
+        parent.style.background = prevBg;
+      }
+    } finally {
+      scene.removeAttribute('data-video-render');
+      videoAnimatingRef.current = false;
+      restoringRef.current = true;
+      setConfig(original);
+    }
+
+    // Seule la zone de l'écran change d'une image à l'autre : tout le reste est dessiné une fois
+    const bx = Math.max(0, Math.floor(rect.x));
+    const by = Math.max(0, Math.floor(rect.y));
+    const bw = Math.min(width, Math.ceil(rect.x + rect.w)) - bx;
+    const bh = Math.min(height, Math.ceil(rect.y + rect.h)) - by;
+
+    // Zone de la scène autour de l'écran, percée là où l'écran est visible (pixels magenta du rendu témoin) :
+    // coins arrondis et éléments posés sur l'écran (badges, textes) restent au-dessus de la page qui défile.
+    const hole = document.createElement('canvas');
+    hole.width = bw;
+    hole.height = bh;
+    const hctx = hole.getContext('2d') as CanvasRenderingContext2D;
+    hctx.drawImage(base, bx, by, bw, bh, 0, 0, bw, bh);
+    const hdata = hctx.getImageData(0, 0, bw, bh);
+    const cdata = (chroma.getContext('2d') as CanvasRenderingContext2D).getImageData(bx, by, bw, bh);
+    for (let i = 0; i < cdata.data.length; i += 4) {
+      if (cdata.data[i] > 190 && cdata.data[i + 2] > 190 && cdata.data[i + 1] < 90) hdata.data[i + 3] = 0;
+    }
+    hctx.putImageData(hdata, 0, 0);
+
+    // La capture est mise une fois à la largeur de l'écran ; ensuite chaque image n'est qu'une copie
+    const dw = Math.max(1, Math.round(rect.w));
+    const dh = Math.max(1, Math.round(rect.h));
+    const fullH = Math.min(32000, Math.round((content.naturalHeight * dw) / content.naturalWidth));
+    const strip = document.createElement('canvas');
+    strip.width = dw;
+    strip.height = fullH;
+    (strip.getContext('2d') as CanvasRenderingContext2D).drawImage(content, 0, 0, dw, fullH);
+    const travel = Math.max(0, fullH - dh);
+    const seconds = Math.min(12, Math.max(4, travel / (dh * 1.2)));
+    const fps = 30;
+    const pause = 0.6;
+    const total = Math.round((seconds + pause * 2) * fps);
+    const rx = Math.round(rect.x);
+    const ry = Math.round(rect.y);
+
+    await recordCanvasVideo(
+      width,
+      height,
+      total,
+      (ctx, f) => {
+        const t = Math.min(1, Math.max(0, (f / fps - pause) / seconds));
+        const sy = Math.round(travel * easeInOut(t));
+        if (f === 0) ctx.drawImage(base, 0, 0);
+        ctx.drawImage(strip, 0, sy, dw, Math.min(dh, fullH - sy), rx, ry, dw, Math.min(dh, fullH - sy));
+        ctx.drawImage(hole, bx, by);
+        if (f % 30 === 0) setVideoProgress(`${Math.round((f / total) * 100)} %`);
+      },
+      filename
+    );
+  };
+
   const handleExportVideo = async () => {
-    if (!sceneRef.current) return;
+    if (!sceneRef.current || isExportingVideo) return;
     setIsExportingVideo(true);
 
     try {
       const auth = await authorizeExport('video', exportQuality === '4k' ? 'hd' : exportQuality);
-      if (!auth) {
-        setIsExportingVideo(false);
+      if (!auth) return;
+      const videoBase = getExportSize(currentFramePreset, auth.quality);
+      const hideWm = !auth.watermark;
+
+      if (videoPreset === 'scroll') {
+        await renderScrollVideo(videoBase.width, videoBase.height, hideWm, `${fileBaseName}-video-defilement`);
         return;
       }
-      const videoBase = getExportSize(currentFramePreset, auth.quality);
-      const basePngUrl = (await renderSceneCanvas(videoBase.width, videoBase.height, !auth.watermark)).toDataURL('image/png');
-      const img = new Image();
-      img.src = basePngUrl;
-      await new Promise((r) => {
-        img.onload = r;
-      });
 
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Contexte canvas 2D indisponible');
+      if (videoPreset === 'rotate3d' || videoPreset === 'riseIn') {
+        // Rendu image par image : limité à 1280 px de large pour rester rapide et léger en mémoire
+        const k = Math.min(1, 1280 / videoBase.width);
+        const w = Math.round(videoBase.width * k);
+        const h = Math.round(videoBase.height * k);
+        const count = 36;
+        const frames = await renderSceneKeyframes(
+          count,
+          (t, b) =>
+            videoPreset === 'rotate3d'
+              ? { mockupTiltY: (b.mockupTiltY || 0) + Math.sin(t * Math.PI * 2) * 18, mockupTiltX: (b.mockupTiltX || 0) + 6 }
+              : { mockupY: b.mockupY + (1 - easeOut(t)) * 60, mockupScale: b.mockupScale * (0.88 + 0.12 * easeOut(t)) },
+          w,
+          h,
+          hideWm
+        );
+        const total = 90;
+        await recordCanvasVideo(
+          w,
+          h,
+          total,
+          (ctx, f) => {
+            // Fondu entre deux images voisines : mouvement fluide à 30 i/s
+            const pos = (f / (total - 1)) * (count - 1);
+            const i = Math.floor(pos);
+            const a = pos - i;
+            ctx.globalAlpha = 1;
+            ctx.drawImage(frames[i], 0, 0, w, h);
+            if (a > 0 && frames[i + 1]) {
+              ctx.globalAlpha = a;
+              ctx.drawImage(frames[i + 1], 0, 0, w, h);
+              ctx.globalAlpha = 1;
+            }
+          },
+          `${fileBaseName}-video-${videoPreset === 'rotate3d' ? 'rotation' : 'entree'}`
+        );
+        frames.forEach((fr) => fr.close());
+        return;
+      }
 
-      const stream = canvas.captureStream(30);
-      // MP4 quand le navigateur sait l'enregistrer (Chrome, Edge, Safari récents), sinon WebM
-      const { mimeType, extension } = getVideoFormat();
-      const recorder = new MediaRecorder(stream, { mimeType });
-      const chunks: Blob[] = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${fileBaseName}-video-3s.${extension}`;
-        a.click();
-        URL.revokeObjectURL(url);
-        setIsExportingVideo(false);
-      };
-
-      recorder.start();
-
-      const durationMs = 3000;
-      const fps = 30;
-      const totalFrames = (durationMs / 1000) * fps;
-      let currentFrame = 0;
-
-      const interval = setInterval(() => {
-        currentFrame++;
-        const progress = currentFrame / totalFrames;
-
-        let scale = 1;
-        let translateX = 0;
-
-        if (videoPreset === 'zoomIn') {
-          scale = 1 + progress * 0.12;
-        } else if (videoPreset === 'zoomOut') {
-          scale = 1.12 - progress * 0.12;
-        } else if (videoPreset === 'panHorizontal') {
-          translateX = (progress - 0.5) * 0.08 * canvas.width;
-        }
-
-        ctx.save();
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.translate(canvas.width / 2 + translateX, canvas.height / 2);
-        ctx.scale(scale, scale);
-        ctx.drawImage(img, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
-        ctx.restore();
-
-        if (currentFrame >= totalFrames) {
-          clearInterval(interval);
-          recorder.stop();
-        }
-      }, 1000 / fps);
+      // Zoom ou glissement d'une image fixe
+      const still = await renderSceneCanvas(videoBase.width, videoBase.height, hideWm);
+      await recordCanvasVideo(
+        still.width,
+        still.height,
+        90,
+        (ctx, f) => {
+          const progress = f / 89;
+          let scale = 1;
+          let translateX = 0;
+          if (videoPreset === 'zoomIn') scale = 1 + progress * 0.12;
+          else if (videoPreset === 'zoomOut') scale = 1.12 - progress * 0.12;
+          else if (videoPreset === 'panHorizontal') {
+            scale = 1.1;
+            translateX = (progress - 0.5) * 0.08 * still.width;
+          }
+          ctx.save();
+          ctx.clearRect(0, 0, still.width, still.height);
+          ctx.translate(still.width / 2 + translateX, still.height / 2);
+          ctx.scale(scale, scale);
+          ctx.drawImage(still, -still.width / 2, -still.height / 2, still.width, still.height);
+          ctx.restore();
+        },
+        `${fileBaseName}-video-3s`
+      );
     } catch (err) {
       console.error('Erreur export vidéo:', err);
-      alert("L'exportation vidéo nécessite un navigateur supportant MediaRecorder.");
+      alert('La création de la vidéo a échoué. Elle nécessite un navigateur récent (Chrome, Edge, Firefox ou Safari).');
+    } finally {
       setIsExportingVideo(false);
+      setVideoProgress('');
     }
   };
 
@@ -2239,24 +2435,46 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <span className="text-[10px] text-zinc-500">PDF pour un devis, carrousel LinkedIn ou Instagram</span>
                       </span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleExportVideo();
-                        setShowExportMenu(false);
-                      }}
-                      disabled={isExportingVideo}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left disabled:opacity-50"
-                    >
-                      {isExportingVideo ? <RefreshCw className="w-4 h-4 animate-spin text-amber-400" /> : <Video className="w-4 h-4 text-amber-400" />}
-                      <span className="flex-1">
-                        <span className="font-semibold block">Vidéo animée 3 s</span>
-                        <span className="text-[10px] text-zinc-500">
-                          Zoom lent, format {videoExtension.toUpperCase()}
-                          {videoExtension === 'webm' && ' (MP4 avec Chrome, Edge ou Safari)'}
+                    <div className="px-3 py-2 rounded-xl space-y-2">
+                      <div className="flex items-center gap-2.5 text-zinc-200">
+                        <Video className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="flex-1">
+                          <span className="font-semibold block">Vidéo animée</span>
+                          <span className="text-[10px] text-zinc-500">
+                            {VIDEO_ANIMATIONS.find((v) => v.id === videoPreset)?.hint}, format {videoExtension.toUpperCase()}
+                            {videoExtension === 'webm' && ' (MP4 avec Chrome, Edge ou Safari)'}
+                          </span>
                         </span>
-                      </span>
-                    </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1" role="radiogroup" aria-label="Animation de la vidéo">
+                        {VIDEO_ANIMATIONS.map((v) => (
+                          <button
+                            key={v.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={videoPreset === v.id}
+                            onClick={() => setVideoPreset(v.id)}
+                            disabled={isExportingVideo}
+                            className={`py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${
+                              videoPreset === v.id
+                                ? 'bg-amber-500/15 border-amber-500/50 text-amber-200'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            {v.label}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleExportVideo}
+                        disabled={isExportingVideo}
+                        className="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-60"
+                      >
+                        {isExportingVideo ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Video className="w-3.5 h-3.5" />}
+                        {isExportingVideo ? `Création de la vidéo… ${videoProgress}` : 'Créer la vidéo'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

@@ -6,7 +6,7 @@ export type DeviceStyle = 'default' | 'glass' | 'inset';
 export type CornerRadius = 'sharp' | 'curved' | 'round';
 export type ExportScale = 1 | 2 | 4;
 export type SceneFilterType = 'none' | 'grain' | 'vhs' | 'glitch';
-export type VideoAnimPreset = 'zoomIn' | 'zoomOut' | 'panHorizontal';
+export type VideoAnimPreset = 'zoomIn' | 'zoomOut' | 'panHorizontal' | 'rotate3d' | 'riseIn' | 'scroll';
 
 export type BrowserStylePreset = 'safari-light' | 'safari-dark' | 'chrome-light' | 'chrome-dark' | 'arc-light' | 'arc-dark';
 export type ShadowPreset = 'none' | 'spread' | 'realistic' | 'adaptive';

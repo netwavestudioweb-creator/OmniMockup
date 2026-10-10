@@ -358,3 +358,10 @@ body {
   -webkit-backdrop-filter: blur(24px);
 }
 
+
+/* Vidéo rendue image par image : aucune transition entre deux images */
+[data-video-render],
+[data-video-render] * {
+  transition: none !important;
+  animation: none !important;
+}

@@ -365,3 +365,58 @@ body {
   transition: none !important;
   animation: none !important;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Thème sombre de la page d'accueil : la barre du haut et le pied de page,
+   conçus pour les pages claires, prennent les couleurs sombres de l'accueil.
+   ───────────────────────────────────────────────────────────────────────────── */
+.site-dark > header,
+.site-dark > footer {
+  background-color: rgba(9, 9, 11, 0.88);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #a1a1aa;
+}
+.site-dark > header .text-stone-900,
+.site-dark > footer .text-stone-900 {
+  color: #fafafa;
+}
+.site-dark > header .text-stone-700,
+.site-dark > header .text-stone-600,
+.site-dark > footer .text-stone-700,
+.site-dark > footer .text-stone-600 {
+  color: #d4d4d8;
+}
+.site-dark > header .text-stone-500,
+.site-dark > header .text-stone-400,
+.site-dark > footer .text-stone-500,
+.site-dark > footer .text-stone-400 {
+  color: #a1a1aa;
+}
+.site-dark > header .bg-white,
+.site-dark > header .bg-sand-50,
+.site-dark > footer .bg-white,
+.site-dark > footer .bg-stone-100 {
+  background-color: #18181b;
+}
+.site-dark > header .border-sand-200,
+.site-dark > header .border-sand-100,
+.site-dark > footer .border-sand-200,
+.site-dark > footer .border-sand-300 {
+  border-color: #27272a;
+}
+.site-dark > header .bg-violet-100,
+.site-dark > footer .bg-violet-100 {
+  background-color: rgba(124, 58, 237, 0.2);
+}
+.site-dark > header .text-violet-800,
+.site-dark > footer .text-violet-800 {
+  color: #c4b5fd;
+}
+.site-dark > header .border-violet-200,
+.site-dark > footer .border-violet-200 {
+  border-color: rgba(124, 58, 237, 0.4);
+}
+.site-dark > header a:hover,
+.site-dark > header button:hover {
+  color: #ffffff;
+}

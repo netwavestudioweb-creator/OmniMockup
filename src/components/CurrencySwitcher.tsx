@@ -24,7 +24,7 @@ export const CurrencySwitcher: React.FC<CurrencySwitcherProps> = ({
   if (variant === 'footer') {
     return (
       <div className={`inline-flex items-center gap-1.5 p-1 rounded-xl bg-stone-100 border border-sand-300 text-xs ${className}`}>
-        <span className="text-[10px] font-semibold text-stone-400 pl-1.5 flex items-center gap-1">
+        <span className="text-[10px] font-semibold text-stone-400 pl-1.5 flex items-center gap-1 whitespace-nowrap">
           <Globe className="w-3 h-3 text-stone-400" />
           <span className="hidden sm:inline">Devise :</span>
         </span>

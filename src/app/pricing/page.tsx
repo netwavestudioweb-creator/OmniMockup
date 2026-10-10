@@ -518,14 +518,14 @@ export default function PricingPage() {
               <span className="text-[10px] bg-sand-100 text-stone-700 px-2 py-0.5 rounded-full font-bold">100% Gratuit</span>
             </div>
             <p className="text-xs text-stone-500">
-              3 exports PNG par jour (1x), filigrane discret, studio complet sans carte bancaire requise.
+              3 exports par jour en qualité Standard, filigrane discret, studio complet, sans carte bancaire.
             </p>
           </div>
           <Link
             href="/"
             className="px-5 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-900 text-xs font-bold border border-sand-300 transition-colors shrink-0"
           >
-            Ouvrir le Studio Gratuit
+            Ouvrir le studio gratuitement
           </Link>
         </div>
 
@@ -540,7 +540,7 @@ export default function PricingPage() {
                 <span>Sans abonnement : payez à l&apos;usage</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-stone-900">
-                Packs de Crédits à la Carte (Pay-per-use)
+                Packs de crédits à la carte
               </h2>
               <p className="text-xs sm:text-sm text-stone-500 mt-1 max-w-2xl leading-relaxed">
                 Besoin ponctuel pour un pitch client ou une release ? Achetez des crédits valables à vie sans aucun abonnement récurrent.

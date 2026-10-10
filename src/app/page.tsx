@@ -36,7 +36,6 @@ import {
   Download,
   Copy,
   Link2,
-  ImagePlus,
   Aperture,
   Palette,
   ScanLine,
@@ -213,7 +212,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col selection:bg-violet-500/30 selection:text-violet-200 w-full max-w-full overflow-x-hidden">
+    <div className="site-dark min-h-screen bg-zinc-950 text-white flex flex-col selection:bg-violet-500/30 selection:text-violet-200 w-full max-w-full overflow-x-hidden">
       <Navbar />
       {showProjects && <ProjectsModal onClose={() => setShowProjects(false)} onOpen={openProject} onChange={setProjects} />}
           {/* ═══════════ HERO SECTION ═══════════ */}
@@ -604,15 +603,11 @@ export default function HomePage() {
                     <p className="text-[11px] text-zinc-400 font-medium">
                       {heroMobileDevice === 'iphone'
                         ? '📱 iPhone 16 Pro Max · Écran Super Retina XDR 6.9"'
-                        : '⌚ Apple Watch Ultra · Cadran Titane 4K'}
+                        : '⌚ Montre connectée · même mockup en version montre'}
                     </p>
                   </div>
                 </div>
 
-                {/* Badge flottant vérifié */}
-                <div className="hidden sm:flex absolute -bottom-3 sm:-bottom-4 -right-2 sm:-right-4 bg-emerald-500 text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl shadow-xl items-center gap-2">
-                  <BadgeCheck className="w-4.5 h-4.5" /> Traitement 4K Haute Fidélité
-                </div>
               </div>
             </div>
           </section>
@@ -944,7 +939,7 @@ export default function HomePage() {
                       <feature.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     </div>
                     <h3 className="font-bold text-white text-xs sm:text-sm">{feature.title}</h3>
-                    <p className="text-[11px] sm:text-xs text-zinc-400 leading-relaxed line-clamp-3 sm:line-clamp-none">{feature.desc}</p>
+                    <p className="text-[11px] sm:text-xs text-zinc-400 leading-relaxed">{feature.desc}</p>
                   </div>
                 ))}
               </div>

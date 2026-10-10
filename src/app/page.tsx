@@ -458,7 +458,7 @@ export default function HomePage() {
                         }`}
                       >
                         <Smartphone className="w-3.5 h-3.5" />
-                        iPhone 16 Pro Max
+                        Téléphone
                       </button>
                       <button
                         type="button"
@@ -470,41 +470,31 @@ export default function HomePage() {
                         }`}
                       >
                         <Watch className="w-3.5 h-3.5" />
-                        Apple Watch
+                        Montre
                       </button>
                     </div>
 
-                    {/* VUE 1 : iPhone 16 Pro Max — Image photoréaliste authentique */}
+                    {/* VUE 1 : téléphone — vrai mockup réalisé avec OmniMockup */}
                     {heroMobileDevice === 'iphone' ? (
                       <div className="w-full max-w-[300px] mx-auto relative animate-fade-in">
                         {/* Halo lumineux violet derrière le téléphone */}
                         <div className="absolute inset-0 -z-10 rounded-[40px] blur-3xl opacity-50 bg-gradient-to-b from-violet-600/40 via-indigo-600/20 to-transparent scale-110" />
 
-                        {/* Vraie image photoréaliste iPhone 16 Pro Max */}
+                        {/* Vrai mockup réalisé avec OmniMockup : boutique en ligne Al Kareem Parfumerie (avec son accord) */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src="/images/iphone16-promax-netwave.webp"
-                          alt="iPhone 16 Pro Max affichant le site Netwave Studio"
-                          className="w-full h-auto object-contain drop-shadow-[0_30px_60px_rgba(124,58,237,0.5)] animate-float"
+                          src="/images/mockup-al-kareem-boutique.webp"
+                          alt="Mockup iPhone de la boutique en ligne Al Kareem Parfumerie, réalisé avec OmniMockup"
+                          width={619}
+                          height={1233}
+                          className="w-[78%] mx-auto h-auto object-contain drop-shadow-[0_30px_60px_rgba(124,58,237,0.45)] animate-float"
                           loading="eager"
                         />
 
-                        {/* Badge flottant Dynamic Island */}
-                        <div className="absolute top-[18%] right-[-8px] flex flex-col items-end gap-1.5">
-                          <div className="bg-black/80 backdrop-blur-sm border border-violet-500/40 text-[9px] font-bold text-violet-300 px-2 py-1 rounded-lg shadow-lg flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            Dynamic Island
-                          </div>
-                          <div className="bg-black/80 backdrop-blur-sm border border-zinc-700/60 text-[9px] font-mono text-emerald-400 px-2 py-1 rounded-lg shadow-lg">
-                            Super Retina XDR 6.9&quot;
-                          </div>
-                        </div>
-
-                        {/* Badge Titane Natural en bas */}
-                        <div className="absolute bottom-[12%] left-1/2 -translate-x-1/2">
-                          <div className="bg-black/80 backdrop-blur-sm border border-zinc-700/60 text-[9px] font-bold text-zinc-300 px-3 py-1 rounded-full shadow-xl whitespace-nowrap flex items-center gap-1.5">
-                            <Sparkles className="w-2.5 h-2.5 text-violet-400" />
-                            iPhone 16 Pro Max · Titane Naturel
+                        <div className="mt-4 flex justify-center">
+                          <div className="bg-black/80 backdrop-blur-sm border border-zinc-700/60 text-[10px] font-semibold text-zinc-300 px-3 py-1.5 rounded-full shadow-xl flex items-center gap-1.5 text-center">
+                            <Sparkles className="w-3 h-3 text-violet-400 shrink-0" />
+                            Boutique Al Kareem Parfumerie · réalisé avec OmniMockup
                           </div>
                         </div>
                       </div>
@@ -579,7 +569,7 @@ export default function HomePage() {
                           className={`h-1.5 rounded-full transition-all ${
                             heroMobileDevice === 'iphone' ? 'w-5 bg-violet-500' : 'w-2 bg-zinc-700'
                           }`}
-                          aria-label="iPhone 16 Pro Max"
+                          aria-label="Téléphone"
                         />
                         <button
                           type="button"
@@ -587,7 +577,7 @@ export default function HomePage() {
                           className={`h-1.5 rounded-full transition-all ${
                             heroMobileDevice === 'watch' ? 'w-5 bg-violet-500' : 'w-2 bg-zinc-700'
                           }`}
-                          aria-label="Apple Watch Ultra"
+                          aria-label="Montre"
                         />
                       </div>
                       <button
@@ -602,7 +592,7 @@ export default function HomePage() {
 
                     <p className="text-[11px] text-zinc-400 font-medium">
                       {heroMobileDevice === 'iphone'
-                        ? '📱 iPhone 16 Pro Max · Écran Super Retina XDR 6.9"'
+                        ? '📱 Mockup téléphone · capture réelle de la version mobile du site'
                         : '⌚ Montre connectée · même mockup en version montre'}
                     </p>
                   </div>

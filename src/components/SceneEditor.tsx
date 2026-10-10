@@ -381,7 +381,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const [salesKitOpen, setSalesKitOpen] = useState(false);
 
   // Badges Stack Technique Développeur
-  const [selectedTechIds, setSelectedTechIds] = useState<string[]>(['nextjs', 'react', 'tailwind']);
+  // Aucun badge par défaut : la technologie du site n'est pas connue, l'utilisateur ajoute les siens
+  const [selectedTechIds, setSelectedTechIds] = useState<string[]>([]);
   const [techPosition, setTechPosition] = useState<'bottom' | 'top' | 'floating'>('bottom');
   const [techThemeStyle, setTechThemeStyle] = useState<'dark-glass' | 'light-glass' | 'neon'>('dark-glass');
 
@@ -1171,7 +1172,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       canvasWidth: width,
       canvasHeight: height,
       imagePlaceholder: EXPORT_IMAGE_PLACEHOLDER,
-      style: { transform: 'none' },
+      // Fond transparent : le damier n'est qu'un aperçu à l'écran, il ne doit pas être exporté
+      style: config.bgTransparent
+        ? { transform: 'none', backgroundImage: 'none', backgroundColor: 'transparent' }
+        : { transform: 'none' },
       filter: (el) =>
         !(el instanceof Element && (el.hasAttribute('data-export-hide') || (hideWatermark && el.hasAttribute('data-watermark')))),
     });

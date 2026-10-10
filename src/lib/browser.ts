@@ -255,8 +255,10 @@ async function captureWebPageCloudFallback(
   try {
     const microlinkUrl = `https://api.microlink.io/?url=${encodeURIComponent(
       targetUrl
-    )}&screenshot=true&meta=true&viewport.width=${width}&viewport.height=${height}${
-      mobile ? '&viewport.isMobile=true&viewport.hasTouch=true&viewport.deviceScaleFactor=2' : ''
+    )}&screenshot=true&meta=true&screenshot.type=jpeg&viewport.width=${width}&viewport.height=${height}${
+      // JPEG à la taille réelle (pas en Retina ×2 sur ordinateur) : 10 à 15 fois plus léger que le PNG,
+      // indispensable sur connexion mobile (une page entière passait de 8 Mo à environ 600 Ko)
+      mobile ? '&viewport.isMobile=true&viewport.hasTouch=true&viewport.deviceScaleFactor=2' : '&viewport.deviceScaleFactor=1'
     }${
       fullPage && !mobile ? '&screenshot.fullPage=true' : ''
     }${options.colorScheme === 'dark' ? '&colorScheme=dark' : ''}${
@@ -272,7 +274,7 @@ async function captureWebPageCloudFallback(
       if (contentType.includes('image/')) {
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        screenshotBase64 = `data:image/png;base64,${buffer.toString('base64')}`;
+        screenshotBase64 = `data:${contentType.split(';')[0] || 'image/jpeg'};base64,${buffer.toString('base64')}`;
       } else {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data: any = await response.json();
@@ -284,7 +286,8 @@ async function captureWebPageCloudFallback(
           if (imgRes.ok) {
             const arrayBuffer = await imgRes.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
-            screenshotBase64 = `data:image/png;base64,${buffer.toString('base64')}`;
+            const imgType = (imgRes.headers.get('content-type') || 'image/jpeg').split(';')[0];
+            screenshotBase64 = `data:${imgType};base64,${buffer.toString('base64')}`;
           }
         }
       }

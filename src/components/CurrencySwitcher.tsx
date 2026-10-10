@@ -13,7 +13,6 @@ interface CurrencySwitcherProps {
 const OPTIONS: { code: Currency; symbol: string; label: string }[] = [
   { code: 'EUR', symbol: '€', label: 'EUR (€)' },
   { code: 'USD', symbol: '$', label: 'USD ($)' },
-  { code: 'XOF', symbol: 'FCFA', label: 'FCFA' },
 ];
 
 export const CurrencySwitcher: React.FC<CurrencySwitcherProps> = ({

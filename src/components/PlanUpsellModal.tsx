@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { usePrices } from '@/lib/usePrices';
 import Link from 'next/link';
 import { Sparkles, Flame, Check, X, ArrowRight, Coins, Zap } from 'lucide-react';
 import { trackEvent } from '@/lib/tracking';
@@ -18,7 +19,9 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
   mode,
   onClose,
 }) => {
+  const price = usePrices();
   if (!isOpen) return null;
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/75 backdrop-blur-sm animate-fade-in">
@@ -53,7 +56,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-bold text-stone-900 text-sm">Solo</span>
-                    <span className="text-[10px] bg-sand-200 text-stone-700 px-2 py-0.5 rounded-full font-bold">5 €/mois</span>
+                    <span className="text-[10px] bg-sand-200 text-stone-700 px-2 py-0.5 rounded-full font-bold">{price.solo}/mois</span>
                   </div>
                   <p className="text-[11px] text-stone-500 leading-tight mb-3">
                     20 exports HD 2x / mois avec filigrane discret.
@@ -77,7 +80,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                   }}
                   className="mt-4 w-full py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold text-center transition-colors block"
                 >
-                  Choisir Solo (5 €)
+                  Choisir Solo ({price.solo})
                 </Link>
               </div>
 
@@ -92,7 +95,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                       <Flame className="w-3.5 h-3.5 text-violet-600 fill-violet-600" />
                       Pro
                     </span>
-                    <span className="text-[10px] bg-violet-600 text-white px-2 py-0.5 rounded-full font-bold">9 €/mois</span>
+                    <span className="text-[10px] bg-violet-600 text-white px-2 py-0.5 rounded-full font-bold">{price.pro}/mois</span>
                   </div>
                   <p className="text-[11px] text-violet-800 leading-tight mb-3 font-medium">
                     Exports illimités HD + 4K, ZÉRO filigrane et vidéo MP4 (10 / mois).
@@ -120,7 +123,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                   }}
                   className="mt-4 w-full py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-black text-center transition-colors block shadow-sm shadow-violet-500/20"
                 >
-                  Passer au Pro (9 €) →
+                  Passer au Pro ({price.pro}) →
                 </Link>
               </div>
             </div>
@@ -135,7 +138,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
               <span>Plus que quelques exports disponibles</span>
             </div>
             <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
-              Passez au Pro pour seulement 4 € de plus
+              Passez au Pro pour seulement {price.proMinusSolo} de plus
             </h3>
             <p className="text-xs text-stone-600 leading-relaxed">
               Ne soyez plus jamais limité par un quota mensuel : débloquez les exports HD et 4K <strong>illimités</strong>, <strong>sans aucun filigrane</strong>, et 10 vidéos MP4 par mois.
@@ -143,7 +146,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
             <div className="p-4 rounded-2xl bg-violet-50 border border-violet-200 text-xs text-violet-950 flex items-center justify-between">
               <div>
                 <span className="font-bold block">Forfait Pro Développeur</span>
-                <span className="text-[11px] text-violet-700">9 €/mois au lieu de 5 €/mois</span>
+                <span className="text-[11px] text-violet-700">{price.pro}/mois au lieu de {price.solo}/mois</span>
               </div>
               <Link
                 href="/pricing"
@@ -153,7 +156,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                 }}
                 className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs"
               >
-                Upgrader (+4 €) →
+                Upgrader (+{price.proMinusSolo}) →
               </Link>
             </div>
           </div>
@@ -180,7 +183,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                 }}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs text-center"
               >
-                Voir le plan Pro (9 €/mois)
+                Voir le plan Pro ({price.pro}/mois)
               </Link>
               <Link
                 href="/pricing#credits"
@@ -244,12 +247,12 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
               Rechargez avec le Grand Pack et économisez 50 %
             </h3>
             <p className="text-xs text-stone-600 leading-relaxed">
-              Le <strong>Grand Pack (75 crédits pour 15 €)</strong> ramène le coût de chaque export à seulement <strong>0,20 €</strong> au lieu de 0,40 €. Vos crédits n&apos;expirent jamais.
+              Le <strong>Grand Pack ({price.grandCredits} crédits pour {price.grandPack})</strong> ramène le coût de chaque crédit à seulement <strong>{price.grandPerCredit}</strong> au lieu de {price.petitPerCredit}. Vos crédits n&apos;expirent jamais.
             </p>
             <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-stone-900 flex items-center justify-between">
               <div>
                 <span className="font-black text-amber-950 block">Grand Pack (75 Crédits)</span>
-                <span className="text-[11px] text-amber-800">15 € (9 800 FCFA) — Valables à vie</span>
+                <span className="text-[11px] text-amber-800">{price.grandPack} — Valables à vie</span>
               </div>
               <Link
                 href="/pricing#credits"

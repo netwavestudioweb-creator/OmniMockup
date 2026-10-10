@@ -78,7 +78,8 @@ export const EUR_COUNTRIES = [
 export function detectCurrencyFromCountry(countryCode?: string | null): Currency {
   if (!countryCode) return 'USD';
   const upper = countryCode.toUpperCase();
-  if ((XOF_COUNTRIES as readonly string[]).includes(upper)) return 'XOF';
+  // Affichage en € ou $ uniquement : le FCFA (arrimé à l'euro) n'est utilisé qu'au paiement SasPay
+  if ((XOF_COUNTRIES as readonly string[]).includes(upper)) return 'EUR';
   if ((EUR_COUNTRIES as readonly string[]).includes(upper)) return 'EUR';
   return 'USD';
 }

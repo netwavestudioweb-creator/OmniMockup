@@ -1157,7 +1157,7 @@ export default function HomePage() {
 
                 return (
                   <>
-                    {/* Desktop View: 4 colonnes claires (Découverte 0€/0$/0FCFA en point d'ancrage gratuité) */}
+                    {/* Desktop View: 4 colonnes claires (Découverte gratuite en point d'ancrage) */}
                     <div className="hidden lg:grid lg:grid-cols-4 gap-4 items-stretch">
                       {homepagePlans.map((plan) => (
                         <div
@@ -1371,11 +1371,11 @@ export default function HomePage() {
                   },
                   {
                     q: 'Comment puis-je payer ?',
-                    a: 'Par carte bancaire (Visa, Mastercard, American Express), partout dans le monde, en euros ou en dollars. En Afrique de l\'Ouest et du Centre, vous pouvez aussi payer en FCFA par Mobile Money ou carte via SasPay.',
+                    a: 'Par carte bancaire (Visa, Mastercard, American Express), partout dans le monde, en euros ou en dollars. En Afrique de l\'Ouest et du Centre, vous pouvez aussi payer par Mobile Money via SasPay (montant converti en FCFA au paiement).',
                   },
                   {
                     q: 'Puis-je annuler à tout moment ?',
-                    a: 'Oui, sans engagement. Un abonnement par carte se résilie en un clic depuis votre espace membre et reste actif jusqu\'à la fin de la période payée. Un paiement en FCFA (SasPay) couvre 1 mois ou 1 an, sans renouvellement automatique.',
+                    a: 'Oui, sans engagement. Un abonnement par carte se résilie en un clic depuis votre espace membre et reste actif jusqu\'à la fin de la période payée. Un paiement Mobile Money (SasPay) couvre 1 mois ou 1 an, sans renouvellement automatique.',
                   },
                 ].map((faq, i) => (
                   <div

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { usePrices } from '@/lib/usePrices';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -52,6 +53,7 @@ function AccountContent() {
   const checkoutType = searchParams.get('type');
 
   const { user, profile, isLoading: isUserLoading, signOut, refreshProfile } = useUser();
+  const price = usePrices();
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [isUsageLoading, setIsUsageLoading] = useState(true);
   const [isPortalLoading, setIsPortalLoading] = useState(false);
@@ -327,7 +329,7 @@ function AccountContent() {
                 href="/pricing"
                 className="w-full py-2 px-3 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-900 text-xs font-bold border border-violet-200 text-center transition-colors"
               >
-                Passer au Pro (9 €)
+                Passer au Pro ({price.pro})
               </Link>
             )}
           </div>
@@ -361,7 +363,7 @@ function AccountContent() {
                 href="/pricing"
                 className="w-full py-2 px-3 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold text-center transition-colors"
               >
-                +4 € pour Pro illimité
+                +{price.proMinusSolo} pour Pro illimité
               </Link>
             )}
           </div>
@@ -424,7 +426,7 @@ function AccountContent() {
                   className="py-2.5 px-5 rounded-xl font-bold text-xs text-white bg-violet-600 hover:bg-violet-700 flex items-center justify-center gap-2 transition-all shadow-sm shadow-violet-600/30"
                 >
                   <Sparkles className="w-4 h-4 text-violet-200" />
-                  <span>Passer au Pro (9 €/mois)</span>
+                  <span>Passer au Pro ({price.pro}/mois)</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               )}
@@ -463,7 +465,7 @@ function AccountContent() {
                 <div className="p-4 rounded-2xl border border-violet-200 bg-violet-50/60 flex items-center justify-between gap-3">
                   <div>
                     <span className="text-xs font-bold text-violet-950 block">Passer au forfait Solo</span>
-                    <span className="text-[11px] text-violet-800">Seulement 5 €/mois : 20 exports HD + 3 analyses IA.</span>
+                    <span className="text-[11px] text-violet-800">Seulement {price.solo}/mois : 20 exports HD + 3 analyses IA.</span>
                   </div>
                   <Link
                     href="/pricing?switch=solo"
@@ -473,7 +475,7 @@ function AccountContent() {
                     }}
                     className="px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs shrink-0"
                   >
-                    Choisir Solo (5 €)
+                    Choisir Solo ({price.solo})
                   </Link>
                 </div>
 
@@ -481,7 +483,7 @@ function AccountContent() {
                 <div className="p-4 rounded-2xl border border-sand-300 bg-sand-50/80 flex items-center justify-between gap-3">
                   <div>
                     <span className="text-xs font-bold text-stone-900 block">Packs de crédits sans abonnement</span>
-                    <span className="text-[11px] text-stone-600">Achetez 10 crédits à vie pour 4 € sans prélèvement mensuel.</span>
+                    <span className="text-[11px] text-stone-600">Achetez {price.petitCredits} crédits à vie pour {price.petitPack} sans prélèvement mensuel.</span>
                   </div>
                   <Link
                     href="/pricing#credits"
@@ -491,7 +493,7 @@ function AccountContent() {
                     }}
                     className="px-3.5 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs shrink-0"
                   >
-                    Voir crédits (4 €)
+                    Voir crédits ({price.petitPack})
                   </Link>
                 </div>
               </div>

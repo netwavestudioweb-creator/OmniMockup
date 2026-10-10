@@ -52,20 +52,18 @@ import {
 export default function PricingPage() {
   const router = useRouter();
   const { user, profile } = useUser();
-  const { currency } = useCurrency();
+  const { currency, mobileMoneyRegion } = useCurrency();
 
-  // En FCFA : SasPay (Mobile Money ou carte, en FCFA) par défaut ; sinon Stripe
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'saspay'>(
-    currency === 'XOF' ? 'saspay' : 'stripe'
-  );
+  // Prix affichés en € ou $ ; Mobile Money (SasPay, réglé en FCFA) proposé en premier en Afrique de l'Ouest
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'saspay'>('stripe');
   const [isAnnual, setIsAnnual] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [paymentSuccessMessage, setPaymentSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    setPaymentMethod(currency === 'XOF' ? 'saspay' : 'stripe');
-  }, [currency]);
+    setPaymentMethod(mobileMoneyRegion ? 'saspay' : 'stripe');
+  }, [mobileMoneyRegion]);
 
   // Étape 6 : Modal Order Bump avant redirection Checkout Stripe
   const [bumpModalPlan, setBumpModalPlan] = useState<Plan | null>(null);
@@ -303,47 +301,36 @@ export default function PricingPage() {
         <div className="max-w-5xl mx-auto mb-10 flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-3xl bg-white border border-sand-200 shadow-sm">
           {/* Moyen de paiement */}
           <div className="flex flex-col items-center md:items-start gap-1 w-full md:w-auto">
-            {currency === 'XOF' ? (
-              <div className="flex items-center gap-1 p-1 bg-sand-100 rounded-2xl border border-sand-200 w-full md:w-auto">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('saspay')}
-                  aria-pressed={paymentMethod === 'saspay'}
-                  className={`flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition-all ${
-                    paymentMethod === 'saspay'
-                      ? 'bg-white text-stone-900 shadow-xs'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <Smartphone className="w-4 h-4 text-amber-600" />
-                  <span>Mobile Money ou carte (FCFA)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('stripe')}
-                  aria-pressed={paymentMethod === 'stripe'}
-                  className={`flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition-all ${
-                    paymentMethod === 'stripe'
-                      ? 'bg-white text-stone-900 shadow-xs'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <CreditCard className="w-4 h-4 text-violet-600" />
-                  <span>Carte (en euros)</span>
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 py-2 px-3.5 rounded-xl bg-sand-100 border border-sand-200 text-xs font-bold text-stone-900">
+            <div className="flex items-center gap-1 p-1 bg-sand-100 rounded-2xl border border-sand-200 w-full md:w-auto" role="radiogroup" aria-label="Moyen de paiement">
+              <button
+                type="button"
+                role="radio"
+                onClick={() => setPaymentMethod('stripe')}
+                aria-checked={paymentMethod === 'stripe'}
+                className={`flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition-all ${
+                  paymentMethod === 'stripe' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
                 <CreditCard className="w-4 h-4 text-violet-600" />
-                <span>Carte bancaire (Stripe)</span>
-              </div>
-            )}
+                <span>Carte bancaire</span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                onClick={() => setPaymentMethod('saspay')}
+                aria-checked={paymentMethod === 'saspay'}
+                className={`flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition-all ${
+                  paymentMethod === 'saspay' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                <Smartphone className="w-4 h-4 text-amber-600" />
+                <span>Mobile Money</span>
+              </button>
+            </div>
             <p className="text-[11px] text-stone-500 text-center md:text-left">
-              {currency !== 'XOF'
-                ? 'Mobile Money : choisissez la devise FCFA.'
-                : paymentMethod === 'saspay'
-                  ? 'Paiement unique via SasPay (MTN, Moov, Wave, Orange… selon votre pays), sans renouvellement automatique.'
-                  : 'Prix affichés en FCFA à titre indicatif : la carte est débitée en euros.'}
+              {paymentMethod === 'saspay'
+                ? 'Via SasPay (MTN, Moov, Wave, Orange… selon votre pays) : paiement unique, sans renouvellement automatique. Le montant est converti en FCFA et affiché par SasPay avant validation.'
+                : `Visa, Mastercard ou American Express via Stripe, débitée en ${currency === 'USD' ? 'dollars' : 'euros'}.`}
             </p>
           </div>
 
@@ -464,7 +451,7 @@ export default function PricingPage() {
                         {formatPrice(displayPrice, currency, false)}
                       </span>
                       <span className="text-xs text-stone-500 font-semibold">
-                        {currency === 'EUR' ? '€ / mois' : currency === 'USD' ? '$ / mois' : 'FCFA / mois'}
+                        {currency === 'USD' ? '$ / mois' : '€ / mois'}
                       </span>
                     </div>
 
@@ -805,17 +792,17 @@ export default function PricingPage() {
                 Quels sont les moyens de paiement acceptés selon ma région ?
               </h4>
               <p className="leading-relaxed text-stone-500">
-                Partout dans le monde : carte Visa, Mastercard ou American Express via Stripe (3D Secure), débitée en euros ou en dollars. En Afrique de l&apos;Ouest et du Centre : Mobile Money ou carte en FCFA via SasPay (choisissez la devise FCFA). Un paiement SasPay couvre 1 mois ou 1 an, sans renouvellement automatique.
+                Partout dans le monde : carte Visa, Mastercard ou American Express via Stripe (3D Secure), débitée en euros ou en dollars. En Afrique de l&apos;Ouest et du Centre : Mobile Money via SasPay (choisissez « Mobile Money ») ; le montant est converti en FCFA et affiché avant validation. Un paiement SasPay couvre 1 mois ou 1 an, sans renouvellement automatique.
               </p>
             </div>
 
             <div className="space-y-1.5">
               <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                Comment changer la devise d&apos;affichage (€, $, FCFA) ?
+                Comment changer la devise d&apos;affichage (€ ou $) ?
               </h4>
               <p className="leading-relaxed text-stone-500">
-                OmniMockup détecte automatiquement votre région mais vous pouvez basculer à tout moment entre EUR (€), USD ($) et FCFA grâce au sélecteur en haut de page ou dans le pied de page. Votre choix est sauvegardé pour vos prochaines visites.
+                Les prix sont affichés en euros ou en dollars selon votre région, et vous pouvez changer à tout moment grâce au sélecteur en haut de page ou dans le pied de page. Votre choix est sauvegardé pour vos prochaines visites.
               </p>
             </div>
 

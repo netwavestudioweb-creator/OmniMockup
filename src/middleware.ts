@@ -11,9 +11,12 @@ export async function middleware(request: NextRequest) {
     (request as unknown as { geo?: { country?: string } }).geo?.country ||
     null;
 
+  // Le site n'affiche que des euros ou des dollars (un ancien choix « FCFA » devient l'euro)
   let activeCurrency: Currency = 'USD';
-  if (cookieCurrency === 'EUR' || cookieCurrency === 'USD' || cookieCurrency === 'XOF') {
+  if (cookieCurrency === 'EUR' || cookieCurrency === 'USD') {
     activeCurrency = cookieCurrency;
+  } else if (cookieCurrency === 'XOF') {
+    activeCurrency = 'EUR';
   } else {
     activeCurrency = detectCurrencyFromCountry(country);
   }
@@ -33,8 +36,14 @@ export async function middleware(request: NextRequest) {
     response.headers.set('x-user-country', country);
   }
 
-  // 4. Poser le cookie si absent
-  if (!cookieCurrency) {
+  // 4. Pays du visiteur (lu par la page Tarifs pour proposer Mobile Money en premier)
+  if (country && request.cookies.get('omnimockup_country')?.value !== country) {
+    response.cookies.set({ name: 'omnimockup_country', value: country, path: '/', maxAge: 60 * 60 * 24 * 30, sameSite: 'lax' });
+  }
+
+  // 5. Poser le cookie de devise si absent (ou ancien « FCFA »)
+  // Pays inconnu : le navigateur choisit lui-même d'après son fuseau horaire
+  if ((!cookieCurrency && country) || cookieCurrency === 'XOF') {
     response.cookies.set({
       name: 'omnimockup_currency',
       value: activeCurrency,

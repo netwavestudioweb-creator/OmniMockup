@@ -76,6 +76,18 @@ export async function captureWebPage(
   const delayMs = Math.max(0, Math.min(8000, Math.round(options.delayMs || 0)));
   const colorScheme = options.colorScheme === 'dark' ? 'dark' : 'light';
 
+  // Sur Vercel, le service de capture en ligne est le plus rapide (7 s contre 15 à 20 s pour notre
+  // navigateur sur le serveur) : on l'essaie d'abord, et notre moteur prend le relais s'il échoue
+  let cloudTried = false;
+  if (process.env.VERCEL) {
+    cloudTried = true;
+    try {
+      return await captureWebPageCloudFallback(targetUrl, options, 25000);
+    } catch (cloudErr) {
+      console.warn('[Capture Engine] Service en ligne indisponible, bascule sur notre moteur :', (cloudErr as Error)?.message || cloudErr);
+    }
+  }
+
   const cookieBannerCSS = `
     [id*="cookie" i], [class*="cookie" i], [id*="consent" i], [class*="consent" i],
     [id*="gdpr" i], [class*="gdpr" i], [id*="banner" i], #onetrust-banner-sdk,
@@ -223,10 +235,10 @@ export async function captureWebPage(
         `[Capture Engine] Tier 2 : lancement ${tLaunch - t0} ms, chargement ${tGoto - tLaunch} ms, capture ${tShot - tGoto} ms, hauteur ${pageSize.height}px, ${Math.round(screenshotBuffer.length / 1024)} Ko`
       );
 
-      await browser.close();
+      await closeQuickly(browser);
       return { screenshotBase64, pageSize, candidates, pageTitle, domainName, faviconUrl, source: 'puppeteer' };
     } catch (err) {
-      await browser.close().catch(() => {});
+      await closeQuickly(browser);
       throw err;
     }
   } catch (tier2Err) {
@@ -239,7 +251,26 @@ export async function captureWebPage(
   // -------------------------------------------------------------
   // TIER 3 : Microlink Cloud API Fallback (Pour Vercel Serverless sans libnss3.so)
   // -------------------------------------------------------------
+  if (cloudTried) {
+    throw new Error(
+      `Impossible de capturer le site "${targetUrl}". Vérifiez que le site est accessible publiquement ou importez directement une capture d'écran.`
+    );
+  }
   return await captureWebPageCloudFallback(targetUrl, options);
+}
+
+/**
+ * Ferme le navigateur sans attendre plus de 2 s : sur Vercel, la fermeture normale bloquait
+ * parfois la réponse 40 s après une capture pourtant terminée.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function closeQuickly(browser: any) {
+  await Promise.race([browser.close().catch(() => {}), new Promise((r) => setTimeout(r, 2000))]);
+  try {
+    browser.process?.()?.kill('SIGKILL');
+  } catch {
+    // déjà fermé
+  }
 }
 
 /**
@@ -247,7 +278,8 @@ export async function captureWebPage(
  */
 async function captureWebPageCloudFallback(
   targetUrl: string,
-  options: CaptureOptions = {}
+  options: CaptureOptions = {},
+  timeoutMs = 45000
 ): Promise<WebPageCaptureResult> {
   console.log('[Capture Engine] Exécution du secours Cloud API pour :', targetUrl);
 
@@ -274,8 +306,10 @@ async function captureWebPageCloudFallback(
       options.delayMs ? `&waitForTimeout=${Math.max(0, Math.min(8000, Math.round(options.delayMs)))}` : ''
     }${options.hideBanners === false ? '&adblock=false' : ''}`;
 
+    const signal = AbortSignal.timeout(timeoutMs);
     const response = await fetch(microlinkUrl, {
       headers: { Accept: 'application/json' },
+      signal,
     });
 
     if (response.ok) {
@@ -291,7 +325,7 @@ async function captureWebPageCloudFallback(
         const screenshotUrl = data?.data?.screenshot?.url;
 
         if (screenshotUrl) {
-          const imgRes = await fetch(screenshotUrl);
+          const imgRes = await fetch(screenshotUrl, { signal });
           if (imgRes.ok) {
             const arrayBuffer = await imgRes.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
@@ -316,6 +350,8 @@ async function captureWebPageCloudFallback(
   let candidates: ExtractedSectionCandidate[] = [];
   try {
     const htmlRes = await fetch(targetUrl, {
+      // Les titres de sections sont un bonus : on n'attend pas plus de 8 s
+      signal: AbortSignal.timeout(8000),
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',

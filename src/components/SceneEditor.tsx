@@ -111,7 +111,7 @@ import { TemplatesModal } from './TemplatesModal';
 import { SceneOverlayPreset } from '@/types/analyzer';
 import { ExportCrossSellBanner } from './ExportCrossSellBanner';
 import { PlanUpsellModal, UpsellMode } from './PlanUpsellModal';
-import { saveStudioDraft } from '@/lib/studioDraft';
+import { saveProject, makeThumbnail, newProjectId } from '@/lib/studioDraft';
 import { SceneAnnotationsLayer } from './SceneAnnotationsLayer';
 import { BrandKitPanel } from './BrandKitPanel';
 import { SavedStylesPanel } from './SavedStylesPanel';
@@ -135,6 +135,8 @@ interface SceneEditorProps {
   /** Avant / Après : ancien site (brouillon) */
   initialBeforeScreenshot?: string;
   initialBeforeUrl?: string;
+  /** Projet enregistré sur cet appareil (Mes projets) */
+  projectId?: string;
 }
 
 // Fonction d'extraction automatique des couleurs dominantes de la capture (Fonds Magiques - ultra rapide <1ms)
@@ -281,6 +283,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   initialMobileScreenshot,
   initialBeforeScreenshot,
   initialBeforeUrl,
+  projectId,
 }) => {
   const { user, profile, signOut, isPremiumUser, refreshProfile } = useUser();
   const userPlan = profile?.plan || 'free';
@@ -1040,18 +1043,29 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   }, []);
 
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+  const projectIdRef = useRef<string>(projectId || newProjectId());
+  const thumbRef = useRef<{ src: string; thumb?: string }>({ src: '' });
   useEffect(() => {
     if (!currentScreenshot) return;
-    const t = setTimeout(() => {
+    const t = setTimeout(async () => {
       const now = Date.now();
-      saveStudioDraft({
-        captureItem: { ...captureItem, screenshotBase64: currentScreenshot },
-        mobileScreenshot: mobileScreenshot || undefined,
-        beforeScreenshot: beforeScreenshot || undefined,
-        beforeUrl: beforeUrl || undefined,
-        snapshot: JSON.parse(snapshotKey),
-        updatedAt: now,
-      }).then(() => setDraftSavedAt(now));
+      // Miniature recalculée seulement quand l'image change
+      if (thumbRef.current.src !== currentScreenshot) {
+        thumbRef.current = { src: currentScreenshot, thumb: await makeThumbnail(currentScreenshot) };
+      }
+      await saveProject(
+        projectIdRef.current,
+        {
+          captureItem: { ...captureItem, screenshotBase64: currentScreenshot },
+          mobileScreenshot: mobileScreenshot || undefined,
+          beforeScreenshot: beforeScreenshot || undefined,
+          beforeUrl: beforeUrl || undefined,
+          snapshot: JSON.parse(snapshotKey),
+          updatedAt: now,
+        },
+        { thumbnail: thumbRef.current.thumb }
+      );
+      setDraftSavedAt(now);
     }, 1200);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps

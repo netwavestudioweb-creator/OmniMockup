@@ -15,7 +15,8 @@ const SceneEditor = dynamic(() => import('@/components/SceneEditor').then((m) =>
     </div>
   ),
 });
-import { loadStudioDraft, clearStudioDraft, StudioDraft } from '@/lib/studioDraft';
+import { listProjects, newProjectId, type StudioProject } from '@/lib/studioDraft';
+import { ProjectsModal } from '@/components/ProjectsModal';
 
 import { Footer } from '@/components/Footer';
 import { FounderApplicationForm } from '@/components/FounderApplicationForm';
@@ -96,13 +97,22 @@ export default function HomePage() {
   const { currency } = useCurrency();
 
   const [activeCaptureItem, setActiveCaptureItem] = useState<CaptureItemResult | null>(null);
-  // Brouillon du studio (dernier mockup) proposé à la reprise
-  const [savedDraft, setSavedDraft] = useState<StudioDraft | null>(null);
-  const [resumedDraft, setResumedDraft] = useState<StudioDraft | null>(null);
+  // Mes projets : mockups enregistrés sur cet appareil, le plus récent proposé à la reprise
+  const [projects, setProjects] = useState<StudioProject[]>([]);
+  const [showProjects, setShowProjects] = useState(false);
+  const [resumedDraft, setResumedDraft] = useState<StudioProject | null>(null);
+  const [activeProjectId, setActiveProjectId] = useState<string>('');
   useEffect(() => {
     if (activeCaptureItem) return;
-    loadStudioDraft().then(setSavedDraft);
+    listProjects().then(setProjects);
   }, [activeCaptureItem]);
+  const savedDraft = projects[0] || null;
+  const openProject = (project: StudioProject) => {
+    setShowProjects(false);
+    setResumedDraft(project);
+    setActiveProjectId(project.id);
+    setActiveCaptureItem(project.captureItem);
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState<string>('Connexion au serveur...');
@@ -146,6 +156,7 @@ export default function HomePage() {
 
       if (firstSuccess) {
         setResumedDraft(null);
+        setActiveProjectId(newProjectId());
         setActiveCaptureItem(firstSuccess);
         setIsLoading(false);
       } else {
@@ -160,6 +171,7 @@ export default function HomePage() {
 
   const handleUploadImage = (base64Image: string, title: string) => {
     setResumedDraft(null);
+    setActiveProjectId(newProjectId());
     setActiveCaptureItem({
       url: 'Image locale',
       title: title || 'Capture téléversée',
@@ -186,6 +198,7 @@ export default function HomePage() {
           initialMobileScreenshot={resumedDraft?.mobileScreenshot}
           initialBeforeScreenshot={resumedDraft?.beforeScreenshot}
           initialBeforeUrl={resumedDraft?.beforeUrl}
+          projectId={activeProjectId}
         />
       </div>
     );
@@ -194,6 +207,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col selection:bg-violet-500/30 selection:text-violet-200 w-full max-w-full overflow-x-hidden">
       <Navbar />
+      {showProjects && <ProjectsModal onClose={() => setShowProjects(false)} onOpen={openProject} onChange={setProjects} />}
           {/* ═══════════ HERO SECTION ═══════════ */}
           <section className="relative hero-mesh noise overflow-hidden">
             {/* Background elements */}
@@ -226,10 +240,10 @@ export default function HomePage() {
               <div className="animate-fade-in delay-300 w-full max-w-3xl mx-auto mb-8">
                 {savedDraft && (
                   <div className="mb-4 p-3 rounded-2xl bg-violet-500/10 border border-violet-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
-                    <p className="text-xs sm:text-sm text-violet-100">
+                    <p className="text-xs sm:text-sm text-violet-100 min-w-0">
                       Reprendre votre dernier mockup :{' '}
                       <strong className="text-white">
-                        {savedDraft.captureItem.domainName || savedDraft.captureItem.title || 'image importée'}
+                        {savedDraft.name}
                       </strong>
                       <span className="text-violet-300/80">
                         {' '}· {new Date(savedDraft.updatedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
@@ -238,23 +252,17 @@ export default function HomePage() {
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={() => {
-                          setResumedDraft(savedDraft);
-                          setActiveCaptureItem(savedDraft.captureItem);
-                        }}
+                        onClick={() => openProject(savedDraft)}
                         className="px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors"
                       >
                         Reprendre
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          clearStudioDraft();
-                          setSavedDraft(null);
-                        }}
-                        className="px-3 py-1.5 rounded-xl text-violet-200 hover:text-white text-xs font-semibold transition-colors"
+                        onClick={() => setShowProjects(true)}
+                        className="px-3 py-1.5 rounded-xl text-violet-200 hover:text-white hover:bg-violet-500/15 text-xs font-semibold transition-colors"
                       >
-                        Supprimer
+                        Mes projets ({projects.length})
                       </button>
                     </div>
                   </div>

@@ -226,6 +226,8 @@ export async function captureWebPage(
         // JPG haute qualité : 5 à 8 fois plus léger que le PNG (chargement rapide sur connexion mobile)
         type: 'jpeg',
         quality: 85,
+        // Encodage plus rapide de l'image (le serveur n'a pas de carte graphique)
+        optimizeForSpeed: true,
         ...(mobileClipHeight
           ? { clip: { x: 0, y: 0, width: viewportWidth, height: mobileClipHeight }, captureBeyondViewport: true }
           : { fullPage }),

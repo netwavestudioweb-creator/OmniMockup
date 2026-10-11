@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import Link from 'next/link';
 import { toCanvas } from 'html-to-image';
+import { captureOne } from '@/lib/captureCache';
 import {
   CaptureItemResult,
   MockupType,
@@ -707,16 +708,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     // Verrou hors état React : relancer l'effet ne doit pas annuler la capture en cours
     mobileCaptureRequested.current = true;
     setMobileCaptureState('loading');
-    fetch('/api/capture', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targets: [captureItem.url], mobile: true, fullPage: true }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
+    // Mémoire courte : rouvrir le même site ne relance pas la capture téléphone (jusqu'à 40 s)
+    captureOne({ targets: [captureItem.url], mobile: true, fullPage: true })
+      .then((item) => {
         if (studioUnmountedRef.current) return;
-        const item = (data?.results || data?.items || [])[0];
-        if (item?.success && item.screenshotBase64) {
+        if (item.success && item.screenshotBase64) {
           setMobileScreenshot(item.screenshotBase64);
           setMobileCaptureState('done');
         } else {
@@ -741,15 +737,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     setBeforeCaptureState('loading');
     setBeforeError('');
     try {
-      const res = await fetch('/api/capture', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targets: [target], fullPage: true }),
-      });
-      const data = await res.json();
-      const item = (data?.results || [])[0];
-      if (!res.ok || !item?.success || !item.screenshotBase64) {
-        throw new Error(item?.error || data?.error || 'Capture impossible.');
+      const item = await captureOne({ targets: [target], fullPage: true });
+      if (!item.success || !item.screenshotBase64) {
+        throw new Error(item.error || 'Capture impossible.');
       }
       setBeforeScreenshot(item.screenshotBase64);
       setBeforeCaptureState('idle');

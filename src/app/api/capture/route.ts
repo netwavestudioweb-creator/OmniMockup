@@ -74,7 +74,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `URL cible non autorisée (${target.url}) : ${validation.error || 'Accès restreint par mesure de sécurité'}.`,
+          // Les messages de validation sont déjà complets et lisibles (adresse introuvable, adresse interne…)
+          error: validation.error || 'Cette adresse ne peut pas être capturée.',
         },
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );

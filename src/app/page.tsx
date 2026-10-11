@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { UrlInputForm } from '@/components/UrlInputForm';
 import dynamic from 'next/dynamic';
 
-// Le studio (plus de 5 000 lignes) n'est chargé qu'à son ouverture : accueil plus rapide
-const SceneEditor = dynamic(() => import('@/components/SceneEditor').then((m) => m.SceneEditor), {
+// Le studio (plus de 5 000 lignes) n'est chargé qu'à son ouverture : accueil plus rapide.
+// Son téléchargement démarre dès le lancement d'une capture (voir handleAnalyzeUrl) : il est prêt à l'arrivée de l'image.
+const loadSceneEditor = () => import('@/components/SceneEditor');
+const SceneEditor = dynamic(() => loadSceneEditor().then((m) => m.SceneEditor), {
   ssr: false,
   loading: () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950 text-zinc-400 text-sm">
@@ -20,11 +22,8 @@ import { ProjectsModal } from '@/components/ProjectsModal';
 
 import { Footer } from '@/components/Footer';
 import { FounderApplicationForm } from '@/components/FounderApplicationForm';
-import { safeFetchJson } from '@/lib/api';
-import {
-  CaptureItemResult,
-  CaptureResponse,
-} from '@/types/analyzer';
+import { captureOne } from '@/lib/captureCache';
+import { CaptureItemResult } from '@/types/analyzer';
 import { useCurrency } from '@/context/CurrencyContext';
 import { PLANS, formatPrice, getPlanMonthlyPrice, getPlanMonthlyEquivalent } from '@/lib/pricing';
 import {
@@ -120,7 +119,8 @@ export default function HomePage() {
   };
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [loadingStep, setLoadingStep] = useState<string>('Connexion au serveur...');
+  const [loadingSeconds, setLoadingSeconds] = useState(0);
+  const captureAbortRef = useRef<AbortController | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [activePricingPlan, setActivePricingPlan] = useState<number>(2); // 0=Découverte, 1=Solo, 2=Pro (recommandé), 3=Agence
   const [activeStep, setActiveStep] = useState<number>(0); // 0=01 Collez, 1=02 Personnalisez, 2=03 Exportez
@@ -130,21 +130,18 @@ export default function HomePage() {
   const handleAnalyzeUrl = async (urlToCapture: string, settings?: import('@/types/analyzer').CaptureSettings) => {
     setIsLoading(true);
     setErrorMessage(null);
-    setLoadingStep('Lancement du moteur de capture...');
+    setLoadingSeconds(0);
+    // Le studio se télécharge pendant la capture
+    loadSceneEditor().catch(() => {});
+
+    const controller = new AbortController();
+    captureAbortRef.current = controller;
+    const startedAt = Date.now();
+    const ticker = setInterval(() => setLoadingSeconds(Math.floor((Date.now() - startedAt) / 1000)), 1000);
 
     try {
-      const stepTimer1 = setTimeout(() => {
-        setLoadingStep('Rendu HD & suppression des bannières...');
-      }, 900);
-
-      const stepTimer2 = setTimeout(() => {
-        setLoadingStep('Préparation du Studio 3D...');
-      }, 2200);
-
-      const captureData = await safeFetchJson<CaptureResponse>('/api/capture', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const item = await captureOne(
+        {
           targets: [urlToCapture],
           fullPage: settings?.fullPage ?? true,
           hideBanners: settings?.hideBanners ?? true,
@@ -153,28 +150,29 @@ export default function HomePage() {
             : { width: 1440, height: 900 },
           delayMs: (settings?.delaySeconds ?? 0) * 1000,
           colorScheme: settings?.darkMode ? 'dark' : 'light',
-        }),
-      });
+        },
+        controller.signal
+      );
 
-      clearTimeout(stepTimer1);
-      clearTimeout(stepTimer2);
-
-      const firstSuccess = captureData.results?.find((r) => r.success && r.screenshotBase64);
-
-      if (firstSuccess) {
+      if (item.success && item.screenshotBase64) {
         setResumedDraft(null);
         setActiveProjectId(newProjectId());
-        setActiveCaptureItem(firstSuccess);
-        setIsLoading(false);
+        setActiveCaptureItem(item);
       } else {
-        throw new Error('Impossible de réaliser la capture de cette page web.');
+        setErrorMessage(item.error || 'Impossible de réaliser la capture de cette page web.');
       }
     } catch (err: unknown) {
-      const e = err as { message?: string };
-      setErrorMessage(e?.message || 'Erreur lors de la capture.');
+      if ((err as Error)?.name !== 'AbortError') {
+        setErrorMessage('Impossible de contacter le serveur. Vérifiez votre connexion internet, puis réessayez.');
+      }
+    } finally {
+      clearInterval(ticker);
+      captureAbortRef.current = null;
       setIsLoading(false);
     }
   };
+
+  const cancelCapture = () => captureAbortRef.current?.abort();
 
   const handleUploadImage = (base64Image: string, title: string) => {
     setResumedDraft(null);
@@ -1445,15 +1443,22 @@ export default function HomePage() {
             <div className="w-14 h-14 rounded-2xl bg-violet-600/20 text-violet-400 flex items-center justify-center mx-auto animate-pulse-glow">
               <Loader2 className="w-7 h-7 animate-spin" />
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-white">
-              Génération de votre Mockup...
-            </h3>
-            <p className="text-xs sm:text-sm text-violet-400 font-semibold animate-pulse">
-              {loadingStep}
+            <h3 className="text-base sm:text-lg font-bold text-white">Capture du site en cours…</h3>
+            <p className="text-xs sm:text-sm text-violet-300 font-semibold" aria-live="polite">
+              {loadingSeconds < 8
+                ? 'Ouverture de la page et prise de la photo'
+                : loadingSeconds < 20
+                  ? 'Les pages longues ou chargées d’images prennent un peu plus de temps'
+                  : 'Ce site est lent à répondre, encore quelques secondes'}
             </p>
-            <p className="text-[11px] text-zinc-500">
-              Capture haute densité & habillage automatique
-            </p>
+            <p className="text-[11px] text-zinc-500 tabular-nums">{loadingSeconds} s</p>
+            <button
+              type="button"
+              onClick={cancelCapture}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 text-sm font-semibold transition-colors"
+            >
+              Annuler
+            </button>
           </div>
         </div>
       )}

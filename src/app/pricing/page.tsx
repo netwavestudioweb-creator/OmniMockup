@@ -538,8 +538,8 @@ export default function PricingPage() {
                 <div className="text-[11px] text-stone-500 mt-0.5">Pack de formats (réseaux, App Store, Google Play)</div>
               </div>
               <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
-                <div className="font-bold text-stone-900">2 Crédits</div>
-                <div className="text-[11px] text-stone-500 mt-0.5">Pitch IA (texte de vente)</div>
+                <div className="font-bold text-stone-900">0 crédit</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">Pitch IA (avec votre clé Gemini ou Claude)</div>
               </div>
             </div>
           </div>
@@ -609,11 +609,11 @@ export default function PricingPage() {
                   <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-medium text-stone-800">Pitch IA (textes de vente)</td>
-                  <td className="py-3.5 px-4 text-center text-stone-500">2 crédits</td>
-                  <td className="py-3.5 px-4 text-center text-stone-500">2 crédits</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">5 / mois</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Pitch IA (avec votre clé Gemini ou Claude)</td>
+                  <td className="py-3.5 px-4 text-center text-stone-700">Inclus</td>
+                  <td className="py-3.5 px-4 text-center text-stone-700">Inclus</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Inclus</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Inclus</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-stone-800">Marque blanche (pages de partage à votre marque)</td>

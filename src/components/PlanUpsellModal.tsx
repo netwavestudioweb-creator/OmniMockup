@@ -102,7 +102,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                     <span className="text-[10px] bg-violet-600 text-white px-2 py-0.5 rounded-full font-bold">{price.pro}/mois</span>
                   </div>
                   <p className="text-[11px] text-violet-800 leading-tight mb-3 font-medium">
-                    Exports HD et 4K illimités, sans filigrane, 10 vidéos ou GIF par mois et 5 Pitch IA.
+                    Exports HD et 4K illimités, sans filigrane, 10 vidéos ou GIF par mois.
                   </p>
                   <ul className="space-y-1.5 text-[11px] text-stone-800">
                     <li className="flex items-center gap-1.5">

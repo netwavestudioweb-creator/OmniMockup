@@ -112,7 +112,7 @@ export const PLANS: Plan[] = [
       { name: '3 analyses IA directeur artistique par mois', included: true },
       { name: 'Exports HD et 4K', included: false },
       { name: 'Vidéos et GIF animés', included: false },
-      { name: 'Pitch IA (ou 2 crédits par texte)', included: false },
+      { name: 'Pitch IA avec votre clé Gemini ou Claude', included: true },
     ],
   },
   {
@@ -137,7 +137,7 @@ export const PLANS: Plan[] = [
       { name: '3 analyses IA directeur artistique par mois', included: true },
       { name: 'Exports 4K', included: false },
       { name: 'Vidéos et GIF animés', included: false },
-      { name: 'Pitch IA (ou 2 crédits par texte)', included: false },
+      { name: 'Pitch IA avec votre clé Gemini ou Claude', included: true },
     ],
   },
   {
@@ -169,7 +169,7 @@ export const PLANS: Plan[] = [
       { name: 'Aucun filigrane', included: true, highlight: true },
       { name: '10 vidéos ou GIF animés par mois', included: true, highlight: true },
       { name: 'Analyses IA directeur artistique illimitées', included: true },
-      { name: 'Pitch IA : 5 textes de vente par mois', included: true, highlight: true },
+      { name: 'Pitch IA avec votre clé Gemini ou Claude', included: true },
       { name: 'Liens de partage illimités', included: true },
       { name: 'Support par e-mail', included: true },
       { name: 'Marque blanche', included: false },
@@ -208,7 +208,7 @@ export const PLANS: Plan[] = [
     features: [
       { name: 'Tout le forfait Pro inclus', included: true },
       { name: 'Vidéos et GIF animés illimités', included: true, highlight: true },
-      { name: 'Pitch IA illimité', included: true, highlight: true },
+      { name: 'Pitch IA avec votre clé Gemini ou Claude', included: true },
       { name: 'Marque blanche : pages de partage à votre nom et logo, sans mention de PitchMySite', included: true, highlight: true },
       { name: 'Support WhatsApp prioritaire', included: true, highlight: true },
     ],

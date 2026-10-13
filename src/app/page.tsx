@@ -232,13 +232,17 @@ export default function HomePage() {
               </div>
 
               {/* Titre principal centré — Phrase complète sans coupure artificielle */}
-              <h1 className="animate-fade-in delay-100 text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-white max-w-4xl mx-auto leading-[1.1] mb-6">
-                Présentez vos sites clients comme une <span className="shimmer-text">agence haut de gamme</span>
+              <h1 className="animate-fade-in delay-100 text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white max-w-4xl mx-auto leading-[1.1] mb-6">
+                Collez le lien de votre&nbsp;site.{' '}
+                <span className="block mt-1 sm:mt-2">
+                  Recevez des visuels qui <span className="shimmer-text">donnent envie de signer</span>.
+                </span>
               </h1>
 
               {/* Sous-titre centré — Complet et équilibré */}
               <p className="animate-fade-in delay-200 text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-8">
-                Collez l&apos;URL d&apos;un site. OmniMockup capture la page automatiquement et la met en scène sur MacBook, iPhone et iPad. Prêt à envoyer au client en quelques secondes.
+                Votre site est capturé automatiquement et mis en scène sur ordinateur, téléphone et tablette. Prêt pour
+                LinkedIn, Instagram, le statut WhatsApp ou votre proposition commerciale, en quelques secondes.
               </p>
 
               {/* Champ de saisie d'URL centré et aéré — Pièce maîtresse */}

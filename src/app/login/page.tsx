@@ -16,7 +16,6 @@ import {
   Eye,
   EyeOff,
   Sparkles,
-  Zap,
 } from 'lucide-react';
 
 function LoginForm() {
@@ -42,40 +41,6 @@ function LoginForm() {
 
     setIsLoading(true);
     setErrorMessage(null);
-
-    // Bypass de test pour validation sans configuration Supabase Auth
-    // Uniquement en développement local : jamais actif sur le site en ligne
-    if (process.env.NODE_ENV === 'development' && email === 'test@omnimockup.com' && password === 'OmniMockup2026!') {
-      const mockTestSession = {
-        user: {
-          id: 'test-user-id-999',
-          email: 'test@omnimockup.com',
-          created_at: new Date().toISOString(),
-          app_metadata: {},
-          user_metadata: { full_name: 'Utilisateur Test (Pro)' },
-          aud: 'authenticated',
-          role: 'authenticated',
-        },
-        profile: {
-          id: 'test-user-id-999',
-          email: 'test@omnimockup.com',
-          plan: 'pro',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      };
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('omnimockup_test_session', JSON.stringify(mockTestSession));
-      }
-
-      setTimeout(() => {
-        setIsLoading(false);
-        router.push(redirectPath);
-        window.location.href = redirectPath;
-      }, 500);
-      return;
-    }
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -167,29 +132,6 @@ function LoginForm() {
               )}
 
               {/* Raccourci Démo Test — développement local uniquement */}
-              {process.env.NODE_ENV === 'development' && (
-              <div className="mb-6 p-3.5 rounded-2xl bg-violet-50/80 border border-violet-200/80 text-violet-900 text-xs space-y-2">
-                <div className="flex items-center justify-between font-bold">
-                  <span className="flex items-center gap-1.5 text-violet-950">
-                    <Zap className="w-3.5 h-3.5 text-violet-600 fill-violet-600" />
-                    Accès Rapide Démo
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-mono">
-                    1-Clic
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('test@omnimockup.com');
-                    setPassword('OmniMockup2026!');
-                  }}
-                  className="w-full py-2 px-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-xs text-xs"
-                >
-                  <span>Remplir les identifiants de test</span>
-                </button>
-              </div>
-              )}
 
               {/* Bouton Google OAuth */}
               <button

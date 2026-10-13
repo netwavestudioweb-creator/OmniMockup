@@ -10,6 +10,9 @@ const DEVICE_BODY: Record<DeviceColor, { body: string; button: string }> = {
   titanium: { body: 'bg-gradient-to-b from-stone-400 via-stone-500 to-stone-600 border-stone-300', button: 'bg-stone-400' },
   midnight: { body: 'bg-gradient-to-b from-slate-700 via-slate-800 to-slate-950 border-slate-600', button: 'bg-slate-600' },
   gold: { body: 'bg-gradient-to-b from-amber-100 via-amber-200 to-amber-300 border-amber-100', button: 'bg-amber-200' },
+  'deep-black': { body: 'bg-gradient-to-b from-neutral-700 via-neutral-900 to-black border-neutral-700', button: 'bg-neutral-700' },
+  glacier: { body: 'bg-gradient-to-b from-sky-100 via-sky-200 to-sky-300 border-sky-100', button: 'bg-sky-200' },
+  burgundy: { body: 'bg-gradient-to-b from-rose-800 via-rose-900 to-rose-950 border-rose-700', button: 'bg-rose-800' },
 };
 import { Lock, ExternalLink, Globe, RotateCw, ArrowLeft, ArrowRight, Plus } from 'lucide-react';
 
@@ -408,34 +411,37 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
     );
   }
 
-  // 4. Cadre iPhone 16 Pro avec Dynamic Island
+  // 4. Cadre iPhone 18 Pro (dernière série, présentée le 9 septembre 2026) : écran 6,3" au format
+  // 1206 × 2622, bords très fins, Dynamic Island plus étroite, bouton Action et commande de l'appareil photo
   if (type === 'iphone') {
     return (
       <div className="w-full flex justify-center select-none py-2">
-        <div className={`w-full ${fill ? 'max-w-none' : 'max-w-[270px] sm:max-w-[290px]'} relative rounded-[44px] sm:rounded-[48px] p-[7px] sm:p-[9px] shadow-2xl border ${chassis.body}`}>
-          {/* Boutons latéraux iPhone */}
-          <div className={`absolute -left-[3px] top-24 w-[3px] h-9 rounded-l-sm ${chassis.button}`} />
-          <div className={`absolute -left-[3px] top-36 w-[3px] h-9 rounded-l-sm ${chassis.button}`} />
-          <div className={`absolute -right-[3px] top-28 w-[3px] h-12 rounded-r-sm ${chassis.button}`} />
+        <div className={`w-full ${fill ? 'max-w-none' : 'max-w-[270px] sm:max-w-[290px]'} relative rounded-[15%/7%] p-[2.4%] shadow-2xl border ${chassis.body}`}>
+          {/* Gauche : bouton Action et volume */}
+          <div className={`absolute -left-[3px] top-[17%] w-[3px] h-[5%] rounded-l-sm ${chassis.button}`} />
+          <div className={`absolute -left-[3px] top-[25%] w-[3px] h-[8%] rounded-l-sm ${chassis.button}`} />
+          <div className={`absolute -left-[3px] top-[35%] w-[3px] h-[8%] rounded-l-sm ${chassis.button}`} />
+          {/* Droite : bouton latéral et commande de l'appareil photo */}
+          <div className={`absolute -right-[3px] top-[26%] w-[3px] h-[12%] rounded-r-sm ${chassis.button}`} />
+          <div className={`absolute -right-[2px] top-[56%] w-[2px] h-[6%] rounded-r-sm ${chassis.button} opacity-80`} />
 
-          {/* Écran tactile iPhone */}
+          {/* Écran */}
           <div
-            className="relative rounded-[36px] sm:rounded-[40px] overflow-hidden aspect-[9/19] bg-black cursor-pointer group shadow-inner"
+            className="relative rounded-[13%/6%] overflow-hidden aspect-[1206/2622] bg-black cursor-pointer group shadow-inner"
             onClick={onClickImage}
           >
-            {/* Dynamic Island Apple */}
-            <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-30 w-24 sm:w-26 h-5.5 bg-black rounded-full flex items-center justify-between px-2.5 shadow-md border border-white/[0.08]">
-              <div className="w-2.5 h-2.5 rounded-full bg-stone-950 border border-stone-800 flex items-center justify-center">
-                <div className="w-1 h-1 rounded-full bg-blue-900/70" />
+            {/* Dynamic Island (plus étroite que sur les modèles précédents) */}
+            <div className="absolute top-[1.6%] left-1/2 -translate-x-1/2 z-30 w-[27%] aspect-[3.6/1] bg-black rounded-full flex items-center justify-end pr-[4%] border border-white/[0.06]">
+              <div className="w-[16%] aspect-square rounded-full bg-stone-950 border border-stone-800 flex items-center justify-center">
+                <div className="w-1/2 h-1/2 rounded-full bg-blue-900/70" />
               </div>
-              <div className="w-2 h-2 rounded-full bg-emerald-500/90 animate-pulse" />
             </div>
 
-            {/* Screenshot dans l'écran de l'iPhone */}
+            {/* Capture dans l'écran */}
             {renderScreen('group-hover:scale-[1.02]')}
 
-            {/* Barre d'accueil tactile */}
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 w-28 h-1 bg-white/40 rounded-full backdrop-blur-md" />
+            {/* Barre d'accueil */}
+            <div className="absolute bottom-[1.2%] left-1/2 -translate-x-1/2 z-30 w-[36%] h-[0.45%] min-h-[3px] bg-white/45 rounded-full backdrop-blur-md" />
           </div>
         </div>
       </div>

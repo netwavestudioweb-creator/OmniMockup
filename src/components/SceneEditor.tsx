@@ -605,7 +605,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     if (tmpl.sceneOverlay) {
       setSceneOverlay(tmpl.sceneOverlay);
     }
-    const matchingPreset = FRAME_PRESETS.find((p) => p.ratioId === tmpl.aspectRatio);
+    // Format exact du réseau visé (ex. LinkedIn 1200 × 627), sinon le premier format du même ratio
+    const matchingPreset =
+      FRAME_PRESETS.find((p) => p.id === tmpl.framePresetId) || FRAME_PRESETS.find((p) => p.ratioId === tmpl.aspectRatio);
     if (matchingPreset) {
       setCurrentFramePreset(matchingPreset);
     }
@@ -3237,7 +3239,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       }}
                     >
                       <MockupFrame
-                        type={phoneModel}
+                        type="iphone"
                         screenshotBase64={phoneScreenshot}
                         url={captureItem.url}
                         title={captureItem.title}
@@ -3331,7 +3333,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       }}
                     >
                       <MockupFrame
-                        type={phoneModel}
+                        type="iphone"
                         screenshotBase64={phoneScreenshot}
                         url={captureItem.url}
                         title={captureItem.title}
@@ -4073,32 +4075,21 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {(phoneVisible || ['ipad', 'watch'].includes(config.mockupType)) && (
                   <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
                     {(config.layoutMode === 'dual-stacked' || config.layoutMode === 'trio-ecosystem') && (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Téléphone</span>
-                        <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-950 border border-zinc-800">
-                          {(['iphone', 'android'] as const).map((m) => (
-                            <button
-                              key={m}
-                              type="button"
-                              onClick={() => setConfig((p) => ({ ...p, phoneModel: m }))}
-                              aria-pressed={phoneModel === m}
-                              className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                                phoneModel === m ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:text-white'
-                              }`}
-                            >
-                              {m === 'iphone' ? 'iPhone' : 'Android'}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <p className="text-[11px] text-zinc-400">
+                        Téléphone : <span className="font-semibold text-zinc-200">iPhone 18 Pro</span>
+                      </p>
                     )}
 
                     <div className="space-y-1.5">
                       <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Couleur de l&apos;appareil</span>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {([
+                          // Les 4 coloris de l'iPhone 18 Pro d'abord, puis les teintes classiques
+                          { id: 'deep-black', label: 'Noir profond (iPhone 18 Pro)', swatch: 'bg-neutral-900' },
+                          { id: 'silver', label: 'Argent (iPhone 18 Pro)', swatch: 'bg-zinc-300' },
+                          { id: 'glacier', label: 'Bleu glacier (iPhone 18 Pro)', swatch: 'bg-sky-200' },
+                          { id: 'burgundy', label: 'Bordeaux (iPhone 18 Pro)', swatch: 'bg-rose-900' },
                           { id: 'graphite', label: 'Graphite', swatch: 'bg-stone-800' },
-                          { id: 'silver', label: 'Argent', swatch: 'bg-zinc-300' },
                           { id: 'titanium', label: 'Titane', swatch: 'bg-stone-500' },
                           { id: 'midnight', label: 'Bleu nuit', swatch: 'bg-slate-800' },
                           { id: 'gold', label: 'Or', swatch: 'bg-amber-200' },
@@ -5768,6 +5759,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             setShowTemplatesModal(false);
           }}
           onClose={() => setShowTemplatesModal(false)}
+          screenshot={currentScreenshot}
         />
       )}
 

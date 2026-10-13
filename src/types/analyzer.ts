@@ -1,6 +1,15 @@
 export type MockupType = 'browser' | 'macbook' | 'iphone' | 'android' | 'ipad' | 'flat' | 'watch' | 'imac' | 'laptop';
 /** Couleur du châssis des téléphones, tablettes et montres */
-export type DeviceColor = 'graphite' | 'silver' | 'titanium' | 'midnight' | 'gold';
+export type DeviceColor =
+  | 'graphite'
+  | 'silver'
+  | 'titanium'
+  | 'midnight'
+  | 'gold'
+  // Coloris de l'iPhone 18 Pro (présenté par Apple le 9 septembre 2026)
+  | 'deep-black'
+  | 'glacier'
+  | 'burgundy';
 export type DeviceTheme = 'light' | 'dark';
 export type DeviceStyle = 'default' | 'glass' | 'inset';
 export type CornerRadius = 'sharp' | 'curved' | 'round';

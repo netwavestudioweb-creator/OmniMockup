@@ -1,216 +1,192 @@
 'use client';
 
-import React, { useState } from 'react';
-import { TEMPLATES_CATALOG, StudioTemplate } from '@/lib/shotsPresets';
-import {
-  X,
-  LayoutGrid,
-  Image as ImageIcon,
-  Video,
-  Sparkles,
-  ArrowRight,
-  Monitor,
-  Smartphone,
-  Tablet,
-} from 'lucide-react';
+import React from 'react';
+import { TEMPLATES_CATALOG, TEMPLATE_CATEGORIES, StudioTemplate } from '@/lib/shotsPresets';
+import { X, Sparkles, ArrowRight, Monitor, Smartphone, Tablet, Layers } from 'lucide-react';
 
 interface TemplatesModalProps {
   onSelectTemplate: (template: StudioTemplate) => void;
   onClose: () => void;
+  /** Capture du site en cours : les aperçus montrent le vrai site du client */
+  screenshot?: string;
 }
 
-export const TemplatesModal: React.FC<TemplatesModalProps> = ({
-  onSelectTemplate,
-  onClose,
-}) => {
-  const [filterType, setFilterType] = useState<'all' | 'image' | 'animated'>('all');
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    promotion: true,
-    desktop: true,
-    shadow: true,
-    showcase: true,
-  });
+const RATIO_CSS: Record<string, string> = {
+  '1.91:1': '1200 / 627',
+  '1:1': '1 / 1',
+  '4:5': '4 / 5',
+  '9:16': '9 / 16',
+  '16:9': '16 / 9',
+  '4:3': '4 / 3',
+};
 
-  const toggleCategory = (cat: string) => {
-    setExpandedCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
-  };
+/** Mini écran : la capture du site, calée en haut */
+const Screen: React.FC<{ src?: string; className?: string }> = ({ src, className = '' }) => (
+  <div
+    className={`bg-zinc-200 bg-cover bg-top ${className}`}
+    style={src ? { backgroundImage: `url(${src})` } : undefined}
+  />
+);
 
-  const categories = [
-    { id: 'promotion', label: 'Product promotion' },
-    { id: 'desktop', label: 'Realistic Desktop' },
-    { id: 'shadow', label: 'Shadow Overlays' },
-    { id: 'showcase', label: 'UI Showcase' },
-  ];
+const MiniPhone: React.FC<{ src?: string; width: string; style?: React.CSSProperties }> = ({ src, width, style }) => (
+  <div className="rounded-[18%/8%] bg-neutral-900 p-[3%] shadow-xl" style={{ width, ...style }}>
+    <Screen src={src} className="rounded-[15%/7%] aspect-[1206/2622]" />
+  </div>
+);
 
+const MiniDesktop: React.FC<{ src?: string; width: string; dark?: boolean; laptop?: boolean; style?: React.CSSProperties }> = ({
+  src,
+  width,
+  dark,
+  laptop,
+  style,
+}) => (
+  <div style={{ width, ...style }}>
+    <div className={`rounded-md overflow-hidden shadow-xl border ${dark ? 'bg-zinc-800 border-zinc-700' : 'bg-white border-zinc-200'}`}>
+      <div className={`h-[7px] flex items-center gap-[2px] px-1 ${dark ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
+        <span className="w-[3px] h-[3px] rounded-full bg-rose-400" />
+        <span className="w-[3px] h-[3px] rounded-full bg-amber-400" />
+        <span className="w-[3px] h-[3px] rounded-full bg-emerald-400" />
+      </div>
+      <Screen src={src} className="aspect-[16/10]" />
+    </div>
+    {laptop && <div className="mx-[-6%] h-[5px] rounded-b-md bg-gradient-to-b from-zinc-300 to-zinc-500" />}
+  </div>
+);
+
+/** Aperçu d'un modèle avec le site du client */
+const TemplatePreview: React.FC<{ tmpl: StudioTemplate; src?: string }> = ({ tmpl, src }) => {
+  const tilt = `perspective(600px) rotateX(${tmpl.mockupTiltX}deg) rotateY(${tmpl.mockupTiltY}deg) rotateZ(${tmpl.mockupRotation}deg)`;
+  const dark = tmpl.browserStyle?.endsWith('dark');
+  const layout = tmpl.layoutMode || 'single';
+  return (
+    <div
+      className="relative w-full overflow-hidden rounded-xl border border-zinc-700/60 flex items-center justify-center"
+      style={{ background: tmpl.bgValue, aspectRatio: RATIO_CSS[tmpl.aspectRatio] || '4 / 3', maxHeight: 220 }}
+    >
+      {tmpl.sceneOverlay === 'blinds' && (
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30 blur-[3px]"
+          style={{ backgroundImage: 'repeating-linear-gradient(-35deg, rgba(0,0,0,0.8) 0 10px, transparent 10px 20px)' }}
+        />
+      )}
+      {(tmpl.sceneOverlay === 'leaves' || tmpl.sceneOverlay === 'palm') && (
+        <div className="absolute -top-6 -left-6 w-1/2 h-1/2 bg-black/35 rounded-full blur-2xl pointer-events-none" />
+      )}
+
+      {layout === 'trio-ecosystem' ? (
+        <div className="relative w-[78%] flex items-end justify-center">
+          <MiniDesktop src={src} width="70%" laptop />
+          <div className="absolute left-[2%] bottom-0 w-[24%] rounded-md bg-neutral-900 p-[1.5%] shadow-xl">
+            <Screen src={src} className="rounded-sm aspect-[3/4]" />
+          </div>
+          <MiniPhone src={src} width="12%" style={{ position: 'absolute', right: '4%', bottom: 0 }} />
+        </div>
+      ) : layout === 'dual-stacked' ? (
+        <div className="relative w-[72%] flex items-end">
+          <MiniDesktop src={src} width="88%" laptop={tmpl.mockupType === 'macbook'} dark={dark} />
+          <MiniPhone src={src} width="22%" style={{ position: 'absolute', right: 0, bottom: '-4%', transform: 'rotate(3deg)' }} />
+        </div>
+      ) : tmpl.mockupType === 'iphone' ? (
+        <div style={{ transform: tilt }} className="h-[80%] flex items-center">
+          <MiniPhone src={src} width="auto" style={{ height: '100%', aspectRatio: '1206 / 2700' }} />
+        </div>
+      ) : tmpl.mockupType === 'ipad' ? (
+        <div style={{ transform: tilt }} className="w-[52%] rounded-lg bg-neutral-900 p-[1.5%] shadow-xl">
+          <Screen src={src} className="rounded-md aspect-[4/3]" />
+        </div>
+      ) : tmpl.mockupType === 'flat' ? (
+        <div style={{ transform: tilt }} className="w-[70%] rounded-lg overflow-hidden shadow-xl bg-white">
+          <Screen src={src} className="aspect-[16/10]" />
+        </div>
+      ) : (
+        <div style={{ transform: tilt }} className="w-[74%] flex justify-center">
+          <MiniDesktop src={src} width="100%" dark={dark} laptop={tmpl.mockupType === 'macbook'} />
+        </div>
+      )}
+
+      {tmpl.badge && (
+        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-violet-600 text-white">
+          {tmpl.badge}
+        </span>
+      )}
+    </div>
+  );
+};
+
+export const TemplatesModal: React.FC<TemplatesModalProps> = ({ onSelectTemplate, onClose, screenshot }) => {
   return (
     <div className="fixed inset-0 z-[130] flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-md animate-fade-in">
       <div className="bg-[#141418] border border-zinc-800 rounded-3xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-scale-up">
-        {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between shrink-0 bg-zinc-900/60">
-          <div>
+        <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between gap-3 shrink-0 bg-zinc-900/60">
+          <div className="min-w-0">
             <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-violet-400" />
-              <span>Templates & Mises en scène</span>
+              <Sparkles className="w-5 h-5 text-violet-400 shrink-0" />
+              <span>Modèles prêts à publier</span>
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Sélectionnez une mise en page prête à l&apos;emploi pour votre produit
+              Choisissez où vous allez publier : l&apos;appareil, le fond et le format exact sont réglés d&apos;un coup.
             </p>
           </div>
-
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            aria-label="Fermer"
+            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Filtres : All / Image / Animated */}
-        <div className="px-5 py-3 border-b border-zinc-850 flex items-center gap-2 shrink-0 bg-zinc-950/40">
-          <button
-            type="button"
-            onClick={() => setFilterType('all')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              filterType === 'all'
-                ? 'bg-zinc-100 text-stone-900 shadow-sm'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-850'
-            }`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5" />
-            <span>Tous</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setFilterType('image')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              filterType === 'image'
-                ? 'bg-zinc-100 text-stone-900 shadow-sm'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-850'
-            }`}
-          >
-            <ImageIcon className="w-3.5 h-3.5" />
-            <span>Image</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setFilterType('animated')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              filterType === 'animated'
-                ? 'bg-zinc-100 text-stone-900 shadow-sm'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-850'
-            }`}
-          >
-            <Video className="w-3.5 h-3.5" />
-            <span>Animé</span>
-          </button>
-        </div>
-
-        {/* Grille des templates par catégories */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-8 scrollbar-thin scrollbar-thumb-zinc-700">
-          {categories.map((cat) => {
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8">
+          {TEMPLATE_CATEGORIES.map((cat) => {
             const tmpls = TEMPLATES_CATALOG.filter((t) => t.category === cat.id);
-            const isExpanded = expandedCategories[cat.id] ?? true;
-
+            if (tmpls.length === 0) return null;
             return (
-              <div key={cat.id} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-wider font-mono">
-                    {cat.label}
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => toggleCategory(cat.id)}
-                    className="text-xs text-zinc-400 hover:text-white font-medium"
-                  >
-                    {isExpanded ? 'Réduire' : `Voir tout (${tmpls.length})`}
-                  </button>
+              <section key={cat.id} className="space-y-3">
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-100">{cat.label}</h3>
+                  <p className="text-[11px] text-zinc-500">{cat.hint}</p>
                 </div>
-
-                {isExpanded && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-                    {tmpls.map((tmpl) => {
-                      const DeviceIcon =
-                        tmpl.mockupType === 'iphone'
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {tmpls.map((tmpl) => {
+                    const DeviceIcon =
+                      tmpl.layoutMode && tmpl.layoutMode !== 'single'
+                        ? Layers
+                        : tmpl.mockupType === 'iphone'
                           ? Smartphone
                           : tmpl.mockupType === 'ipad'
-                          ? Tablet
-                          : Monitor;
-
-                      return (
-                        <div
-                          key={tmpl.id}
-                          onClick={() => {
-                            onSelectTemplate(tmpl);
-                            onClose();
-                          }}
-                          className="group relative rounded-2xl overflow-hidden border border-zinc-800 hover:border-violet-500 bg-zinc-900/60 hover:bg-zinc-850/80 cursor-pointer transition-all duration-300 p-4 flex flex-col justify-between shadow-sm hover:shadow-xl hover:shadow-violet-600/10"
-                        >
-                          {/* Mini scène de prévisualisation */}
-                          <div
-                            className="w-full h-36 rounded-xl relative overflow-hidden flex items-center justify-center border border-zinc-750/60 shadow-inner group-hover:scale-[1.01] transition-transform duration-300"
-                            style={{
-                              background: tmpl.bgValue,
-                            }}
-                          >
-                            {/* Simule l'ombre portée de la scène */}
-                            {tmpl.sceneOverlay === 'blinds' && (
-                              <div
-                                className="absolute inset-0 pointer-events-none opacity-40 filter blur-[4px]"
-                                style={{
-                                  backgroundImage:
-                                    'repeating-linear-gradient(-35deg, rgba(0,0,0,0.8) 0px, rgba(0,0,0,0.8) 12px, transparent 12px, transparent 24px)',
-                                }}
-                              />
-                            )}
-
-                            {tmpl.sceneOverlay === 'leaves' && (
-                              <div className="absolute -top-4 -left-4 w-24 h-24 bg-black/50 rounded-full blur-xl pointer-events-none" />
-                            )}
-
-                            {/* Mini mockup représentatif */}
-                            <div
-                              className="w-24 h-16 rounded-md bg-zinc-950/90 border border-white/20 shadow-2xl flex items-center justify-center transition-transform group-hover:scale-105"
-                              style={{
-                                transform: `rotate(${tmpl.mockupRotation}deg)`,
-                              }}
-                            >
-                              <DeviceIcon className="w-6 h-6 text-violet-400/80" />
-                            </div>
-
-                            {tmpl.badge && (
-                              <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-violet-600 text-white shadow-xs">
-                                {tmpl.badge}
-                              </span>
-                            )}
+                            ? Tablet
+                            : Monitor;
+                    return (
+                      <button
+                        type="button"
+                        key={tmpl.id}
+                        onClick={() => {
+                          onSelectTemplate(tmpl);
+                          onClose();
+                        }}
+                        className="group text-left rounded-2xl border border-zinc-800 hover:border-violet-500 bg-zinc-900/60 p-3 flex flex-col gap-3 transition-colors"
+                      >
+                        <TemplatePreview tmpl={tmpl} src={screenshot} />
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-bold text-white group-hover:text-violet-300 transition-colors">{tmpl.title}</h4>
+                            <p className="text-[11px] text-zinc-400 flex items-center gap-1.5 mt-0.5">
+                              <DeviceIcon className="w-3 h-3 text-zinc-500 shrink-0" />
+                              <span className="truncate">{tmpl.deviceLabel}</span>
+                            </p>
+                            <p className="text-[11px] text-zinc-500 mt-1 leading-snug">{tmpl.description}</p>
                           </div>
-
-                          {/* Infos du template */}
-                          <div className="mt-3 flex items-center justify-between">
-                            <div>
-                              <h4 className="text-sm font-bold text-white group-hover:text-violet-300 transition-colors">
-                                {tmpl.title}
-                              </h4>
-                              <p className="text-[11px] text-zinc-400 flex items-center gap-1.5 mt-0.5">
-                                <DeviceIcon className="w-3 h-3 text-zinc-500" />
-                                <span>{tmpl.deviceLabel}</span>
-                                <span className="text-zinc-600">•</span>
-                                <span className="font-mono text-[10px]">{tmpl.aspectRatio}</span>
-                              </p>
-                            </div>
-
-                            <span className="p-2 rounded-xl bg-zinc-800 text-zinc-400 group-hover:bg-violet-600 group-hover:text-white transition-all">
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </span>
-                          </div>
+                          <span className="p-2 rounded-xl bg-zinc-800 text-zinc-400 group-hover:bg-violet-600 group-hover:text-white transition-colors shrink-0">
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             );
           })}
         </div>

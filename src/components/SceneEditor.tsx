@@ -32,6 +32,7 @@ import {
   Trash2,
   Plus,
   RefreshCw,
+  AlertTriangle,
   Monitor,
   Laptop,
   Smartphone,
@@ -290,6 +291,24 @@ function getVideoFormat(): { mimeType: string; extension: 'mp4' | 'webm' } {
 }
 
 const EXPERT_MODE_STORAGE_KEY = 'omnimockup_studio_expert';
+
+/**
+ * Attend que l'écran ait affiché la dernière mise à jour. Si l'onglet passe en arrière-plan
+ * (le client change d'application pendant l'export), le navigateur n'affiche plus d'images :
+ * on n'attend alors pas plus de 80 ms, sinon l'export restait bloqué sur « Rendu… ».
+ */
+const nextFrame = () =>
+  new Promise<void>((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (!done) {
+        done = true;
+        resolve();
+      }
+    };
+    requestAnimationFrame(() => finish());
+    setTimeout(finish, 80);
+  });
 const HISTORY_LIMIT = 60;
 
 export const SceneEditor: React.FC<SceneEditorProps> = ({
@@ -373,6 +392,17 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
   const [isExportingPack, setIsExportingPack] = useState(false);
+  // Bandeau d'export : étape en cours, fin ou erreur (remplace les fenêtres d'alerte)
+  const [exportStep, setExportStep] = useState('');
+  const [exportNotice, setExportNotice] = useState<{ kind: 'done' | 'error'; text: string } | null>(null);
+  const exportNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showExportNotice = (kind: 'done' | 'error', text: string) => {
+    if (exportNoticeTimer.current) clearTimeout(exportNoticeTimer.current);
+    setExportNotice({ kind, text });
+    exportNoticeTimer.current = setTimeout(() => setExportNotice(null), kind === 'error' ? 8000 : 3000);
+  };
+  const showExportDone = (text: string) => showExportNotice('done', text);
+  const showExportError = (text: string) => showExportNotice('error', text);
   const [packProgress, setPackProgress] = useState<string>('');
   const [isCopying, setIsCopying] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -1156,7 +1186,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       setSelectedAnnotationId(null);
     });
     // Les contours de sélection portent data-export-hide : une image suffit pour finir le rendu
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    await nextFrame();
 
     const canvas = await toCanvas(node, {
       cacheBust: true,
@@ -1203,29 +1233,49 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     return canvas;
   };
 
+  /** JPG : fond blanc sous les zones transparentes (le JPG n'a pas de transparence) */
+  const flattenOnWhite = (canvas: HTMLCanvasElement) => {
+    const flat = document.createElement('canvas');
+    flat.width = canvas.width;
+    flat.height = canvas.height;
+    const fctx = flat.getContext('2d');
+    if (fctx) {
+      fctx.fillStyle = '#ffffff';
+      fctx.fillRect(0, 0, flat.width, flat.height);
+      fctx.drawImage(canvas, 0, 0);
+    }
+    return flat;
+  };
+
+  /** Encodage du fichier image en tâche de fond (toBlob) : l'écran ne se fige pas, même en 4K */
+  const canvasToBlob = (canvas: HTMLCanvasElement, type: string, quality?: number) =>
+    new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Image vide'))), type, quality)
+    );
+
   /** Rend la scène aux dimensions exactes du format choisi. */
   const renderScene = async (
     format: ExportFormat,
     preset: FramePresetOption,
     quality: ExportQuality,
     hideWatermark = false
-  ): Promise<string> => {
+  ): Promise<Blob> => {
     const { width, height } = getExportSize(preset, quality);
     const canvas = await renderSceneCanvas(width, height, hideWatermark);
-    if (format === 'jpg') {
-      // Fond blanc sous les zones transparentes (le JPG n'a pas de transparence)
-      const flat = document.createElement('canvas');
-      flat.width = canvas.width;
-      flat.height = canvas.height;
-      const fctx = flat.getContext('2d');
-      if (fctx) {
-        fctx.fillStyle = '#ffffff';
-        fctx.fillRect(0, 0, flat.width, flat.height);
-        fctx.drawImage(canvas, 0, 0);
-      }
-      return flat.toDataURL('image/jpeg', 0.92);
-    }
-    return canvas.toDataURL(format === 'webp' ? 'image/webp' : 'image/png', 0.9);
+    setExportStep('Enregistrement du fichier…');
+    if (format === 'jpg') return canvasToBlob(flattenOnWhite(canvas), 'image/jpeg', 0.92);
+    return canvasToBlob(canvas, format === 'webp' ? 'image/webp' : 'image/png', 0.9);
+  };
+
+  /** Même rendu, en texte data: (pages de présentation et liens de partage, qui gardent l'image) */
+  const renderSceneDataUrl = async (...args: Parameters<typeof renderScene>) => {
+    const blob = await renderScene(...args);
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
   };
 
   const downloadDataUrl = (dataUrl: string, filename: string) => {
@@ -1235,25 +1285,38 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     link.click();
   };
 
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
+
   const closeCrossSellBanner = useCallback(() => setShowCrossSellBanner(false), []);
 
   const [videoExtension, setVideoExtension] = useState<'mp4' | 'webm'>('webm');
   useEffect(() => setVideoExtension(getVideoFormat().extension), []);
 
-  const fileBaseName = (captureItem.domainName || 'omnimockup').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const fileBaseName = (captureItem.domainName || 'pitchmysite').replace(/[^a-zA-Z0-9_-]/g, '_');
 
   // Export d'une image (format et qualité choisis dans le menu Exporter)
   const handleExportImage = async () => {
     if (!sceneRef.current) return;
     setIsExporting(true);
     setExportSuccess(false);
+    setExportStep('Création de l’image…');
 
     try {
       const auth = await authorizeExport('image', exportQuality);
       if (!auth) return;
-      const dataUrl = await renderScene(exportFormat, currentFramePreset, auth.quality, !auth.watermark);
+      const blob = await renderScene(exportFormat, currentFramePreset, auth.quality, !auth.watermark);
       const { width, height } = getExportSize(currentFramePreset, auth.quality);
-      downloadDataUrl(dataUrl, `${fileBaseName}-${width}x${height}.${exportFormat}`);
+      downloadBlob(blob, `${fileBaseName}-${width}x${height}.${exportFormat}`);
+      showExportDone('Image téléchargée');
 
       setExportSuccess(true);
       setTimeout(() => setExportSuccess(false), 3000);
@@ -1264,9 +1327,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
     } catch (err) {
       console.error('Erreur export image:', err);
-      alert("Erreur lors de l'exportation de l'image. Veuillez réessayer.");
+      showExportError("L'image n'a pas pu être créée. Réessayez ; si le problème continue, choisissez une qualité plus basse.");
     } finally {
       setIsExporting(false);
+      setExportStep('');
     }
   };
 
@@ -1282,10 +1346,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }
   }, []);
 
-  const dataUrlToFile = async (dataUrl: string, filename: string) => {
-    const blob = await (await fetch(dataUrl)).blob();
-    return new File([blob], filename, { type: blob.type });
-  };
+  const blobToFile = (blob: Blob, filename: string) => new File([blob], filename, { type: blob.type });
 
   /** Statut WhatsApp : image 9:16 en JPG léger (le format du canevas est rétabli ensuite) */
   const handleExportWhatsAppStatus = async () => {
@@ -1293,6 +1354,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     const story = FRAME_PRESETS.find((fp) => fp.id === 'ig-story');
     if (!story) return;
     setIsExporting(true);
+    setExportStep('Création du statut WhatsApp…');
     const originalPreset = currentFramePreset;
     try {
       const auth = await authorizeExport('image', exportQuality === '4k' ? 'hd' : exportQuality);
@@ -1301,31 +1363,24 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       await new Promise((r) => setTimeout(r, 500));
       const { width, height } = getExportSize(story, auth.quality);
       const canvas = await renderSceneCanvas(width, height, !auth.watermark);
-      const flat = document.createElement('canvas');
-      flat.width = canvas.width;
-      flat.height = canvas.height;
-      const fctx = flat.getContext('2d');
-      if (fctx) {
-        fctx.fillStyle = '#ffffff';
-        fctx.fillRect(0, 0, flat.width, flat.height);
-        fctx.drawImage(canvas, 0, 0);
-      }
+      setExportStep('Enregistrement du fichier…');
       // Qualité 0,85 : fichier léger, rapide à envoyer même avec une connexion faible
-      const dataUrl = flat.toDataURL('image/jpeg', 0.85);
+      const blob = await canvasToBlob(flattenOnWhite(canvas), 'image/jpeg', 0.85);
       const filename = `${fileBaseName}-statut-whatsapp-${width}x${height}.jpg`;
       if (canShareFiles) {
-        const file = await dataUrlToFile(dataUrl, filename);
-        await navigator.share({ files: [file], title: 'Mockup' }).catch(() => downloadDataUrl(dataUrl, filename));
+        await navigator.share({ files: [blobToFile(blob, filename)], title: 'Mockup' }).catch(() => downloadBlob(blob, filename));
       } else {
-        downloadDataUrl(dataUrl, filename);
+        downloadBlob(blob, filename);
       }
+      showExportDone('Statut WhatsApp prêt');
       setShowExportMenu(false);
     } catch (err) {
       console.error('Erreur export WhatsApp:', err);
-      alert("Erreur lors de l'export pour WhatsApp. Veuillez réessayer.");
+      showExportError("Le statut WhatsApp n'a pas pu être créé. Réessayez.");
     } finally {
       selectFramePreset(originalPreset);
       setIsExporting(false);
+      setExportStep('');
     }
   };
 
@@ -1337,16 +1392,17 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       const auth = await authorizeExport('image', exportQuality);
       if (!auth) return;
       const format: ExportFormat = exportFormat === 'png' ? 'jpg' : exportFormat; // plus léger à partager
-      const dataUrl = await renderScene(format, currentFramePreset, auth.quality, !auth.watermark);
+      setExportStep('Préparation du partage…');
+      const blob = await renderScene(format, currentFramePreset, auth.quality, !auth.watermark);
       const { width, height } = getExportSize(currentFramePreset, auth.quality);
-      const file = await dataUrlToFile(dataUrl, `${fileBaseName}-${width}x${height}.${format}`);
-      await navigator.share({ files: [file], title: 'Mockup' });
+      await navigator.share({ files: [blobToFile(blob, `${fileBaseName}-${width}x${height}.${format}`)], title: 'Mockup' });
       setShowExportMenu(false);
     } catch (err) {
       // Partage annulé par l'utilisateur : rien à signaler
       if ((err as Error)?.name !== 'AbortError') console.error('Erreur partage:', err);
     } finally {
       setIsExporting(false);
+      setExportStep('');
     }
   };
 
@@ -1371,7 +1427,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       setTimeout(() => setCopySuccess(false), 2500);
     } catch (err) {
       console.error('Erreur copie presse-papier:', err);
-      alert('Impossible de copier dans le presse-papier sur ce navigateur.');
+      showExportError('Ce navigateur ne permet pas de copier une image. Utilisez « Télécharger l’image ».');
     } finally {
       setIsCopying(false);
     }
@@ -1512,7 +1568,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       for (let k = 0; k < count; k++) {
         setVideoProgress(`${Math.round((k / count) * 100)} %`);
         flushSync(() => setConfig({ ...original, ...at(k / (count - 1), original) }));
-        await new Promise((r) => requestAnimationFrame(() => r(null)));
+        await nextFrame();
         const c = await renderSceneCanvas(width, height, hideWatermark);
         frames.push(await createImageBitmap(c));
       }
@@ -1540,7 +1596,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     let rect: { x: number; y: number; w: number; h: number };
     try {
       flushSync(() => setConfig({ ...original, ...flat }));
-      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      await nextFrame();
       // L'écran principal : la plus grande capture affichée dans un appareil
       const shots = new Set([currentScreenshot, phoneScreenshot].filter(Boolean));
       const screens = Array.from(scene.querySelectorAll('img')).filter((i) => shots.has(i.getAttribute('src') || ''));
@@ -1708,7 +1764,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       );
     } catch (err) {
       console.error('Erreur export vidéo:', err);
-      alert('La création de la vidéo a échoué. Elle nécessite un navigateur récent (Chrome, Edge, Firefox ou Safari).');
+      showExportError('La vidéo n’a pas pu être créée. Il faut un navigateur récent (Chrome, Edge, Firefox ou Safari), et garder cet onglet ouvert pendant la création.');
     } finally {
       setIsExportingVideo(false);
       setVideoProgress('');
@@ -1939,9 +1995,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const renderSlide = async (caption = ''): Promise<PresentationSlide> => {
     const quality = canExportHd ? 'hd' : 'standard';
     const { width, height } = getExportSize(currentFramePreset, quality);
-    const image = await renderScene('jpg', currentFramePreset, quality, false);
+    const image = await renderSceneDataUrl('jpg', currentFramePreset, quality, false);
     // Version sans filigrane gardée pour un export payé en crédits
-    const cleanImage = planWatermark ? await renderScene('jpg', currentFramePreset, quality, true) : undefined;
+    const cleanImage = planWatermark ? await renderSceneDataUrl('jpg', currentFramePreset, quality, true) : undefined;
     return { id: `slide_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, image, clean: cleanImage, width, height, quality, caption };
   };
 
@@ -1959,7 +2015,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       setTimeout(() => setSlideAddedNote(''), 2500);
     } catch (err) {
       console.error('Erreur ajout présentation:', err);
-      alert("Impossible d'ajouter cette scène à la présentation.");
+      showExportError("Impossible d'ajouter cette scène à la présentation. Réessayez.");
     } finally {
       setIsAddingSlide(false);
     }
@@ -1986,7 +2042,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       setShowPresentation(true);
     } catch (err) {
       console.error('Erreur ajout des pages:', err);
-      alert("Impossible d'ajouter les pages à la présentation.");
+      showExportError("Impossible d'ajouter les pages à la présentation. Réessayez.");
     } finally {
       setCurrentScreenshot(original);
       setIsAddingAllPages(false);
@@ -2039,7 +2095,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       }
     } catch (err) {
       console.error('Erreur PDF:', err);
-      alert('Une erreur est survenue lors de la création du PDF.');
+      showExportError('Le PDF n’a pas pu être créé. Réessayez.');
     } finally {
       setIsBuildingPdf(false);
     }
@@ -2072,17 +2128,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         // Laisser le canevas prendre sa nouvelle forme avant le rendu
         await new Promise((r) => setTimeout(r, 500));
         const quality: ExportQuality = auth.quality;
-        const dataUrl = await renderScene(format, preset, quality, !auth.watermark);
+        const blob = await renderScene(format, preset, quality, !auth.watermark);
         const { width, height } = getExportSize(preset, quality);
         const label = `${preset.category}-${preset.name}`.replace(/[^a-zA-Z0-9_-]+/g, '_');
-        downloadDataUrl(dataUrl, `${fileBaseName}-${label}-${width}x${height}.${format}`);
+        downloadBlob(blob, `${fileBaseName}-${label}-${width}x${height}.${format}`);
         await new Promise((r) => setTimeout(r, 250));
       }
       setPackProgress('Fait !');
       setTimeout(() => setPackProgress(''), 3000);
+      showExportDone(`${packPresets.length} fichiers téléchargés`);
     } catch (err) {
       console.error('Erreur export pack:', err);
-      alert('Une erreur est survenue lors du téléchargement du pack.');
+      showExportError('Le pack n’a pas pu être téléchargé en entier. Réessayez.');
     } finally {
       selectFramePreset(originalPreset);
       setIsExportingPack(false);
@@ -5722,6 +5779,62 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         screenshot={currentScreenshot}
       />
 
+      {/* BANDEAU D'EXPORT : progression, fin ou erreur (la scène reste visible et utilisable) */}
+      {(() => {
+        const progress = isExportingVideo
+          ? `Création ${videoAsGif ? 'du GIF' : 'de la vidéo'}… ${videoProgress}`
+          : isExportingPack
+            ? packProgress && packProgress !== 'Fait !' ? `Pack : fichier ${packProgress}` : 'Pack : préparation…'
+            : isBuildingPdf
+              ? 'Création du PDF…'
+              : isExporting
+                ? exportStep || 'Création de l’image…'
+                : isCopying
+                  ? 'Copie de l’image…'
+                  : '';
+        if (!progress && !exportNotice) return null;
+        const tone = progress
+          ? 'bg-zinc-900/95 border-violet-500/40 text-zinc-100'
+          : exportNotice?.kind === 'error'
+            ? 'bg-rose-950/95 border-rose-500/50 text-rose-100'
+            : 'bg-emerald-950/95 border-emerald-500/50 text-emerald-100';
+        return (
+          <div
+            role={exportNotice?.kind === 'error' && !progress ? 'alert' : 'status'}
+            aria-live="polite"
+            className={`fixed z-[140] left-1/2 -translate-x-1/2 bottom-4 sm:bottom-6 w-[calc(100%-2rem)] max-w-md px-4 py-3 rounded-2xl border shadow-2xl backdrop-blur-md flex items-start gap-3 text-sm ${tone}`}
+          >
+            {progress ? (
+              <RefreshCw className="w-4 h-4 mt-0.5 shrink-0 animate-spin text-violet-300" />
+            ) : exportNotice?.kind === 'error' ? (
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-rose-300" />
+            ) : (
+              <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-300" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">{progress || exportNotice?.text}</p>
+              {progress && (
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  {isExportingVideo
+                    ? 'Gardez cet onglet ouvert jusqu’à la fin de la création.'
+                    : 'Le fichier se télécharge automatiquement à la fin.'}
+                </p>
+              )}
+            </div>
+            {!progress && (
+              <button
+                type="button"
+                onClick={() => setExportNotice(null)}
+                aria-label="Fermer le message"
+                className="p-1 -m-1 rounded-lg opacity-70 hover:opacity-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        );
+      })()}
+
       {/* POPOVER FORMAT DE FRAME */}
       {showFrameSizePopover && (
         <FrameSizePopover
@@ -5829,7 +5942,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             // Même qualité et même filigrane qu'un export inclus dans le forfait
             const quality = canExportHd ? 'hd' : 'standard';
             const { width, height } = getExportSize(currentFramePreset, quality);
-            const image = await renderScene('jpg', currentFramePreset, quality, !planWatermark);
+            const image = await renderSceneDataUrl('jpg', currentFramePreset, quality, !planWatermark);
             return { image, width, height };
           }}
           onClose={() => setShowShare(false)}

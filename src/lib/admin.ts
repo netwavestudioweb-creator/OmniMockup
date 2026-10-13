@@ -1,28 +1,21 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { ADMIN_COOKIE, adminConfigured, verifyAdminSession } from '@/lib/adminAuth';
 
 /**
- * Accès au tableau de bord : seuls les comptes listés dans la table app_admins (le compte de Dodo).
- * La vérification se fait toujours côté serveur, à chaque appel.
- * Renvoie l'identifiant de l'administrateur, ou une réponse 401 / 403 à renvoyer telle quelle.
+ * Accès au tableau de bord : uniquement la session administrateur (mot de passe + code à 6 chiffres),
+ * indépendante des comptes clients. Être connecté à un compte client, même celui de Dodo, ne suffit pas.
+ * Renvoie une réponse 401 / 503 à renvoyer telle quelle si l'accès est refusé.
  */
-export async function requireAdmin(): Promise<{ adminId: string } | { response: NextResponse }> {
-  try {
-    const { data } = await createClient().auth.getUser();
-    if (!data.user) {
-      return { response: NextResponse.json({ error: 'Connectez-vous.' }, { status: 401 }) };
-    }
-    const { data: row } = await createAdminClient()
-      .from('app_admins')
-      .select('user_id')
-      .eq('user_id', data.user.id)
-      .maybeSingle();
-    if (!row) return { response: NextResponse.json({ error: 'Accès réservé.' }, { status: 403 }) };
-    return { adminId: data.user.id };
-  } catch {
-    return { response: NextResponse.json({ error: 'Service indisponible.' }, { status: 503 }) };
+export async function requireAdmin(): Promise<{ adminId: null } | { response: NextResponse }> {
+  if (!adminConfigured()) {
+    return { response: NextResponse.json({ error: 'Accès administrateur non configuré.', setup: true }, { status: 503 }) };
   }
+  if (!verifyAdminSession(cookies().get(ADMIN_COOKIE)?.value)) {
+    return { response: NextResponse.json({ error: 'Connexion administrateur requise.' }, { status: 401 }) };
+  }
+  return { adminId: null };
 }
 
 /** Enregistre un paiement encaissé (une seule fois grâce à provider + external_id). Ne bloque jamais l'appelant. */

@@ -12,6 +12,8 @@ import {
   ShieldAlert,
   Loader2,
   ArrowLeft,
+  LogOut,
+  KeyRound,
 } from 'lucide-react';
 import { TEMPLATES_CATALOG } from '@/lib/shotsPresets';
 
@@ -189,14 +191,14 @@ const TABS: { id: Tab; label: string; short: string; Icon: React.ElementType }[]
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [stats, setStats] = useState<Stats | null>(null);
-  const [status, setStatus] = useState<'loading' | 'ok' | 'login' | 'forbidden' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'ok' | 'login' | 'setup' | 'error'>('loading');
 
   const loadStats = useCallback(async () => {
-    setStatus('loading');
+    setStatus((s) => (s === 'ok' ? 'ok' : 'loading'));
     try {
       const res = await fetch('/api/admin/stats', { cache: 'no-store' });
       if (res.status === 401) return setStatus('login');
-      if (res.status === 403) return setStatus('forbidden');
+      if (res.status === 503) return setStatus('setup');
       if (!res.ok) return setStatus('error');
       setStats(await res.json());
       setStatus('ok');
@@ -208,20 +210,24 @@ export default function AdminPage() {
     loadStats();
   }, [loadStats]);
 
-  if (status === 'login' || status === 'forbidden') {
+  const logout = async () => {
+    await fetch('/api/admin/login', { method: 'DELETE' }).catch(() => null);
+    setStats(null);
+    setStatus('login');
+  };
+
+  if (status === 'login') return <AdminLogin onSuccess={loadStats} />;
+  if (status === 'setup') {
     return (
       <main className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
-        <div className="max-w-sm w-full rounded-2xl bg-zinc-900 border border-zinc-800 p-6 text-center space-y-4">
-          <ShieldAlert className="w-10 h-10 text-amber-400 mx-auto" />
-          <h1 className="text-lg font-bold">{status === 'login' ? 'Connexion requise' : 'Accès réservé'}</h1>
+        <div className="max-w-md w-full rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-3">
+          <ShieldAlert className="w-10 h-10 text-amber-400" />
+          <h1 className="text-lg font-bold">Accès administrateur pas encore configuré</h1>
           <p className="text-sm text-zinc-400">
-            {status === 'login' ? 'Connectez-vous avec le compte administrateur.' : 'Cette page est réservée à l’administrateur de PitchMySite.'}
+            Personne ne peut ouvrir cette page tant que le mot de passe et le code à 6 chiffres ne sont pas créés.
+            Sur ton ordinateur, dans le dossier du projet, lance <code className="text-violet-300">node scripts/admin-setup.mjs</code>,
+            puis copie les 3 valeurs dans Vercel et redéploie.
           </p>
-          {status === 'login' ? (
-            <Link href="/login?redirect=/admin" className="inline-flex px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 font-bold text-sm">Se connecter</Link>
-          ) : (
-            <Link href="/" className="inline-flex px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 font-bold text-sm">Retour au site</Link>
-          )}
         </div>
       </main>
     );
@@ -236,9 +242,14 @@ export default function AdminPage() {
             <p className="text-lg font-black">Pitch<span className="text-violet-400">MySite</span></p>
             <p className="text-[10px] tracking-[0.2em] text-zinc-500 font-bold uppercase">Administration</p>
           </div>
-          <Link href="/" className="lg:mt-4 inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white">
-            <ArrowLeft className="w-3.5 h-3.5" /> Site
-          </Link>
+          <div className="flex items-center gap-3 lg:mt-4">
+            <Link href="/" className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white">
+              <ArrowLeft className="w-3.5 h-3.5" /> Site
+            </Link>
+            <button type="button" onClick={logout} className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white">
+              <LogOut className="w-3.5 h-3.5" /> Déconnexion
+            </button>
+          </div>
         </div>
         <nav className="grid grid-cols-4 lg:flex lg:flex-col gap-1 px-2 pb-2 lg:px-3" aria-label="Sections">
           {TABS.map(({ id, label, short, Icon }) => (
@@ -280,6 +291,89 @@ export default function AdminPage() {
         {tab === 'payments' && <PaymentsTab />}
       </main>
     </div>
+  );
+}
+
+/* ───────────── Connexion administrateur ───────────── */
+function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
+  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, code }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setPassword('');
+        onSuccess();
+      } else {
+        setError(json.error || 'Connexion impossible.');
+        setCode('');
+      }
+    } catch {
+      setError('Connexion impossible. Vérifiez votre connexion internet.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
+      <form onSubmit={submit} className="max-w-sm w-full rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-violet-600/20 text-violet-300 flex items-center justify-center">
+            <KeyRound className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold">Administration</h1>
+            <p className="text-xs text-zinc-400">Accès réservé, indépendant des comptes clients.</p>
+          </div>
+        </div>
+        <label className="block text-xs text-zinc-300">
+          Mot de passe administrateur
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="mt-1 w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-sm focus:outline-none focus:border-violet-500"
+          />
+        </label>
+        <label className="block text-xs text-zinc-300">
+          Code à 6 chiffres (application sur ton téléphone)
+          <input
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+            required
+            className="mt-1 w-full px-3 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-lg tracking-[0.4em] tabular-nums focus:outline-none focus:border-violet-500"
+          />
+        </label>
+        {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
+        <button
+          type="submit"
+          disabled={busy || !password || code.length !== 6}
+          className="w-full py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {busy && <Loader2 className="w-4 h-4 animate-spin" />}
+          Ouvrir le tableau de bord
+        </button>
+        <p className="text-[11px] text-zinc-500">Après 5 erreurs, l’accès est bloqué 15 minutes. La session dure 12 heures.</p>
+      </form>
+    </main>
   );
 }
 

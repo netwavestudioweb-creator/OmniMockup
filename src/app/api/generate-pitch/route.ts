@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -8,8 +9,22 @@ import { checkRateLimit, createRateLimitResponse } from '@/lib/security';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-// Modèles actifs (les plus anciens, comme gemini-1.5-flash, ont été retirés par Google)
+// IA principale : Claude (Anthropic), si ANTHROPIC_API_KEY est configurée sur le serveur
+const CLAUDE_MODEL = 'claude-opus-5-5';
+// IA de secours : Google Gemini (les anciens modèles, comme gemini-1.5-flash, ont été retirés par Google)
 const MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
+
+/** Lit l'objet JSON renvoyé par l'IA, même entouré de ```json … ``` ou d'une phrase */
+function parseJsonReply(text: string) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    return JSON.parse(start >= 0 && end > start ? cleaned.slice(start, end + 1) : cleaned);
+  }
+}
 const clip = (v: unknown, max: number, fallback: string) =>
   (typeof v === 'string' && v.trim() ? v.trim() : fallback).slice(0, max);
 
@@ -36,7 +51,8 @@ export async function POST(req: NextRequest) {
     : [];
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey && !anthropicKey) {
     return NextResponse.json({ success: false, error: 'Service IA indisponible pour le moment.' }, { status: 503 });
   }
 
@@ -123,41 +139,74 @@ Réponds EXCLUSIVEMENT avec cet objet JSON :
   "socialHooks": ["string", "string", "string"]${sections.length > 0 ? ',\n  "sections": [{ "titre": "string", "contenu": "string" }]' : ''}
 }
 `;
-  const imageParts = sections.map((data) => ({ inlineData: { mimeType: 'image/jpeg', data } }));
 
-  // IA utilisée : Google Gemini (modèles « flash », qui lisent aussi les images)
-  const genAI = new GoogleGenerativeAI(apiKey);
   let lastError = '';
   let overloaded = false;
-  // Budget total de 50 s (la fonction en ligne est coupée à 60 s) : chaque essai est limité à 20 s,
+  // Budget total de 50 s (la fonction en ligne est coupée à 60 s) : chaque essai a sa limite de temps,
   // sinon un modèle surchargé bloquait jusqu'à 30 s et l'utilisateur n'obtenait jamais de réponse.
   const deadline = Date.now() + 50_000;
-  // Chaque modèle est essayé deux fois : Google renvoie parfois « surchargé » (503) quelques secondes
-  for (const name of [...MODELS, ...MODELS]) {
-    if (lastError.includes('503')) await new Promise((r) => setTimeout(r, 2500));
-    const remaining = deadline - Date.now();
-    if (remaining < 5_000) break;
+
+  // 1. Claude d'abord (lit le texte et les captures du site)
+  if (anthropicKey) {
     try {
-      const model = genAI.getGenerativeModel(
+      const client = new Anthropic({ apiKey: anthropicKey, maxRetries: 0 });
+      const content: Anthropic.Beta.BetaContentBlockParam[] = [
+        ...sections.map(
+          (data): Anthropic.Beta.BetaContentBlockParam => ({
+            type: 'image',
+            source: { type: 'base64', media_type: 'image/jpeg', data },
+          })
+        ),
+        { type: 'text', text: prompt },
+      ];
+      const response = await client.beta.messages.create(
         {
-          model: name,
-          generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
+          model: CLAUDE_MODEL,
+          max_tokens: 8000,
+          output_config: { effort: 'medium' },
+          // Si une protection de Claude refuse la demande, Anthropic la relance sur le modèle conseillé
+          betas: ['server-side-fallback-2026-07-01'],
+          fallbacks: 'default',
+          messages: [{ role: 'user', content }],
         },
-        { timeout: Math.min(20_000, remaining) }
+        { timeout: 35_000 }
       );
-      const result = await model.generateContent(imageParts.length > 0 ? [prompt, ...imageParts] : prompt);
-      const text = result.response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = JSON.parse(text.replace(/```json/g, '').replace(/```/g, '').trim());
-      }
-      return NextResponse.json({ success: true, data });
+      if (response.stop_reason === 'refusal') throw new Error('Claude a refusé la demande');
+      const text = response.content.map((block) => (block.type === 'text' ? block.text : '')).join('');
+      return NextResponse.json({ success: true, data: parseJsonReply(text), provider: 'claude' });
     } catch (err) {
+      if (err instanceof Anthropic.RateLimitError || (err instanceof Anthropic.APIError && (err.status ?? 0) >= 500)) {
+        overloaded = true;
+      }
       lastError = err instanceof Error ? err.message : String(err);
-      if (lastError.includes('503')) overloaded = true;
-      console.warn(`[generate-pitch] Échec avec ${name} :`, lastError.slice(0, 200));
+      console.warn(`[generate-pitch] Échec avec ${CLAUDE_MODEL}, bascule sur Gemini :`, lastError.slice(0, 200));
+    }
+  }
+
+  // 2. Gemini en secours (modèles « flash », qui lisent aussi les images)
+  if (apiKey) {
+    const imageParts = sections.map((data) => ({ inlineData: { mimeType: 'image/jpeg', data } }));
+    const genAI = new GoogleGenerativeAI(apiKey);
+    // Chaque modèle est essayé deux fois : Google renvoie parfois « surchargé » (503) quelques secondes
+    for (const name of [...MODELS, ...MODELS]) {
+      if (lastError.includes('503')) await new Promise((r) => setTimeout(r, 2500));
+      const remaining = deadline - Date.now();
+      if (remaining < 5_000) break;
+      try {
+        const model = genAI.getGenerativeModel(
+          {
+            model: name,
+            generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
+          },
+          { timeout: Math.min(20_000, remaining) }
+        );
+        const result = await model.generateContent(imageParts.length > 0 ? [prompt, ...imageParts] : prompt);
+        return NextResponse.json({ success: true, data: parseJsonReply(result.response.text()), provider: 'gemini' });
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
+        if (lastError.includes('503')) overloaded = true;
+        console.warn(`[generate-pitch] Échec avec ${name} :`, lastError.slice(0, 200));
+      }
     }
   }
 
@@ -167,7 +216,7 @@ Réponds EXCLUSIVEMENT avec cet objet JSON :
     {
       success: false,
       error: overloaded
-        ? "Le service d'IA de Google est surchargé en ce moment. Réessayez dans quelques minutes (rien n'a été décompté)."
+        ? "Le service d'IA est surchargé en ce moment. Réessayez dans quelques minutes (rien n'a été décompté)."
         : "L'IA n'a pas pu générer le texte. Réessayez dans un instant (rien n'a été décompté).",
     },
     { status: 502 }

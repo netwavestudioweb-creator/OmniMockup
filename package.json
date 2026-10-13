@@ -10,6 +10,7 @@
     "setup-stripe": "npx tsx scripts/setup-stripe-products.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@google/generative-ai": "^0.24.1",
     "@sparticuz/chromium": "^153.0.0",
     "@supabase/ssr": "^0.12.7",

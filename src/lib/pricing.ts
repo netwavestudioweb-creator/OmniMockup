@@ -1,6 +1,6 @@
 /**
  * src/lib/pricing.ts
- * SOURCE UNIQUE DE VERITE — OmniMockup Studio
+ * SOURCE UNIQUE DE VERITE — PitchMySite
  * Toute modification de prix, quota ou crédit SE FAIT ICI UNIQUEMENT.
  * Importé par : /pricing, /account, setup-stripe, webhook, usage.ts
  */
@@ -107,7 +107,7 @@ export const PLANS: Plan[] = [
     features: [
       { name: 'Studio complet : 9 appareils, scènes photo, annotations', included: true },
       { name: '3 exports par jour en qualité Standard (1280 px)', included: true },
-      { name: 'Filigrane « Réalisé avec OmniMockup »', included: true },
+      { name: 'Filigrane « Réalisé avec PitchMySite »', included: true },
       { name: '5 liens de partage actifs', included: true },
       { name: '3 analyses IA directeur artistique par mois', included: true },
       { name: 'Exports HD et 4K', included: false },
@@ -209,7 +209,7 @@ export const PLANS: Plan[] = [
       { name: 'Tout le forfait Pro inclus', included: true },
       { name: 'Vidéos et GIF animés illimités', included: true, highlight: true },
       { name: 'Pitch IA illimité', included: true, highlight: true },
-      { name: 'Marque blanche : pages de partage à votre nom et logo, sans mention d’OmniMockup', included: true, highlight: true },
+      { name: 'Marque blanche : pages de partage à votre nom et logo, sans mention de PitchMySite', included: true, highlight: true },
       { name: 'Support WhatsApp prioritaire', included: true, highlight: true },
     ],
   },

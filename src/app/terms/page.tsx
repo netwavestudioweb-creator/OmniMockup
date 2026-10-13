@@ -6,8 +6,8 @@ import { Footer } from '@/components/Footer';
 import { ArrowLeft, Shield, FileText, Scale } from 'lucide-react';
 
 export const metadata = {
-  title: "Conditions Générales d'Utilisation (CGU/CGV) • OmniMockup Studio",
-  description: "Conditions générales d'utilisation et de vente d'OmniMockup Studio.",
+  title: "Conditions Générales d'Utilisation (CGU/CGV) • PitchMySite",
+  description: "Conditions générales d'utilisation et de vente de PitchMySite.",
 };
 
 export default function TermsPage() {
@@ -46,7 +46,7 @@ export default function TermsPage() {
               1. Objet du Service
             </h2>
             <p>
-              OmniMockup Studio fournit une plateforme en ligne permettant d&apos;analyser automatiquement la structure de pages web cibles, d&apos;en capturer des volets en haute définition et de composer des visuels de mise en scène (mockups) à des fins marketing ou de présentation.
+              PitchMySite fournit une plateforme en ligne permettant d&apos;analyser automatiquement la structure de pages web cibles, d&apos;en capturer des volets en haute définition et de composer des visuels de mise en scène (mockups) à des fins marketing ou de présentation.
             </p>
 
             <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
@@ -70,7 +70,7 @@ export default function TermsPage() {
               4. Propriété Intellectuelle & Droits des Captures
             </h2>
             <p>
-              L&apos;utilisateur garantit détenir les droits d&apos;accès et d&apos;utilisation des sites web soumis à l&apos;analyse. OmniMockup Studio ne revendique aucun droit de propriété sur les captures d&apos;écran d&apos;interfaces tierces générées via le service.
+              L&apos;utilisateur garantit détenir les droits d&apos;accès et d&apos;utilisation des sites web soumis à l&apos;analyse. PitchMySite ne revendique aucun droit de propriété sur les captures d&apos;écran d&apos;interfaces tierces générées via le service.
             </p>
 
             <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">

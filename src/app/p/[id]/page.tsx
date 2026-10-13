@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 const BUCKET = 'shared-mockups';
 
 type Share = { id: string; user_id: string | null; title: string; image_path: string; width: number; height: number; created_at: string };
-/** Marque blanche (forfait Agence) : la page porte le nom et le logo de l'agence, sans mention d'OmniMockup */
+/** Marque blanche (forfait Agence) : la page porte le nom et le logo de l'agence, sans mention de PitchMySite */
 type WhiteLabel = { name: string; logo: string | null; color: string | null } | null;
 
 async function getShare(id: string): Promise<Share | null> {
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const img = imageUrl(share.image_path);
   const brand = await getWhiteLabel(share.user_id);
   return {
-    title: brand ? (brand.name ? `${title} • ${brand.name}` : title) : `${title} • OmniMockup`,
+    title: brand ? (brand.name ? `${title} • ${brand.name}` : title) : `${title} • PitchMySite`,
     // Page privée destinée au client : jamais indexée par les moteurs de recherche
     robots: { index: false, follow: false },
     openGraph: { title, images: [{ url: img, width: share.width, height: share.height }] },
@@ -108,7 +108,7 @@ export default async function SharedMockupPage({ params }: { params: { id: strin
         <footer className="border-t border-zinc-900 py-5 px-4 text-center">
           <Link href="/" className="inline-flex items-center gap-2 text-xs text-zinc-500 hover:text-white">
             <Layers className="w-3.5 h-3.5 text-violet-400" />
-            Mockup réalisé avec OmniMockup
+            Mockup réalisé avec PitchMySite
           </Link>
         </footer>
       )}

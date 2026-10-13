@@ -58,14 +58,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
           <div className="min-w-0">
             <div className="flex items-center space-x-1.5 sm:space-x-2">
               <span className="font-bold tracking-tight text-stone-900 text-sm sm:text-base md:text-lg truncate">
-                Omni<span className="text-violet-600">Mockup</span>
+                Pitch<span className="text-violet-600">MySite</span>
               </span>
               <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold tracking-wider rounded-full bg-violet-100 text-violet-800 border border-violet-200 shrink-0">
                 Studio
               </span>
             </div>
             <p className="text-[10px] sm:text-[11px] text-stone-500 font-sans hidden sm:block truncate">
-              Studio de mockups &amp; capture instantanée
+              Votre site en visuels prêts à convaincre
             </p>
           </div>
         </Link>

@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true, ...result });
     }
 
-    // Déjà appliqué par le retour navigateur, ou paiement étranger à OmniMockup
+    // Déjà appliqué par le retour navigateur, ou paiement étranger à PitchMySite
     return NextResponse.json({ received: true, matched: false });
   } catch (err) {
     console.error('[SasPay Webhook] Erreur :', err);

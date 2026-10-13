@@ -90,7 +90,7 @@ export const PaymentResultPanel: React.FC<PaymentResultPanelProps> = ({ result, 
               </>
             )}
             {(result === 'verification' || result === 'pending' || result === 'failed') && (
-              <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Paiement OmniMockup')}`} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-800 font-bold text-sm">
+              <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Paiement PitchMySite')}`} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-800 font-bold text-sm">
                 <Mail className="w-4 h-4" />
                 Nous écrire
               </a>

@@ -2317,7 +2317,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           {/* Ligne d'accentuation subtile en haut */}
           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent pointer-events-none" />
 
-          {/* ── GAUCHE : Quitter, Marque OmniMockup, Site Cible & Templates ── */}
+          {/* ── GAUCHE : Quitter, Marque PitchMySite, Site Cible & Templates ── */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
             {onClose && (
               <button
@@ -2338,7 +2338,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               <div className="min-w-0 hidden sm:block">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs sm:text-sm font-black tracking-tight text-white truncate">
-                    Omni<span className="text-violet-400">Mockup</span>
+                    Pitch<span className="text-violet-400">MySite</span>
                   </span>
                   <span className="px-1.5 py-0.2 rounded-md bg-violet-500/15 text-violet-300 border border-violet-500/30 text-[9px] font-bold tracking-wider uppercase shrink-0">
                     Studio
@@ -3641,10 +3641,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   data-watermark
                   href="/pricing"
                   className="absolute bottom-3 right-3 z-40 px-2.5 py-1 rounded-lg bg-black/65 hover:bg-violet-950/80 backdrop-blur-md text-white/90 hover:text-white text-[10px] font-mono font-semibold flex items-center gap-1.5 shadow-sm border border-white/20 hover:border-violet-400 transition-all select-none group"
-                  title="Créé avec OmniMockup. Débloquez le plan Pro pour supprimer le filigrane."
+                  title="Créé avec PitchMySite. Débloquez le plan Pro pour supprimer le filigrane."
                 >
                   <Layers className="w-3 h-3 text-violet-400 group-hover:scale-110 transition-transform" />
-                  <span>Réalisé avec OmniMockup</span>
+                  <span>Réalisé avec PitchMySite</span>
                   <span data-export-hide className="text-[9px] bg-violet-600/60 px-1 py-0.5 rounded text-violet-200 group-hover:bg-violet-600 font-sans">
                     Retirer
                   </span>

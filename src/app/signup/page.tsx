@@ -153,12 +153,12 @@ function SignupForm() {
                     <Layers className="w-4 h-4 text-white" />
                   </div>
                   <span className="font-extrabold tracking-tight text-stone-900 text-xl">
-                    Omni<span className="text-violet-600">Mockup</span>
+                    Pitch<span className="text-violet-600">MySite</span>
                   </span>
                 </Link>
 
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight mt-6">
-                  Rejoignez OmniMockup
+                  Rejoignez PitchMySite
                 </h1>
                 <p className="text-xs sm:text-sm text-stone-500 mt-1.5 leading-relaxed">
                   Créez votre compte gratuit et testez le studio : 3 exports par jour, sans carte bancaire.

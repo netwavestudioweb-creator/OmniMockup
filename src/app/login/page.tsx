@@ -147,7 +147,7 @@ function LoginForm() {
                     <Layers className="w-4 h-4 text-white" />
                   </div>
                   <span className="font-extrabold tracking-tight text-stone-900 text-xl">
-                    Omni<span className="text-violet-600">Mockup</span>
+                    Pitch<span className="text-violet-600">MySite</span>
                   </span>
                 </Link>
 

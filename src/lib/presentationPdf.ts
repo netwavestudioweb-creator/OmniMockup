@@ -70,7 +70,7 @@ export async function buildPresentationPdf(
   const H = 210;
   const [ar, ag, ab] = hexToRgb(meta.accent);
   const title = clean(meta.title) || 'Présentation';
-  const footerNote = watermark ? 'Réalisé avec OmniMockup' : '';
+  const footerNote = watermark ? 'Réalisé avec PitchMySite' : '';
 
   // ── Couverture ─────────────────────────────────────────────────────────
   doc.setFillColor(ar, ag, ab);

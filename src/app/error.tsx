@@ -12,7 +12,7 @@ import { SUPPORT_EMAIL } from '@/lib/contact';
  */
 export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    console.error('[OmniMockup] Erreur d’affichage :', error);
+    console.error('[PitchMySite] Erreur d’affichage :', error);
   }, [error]);
 
   return (

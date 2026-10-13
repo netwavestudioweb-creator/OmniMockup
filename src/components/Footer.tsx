@@ -15,7 +15,7 @@ export const Footer: React.FC = () => {
           <div>
             <div className="flex items-center space-x-2">
               <span className="font-bold tracking-tight text-stone-900 text-sm">
-                Omni<span className="text-violet-600">Mockup</span> Studio
+                Pitch<span className="text-violet-600">MySite</span> Studio
               </span>
               <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-violet-100 text-violet-800 border border-violet-200">
                 v1.0
@@ -45,7 +45,7 @@ export const Footer: React.FC = () => {
         <div className="flex items-center gap-4">
           <CurrencySwitcher variant="footer" />
           <div className="text-[11px] text-stone-400 font-mono text-center md:text-right">
-            © {new Date().getFullYear()} OmniMockup Studio. Tous droits réservés.
+            © {new Date().getFullYear()} PitchMySite. Tous droits réservés.
           </div>
         </div>
       </div>

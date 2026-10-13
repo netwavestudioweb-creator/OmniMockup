@@ -351,7 +351,7 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* Vrai contenu traité : Netwave Studio & OmniMockup */}
+                    {/* Vrai contenu traité : Netwave Studio & PitchMySite */}
                     <div className="relative bg-gradient-to-br from-zinc-950 via-zinc-900 to-black p-6 sm:p-8 text-left overflow-hidden">
                       {/* Halos lumineux en arrière-plan */}
                       <div className="absolute top-0 right-1/4 w-72 h-72 bg-violet-600/15 rounded-full blur-3xl pointer-events-none" />
@@ -476,17 +476,17 @@ export default function HomePage() {
                       </button>
                     </div>
 
-                    {/* VUE 1 : téléphone — vrai mockup réalisé avec OmniMockup */}
+                    {/* VUE 1 : téléphone — vrai mockup réalisé avec PitchMySite */}
                     {heroMobileDevice === 'iphone' ? (
                       <div className="w-full max-w-[300px] mx-auto relative animate-fade-in">
                         {/* Halo lumineux violet derrière le téléphone */}
                         <div className="absolute inset-0 -z-10 rounded-[40px] blur-3xl opacity-50 bg-gradient-to-b from-violet-600/40 via-indigo-600/20 to-transparent scale-110" />
 
-                        {/* Vrai mockup réalisé avec OmniMockup : boutique en ligne Al Kareem Parfumerie (avec son accord) */}
+                        {/* Vrai mockup réalisé avec PitchMySite : boutique en ligne Al Kareem Parfumerie (avec son accord) */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src="/images/mockup-al-kareem-boutique.webp"
-                          alt="Mockup iPhone de la page Boutique d’Al Kareem Parfumerie, réalisé avec OmniMockup"
+                          alt="Mockup iPhone de la page Boutique d’Al Kareem Parfumerie, réalisé avec PitchMySite"
                           width={619}
                           height={1233}
                           className="w-[78%] mx-auto h-auto object-contain drop-shadow-[0_30px_60px_rgba(124,58,237,0.45)] animate-float"
@@ -496,7 +496,7 @@ export default function HomePage() {
                         <div className="mt-4 flex justify-center">
                           <div className="bg-black/80 backdrop-blur-sm border border-zinc-700/60 text-[10px] font-semibold text-zinc-300 px-3 py-1.5 rounded-full shadow-xl flex items-center gap-1.5 text-center">
                             <Sparkles className="w-3 h-3 text-violet-400 shrink-0" />
-                            Page Boutique d’Al Kareem Parfumerie · réalisé avec OmniMockup
+                            Page Boutique d’Al Kareem Parfumerie · réalisé avec PitchMySite
                           </div>
                         </div>
                       </div>
@@ -646,7 +646,7 @@ export default function HomePage() {
                     <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center shrink-0">
                       <XCircle className="w-5 h-5 text-rose-400" />
                     </div>
-                    <h3 className="font-bold text-rose-200 text-base sm:text-lg">Sans OmniMockup</h3>
+                    <h3 className="font-bold text-rose-200 text-base sm:text-lg">Sans PitchMySite</h3>
                   </div>
                   {[
                     'Des captures plates qui ne mettent pas votre travail en valeur',
@@ -668,7 +668,7 @@ export default function HomePage() {
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
                       <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                     </div>
-                    <h3 className="font-bold text-emerald-200 text-base sm:text-lg">Avec OmniMockup</h3>
+                    <h3 className="font-bold text-emerald-200 text-base sm:text-lg">Avec PitchMySite</h3>
                   </div>
                   {[
                     'Collez l\'URL : les pages sont capturées automatiquement, sans capture manuelle',
@@ -1025,7 +1025,7 @@ export default function HomePage() {
 
               <p className="mt-8 text-center text-sm text-zinc-400">
                 <BadgeCheck className="inline w-4 h-4 text-violet-400 mr-1.5 -mt-0.5" />
-                Marque blanche (plan Agence) : vos pages de partage portent le nom et le logo de votre agence, sans mention d&apos;OmniMockup.
+                Marque blanche (plan Agence) : vos pages de partage portent le nom et le logo de votre agence, sans mention de PitchMySite.
               </p>
             </div>
           </section>
@@ -1338,11 +1338,11 @@ export default function HomePage() {
                 {[
                   {
                     q: 'Puis-je utiliser les mockups pour mes clients et à des fins commerciales ?',
-                    a: 'Oui. Les visuels que vous créez avec OmniMockup peuvent être utilisés dans vos propositions commerciales, vos livrables clients, votre portfolio et vos publications, y compris à des fins commerciales.',
+                    a: 'Oui. Les visuels que vous créez avec PitchMySite peuvent être utilisés dans vos propositions commerciales, vos livrables clients, votre portfolio et vos publications, y compris à des fins commerciales.',
                   },
                   {
                     q: 'Comment fonctionne la marque blanche ?',
-                    a: 'Dès le plan Pro, vos images, vidéos et PDF ne portent plus aucun filigrane. Avec le plan Agence, les pages de partage envoyées à vos clients affichent aussi le nom et le logo de votre agence (votre kit de marque), sans aucune mention d\'OmniMockup.',
+                    a: 'Dès le plan Pro, vos images, vidéos et PDF ne portent plus aucun filigrane. Avec le plan Agence, les pages de partage envoyées à vos clients affichent aussi le nom et le logo de votre agence (votre kit de marque), sans aucune mention d\'PitchMySite.',
                   },
                   {
                     q: 'Que deviennent les captures des sites de mes clients ?',

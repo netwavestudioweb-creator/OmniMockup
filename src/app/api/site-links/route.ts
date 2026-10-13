@@ -35,7 +35,7 @@ async function fetchHtml(startUrl: string): Promise<{ html: string; finalUrl: UR
     const res = await fetch(check.parsedUrl.href, {
       redirect: 'manual',
       signal: AbortSignal.timeout(8000),
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OmniMockupBot/1.0)', Accept: 'text/html' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PitchMySiteBot/1.0)', Accept: 'text/html' },
     });
     if (res.status >= 300 && res.status < 400) {
       const loc = res.headers.get('location');

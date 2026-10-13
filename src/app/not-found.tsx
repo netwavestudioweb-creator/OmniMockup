@@ -4,7 +4,7 @@ import { Navbar } from '@/components/Navbar';
 import { Home, AlertCircle } from 'lucide-react';
 
 export const metadata = {
-  title: "Page introuvable • OmniMockup Studio",
+  title: "Page introuvable • PitchMySite",
 };
 
 export default function NotFound() {

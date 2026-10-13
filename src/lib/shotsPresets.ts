@@ -1,5 +1,5 @@
 /**
- * Presets, Backgrounds, Ratios et Templates inspirés de Shots.so pour OmniMockup
+ * Presets, Backgrounds, Ratios et Templates inspirés de Shots.so pour PitchMySite
  */
 
 import { SceneAspectRatio, BrowserStylePreset, MockupType, SceneOverlayPreset } from '@/types/analyzer';

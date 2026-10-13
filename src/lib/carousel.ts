@@ -85,7 +85,7 @@ export async function renderCarouselPages(
       ctx.textAlign = 'center';
       ctx.font = `500 24px ${FONT}`;
       ctx.fillStyle = light ? 'rgba(255,255,255,0.6)' : 'rgba(24,24,27,0.45)';
-      ctx.fillText('Réalisé avec OmniMockup', W / 2, H - 28);
+      ctx.fillText('Réalisé avec PitchMySite', W / 2, H - 28);
     }
   };
 

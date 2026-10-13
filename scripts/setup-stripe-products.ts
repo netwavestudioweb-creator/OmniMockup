@@ -90,7 +90,7 @@ async function upsertPrice(params: {
 // MAIN
 // ─────────────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log('\n⚡ OmniMockup Studio — Setup Stripe Multi-Devises (EUR & USD idempotent)\n');
+  console.log('\n⚡ PitchMySite — Setup Stripe Multi-Devises (EUR & USD idempotent)\n');
 
   const newEnvVars: Record<string, string> = {};
 
@@ -103,7 +103,7 @@ async function main() {
     // Mensuel EUR
     const monthlyEur = await upsertPrice({
       productKey: `${plan.id}_monthly`,
-      productName: `OmniMockup ${plan.name}`,
+      productName: `PitchMySite ${plan.name}`,
       productDescription: plan.description,
       productMetadata: { plan_id: plan.id, billing: 'monthly' },
       lookupKey: STRIPE_LOOKUP_KEYS[`${plan.id}_monthly_eur` as keyof typeof STRIPE_LOOKUP_KEYS],
@@ -117,7 +117,7 @@ async function main() {
     // Mensuel USD
     const monthlyUsd = await upsertPrice({
       productKey: `${plan.id}_monthly`,
-      productName: `OmniMockup ${plan.name}`,
+      productName: `PitchMySite ${plan.name}`,
       productDescription: plan.description,
       productMetadata: { plan_id: plan.id, billing: 'monthly' },
       lookupKey: STRIPE_LOOKUP_KEYS[`${plan.id}_monthly_usd` as keyof typeof STRIPE_LOOKUP_KEYS],
@@ -130,7 +130,7 @@ async function main() {
     // Annuel EUR
     const annualEur = await upsertPrice({
       productKey: `${plan.id}_annual`,
-      productName: `OmniMockup ${plan.name} (Annuel)`,
+      productName: `PitchMySite ${plan.name} (Annuel)`,
       productDescription: `${plan.description} — 2 mois offerts, facturé annuellement.`,
       productMetadata: { plan_id: plan.id, billing: 'annual' },
       lookupKey: STRIPE_LOOKUP_KEYS[`${plan.id}_annual_eur` as keyof typeof STRIPE_LOOKUP_KEYS],
@@ -144,7 +144,7 @@ async function main() {
     // Annuel USD
     const annualUsd = await upsertPrice({
       productKey: `${plan.id}_annual`,
-      productName: `OmniMockup ${plan.name} (Annuel)`,
+      productName: `PitchMySite ${plan.name} (Annuel)`,
       productDescription: `${plan.description} — 2 mois offerts, facturé annuellement.`,
       productMetadata: { plan_id: plan.id, billing: 'annual' },
       lookupKey: STRIPE_LOOKUP_KEYS[`${plan.id}_annual_usd` as keyof typeof STRIPE_LOOKUP_KEYS],
@@ -162,7 +162,7 @@ async function main() {
     // Pack EUR
     const packEur = await upsertPrice({
       productKey: `credit_pack_${pack.id}`,
-      productName: `OmniMockup — ${pack.name}`,
+      productName: `PitchMySite — ${pack.name}`,
       productDescription: `${pack.credits} crédits à vie (aucune expiration). ${pack.badge ?? ''}`,
       productMetadata: { pack_id: pack.id, credits: String(pack.credits) },
       lookupKey: STRIPE_LOOKUP_KEYS[`${pack.id}_eur` as keyof typeof STRIPE_LOOKUP_KEYS],
@@ -175,7 +175,7 @@ async function main() {
     // Pack USD
     const packUsd = await upsertPrice({
       productKey: `credit_pack_${pack.id}`,
-      productName: `OmniMockup — ${pack.name}`,
+      productName: `PitchMySite — ${pack.name}`,
       productDescription: `${pack.credits} crédits à vie (aucune expiration). ${pack.badge ?? ''}`,
       productMetadata: { pack_id: pack.id, credits: String(pack.credits) },
       lookupKey: STRIPE_LOOKUP_KEYS[`${pack.id}_usd` as keyof typeof STRIPE_LOOKUP_KEYS],
@@ -191,7 +191,7 @@ async function main() {
   // Bump EUR
   const bumpEur = await upsertPrice({
     productKey: 'bump_pitch_kit',
-    productName: `OmniMockup — ${ORDER_BUMP.name}`,
+    productName: `PitchMySite — ${ORDER_BUMP.name}`,
     productDescription: ORDER_BUMP.description,
     productMetadata: { bump_id: ORDER_BUMP.id },
     lookupKey: STRIPE_LOOKUP_KEYS.bump_pitch_kit_eur,
@@ -204,7 +204,7 @@ async function main() {
   // Bump USD
   const bumpUsd = await upsertPrice({
     productKey: 'bump_pitch_kit',
-    productName: `OmniMockup — ${ORDER_BUMP.name}`,
+    productName: `PitchMySite — ${ORDER_BUMP.name}`,
     productDescription: ORDER_BUMP.description,
     productMetadata: { bump_id: ORDER_BUMP.id },
     lookupKey: STRIPE_LOOKUP_KEYS.bump_pitch_kit_usd,

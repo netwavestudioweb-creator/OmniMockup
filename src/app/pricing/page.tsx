@@ -825,7 +825,7 @@ export default function PricingPage() {
                   Offre exclusive de paiement
                 </div>
                 <h3 className="text-lg font-black text-stone-900">
-                  Souscription : OmniMockup {bumpModalPlan.name}
+                  Souscription : PitchMySite {bumpModalPlan.name}
                 </h3>
                 <p className="text-xs text-stone-500">
                   {isAnnual ? 'Facturation annuelle' : 'Facturation mensuelle'} — Paiement sécurisé via Stripe

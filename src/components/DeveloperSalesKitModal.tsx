@@ -159,7 +159,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                     value={projectTitle}
                     onChange={(e) => setProjectTitle(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-sand-300 focus:outline-none focus:border-violet-500"
-                    placeholder="Ex: OmniMockup SaaS"
+                    placeholder="Ex: PitchMySite SaaS"
                   />
                 </div>
 

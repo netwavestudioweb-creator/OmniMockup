@@ -78,9 +78,9 @@ export async function POST(req: NextRequest) {
     const email = user.email || '';
     const session = await createSaspayCheckout({
       amount: item.amount,
-      description: `OmniMockup Studio - ${item.label}`,
+      description: `PitchMySite - ${item.label}`,
       customerEmail: email,
-      customerName: (user.user_metadata?.full_name as string) || email.split('@')[0] || 'Client OmniMockup',
+      customerName: (user.user_metadata?.full_name as string) || email.split('@')[0] || 'Client PitchMySite',
       returnUrl: `${siteUrl}/api/payments/saspay/return?ref=${row.id}`,
       metadata: { checkout_ref: row.id, item: item.itemId },
     });

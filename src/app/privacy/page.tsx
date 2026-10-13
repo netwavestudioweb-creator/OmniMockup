@@ -5,8 +5,8 @@ import { Footer } from '@/components/Footer';
 import { ArrowLeft, Lock, Database, ShieldCheck } from 'lucide-react';
 
 export const metadata = {
-  title: "Politique de Confidentialité (RGPD) • OmniMockup Studio",
-  description: "Politique de traitement et protection des données personnelles d'OmniMockup Studio.",
+  title: "Politique de Confidentialité (RGPD) • PitchMySite",
+  description: "Politique de traitement et protection des données personnelles de PitchMySite.",
 };
 
 export default function PrivacyPage() {

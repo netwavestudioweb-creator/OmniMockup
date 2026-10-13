@@ -14,8 +14,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "OmniMockup Studio • Analyse Web & Mockups IA Haute Fidélité",
-  description: "Capture intelligente de pages et sections web, analyse de composition par IA et studio de mise en scène de mockups.",
+  title: "PitchMySite • Votre site en visuels qui donnent envie de signer",
+  description: "Collez le lien de votre site : il est capturé et mis en scène sur ordinateur, téléphone et tablette, prêt pour LinkedIn, Instagram, WhatsApp ou votre proposition commerciale.",
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },

@@ -83,7 +83,7 @@ export function FounderApplicationForm() {
         {status === 'sending' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         Devenir agence fondatrice
       </button>
-      <p className="sm:col-span-2 text-[11px] text-zinc-500 text-center">
+      <p className="sm:col-span-2 text-[11px] text-zinc-400 text-center">
         Vos informations servent uniquement à vous recontacter au sujet du programme.
       </p>
     </form>

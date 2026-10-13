@@ -44,7 +44,7 @@ export const Footer: React.FC = () => {
 
         <div className="flex items-center gap-4">
           <CurrencySwitcher variant="footer" />
-          <div className="text-[11px] text-stone-400 font-mono text-center md:text-right">
+          <div className="text-[11px] text-stone-500 font-mono text-center md:text-right">
             © {new Date().getFullYear()} PitchMySite. Tous droits réservés.
           </div>
         </div>

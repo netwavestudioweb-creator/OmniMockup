@@ -232,7 +232,7 @@ export default function HomePage() {
               </div>
 
               {/* Titre principal centré — Phrase complète sans coupure artificielle */}
-              <h1 className="animate-fade-in delay-100 text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white max-w-4xl mx-auto leading-[1.1] mb-6">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white max-w-4xl mx-auto leading-[1.1] mb-6">
                 Collez le lien de votre&nbsp;site.{' '}
                 <span className="block mt-1 sm:mt-2">
                   Recevez des visuels qui <span className="shimmer-text">donnent envie de signer</span>.
@@ -240,7 +240,7 @@ export default function HomePage() {
               </h1>
 
               {/* Sous-titre centré — Complet et équilibré */}
-              <p className="animate-fade-in delay-200 text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-8">
+              <p className="text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-8">
                 Votre site est capturé automatiquement et mis en scène sur ordinateur, téléphone et tablette. Prêt pour
                 LinkedIn, Instagram, le statut WhatsApp ou votre proposition commerciale, en quelques secondes.
               </p>
@@ -565,22 +565,22 @@ export default function HomePage() {
                         <ChevronLeft className="w-3.5 h-3.5" />
                       </button>
                       <div className="flex gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setHeroMobileDevice('iphone')}
-                          className={`h-1.5 rounded-full transition-all ${
-                            heroMobileDevice === 'iphone' ? 'w-5 bg-violet-500' : 'w-2 bg-zinc-700'
-                          }`}
-                          aria-label="Téléphone"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setHeroMobileDevice('watch')}
-                          className={`h-1.5 rounded-full transition-all ${
-                            heroMobileDevice === 'watch' ? 'w-5 bg-violet-500' : 'w-2 bg-zinc-700'
-                          }`}
-                          aria-label="Montre"
-                        />
+                        {(['iphone', 'watch'] as const).map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => setHeroMobileDevice(d)}
+                            className="h-6 min-w-6 px-1 flex items-center justify-center"
+                            aria-label={d === 'iphone' ? 'Téléphone' : 'Montre'}
+                            aria-pressed={heroMobileDevice === d}
+                          >
+                            <span
+                              className={`h-1.5 rounded-full transition-all ${
+                                heroMobileDevice === d ? 'w-5 bg-violet-500' : 'w-2 bg-zinc-700'
+                              }`}
+                            />
+                          </button>
+                        ))}
                       </div>
                       <button
                         type="button"
@@ -627,7 +627,7 @@ export default function HomePage() {
           </section>
 
           {/* ═══════════ OLD WAY → NEW WAY ═══════════ */}
-          <section className="bg-zinc-950 py-20 sm:py-28">
+          <section className="cv-auto bg-zinc-950 py-20 sm:py-28">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center max-w-3xl mx-auto mb-14">
                 <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Le problème</p>
@@ -688,7 +688,7 @@ export default function HomePage() {
           </section>
 
           {/* ═══════════ HOW IT WORKS — 3 ÉTAPES ═══════════ */}
-          <section className="bg-zinc-900 py-20 sm:py-28">
+          <section className="cv-auto bg-zinc-900 py-20 sm:py-28">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center max-w-3xl mx-auto mb-14">
                 <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Fonctionnement Intuitif</p>
@@ -806,10 +806,16 @@ export default function HomePage() {
                               key={dotIdx}
                               type="button"
                               onClick={() => setActiveStep(dotIdx)}
-                              className={`w-2 h-2 rounded-full transition-all ${
-                                activeStep === dotIdx ? 'w-5 bg-violet-500' : 'bg-zinc-700'
-                              }`}
-                            />
+                              className="h-6 min-w-6 px-1 flex items-center justify-center"
+                              aria-label={`Étape ${dotIdx + 1}`}
+                              aria-pressed={activeStep === dotIdx}
+                            >
+                              <span
+                                className={`h-2 rounded-full transition-all ${
+                                  activeStep === dotIdx ? 'w-5 bg-violet-500' : 'w-2 bg-zinc-700'
+                                }`}
+                              />
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -839,7 +845,7 @@ export default function HomePage() {
           </section>
 
           {/* ═══════════ FEATURES / ALL THAT YOU GET ═══════════ */}
-          <section className="bg-gradient-to-b from-zinc-950 to-zinc-900 py-20 sm:py-28">
+          <section className="cv-auto bg-gradient-to-b from-zinc-950 to-zinc-900 py-20 sm:py-28">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center max-w-3xl mx-auto mb-14">
                 <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Fonctionnalités Clés</p>
@@ -939,7 +945,7 @@ export default function HomePage() {
           </section>
 
           {/* ═══════════ USAGES POUR UNE AGENCE ═══════════ */}
-          <section className="bg-zinc-900 py-20 sm:py-28">
+          <section className="cv-auto bg-zinc-900 py-20 sm:py-28">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center max-w-3xl mx-auto mb-14">
                 <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Pour les agences</p>
@@ -1031,7 +1037,7 @@ export default function HomePage() {
           </section>
 
           {/* ═══════════ FONDATEURS SAAS (cible secondaire) ═══════════ */}
-          <section className="bg-zinc-950 py-16 sm:py-20">
+          <section className="cv-auto bg-zinc-950 py-16 sm:py-20">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-indigo-950/60 to-zinc-900 border border-indigo-500/25">
                 <div className="flex items-start gap-4">
@@ -1322,7 +1328,7 @@ export default function HomePage() {
           </section>
 
           {/* ═══════════ FAQ ═══════════ */}
-          <section className="bg-zinc-950 py-20 sm:py-28">
+          <section className="cv-auto bg-zinc-950 py-20 sm:py-28">
             <div className="max-w-3xl mx-auto px-4 sm:px-6">
               <div className="text-center max-w-2xl mx-auto mb-14">
                 <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">FAQ</p>
@@ -1398,7 +1404,7 @@ export default function HomePage() {
           </section>
 
           {/* ═══════════ CTA FINAL ═══════════ */}
-          <section className="relative bg-zinc-900 py-20 sm:py-28 overflow-hidden">
+          <section className="cv-auto relative bg-zinc-900 py-20 sm:py-28 overflow-hidden">
             <div className="absolute inset-0 hero-mesh opacity-70" />
             <div className="absolute inset-0 dot-grid opacity-40" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-violet-700/15 blur-[100px] pointer-events-none" />

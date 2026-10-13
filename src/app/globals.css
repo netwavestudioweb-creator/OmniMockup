@@ -74,6 +74,9 @@ body {
   position: absolute;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  /* Tuile de 200 px répétée : sans cette taille, le filtre de bruit était recalculé sur toute la largeur de l'écran
+     (plus de 2 s de dessin sur un téléphone moyen) */
+  background-size: 200px 200px;
   pointer-events: none;
   border-radius: inherit;
 }
@@ -419,4 +422,30 @@ body {
 .site-dark > header a:hover,
 .site-dark > header button:hover {
   color: #ffffff;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Fluidité : les sections hors de l'écran ne sont dessinées qu'à l'approche du défilement
+   ───────────────────────────────────────────────────────────────────────────── */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}
+
+/* Visiteurs qui ont demandé moins d'animations (réglage du téléphone) : animations arrêtées */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Logo sur fond sombre : le violet foncé manquait de contraste */
+.site-dark > header .text-violet-600,
+.site-dark > footer .text-violet-600 {
+  color: #a78bfa;
 }

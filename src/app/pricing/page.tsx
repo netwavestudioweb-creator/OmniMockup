@@ -331,7 +331,7 @@ export default function PricingPage() {
               <span
                 onClick={() => setIsAnnual(false)}
                 className={`text-xs font-bold cursor-pointer transition-colors ${
-                  !isAnnual ? 'text-stone-900 font-extrabold' : 'text-stone-400 hover:text-stone-600'
+                  !isAnnual ? 'text-stone-900 font-extrabold' : 'text-stone-500 hover:text-stone-600'
                 }`}
               >
                 Mensuel
@@ -341,6 +341,7 @@ export default function PricingPage() {
                 type="button"
                 role="switch"
                 aria-checked={isAnnual}
+                aria-label="Paiement annuel"
                 onClick={() => setIsAnnual(!isAnnual)}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2 ${
                   isAnnual ? 'bg-violet-600' : 'bg-stone-300'
@@ -356,7 +357,7 @@ export default function PricingPage() {
               <span
                 onClick={() => setIsAnnual(true)}
                 className={`text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-colors ${
-                  isAnnual ? 'text-violet-900 font-extrabold' : 'text-stone-400 hover:text-stone-600'
+                  isAnnual ? 'text-violet-900 font-extrabold' : 'text-stone-500 hover:text-stone-600'
                 }`}
               >
                 <span>Annuel</span>
@@ -413,9 +414,9 @@ export default function PricingPage() {
                   {/* Titre et description */}
                   <div className="mb-6 pt-2">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
+                      <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
                         {plan.name}
-                      </h3>
+                      </h2>
                     </div>
                     <p className="text-xs text-stone-500 mt-2 leading-relaxed min-h-[36px]">
                       {plan.description}
@@ -440,7 +441,7 @@ export default function PricingPage() {
                           <span className="text-emerald-700 font-bold">
                             Facturé {formatPrice(annualPrice, currency)} / an (2 mois offerts)
                           </span>
-                          <span className="text-stone-400">
+                          <span className="text-stone-500">
                             Économie : {formatPrice(savings, currency)} par an
                           </span>
                         </>
@@ -458,7 +459,7 @@ export default function PricingPage() {
                       <li
                         key={i}
                         className={`flex items-start gap-2.5 ${
-                          feat.included ? 'text-stone-800' : 'text-stone-400 line-through opacity-75'
+                          feat.included ? 'text-stone-800' : 'text-stone-500 line-through opacity-75'
                         }`}
                       >
                         {feat.included ? (
@@ -468,7 +469,7 @@ export default function PricingPage() {
                             }`}
                           />
                         ) : (
-                          <XIcon className="w-4 h-4 shrink-0 mt-0.5 text-stone-400 stroke-[2]" />
+                          <XIcon className="w-4 h-4 shrink-0 mt-0.5 text-stone-500 stroke-[2]" />
                         )}
                         <span className={feat.highlight ? 'font-bold text-stone-900' : ''}>
                           {feat.name}
@@ -599,7 +600,7 @@ export default function PricingPage() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-sand-200 flex items-center justify-between">
-                    <span className="text-[11px] text-stone-400">Paiement unique</span>
+                    <span className="text-[11px] text-stone-500">Paiement unique</span>
                     <button
                       type="button"
                       onClick={() => handleCreditBuy(pack)}
@@ -815,7 +816,7 @@ export default function PricingPage() {
               <button
                 type="button"
                 onClick={() => setBumpModalPlan(null)}
-                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-sand-100 transition-colors"
+                className="absolute top-4 right-4 p-2 text-stone-500 hover:text-stone-700 rounded-full hover:bg-sand-100 transition-colors"
               >
                 <XIcon className="w-5 h-5" />
               </button>
@@ -918,7 +919,7 @@ export default function PricingPage() {
               <button
                 type="button"
                 onClick={() => setShowExitDownsell(false)}
-                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-sand-100 transition-colors"
+                className="absolute top-4 right-4 p-2 text-stone-500 hover:text-stone-700 rounded-full hover:bg-sand-100 transition-colors"
               >
                 <XIcon className="w-5 h-5" />
               </button>

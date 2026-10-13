@@ -1,8 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/client';
+import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { Profile } from '@/types/database';
 import { getEffectivePlan } from '@/lib/plan';
 
@@ -13,6 +12,17 @@ interface UserContextType {
   isPremiumUser: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+}
+
+/**
+ * La bibliothèque de connexion (Supabase, environ 55 Ko compressés) est chargée juste après l'affichage
+ * de la page au lieu de bloquer son premier rendu : la page apparaît plus vite, surtout sur téléphone.
+ */
+type SupabaseBrowserClient = ReturnType<typeof import('@/lib/supabase/client').createClient>;
+let supabasePromise: Promise<SupabaseBrowserClient> | null = null;
+function getSupabase(): Promise<SupabaseBrowserClient> {
+  if (!supabasePromise) supabasePromise = import('@/lib/supabase/client').then((m) => m.createClient());
+  return supabasePromise;
 }
 
 const UserContext = createContext<UserContextType>({
@@ -28,10 +38,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
+      const supabase = await getSupabase();
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -60,7 +70,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error('[UserContext] Erreur lors du chargement du profil :', err);
     }
-  }, [supabase]);
+  }, []);
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) {
@@ -98,6 +108,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Timeout rapide (1200ms) pour éviter les blocages de rendu si Supabase est indisponible
+        const supabase = await getSupabase();
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) =>
           setTimeout(() => resolve({ data: { session: null } }), 1200)
@@ -125,7 +136,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+    let subscription: { unsubscribe: () => void } | null = null;
+    getSupabase().then((supabase) => {
+      if (!mounted) return;
+      subscription = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       const localTestSession = typeof window !== 'undefined' ? localStorage.getItem('omnimockup_test_session') : null;
       if (localTestSession && event === 'SIGNED_OUT') {
         localStorage.removeItem('omnimockup_test_session');
@@ -141,19 +155,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       setIsLoading(false);
+      }).data.subscription;
     });
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
-  }, [supabase, fetchProfile]);
+  }, [fetchProfile]);
 
   const signOut = async () => {
     try {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('omnimockup_test_session');
       }
+      const supabase = await getSupabase();
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);

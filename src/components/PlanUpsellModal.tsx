@@ -40,7 +40,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
             <div className="space-y-1 text-center sm:text-left">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-100 text-violet-800 text-xs font-black uppercase mb-1">
                 <Sparkles className="w-3.5 h-3.5 text-violet-600" />
-                <span>Quota Découverte atteint (3/jour)</span>
+                <span>Vos 3 exports gratuits du jour sont utilisés</span>
               </div>
               <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
                 Débloquez vos exports sans filigrane
@@ -59,7 +59,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                     <span className="text-[10px] bg-sand-200 text-stone-700 px-2 py-0.5 rounded-full font-bold">{price.solo}/mois</span>
                   </div>
                   <p className="text-[11px] text-stone-500 leading-tight mb-3">
-                    20 exports HD 2x / mois avec filigrane discret.
+                    20 exports HD (1920 px) par mois, avec un filigrane discret.
                   </p>
                   <ul className="space-y-1.5 text-[11px] text-stone-600">
                     <li className="flex items-center gap-1.5">
@@ -98,7 +98,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                     <span className="text-[10px] bg-violet-600 text-white px-2 py-0.5 rounded-full font-bold">{price.pro}/mois</span>
                   </div>
                   <p className="text-[11px] text-violet-800 leading-tight mb-3 font-medium">
-                    Exports illimités HD + 4K, ZÉRO filigrane et vidéo MP4 (10 / mois).
+                    Exports HD et 4K illimités, sans filigrane, 10 vidéos ou GIF par mois et 5 Pitch IA.
                   </p>
                   <ul className="space-y-1.5 text-[11px] text-stone-800">
                     <li className="flex items-center gap-1.5">
@@ -111,7 +111,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                     </li>
                     <li className="flex items-center gap-1.5">
                       <Check className="w-3.5 h-3.5 text-violet-600 font-bold" />
-                      <span>10 vidéos MP4 / mois</span>
+                      <span>10 vidéos ou GIF / mois</span>
                     </li>
                   </ul>
                 </div>

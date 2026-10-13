@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { CREDIT_PACKS } from '@/lib/pricing';
@@ -99,9 +99,15 @@ export async function POST(req: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
         const status = subscription.status;
-        const plan = (subscription.metadata?.plan as 'solo' | 'pro' | 'agence') || 'pro';
+        // Formule lue sur le prix réellement facturé (clé « …_pro_monthly_… ») : un changement de formule
+        // depuis l'espace client Stripe est ainsi pris en compte ; à défaut, la formule notée à l'achat.
+        const lookupKey = subscription.items?.data?.[0]?.price?.lookup_key || '';
+        const fromPrice = /_(solo|pro|agence)_/.exec(lookupKey)?.[1] as 'solo' | 'pro' | 'agence' | undefined;
+        const plan = fromPrice || (subscription.metadata?.plan as 'solo' | 'pro' | 'agence') || 'pro';
 
-        const newPlan = (status === 'active' || status === 'trialing') ? plan : 'free';
+        // Paiement en retard (past_due) : Stripe réessaie pendant quelques jours, le client garde sa formule.
+        // Il repasse en gratuit seulement si l'abonnement est réellement arrêté (impayé définitif, annulé…).
+        const newPlan = status === 'active' || status === 'trialing' || status === 'past_due' ? plan : 'free';
         await admin.from('profiles').update({
           plan: newPlan,
           plan_expires_at: null,

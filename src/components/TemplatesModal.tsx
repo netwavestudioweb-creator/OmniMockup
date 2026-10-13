@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { TEMPLATES_CATALOG, TEMPLATE_CATEGORIES, StudioTemplate } from '@/lib/shotsPresets';
 import { X, Sparkles, ArrowRight, Monitor, Smartphone, Tablet, Layers } from 'lucide-react';
 
@@ -114,7 +114,38 @@ const TemplatePreview: React.FC<{ tmpl: StudioTemplate; src?: string }> = ({ tmp
   );
 };
 
-export const TemplatesModal: React.FC<TemplatesModalProps> = ({ onSelectTemplate, onClose, screenshot }) => {
+/**
+ * La capture (souvent 0,5 à 1 Mo en texte base64) est convertie une seule fois en adresse courte (blob:) :
+ * sinon les 13 aperçus recopiaient chacun l'image entière dans la page.
+ */
+function useBlobUrl(dataUrl?: string) {
+  const [url, setUrl] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (!dataUrl) return;
+    if (!dataUrl.startsWith('data:')) {
+      setUrl(dataUrl);
+      return;
+    }
+    let objectUrl: string | undefined;
+    let cancelled = false;
+    fetch(dataUrl)
+      .then((r) => r.blob())
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setUrl(objectUrl);
+      })
+      .catch(() => !cancelled && setUrl(dataUrl));
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [dataUrl]);
+  return url;
+}
+
+export const TemplatesModal: React.FC<TemplatesModalProps> = ({ onSelectTemplate, onClose, screenshot: rawScreenshot }) => {
+  const screenshot = useBlobUrl(rawScreenshot);
   return (
     <div className="fixed inset-0 z-[130] flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-md animate-fade-in">
       <div className="bg-[#141418] border border-zinc-800 rounded-3xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-scale-up">

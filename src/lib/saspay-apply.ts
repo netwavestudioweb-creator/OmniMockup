@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getSaspayCheckout, verifySaspayPayment } from '@/lib/saspay';
 import { PLANS, CREDIT_PACKS } from '@/lib/pricing';
+import { recordPayment } from '@/lib/admin';
 
 export type SaspayItem =
   | { kind: 'plan'; itemId: string; plan: 'solo' | 'pro' | 'agence'; cycle: 'monthly' | 'annual'; amount: number; label: string }
@@ -130,6 +131,17 @@ export async function applySaspayCheckout(checkoutRef: string): Promise<SaspayAp
     .from('saspay_checkouts')
     .update({ status: 'applied', transaction_id: payment.id, applied_at: new Date().toISOString() })
     .eq('id', row.id);
+
+  // Chiffre d'affaires du tableau de bord (une seule fois par paiement)
+  await recordPayment({
+    provider: 'saspay',
+    externalId: payment.id,
+    userId: row.user_id,
+    kind: item.kind,
+    item: item.itemId,
+    amount: Number(payment.requested_amount) || row.amount_xof,
+    currency: 'XOF',
+  });
 
   return result;
 }

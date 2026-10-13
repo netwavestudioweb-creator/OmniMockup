@@ -20,7 +20,17 @@ export type TrackedEventName =
   // Pubs récompensées (formule gratuite)
   | 'rewarded_ad_start'
   | 'rewarded_ad_granted'
-  | 'rewarded_ad_not_granted';
+  | 'rewarded_ad_not_granted'
+  // Usage du site et du studio (tableau de bord administrateur)
+  | 'home_view'
+  | 'template_applied'
+  | 'layout_selected'
+  | 'quota_reached'
+  | 'whatsapp_status'
+  | 'pdf_generated'
+  | 'carousel_generated'
+  | 'photo_scene_used'
+  | 'video_exported';
 
 export function trackEvent(
   eventName: TrackedEventName,

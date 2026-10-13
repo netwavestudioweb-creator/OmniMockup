@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getEffectivePlan } from '@/lib/plan';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/security';
+import { logServerEvent } from '@/lib/admin';
 
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
@@ -173,7 +174,9 @@ Réponds EXCLUSIVEMENT avec cet objet JSON :
       );
       if (response.stop_reason === 'refusal') throw new Error('Claude a refusé la demande');
       const text = response.content.map((block) => (block.type === 'text' ? block.text : '')).join('');
-      return NextResponse.json({ success: true, data: parseJsonReply(text), provider: 'claude' });
+      const data = parseJsonReply(text);
+      await logServerEvent('pitch_result', { ok: true, provider: 'claude', sections: sections.length }, userId);
+      return NextResponse.json({ success: true, data, provider: 'claude' });
     } catch (err) {
       if (err instanceof Anthropic.RateLimitError || (err instanceof Anthropic.APIError && (err.status ?? 0) >= 500)) {
         overloaded = true;
@@ -201,7 +204,9 @@ Réponds EXCLUSIVEMENT avec cet objet JSON :
           { timeout: Math.min(20_000, remaining) }
         );
         const result = await model.generateContent(imageParts.length > 0 ? [prompt, ...imageParts] : prompt);
-        return NextResponse.json({ success: true, data: parseJsonReply(result.response.text()), provider: 'gemini' });
+        const data = parseJsonReply(result.response.text());
+        await logServerEvent('pitch_result', { ok: true, provider: 'gemini', sections: sections.length }, userId);
+        return NextResponse.json({ success: true, data, provider: 'gemini' });
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);
         if (lastError.includes('503')) overloaded = true;
@@ -211,6 +216,7 @@ Réponds EXCLUSIVEMENT avec cet objet JSON :
   }
 
   // Aucun modèle n'a répondu : l'utilisation (et les crédits) sont rendus
+  await logServerEvent('pitch_result', { ok: false, overloaded, error: lastError.slice(0, 120) }, userId);
   if (eventId !== null) await createAdminClient().rpc('refund_pitch', { p_event_id: eventId });
   return NextResponse.json(
     {

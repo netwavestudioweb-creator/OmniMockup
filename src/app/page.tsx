@@ -23,6 +23,7 @@ import { ProjectsModal } from '@/components/ProjectsModal';
 import { Footer } from '@/components/Footer';
 import { FounderApplicationForm } from '@/components/FounderApplicationForm';
 import { captureOne } from '@/lib/captureCache';
+import { trackEvent } from '@/lib/tracking';
 import { CaptureItemResult } from '@/types/analyzer';
 import { useCurrency } from '@/context/CurrencyContext';
 import { PLANS, formatPrice, getPlanMonthlyPrice, getPlanMonthlyEquivalent } from '@/lib/pricing';
@@ -110,6 +111,16 @@ export default function HomePage() {
     if (activeCaptureItem) return;
     listProjects().then(setProjects);
   }, [activeCaptureItem]);
+  // Tableau de bord : une visite de l'accueil par session
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('pms_home_view')) return;
+      sessionStorage.setItem('pms_home_view', '1');
+    } catch {
+      // navigation privée : on compte quand même
+    }
+    trackEvent('home_view', {});
+  }, []);
   const savedDraft = projects[0] || null;
   const openProject = (project: StudioProject) => {
     setShowProjects(false);

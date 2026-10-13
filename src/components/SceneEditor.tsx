@@ -5,6 +5,7 @@ import { flushSync } from 'react-dom';
 import Link from 'next/link';
 import { toCanvas } from 'html-to-image';
 import { captureOne } from '@/lib/captureCache';
+import { trackEvent } from '@/lib/tracking';
 import {
   CaptureItemResult,
   MockupType,
@@ -547,6 +548,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }
 
     setShowExportMenu(false);
+    if (first.reason === 'quota_reached') trackEvent('quota_reached', { kind, plan: userPlan });
     setUpsellModal({
       open: true,
       mode:
@@ -612,6 +614,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   // Application d'un template complet Shots.so
   const handleApplyTemplate = (tmpl: StudioTemplate) => {
+    trackEvent('template_applied', { template: tmpl.id });
     setConfig((prev) => ({
       ...prev,
       mockupType: tmpl.mockupType,
@@ -794,6 +797,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const phoneScreenshot =
     config.phoneScreen !== 'desktop' && mobileScreenshot ? mobileScreenshot : currentScreenshot;
   const phoneModel = config.phoneModel || 'iphone';
+
+  // Tableau de bord : dispositions choisies (Solo, Duo, Trio, Avant / Après)
+  const trackedLayout = useRef(config.layoutMode);
+  useEffect(() => {
+    if (config.layoutMode && config.layoutMode !== trackedLayout.current) {
+      trackedLayout.current = config.layoutMode;
+      trackEvent('layout_selected', { layout: config.layoutMode });
+    }
+  }, [config.layoutMode]);
 
   // ══ REPÈRES D'ALIGNEMENT (magnétisme au centre de la scène) ══
   const SNAP_TOLERANCE = 1.5; // en % de la scène
@@ -1373,6 +1385,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         downloadBlob(blob, filename);
       }
       showExportDone('Statut WhatsApp prêt');
+      trackEvent('whatsapp_status', {});
       setShowExportMenu(false);
     } catch (err) {
       console.error('Erreur export WhatsApp:', err);
@@ -1689,6 +1702,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     try {
       const auth = await authorizeExport('video', exportQuality === '4k' ? 'hd' : exportQuality);
       if (!auth) return;
+      trackEvent('video_exported', { preset: videoPreset, gif: videoAsGif });
       const videoBase = getExportSize(currentFramePreset, auth.quality);
       const hideWm = !auth.watermark;
 
@@ -2093,6 +2107,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           }
         }
       }
+      trackEvent(output === 'pdf' ? 'pdf_generated' : 'carousel_generated', { output, pages: presentationSlides.length });
     } catch (err) {
       console.error('Erreur PDF:', err);
       showExportError('Le PDF n’a pas pu être créé. Réessayez.');
@@ -2225,6 +2240,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const lastSceneShotRef = useRef('');
 
   const applyPhotoScene = async (scene: PhotoScene) => {
+    trackEvent('photo_scene_used', { scene: scene.id });
     if (
       scene.kind === 'phone' &&
       !mobileScreenshot &&

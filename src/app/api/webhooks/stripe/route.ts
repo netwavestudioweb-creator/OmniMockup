@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { CREDIT_PACKS } from '@/lib/pricing';
+import { recordPayment } from '@/lib/admin';
 import Stripe from 'stripe';
 
 export const dynamic = 'force-dynamic';
@@ -86,6 +87,15 @@ export async function POST(req: NextRequest) {
           const pack = CREDIT_PACKS.find((p) => p.id === packId);
           if (pack) {
             await creditUser(admin, userId, pack.credits, `credit_pack_${packId}`, event.id);
+            await recordPayment({
+              provider: 'stripe',
+              externalId: session.id,
+              userId,
+              kind: 'credits',
+              item: packId || null,
+              amount: (session.amount_total || 0) / 100,
+              currency: session.currency || 'eur',
+            });
           }
         }
 
@@ -135,7 +145,28 @@ export async function POST(req: NextRequest) {
       }
 
       // ──────────────────────────────────────────────────────────────────────
-      // 4. PAIEMENT ÉCHOUÉ — bandeau affiché dans /account
+      // 4. FACTURE D'ABONNEMENT PAYÉE (premier mois et renouvellements) — chiffre d'affaires
+      // ──────────────────────────────────────────────────────────────────────
+      case 'invoice.paid': {
+        const invoice = event.data.object as Stripe.Invoice;
+        if ((invoice.amount_paid || 0) > 0) {
+          const customerId = invoice.customer as string;
+          const { data: owner } = await admin.from('profiles').select('id, plan').eq('stripe_customer_id', customerId).maybeSingle();
+          await recordPayment({
+            provider: 'stripe',
+            externalId: invoice.id || event.id,
+            userId: owner?.id || null,
+            kind: 'plan',
+            item: owner?.plan || null,
+            amount: invoice.amount_paid / 100,
+            currency: invoice.currency || 'eur',
+          });
+        }
+        break;
+      }
+
+      // ──────────────────────────────────────────────────────────────────────
+      // 5. PAIEMENT ÉCHOUÉ — bandeau affiché dans /account
       // ──────────────────────────────────────────────────────────────────────
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;

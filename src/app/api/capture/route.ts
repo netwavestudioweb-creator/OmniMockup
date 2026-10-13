@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { captureWebPage } from '@/lib/browser';
 import { CaptureItemResult, CaptureResponse, SectionCoordinates } from '@/types/analyzer';
 import { checkRateLimit, createRateLimitResponse, validateSafeUrl } from '@/lib/security';
+import { logServerEvent } from '@/lib/admin';
+
+/** Cause d'un échec de capture, pour le tableau de bord (santé du site) */
+function failureReason(message: string): string {
+  if (/introuvable/i.test(message)) return 'introuvable';
+  if (/refusé|interdit|non autoris/i.test(message)) return 'adresse_bloquee';
+  if (/timeout|délai|trop de temps|aborted/i.test(message)) return 'trop_lent';
+  if (/Impossible de capturer/i.test(message)) return 'site_inaccessible';
+  return 'autre';
+}
 
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
@@ -71,6 +81,7 @@ export async function POST(req: NextRequest) {
   for (const target of targetsToProcess) {
     const validation = await validateSafeUrl(target.url);
     if (!validation.valid || !validation.parsedUrl) {
+      await logServerEvent('capture_result', { ok: false, reason: failureReason(validation.error || ''), mobile: body?.mobile === true });
       return NextResponse.json(
         {
           success: false,
@@ -96,6 +107,7 @@ export async function POST(req: NextRequest) {
     const itemStartTime = Date.now();
     try {
       const captureRes = await captureWebPage(target.url, { fullPage, hideBanners, viewport, mobile, delayMs, colorScheme });
+      await logServerEvent('capture_result', { ok: true, engine: captureRes.source, ms: Date.now() - itemStartTime, mobile });
       results.push({
         url: target.url,
         title: target.label || captureRes.pageTitle || target.url,
@@ -109,6 +121,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (err: unknown) {
       const errorObj = err as { message?: string };
+      await logServerEvent('capture_result', { ok: false, reason: failureReason(errorObj?.message || ''), ms: Date.now() - itemStartTime, mobile });
       results.push({
         url: target.url,
         title: target.label || target.url,

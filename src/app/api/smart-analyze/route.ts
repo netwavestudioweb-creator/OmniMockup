@@ -10,6 +10,7 @@ import {
 } from '@/types/analyzer';
 import { checkRateLimit, createRateLimitResponse, validateSafeUrl } from '@/lib/security';
 import { createClient } from '@/lib/supabase/server';
+import { logServerEvent } from '@/lib/admin';
 import { checkUsageQuota, incrementUsageCount } from '@/lib/usage';
 import { UserPlan } from '@/types/database';
 
@@ -399,6 +400,10 @@ Réponds STRICTEMENT au format JSON avec ce schéma :
       usageLimit: quotaCheck.limit,
       executionTimeMs: Date.now() - overallStartTime,
     };
+
+    // Tableau de bord : analyse lancée, et échec de l'IA quand elle devait répondre (hors quota atteint)
+    await logServerEvent('art_director_run', { ai: isAllowedFullAi && !isFallback });
+    if (isAllowedFullAi && isFallback) await logServerEvent('art_director_result', { ok: false });
 
     return NextResponse.json(response, {
       headers: { 'Content-Type': 'application/json' },

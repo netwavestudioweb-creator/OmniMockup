@@ -46,21 +46,13 @@ export default function PricingPage() {
   const { user, profile } = useUser();
   const { currency, mobileMoneyRegion } = useCurrency();
 
-  // Prix affichés en € ou $ ; Mobile Money (SasPay, réglé en FCFA) proposé en premier en Afrique de l'Ouest
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'saspay'>('stripe');
+  // Paiement uniquement par Mobile Money (SasPay, en FCFA). La carte bancaire est retirée pour l'instant
+  // (Stripe n'ouvre pas de compte au Bénin, SasPay n'a pas encore la carte).
+  const paymentMethod = 'saspay' as const;
   const [isAnnual, setIsAnnual] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
-
-  useEffect(() => {
-    setPaymentMethod(mobileMoneyRegion ? 'saspay' : 'stripe');
-  }, [mobileMoneyRegion]);
-
-  // Étape 6 : Modal Order Bump avant redirection Checkout Stripe
-  const [bumpModalPlan, setBumpModalPlan] = useState<Plan | null>(null);
-  const [bumpAccepted, setBumpAccepted] = useState(false);
-  const [isSubmittingCheckout, setIsSubmittingCheckout] = useState(false);
 
   // Étape 5 : Modal Downsell Exit-Intent sur /pricing
   const [showExitDownsell, setShowExitDownsell] = useState(false);
@@ -115,14 +107,7 @@ export default function PricingPage() {
       return;
     }
 
-    if (paymentMethod === 'saspay') {
-      startSaspayCheckout(plan.id, isAnnual ? 'annual' : 'monthly');
-      return;
-    }
-
-    // Ouvrir l'étape d'Order Bump avant le checkout Stripe
-    setBumpAccepted(false);
-    setBumpModalPlan(plan);
+    startSaspayCheckout(plan.id, isAnnual ? 'annual' : 'monthly');
   };
 
   // Paiement SasPay (Mobile Money ou carte, en FCFA) : redirection vers la page hébergée
@@ -151,46 +136,6 @@ export default function PricingPage() {
     }
   };
 
-  // Exécution du checkout Stripe avec ou sans Order Bump
-  const proceedStripeCheckout = async (plan: Plan, withBump: boolean) => {
-    setIsSubmittingCheckout(true);
-    setCheckoutError(null);
-    setLoadingPlan(plan.id);
-
-    try {
-      trackEvent('checkout_start', {
-        plan_id: plan.id,
-        billing: isAnnual ? 'annual' : 'monthly',
-        with_bump: withBump,
-      });
-
-      const res = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan: plan.id,
-          billing: isAnnual ? 'annual' : 'monthly',
-          withBump,
-          currency: currency === 'USD' ? 'USD' : 'EUR',
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success || !data.url) {
-        throw new Error(data.error || 'Impossible d’initialiser la session de paiement.');
-      }
-
-      window.location.href = data.url;
-    } catch (err: unknown) {
-      const e = err as { message?: string };
-      setCheckoutError(e?.message || 'Erreur lors de la redirection vers Stripe.');
-      setLoadingPlan(null);
-      setIsSubmittingCheckout(false);
-      setBumpModalPlan(null);
-    }
-  };
-
   // Achat d'un pack de crédits
   const handleCreditBuy = async (pack: CreditPack) => {
     trackEvent('plan_click', { pack_id: pack.id, type: 'credits' });
@@ -200,37 +145,7 @@ export default function PricingPage() {
       return;
     }
 
-    if (paymentMethod === 'saspay') {
-      startSaspayCheckout(pack.id);
-      return;
-    }
-
-    setLoadingPlan(pack.id);
-    setCheckoutError(null);
-
-    try {
-      trackEvent('checkout_start', { pack_id: pack.id, type: 'credits' });
-
-      const res = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pack: pack.id,
-          currency: currency === 'USD' ? 'USD' : 'EUR',
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success || !data.url) {
-        throw new Error(data.error || 'Erreur initialisation session crédits.');
-      }
-
-      window.location.href = data.url;
-    } catch (err: unknown) {
-      const e = err as { message?: string };
-      setCheckoutError(e?.message || 'Erreur paiement crédits.');
-      setLoadingPlan(null);
-    }
+    startSaspayCheckout(pack.id);
   };
 
   // Filtrer les plans payants pour la grille principale (Solo, Pro, Agence)
@@ -269,11 +184,6 @@ export default function PricingPage() {
               setPaymentResult(null);
               document.getElementById('formules')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }}
-            onSwitchMethod={() => {
-              setPaymentMethod((m) => (m === 'saspay' ? 'stripe' : 'saspay'));
-              setPaymentResult(null);
-              document.getElementById('formules')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }}
             onClose={() => setPaymentResult(null)}
           />
         )}
@@ -287,39 +197,18 @@ export default function PricingPage() {
 
         {/* SÉLECTEUR DE MOYEN DE PAIEMENT, DEVISE & TOGGLE ANNUEL/MENSUEL */}
         <div className="max-w-5xl mx-auto mb-10 flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-3xl bg-white border border-sand-200 shadow-sm">
-          {/* Moyen de paiement */}
-          <div className="flex flex-col items-center md:items-start gap-1 w-full md:w-auto">
-            <div className="flex items-center gap-1 p-1 bg-sand-100 rounded-2xl border border-sand-200 w-full md:w-auto" role="radiogroup" aria-label="Moyen de paiement">
-              <button
-                type="button"
-                role="radio"
-                onClick={() => setPaymentMethod('stripe')}
-                aria-checked={paymentMethod === 'stripe'}
-                className={`flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition-all ${
-                  paymentMethod === 'stripe' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                <CreditCard className="w-4 h-4 text-violet-600" />
-                <span>Carte bancaire</span>
-              </button>
-              <button
-                type="button"
-                role="radio"
-                onClick={() => setPaymentMethod('saspay')}
-                aria-checked={paymentMethod === 'saspay'}
-                className={`flex-1 md:flex-initial flex items-center justify-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition-all ${
-                  paymentMethod === 'saspay' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                <Smartphone className="w-4 h-4 text-amber-600" />
-                <span>Mobile Money</span>
-              </button>
+          {/* Moyen de paiement : Mobile Money uniquement */}
+          <div className="flex items-start gap-3 w-full md:w-auto md:max-w-md">
+            <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 shrink-0">
+              <Smartphone className="w-5 h-5 text-amber-600" />
             </div>
-            <p className="text-[11px] text-stone-500 text-center md:text-left">
-              {paymentMethod === 'saspay'
-                ? 'Via SasPay (MTN, Moov, Wave, Orange… selon votre pays) : paiement unique, sans renouvellement automatique. Le montant est converti en FCFA et affiché par SasPay avant validation.'
-                : `Visa, Mastercard ou American Express via Stripe, débitée en ${currency === 'USD' ? 'dollars' : 'euros'}.`}
-            </p>
+            <div>
+              <p className="text-xs font-bold text-stone-900">Paiement par Mobile Money, en FCFA</p>
+              <p className="text-[11px] text-stone-500 leading-relaxed">
+                Via SasPay : MTN, Moov, Celtiis, Orange, Wave… selon votre pays. Paiement unique pour 1 mois ou 1 an, sans
+                renouvellement automatique. Paiement par carte bientôt disponible.
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 w-full md:w-auto">
@@ -434,6 +323,12 @@ export default function PricingPage() {
                       </span>
                     </div>
 
+                    {/* Montant réellement payé par Mobile Money */}
+                    <p className="mt-1 text-[11px] font-bold text-amber-700">
+                      Payé en Mobile Money : {new Intl.NumberFormat('fr-FR').format(isAnnual ? plan.annualFcfa : plan.monthlyFcfa)} FCFA
+                      {isAnnual ? ' pour 1 an' : ' pour 1 mois'}
+                    </p>
+
                     {/* Économie annuelle ou facturation */}
                     <div className="mt-2 text-[11px] font-semibold text-stone-600 flex flex-col gap-0.5">
                       {isAnnual ? (
@@ -447,7 +342,7 @@ export default function PricingPage() {
                         </>
                       ) : (
                         <span className="text-stone-500">
-                          Facturation mensuelle sans engagement
+                          1 mois, sans engagement ni renouvellement automatique
                         </span>
                       )}
                     </div>
@@ -771,7 +666,7 @@ export default function PricingPage() {
                 Quels sont les moyens de paiement acceptés selon ma région ?
               </h4>
               <p className="leading-relaxed text-stone-500">
-                Partout dans le monde : carte Visa, Mastercard ou American Express via Stripe (3D Secure), débitée en euros ou en dollars. En Afrique de l&apos;Ouest et du Centre : Mobile Money via SasPay (choisissez « Mobile Money ») ; le montant est converti en FCFA et affiché avant validation. Un paiement SasPay couvre 1 mois ou 1 an, sans renouvellement automatique.
+                Pour l&apos;instant, par Mobile Money via SasPay (MTN, Moov, Celtiis, Orange, Wave… selon votre pays), en FCFA. Un paiement couvre 1 mois ou 1 an, sans renouvellement automatique : vous repayez seulement si vous voulez continuer. Le paiement par carte bancaire arrive bientôt.
               </p>
             </div>
 
@@ -806,109 +701,6 @@ export default function PricingPage() {
             </div>
           </div>
         </div>
-
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* MODAL ÉTAPE 6 : ORDER BUMP AU PAIEMENT (KIT IA PITCH) */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {bumpModalPlan && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-sand-300 relative space-y-5 animate-scale-up">
-              <button
-                type="button"
-                onClick={() => setBumpModalPlan(null)}
-                className="absolute top-4 right-4 p-2 text-stone-500 hover:text-stone-700 rounded-full hover:bg-sand-100 transition-colors"
-              >
-                <XIcon className="w-5 h-5" />
-              </button>
-
-              <div className="space-y-1">
-                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 text-[10px] font-black uppercase">
-                  Offre exclusive de paiement
-                </div>
-                <h3 className="text-lg font-black text-stone-900">
-                  Souscription : PitchMySite {bumpModalPlan.name}
-                </h3>
-                <p className="text-xs text-stone-500">
-                  {isAnnual ? 'Facturation annuelle' : 'Facturation mensuelle'} — Paiement sécurisé via Stripe
-                </p>
-              </div>
-
-              {/* Box Order Bump avec case à cocher */}
-              <div
-                onClick={() => {
-                  const nextState = !bumpAccepted;
-                  setBumpAccepted(nextState);
-                  if (nextState) {
-                    trackEvent('bump_accepted', { plan_id: bumpModalPlan.id });
-                  }
-                }}
-                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                  bumpAccepted
-                    ? 'border-violet-600 bg-violet-50/70 shadow-sm'
-                    : 'border-sand-300 bg-sand-50/50 hover:border-violet-300'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={bumpAccepted}
-                    onChange={(e) => {
-                      setBumpAccepted(e.target.checked);
-                      if (e.target.checked) {
-                        trackEvent('bump_accepted', { plan_id: bumpModalPlan.id });
-                      }
-                    }}
-                    className="mt-1 w-4 h-4 rounded text-violet-600 focus:ring-violet-500 cursor-pointer"
-                  />
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-stone-900">
-                        {ORDER_BUMP.name}
-                      </span>
-                      <span className="text-xs font-black text-violet-700 font-mono">
-                        +{formatPrice(getOrderBumpPrice(currency), currency)}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-stone-600 leading-relaxed">
-                      {ORDER_BUMP.description} (+10 crédits équivalents crédités immédiatement).
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bouton de confirmation */}
-              <div className="pt-2 flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => proceedStripeCheckout(bumpModalPlan, bumpAccepted)}
-                  disabled={isSubmittingCheckout}
-                  className="w-full py-3.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-                >
-                  {isSubmittingCheckout ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin text-white" />
-                      <span>Redirection vers Stripe...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Continuer vers le paiement sécurisé</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBumpModalPlan(null)}
-                  disabled={isSubmittingCheckout}
-                  className="w-full py-2 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors"
-                >
-                  Annuler
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* ══════════════════════════════════════════════════════════════════════ */}
         {/* MODAL ÉTAPE 5 : DOWNSELL EXIT-INTENT (PROPOSER PRO FACE À AGENCE) */}

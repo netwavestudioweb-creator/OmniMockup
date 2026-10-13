@@ -1375,11 +1375,11 @@ export default function HomePage() {
                   },
                   {
                     q: 'Comment puis-je payer ?',
-                    a: 'Par carte bancaire (Visa, Mastercard, American Express), partout dans le monde, en euros ou en dollars. En Afrique de l\'Ouest et du Centre, vous pouvez aussi payer par Mobile Money via SasPay (montant converti en FCFA au paiement).',
+                    a: 'Pour l\'instant par Mobile Money via SasPay (MTN, Moov, Celtiis, Orange, Wave… selon votre pays), en FCFA. Le paiement par carte bancaire arrive bientôt.',
                   },
                   {
                     q: 'Puis-je annuler à tout moment ?',
-                    a: 'Oui, sans engagement. Un abonnement par carte se résilie en un clic depuis votre espace membre et reste actif jusqu\'à la fin de la période payée. Un paiement Mobile Money (SasPay) couvre 1 mois ou 1 an, sans renouvellement automatique.',
+                    a: 'Il n\'y a rien à annuler : un paiement couvre 1 mois ou 1 an, sans renouvellement automatique. Vous repayez seulement si vous voulez continuer.',
                   },
                 ].map((faq, i) => (
                   <div

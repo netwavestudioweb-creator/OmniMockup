@@ -29,6 +29,10 @@ async function resolveStripePriceId(envKey: string, fallbackLookupKey: string): 
 }
 
 export async function POST(req: NextRequest) {
+  // Paiement par carte (Stripe) retiré du site pour l'instant : réactivable avec STRIPE_ENABLED=true
+  if (process.env.STRIPE_ENABLED !== 'true') {
+    return NextResponse.json({ success: false, error: 'Le paiement par carte n’est pas disponible pour le moment.' }, { status: 410 });
+  }
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();

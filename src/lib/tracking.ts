@@ -30,7 +30,9 @@ export type TrackedEventName =
   | 'pdf_generated'
   | 'carousel_generated'
   | 'photo_scene_used'
-  | 'video_exported';
+  | 'video_exported'
+  // Pitch IA avec la clé du client
+  | 'pitch_byok';
 
 export function trackEvent(
   eventName: TrackedEventName,

@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getEffectivePlan } from '@/lib/plan';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/security';
 import { logServerEvent } from '@/lib/admin';
+import { buildPitchPrompt, parseJsonReply } from '@/lib/pitchPrompt';
 
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
@@ -15,17 +16,6 @@ const CLAUDE_MODEL = 'claude-opus-5-5';
 // IA de secours : Google Gemini (les anciens modèles, comme gemini-1.5-flash, ont été retirés par Google)
 const MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
 
-/** Lit l'objet JSON renvoyé par l'IA, même entouré de ```json … ``` ou d'une phrase */
-function parseJsonReply(text: string) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    const start = cleaned.indexOf('{');
-    const end = cleaned.lastIndexOf('}');
-    return JSON.parse(start >= 0 && end > start ? cleaned.slice(start, end + 1) : cleaned);
-  }
-}
 const clip = (v: unknown, max: number, fallback: string) =>
   (typeof v === 'string' && v.trim() ? v.trim() : fallback).slice(0, max);
 
@@ -93,53 +83,14 @@ export async function POST(req: NextRequest) {
     eventId = a.event_id ?? null;
   }
 
-  const stackList = techStack.length > 0 ? techStack.join(', ') : 'Next.js, React, Tailwind CSS, TypeScript';
-    const prompt = `
-Tu es un Directeur Artistique et un Copywriter d'élite spécialisé dans l'aide aux développeurs web et créateurs tech pour VENDRE leurs services et projets à forte valeur ajoutée.
-
-Voici les détails du projet réalisé :
-- Nom du projet : "${projectTitle}"
-- URL / Démo : "${projectUrl || 'Projet interne / confidentiel'}"
-- Description du créateur : "${projectDescription || 'Application web moderne avec expérience utilisateur fluide et design haute précision'}"
-- Technologies utilisées : ${stackList}
-- Cible visée : ${targetAudience}
-
-${
-  sections.length > 0
-    ? `Tu reçois aussi ${sections.length} capture(s) du site, découpée(s) section par section, de haut en bas.
-Lis-les attentivement : nom de l'entreprise, activité, produits ou services, offres, prix affichés, ton, couleurs, public visé.
-Appuie-toi d'abord sur ce que montrent réellement ces captures ; la description du créateur ne fait que compléter.
-`
-    : ''
-}
-Génère les livrables de vente au format JSON strict :
-1. "linkedInPost" : Un post LinkedIn viral ultra captivant (accroche percutante qui attire l'attention des décideurs, narration du problème résolu, démonstration de la valeur et de l'architecture tech sans jargon excessif, appel à l'action clair pour attirer des clients en messages privés).
-2. "clientProposalPitch" : Un texte de proposition commerciale (pour Upwork, Malt, ou email de prospection directe) montrant comment ce projet prouve que le développeur est capable de résoudre le problème business d'un prospect et justifier un devis premium.
-3. "caseStudy" : Une fiche étude de cas concise (Défi initial, Solution technique mise en place, Bénéfice / ROI pour l'utilisateur final).
-4. "socialHooks" : 3 accroches courtes (Twitter / X / Threads) pour susciter l'envie et faire cliquer sur le lien du mockup.
-
-${
-  sections.length > 0
-    ? `0. "sections" : pour chaque capture, dans l'ordre, un objet { "titre": nom court de la section (ex. « En-tête », « Produits phares », « Contact »), "contenu": une phrase sur ce qu'elle montre réellement }.
-`
-    : ''
-}
-Règles absolues :
-- N'invente AUCUN chiffre, pourcentage, statistique, nom de client, témoignage ou résultat mesuré qui ne figure pas dans les informations ci-dessus ou sur les captures. Décris la valeur avec des mots, sans données inventées.
-- Écris en français, avec un ton professionnel et chaleureux.
-
-Réponds EXCLUSIVEMENT avec cet objet JSON :
-{
-  "linkedInPost": "string",
-  "clientProposalPitch": "string",
-  "caseStudy": {
-    "challenge": "string",
-    "solution": "string",
-    "impact": "string"
-  },
-  "socialHooks": ["string", "string", "string"]${sections.length > 0 ? ',\n  "sections": [{ "titre": "string", "contenu": "string" }]' : ''}
-}
-`;
+  const prompt = buildPitchPrompt({
+    projectTitle,
+    projectUrl,
+    projectDescription,
+    targetAudience,
+    techStack,
+    sectionCount: sections.length,
+  });
 
   let lastError = '';
   let overloaded = false;

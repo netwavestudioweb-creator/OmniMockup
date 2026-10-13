@@ -29,6 +29,7 @@ const ALLOWED_EVENTS = new Set([
   'carousel_generated',
   'photo_scene_used',
   'video_exported',
+  'pitch_byok',
 ]);
 
 export async function POST(req: NextRequest) {

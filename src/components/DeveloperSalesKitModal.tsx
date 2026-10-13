@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Sparkles,
   X,
@@ -11,10 +11,23 @@ import {
   Briefcase,
   Share2,
   Award,
+  KeyRound,
+  ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
 import { AVAILABLE_TECHS } from './TechStackPicker';
 import { sliceIntoSections } from '@/lib/pageSections';
+import {
+  ByokError,
+  PROVIDER_INFO,
+  forgetAi,
+  generatePitchWithOwnKey,
+  getSavedAi,
+  looksLikeKey,
+  saveAi,
+  type AiProvider,
+} from '@/lib/byokPitch';
+import { trackEvent } from '@/lib/tracking';
 
 interface DeveloperSalesKitModalProps {
   isOpen: boolean;
@@ -62,7 +75,37 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
   const [activeTab, setActiveTab] = useState<'linkedin' | 'proposal' | 'casestudy' | 'twitter' | 'sections'>('linkedin');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  // IA du client : sa propre clé Gemini ou Claude, gardée dans son navigateur seulement
+  const [ai, setAi] = useState<{ provider: AiProvider; key: string } | null>(null);
+  const [showAiSetup, setShowAiSetup] = useState(false);
+  const [setupProvider, setSetupProvider] = useState<AiProvider>('gemini');
+  const [setupKey, setSetupKey] = useState('');
+  const [setupError, setSetupError] = useState('');
+  useEffect(() => {
+    if (!isOpen) return;
+    const saved = getSavedAi();
+    setAi(saved);
+    if (saved) setSetupProvider(saved.provider);
+  }, [isOpen]);
+
   if (!isOpen) return null;
+
+  const saveOwnKey = () => {
+    if (!looksLikeKey(setupProvider, setupKey)) {
+      setSetupError(
+        setupProvider === 'claude'
+          ? 'Cette clé ne ressemble pas à une clé Claude (elle commence par « sk-ant- »).'
+          : 'Cette clé ne ressemble pas à une clé Gemini. Copiez-la en entier depuis Google AI Studio.'
+      );
+      return;
+    }
+    saveAi(setupProvider, setupKey);
+    setAi({ provider: setupProvider, key: setupKey.trim() });
+    setSetupKey('');
+    setSetupError('');
+    setShowAiSetup(false);
+    setNotice(null);
+  };
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -83,6 +126,30 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
       const sections = screenshot ? await sliceIntoSections(screenshot).catch(() => []) : [];
       setLoadingStep('Rédaction de vos textes de vente…');
 
+      // 1. Clé du client : l'appel part directement de son navigateur vers Google ou Anthropic
+      if (ai) {
+        try {
+          const data = await generatePitchWithOwnKey(
+            ai.provider,
+            ai.key,
+            { projectTitle, projectUrl, projectDescription, targetAudience: targetAudience || 'Clients freelances & Entreprises', techStack: techNames as string[] },
+            sections
+          );
+          setSalesData(data);
+          trackEvent('pitch_byok', { provider: ai.provider, ok: true, sections: sections.length });
+        } catch (err) {
+          const e = err instanceof ByokError ? err : new ByokError('L’IA n’a pas pu répondre. Réessayez dans un instant.', 'other');
+          trackEvent('pitch_byok', { provider: ai.provider, ok: false, kind: e.kind });
+          setNotice({ kind: 'error', text: e.message });
+          if (e.kind === 'invalid_key') {
+            setSetupProvider(ai.provider);
+            setShowAiSetup(true);
+          }
+        }
+        return;
+      }
+
+      // 2. Sans clé du client : IA du site, si elle est configurée
       const res = await fetch('/api/generate-pitch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,7 +166,11 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
       });
 
       const json = await res.json().catch(() => ({}));
-      if (json.success && json.data) {
+      if (res.status === 503) {
+        // Pas d'IA sur le serveur : le client connecte la sienne
+        setShowAiSetup(true);
+        setNotice({ kind: 'error', text: 'Connectez votre IA (Gemini ou Claude) pour générer vos textes.' });
+      } else if (json.success && json.data) {
         setSalesData(json.data);
       } else if (json.reason === 'login_required') {
         setNotice({ kind: 'login', text: 'Connectez-vous pour utiliser le Pitch IA.' });
@@ -201,12 +272,92 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                 />
               </div>
 
+              {/* IA du client */}
+              {ai && !showAiSetup ? (
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex flex-wrap items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5">
+                    <KeyRound className="w-4 h-4 text-emerald-600" />
+                    IA connectée : <strong>{PROVIDER_INFO[ai.provider].label}</strong> (votre clé)
+                  </span>
+                  <button type="button" onClick={() => setShowAiSetup(true)} className="font-bold underline">
+                    Changer
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-violet-50/70 border border-violet-200 space-y-3 text-xs">
+                  <p className="font-bold text-stone-900 flex items-center gap-1.5">
+                    <KeyRound className="w-4 h-4 text-violet-600" /> Connectez votre IA
+                  </p>
+                  <p className="text-stone-600 leading-relaxed">
+                    Le Pitch IA utilise <strong>votre propre clé</strong> Gemini ou Claude. Elle reste dans votre navigateur :
+                    elle n&apos;est jamais envoyée à PitchMySite, et c&apos;est Google ou Anthropic qui vous facture directement.
+                  </p>
+                  <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-white border border-sand-200">
+                    {(['gemini', 'claude'] as AiProvider[]).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => {
+                          setSetupProvider(p);
+                          setSetupError('');
+                        }}
+                        aria-pressed={setupProvider === p}
+                        className={`py-2 rounded-lg font-bold transition-colors ${setupProvider === p ? 'bg-violet-600 text-white' : 'text-stone-600 hover:text-stone-900'}`}
+                      >
+                        {PROVIDER_INFO[p].label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-stone-500">{PROVIDER_INFO[setupProvider].hint}</p>
+                  <a
+                    href={PROVIDER_INFO[setupProvider].getKeyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 font-bold text-violet-700 underline"
+                  >
+                    Obtenir ma clé {setupProvider === 'claude' ? 'Claude' : 'Gemini'} <ExternalLink className="w-3 h-3" />
+                  </a>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={setupKey}
+                    onChange={(e) => setSetupKey(e.target.value)}
+                    placeholder={setupProvider === 'claude' ? 'sk-ant-…' : 'Collez votre clé Gemini'}
+                    aria-label={`Clé ${PROVIDER_INFO[setupProvider].label}`}
+                    className="w-full px-3 py-2 rounded-xl border border-sand-300 bg-white focus:outline-none focus:border-violet-500"
+                  />
+                  {setupError && <p role="alert" className="text-rose-700">{setupError}</p>}
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={saveOwnKey} disabled={!setupKey.trim()} className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold disabled:opacity-50">
+                      Enregistrer sur cet appareil
+                    </button>
+                    {ai && (
+                      <>
+                        <button type="button" onClick={() => setShowAiSetup(false)} className="px-3 py-2 rounded-xl text-stone-600 hover:text-stone-900 font-semibold">
+                          Annuler
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            forgetAi();
+                            setAi(null);
+                          }}
+                          className="px-3 py-2 rounded-xl text-rose-700 hover:text-rose-800 font-semibold"
+                        >
+                          Oublier ma clé
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="p-3.5 rounded-2xl bg-sand-50 border border-sand-200 text-xs text-stone-600 flex items-start gap-2.5">
                 <Sparkles className="w-4 h-4 text-violet-600 shrink-0 mt-0.5" />
                 <span>
                   {screenshot
-                    ? 'L’IA (Google Gemini) lit votre site section par section, puis rédige un post LinkedIn, une proposition commerciale et une étude de cas fidèles à ce qu’elle a vu. Les champs ci-dessus sont facultatifs.'
-                    : 'L’IA (Google Gemini) rédige un post LinkedIn, une proposition commerciale et une étude de cas à partir de vos informations.'}
+                    ? 'L’IA lit votre site section par section, puis rédige un post LinkedIn, une proposition commerciale et une étude de cas fidèles à ce qu’elle a vu. Les champs ci-dessus sont facultatifs.'
+                    : 'L’IA rédige un post LinkedIn, une proposition commerciale et une étude de cas à partir de vos informations.'}
                 </span>
               </div>
 

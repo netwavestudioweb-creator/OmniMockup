@@ -4,6 +4,10 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(req: NextRequest) {
+  // Paiement par carte (Stripe) retiré du site pour l'instant : réactivable avec STRIPE_ENABLED=true
+  if (process.env.STRIPE_ENABLED !== 'true') {
+    return NextResponse.json({ success: false, error: 'Le paiement par carte n’est pas disponible pour le moment.' }, { status: 410 });
+  }
   try {
     const supabase = createClient();
     const {

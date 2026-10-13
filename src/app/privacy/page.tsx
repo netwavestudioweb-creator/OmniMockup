@@ -50,7 +50,7 @@ export default function PrivacyPage() {
             <ul className="list-disc pl-5 space-y-1 text-stone-600">
               <li>Adresse e-mail (pour l&apos;authentification et la gestion du compte via Supabase Auth).</li>
               <li>Historique d&apos;utilisation des quotas mensuels d&apos;analyse.</li>
-              <li>Identifiants de facturation Stripe anonymisés (Customer ID & Subscription ID).</li>
+              <li>Références de paiement SasPay (identifiant de transaction, montant, date), sans numéro de téléphone ni donnée bancaire.</li>
             </ul>
 
             <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">

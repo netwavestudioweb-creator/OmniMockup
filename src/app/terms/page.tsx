@@ -62,7 +62,7 @@ export default function TermsPage() {
               3. Abonnements & Facturation
             </h2>
             <p>
-              Les offres payantes (Pro et Agence) sont facturées sous forme d&apos;abonnement mensuel reconductible automatiquement via le service sécurisé Stripe. L&apos;utilisateur peut résilier son abonnement à tout moment depuis son espace client. La résiliation prendra effet à la fin de la période de facturation en cours.
+              Les offres payantes (Solo, Pro et Agence) et les packs de crédits sont payés par Mobile Money via le prestataire SasPay, en francs CFA. Chaque paiement couvre une durée fixe (1 mois ou 1 an) sans renouvellement automatique : l&apos;accès prend fin à la date indiquée dans l&apos;espace client, sauf nouveau paiement.
             </p>
 
             <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">

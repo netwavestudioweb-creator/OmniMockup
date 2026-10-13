@@ -5719,6 +5719,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         defaultProjectTitle={captureItem.title}
         selectedTechIds={selectedTechIds}
         demo={user?.id === 'test-user-id-999'}
+        screenshot={currentScreenshot}
       />
 
       {/* POPOVER FORMAT DE FRAME */}

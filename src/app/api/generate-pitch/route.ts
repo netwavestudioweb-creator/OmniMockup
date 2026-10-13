@@ -28,6 +28,12 @@ export async function POST(req: NextRequest) {
   const projectDescription = clip(body?.projectDescription, 1200, '');
   const targetAudience = clip(body?.targetAudience, 200, 'Clients freelances & Entreprises');
   const techStack = Array.isArray(body?.techStack) ? body.techStack.slice(0, 15).map((t: unknown) => String(t).slice(0, 40)) : [];
+  // Captures du site découpées en sections (JPG en base64), pour que l'IA lise le vrai contenu
+  const sections: string[] = Array.isArray(body?.sections)
+    ? body.sections
+        .filter((x: unknown): x is string => typeof x === 'string' && x.length > 100 && x.length < 700_000 && /^[A-Za-z0-9+/=]+$/.test(x))
+        .slice(0, 6)
+    : [];
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -81,14 +87,28 @@ Voici les détails du projet réalisé :
 - Technologies utilisées : ${stackList}
 - Cible visée : ${targetAudience}
 
-Génère 3 livrables de vente irrésistibles au format JSON strict :
+${
+  sections.length > 0
+    ? `Tu reçois aussi ${sections.length} capture(s) du site, découpée(s) section par section, de haut en bas.
+Lis-les attentivement : nom de l'entreprise, activité, produits ou services, offres, prix affichés, ton, couleurs, public visé.
+Appuie-toi d'abord sur ce que montrent réellement ces captures ; la description du créateur ne fait que compléter.
+`
+    : ''
+}
+Génère les livrables de vente au format JSON strict :
 1. "linkedInPost" : Un post LinkedIn viral ultra captivant (accroche percutante qui attire l'attention des décideurs, narration du problème résolu, démonstration de la valeur et de l'architecture tech sans jargon excessif, appel à l'action clair pour attirer des clients en messages privés).
 2. "clientProposalPitch" : Un texte de proposition commerciale (pour Upwork, Malt, ou email de prospection directe) montrant comment ce projet prouve que le développeur est capable de résoudre le problème business d'un prospect et justifier un devis premium.
 3. "caseStudy" : Une fiche étude de cas concise (Défi initial, Solution technique mise en place, Bénéfice / ROI pour l'utilisateur final).
 4. "socialHooks" : 3 accroches courtes (Twitter / X / Threads) pour susciter l'envie et faire cliquer sur le lien du mockup.
 
+${
+  sections.length > 0
+    ? `0. "sections" : pour chaque capture, dans l'ordre, un objet { "titre": nom court de la section (ex. « En-tête », « Produits phares », « Contact »), "contenu": une phrase sur ce qu'elle montre réellement }.
+`
+    : ''
+}
 Règles absolues :
-- N'invente AUCUN chiffre, pourcentage, statistique, nom de client, témoignage ou résultat mesuré qui ne figure pas dans les informations ci-dessus. Décris la valeur avec des mots, sans données inventées.
+- N'invente AUCUN chiffre, pourcentage, statistique, nom de client, témoignage ou résultat mesuré qui ne figure pas dans les informations ci-dessus ou sur les captures. Décris la valeur avec des mots, sans données inventées.
 - Écris en français, avec un ton professionnel et chaleureux.
 
 Réponds EXCLUSIVEMENT avec cet objet JSON :
@@ -100,21 +120,32 @@ Réponds EXCLUSIVEMENT avec cet objet JSON :
     "solution": "string",
     "impact": "string"
   },
-  "socialHooks": ["string", "string", "string"]
+  "socialHooks": ["string", "string", "string"]${sections.length > 0 ? ',\n  "sections": [{ "titre": "string", "contenu": "string" }]' : ''}
 }
 `;
+  const imageParts = sections.map((data) => ({ inlineData: { mimeType: 'image/jpeg', data } }));
 
+  // IA utilisée : Google Gemini (modèles « flash », qui lisent aussi les images)
   const genAI = new GoogleGenerativeAI(apiKey);
   let lastError = '';
+  let overloaded = false;
+  // Budget total de 50 s (la fonction en ligne est coupée à 60 s) : chaque essai est limité à 20 s,
+  // sinon un modèle surchargé bloquait jusqu'à 30 s et l'utilisateur n'obtenait jamais de réponse.
+  const deadline = Date.now() + 50_000;
   // Chaque modèle est essayé deux fois : Google renvoie parfois « surchargé » (503) quelques secondes
   for (const name of [...MODELS, ...MODELS]) {
     if (lastError.includes('503')) await new Promise((r) => setTimeout(r, 2500));
+    const remaining = deadline - Date.now();
+    if (remaining < 5_000) break;
     try {
-      const model = genAI.getGenerativeModel({
-        model: name,
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
-      });
-      const result = await model.generateContent(prompt);
+      const model = genAI.getGenerativeModel(
+        {
+          model: name,
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
+        },
+        { timeout: Math.min(20_000, remaining) }
+      );
+      const result = await model.generateContent(imageParts.length > 0 ? [prompt, ...imageParts] : prompt);
       const text = result.response.text();
       let data;
       try {
@@ -125,6 +156,7 @@ Réponds EXCLUSIVEMENT avec cet objet JSON :
       return NextResponse.json({ success: true, data });
     } catch (err) {
       lastError = err instanceof Error ? err.message : String(err);
+      if (lastError.includes('503')) overloaded = true;
       console.warn(`[generate-pitch] Échec avec ${name} :`, lastError.slice(0, 200));
     }
   }
@@ -132,7 +164,12 @@ Réponds EXCLUSIVEMENT avec cet objet JSON :
   // Aucun modèle n'a répondu : l'utilisation (et les crédits) sont rendus
   if (eventId !== null) await createAdminClient().rpc('refund_pitch', { p_event_id: eventId });
   return NextResponse.json(
-    { success: false, error: "L'IA n'a pas pu générer le texte. Réessayez dans un instant (rien n'a été décompté)." },
+    {
+      success: false,
+      error: overloaded
+        ? "Le service d'IA de Google est surchargé en ce moment. Réessayez dans quelques minutes (rien n'a été décompté)."
+        : "L'IA n'a pas pu générer le texte. Réessayez dans un instant (rien n'a été décompté).",
+    },
     { status: 502 }
   );
 }

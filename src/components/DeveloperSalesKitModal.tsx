@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { AVAILABLE_TECHS } from './TechStackPicker';
+import { sliceIntoSections } from '@/lib/pageSections';
 
 interface DeveloperSalesKitModalProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ interface DeveloperSalesKitModalProps {
   selectedTechIds?: string[];
   /** Session de démonstration en développement local */
   demo?: boolean;
+  /** Capture pleine page du site : l'IA la lit section par section */
+  screenshot?: string;
 }
 
 type PitchNotice =
@@ -37,14 +40,15 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
   defaultProjectUrl = '',
   selectedTechIds = [],
   demo = false,
+  screenshot = '',
 }) => {
   const [notice, setNotice] = useState<PitchNotice | null>(null);
   const [projectTitle, setProjectTitle] = useState(defaultProjectTitle);
   const [projectUrl] = useState(defaultProjectUrl);
-  const [projectDescription, setProjectDescription] = useState(
-    'Application SaaS moderne conçue pour simplifier la vie des utilisateurs et booster les conversions.'
-  );
-  const [targetAudience, setTargetAudience] = useState('Clients freelances, Startups & PME');
+  // Vides par défaut : l'IA lit le site lui-même, ces champs servent seulement à préciser
+  const [projectDescription, setProjectDescription] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
+  const [loadingStep, setLoadingStep] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [salesData, setSalesData] = useState<{
@@ -52,9 +56,10 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
     clientProposalPitch?: string;
     caseStudy?: { challenge: string; solution: string; impact: string };
     socialHooks?: string[];
+    sections?: { titre: string; contenu: string }[];
   } | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'linkedin' | 'proposal' | 'casestudy' | 'twitter'>('linkedin');
+  const [activeTab, setActiveTab] = useState<'linkedin' | 'proposal' | 'casestudy' | 'twitter' | 'sections'>('linkedin');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -73,6 +78,11 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
         .map((id) => AVAILABLE_TECHS.find((t) => t.id === id)?.name)
         .filter(Boolean);
 
+      // Le site est découpé en sections (de haut en bas) pour que l'IA lise son vrai contenu
+      setLoadingStep('Lecture du site, section par section…');
+      const sections = screenshot ? await sliceIntoSections(screenshot).catch(() => []) : [];
+      setLoadingStep('Rédaction de vos textes de vente…');
+
       const res = await fetch('/api/generate-pitch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -81,9 +91,10 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
           projectUrl,
           projectDescription,
           techStack: techNames,
-          targetAudience,
+          targetAudience: targetAudience || undefined,
           useCredits,
           demo,
+          sections,
         }),
       });
 
@@ -172,7 +183,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                     value={targetAudience}
                     onChange={(e) => setTargetAudience(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-sand-300 focus:outline-none focus:border-violet-500"
-                    placeholder="Ex: Startups, PME, Agences"
+                    placeholder="Facultatif : ex. boutiques, restaurants, PME"
                   />
                 </div>
               </div>
@@ -186,14 +197,16 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                   value={projectDescription}
                   onChange={(e) => setProjectDescription(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-sand-300 text-xs focus:outline-none focus:border-violet-500"
-                  placeholder="Décrivez le problème que résout votre projet pour les utilisateurs ou l'entreprise..."
+                  placeholder="Facultatif : ce que le site apporte au client, le problème résolu…"
                 />
               </div>
 
               <div className="p-3.5 rounded-2xl bg-sand-50 border border-sand-200 text-xs text-stone-600 flex items-start gap-2.5">
                 <Sparkles className="w-4 h-4 text-violet-600 shrink-0 mt-0.5" />
                 <span>
-                  L&apos;IA Gemini va rédiger un post LinkedIn captivant pour trouver des clients, une proposition commerciale pour remporter des missions freelances (Upwork, Malt), et une étude de cas valorisant votre savoir-faire technique.
+                  {screenshot
+                    ? 'L’IA (Google Gemini) lit votre site section par section, puis rédige un post LinkedIn, une proposition commerciale et une étude de cas fidèles à ce qu’elle a vu. Les champs ci-dessus sont facultatifs.'
+                    : 'L’IA (Google Gemini) rédige un post LinkedIn, une proposition commerciale et une étude de cas à partir de vos informations.'}
                 </span>
               </div>
 
@@ -206,7 +219,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span>Rédaction de vos arguments de vente...</span>
+                    <span>{loadingStep || 'Rédaction de vos textes de vente…'}</span>
                   </>
                 ) : (
                   <>
@@ -250,7 +263,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
           ) : (
             <div className="space-y-4">
               {/* Onglets des livrables */}
-              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-sand-100 border border-sand-200 text-xs">
+              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-sand-100 border border-sand-200 text-xs">
                 <button
                   type="button"
                   onClick={() => setActiveTab('linkedin')}
@@ -289,7 +302,33 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                   <Award className="w-3.5 h-3.5 text-violet-600" />
                   <span>Étude de Cas</span>
                 </button>
+
+                {salesData.sections && salesData.sections.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('sections')}
+                    className={`flex-1 py-2 px-3 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      activeTab === 'sections' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Ce que l&apos;IA a vu</span>
+                  </button>
+                )}
               </div>
+
+              {activeTab === 'sections' && salesData.sections && (
+                <ol className="space-y-2 text-xs">
+                  {salesData.sections.map((sec, i) => (
+                    <li key={i} className="p-3 rounded-xl bg-sand-50 border border-sand-200">
+                      <span className="font-bold text-stone-900">
+                        {i + 1}. {sec.titre}
+                      </span>
+                      <p className="text-stone-600 mt-0.5 leading-relaxed">{sec.contenu}</p>
+                    </li>
+                  ))}
+                </ol>
+              )}
 
               {/* Contenu onglet LinkedIn */}
               {activeTab === 'linkedin' && salesData.linkedInPost && (

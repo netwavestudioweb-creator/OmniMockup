@@ -5,6 +5,7 @@ import { usePrices } from '@/lib/usePrices';
 import Link from 'next/link';
 import { Sparkles, Flame, Check, X, Coins, Zap } from 'lucide-react';
 import { trackEvent } from '@/lib/tracking';
+import { RewardedAdOffer } from './RewardedAdOffer';
 
 export type UpsellMode = 'free_quota_reached' | 'solo_quota_approaching' | 'low_credits' | 'feature_locked' | 'video_quota_reached';
 
@@ -12,12 +13,15 @@ interface PlanUpsellModalProps {
   isOpen: boolean;
   mode: UpsellMode;
   onClose: () => void;
+  /** Pub récompensée regardée : 1 export de plus (formule gratuite) */
+  onAdRewarded?: () => void;
 }
 
 export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
   isOpen,
   mode,
   onClose,
+  onAdRewarded,
 }) => {
   const price = usePrices();
   if (!isOpen) return null;
@@ -25,7 +29,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/75 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-sand-300 relative space-y-6 animate-scale-up">
+      <div className="bg-white rounded-3xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 shadow-2xl border border-sand-300 relative space-y-6 animate-scale-up">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-sand-100 transition-colors"
@@ -127,6 +131,8 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                 </Link>
               </div>
             </div>
+
+            {onAdRewarded && <RewardedAdOffer onRewarded={onAdRewarded} />}
           </>
         )}
 

@@ -16,7 +16,11 @@ export type TrackedEventName =
   | 'checkout_start'
   | 'bump_accepted'
   | 'downsell_shown'
-  | 'downsell_accepted';
+  | 'downsell_accepted'
+  // Pubs récompensées (formule gratuite)
+  | 'rewarded_ad_start'
+  | 'rewarded_ad_granted'
+  | 'rewarded_ad_not_granted';
 
 export function trackEvent(
   eventName: TrackedEventName,

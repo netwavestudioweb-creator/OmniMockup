@@ -5968,6 +5968,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         isOpen={upsellModal.open}
         mode={upsellModal.mode}
         onClose={() => setUpsellModal((prev) => ({ ...prev, open: false }))}
+        onAdRewarded={() => {
+          // Bonus accordé par le serveur : le menu Exporter se rouvre pour relancer l'export
+          setUpsellModal((prev) => ({ ...prev, open: false }));
+          setShowExportMenu(true);
+        }}
       />
     </div>
   );

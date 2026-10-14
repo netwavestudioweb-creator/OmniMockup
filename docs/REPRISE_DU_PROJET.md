@@ -32,7 +32,7 @@ Document de passation, mis à jour le **14 octobre 2026**. Il permet à n'import
 | Directeur artistique IA | Note chaque section du site ; utilise encore la clé Gemini du site (vide pour l'instant) |
 | Formules | Découverte (gratuite), Solo, Pro, Agence + packs de crédits ; limites vérifiées par le serveur |
 | Pubs récompensées | Formule gratuite : 1 pub vue = 1 export de plus, 3 par jour (invisible tant que Google Ad Manager n'est pas configuré) |
-| Administration `/admin` | Tableau de bord réservé au propriétaire : chiffres, comptes, paiements, courbes |
+| Administration `/admin` | Tableau de bord réservé au propriétaire : ventes (revenu net, export CSV), clients payants et relances, tentatives de paiement et paniers abandonnés, fiche client, résumé, comptes, courbes |
 
 Prix validés le 13/10/2026 : Solo 3 300 FCFA par mois ou 33 000 par an ; Pro 5 900 ou 59 000 ; Agence 19 000 ou 190 000. Packs : 10 crédits = 2 600 FCFA, 30 = 6 600, 75 = 9 800. Le détail est dans `src/lib/pricing.ts` et dans `A_FAIRE_DODO.md`.
 
@@ -104,7 +104,7 @@ next.config.mjs        réglages Next.js (dont le navigateur Chrome limité aux 
 | `ads/reward` | Pubs récompensées |
 | `events` | Statistiques d'usage (liste blanche de noms d'événements) |
 | `founders` | Formulaire « agences fondatrices » |
-| `admin/login`, `admin/stats`, `admin/users`, `admin/payments` | Tableau de bord administrateur |
+| `admin/login`, `admin/stats`, `admin/users`, `admin/users/[id]`, `admin/payments`, `admin/sales` | Tableau de bord administrateur (`sales` : ventes, tentatives et clients ; `users/[id]` : fiche client) |
 
 **Fichiers clés de `src/lib`**
 
@@ -214,7 +214,7 @@ Règles :
 | 10/10 | Grosse journée (38 changements) : moteur de capture compatible Vercel, liens de partage, directeur artistique IA, lots 3 et 4 du studio |
 | 11 et 12/10 | Kits de marque, limites d'export et de Pitch IA vérifiées par le serveur, nettoyage de sécurité |
 | 13/10 | Nouveau nom **PitchMySite** et nouvelle accroche ; 13 modèles ; iPhone 18 Pro ; plan de fluidité (phases 1 à 5) ; exports qui ne bloquent plus ; pubs récompensées ; tableau de bord admin et accès séparé ; carte retirée (SasPay seul) ; Pitch IA avec la clé du client ; formules validées ; stockage Vercel corrigé |
-| 14/10 | Carte bancaire préparée (grisée « Bientôt ») ; accès admin créé par Dodo et connexion réussie ; outil `admin-check.mjs` ; plan du tableau de bord version 2 ; ce document |
+| 14/10 | Carte bancaire préparée (grisée « Bientôt ») ; accès admin créé par Dodo et connexion réussie ; outil `admin-check.mjs` ; ce document ; **tableau de bord version 2 en ligne** (Ventes, Clients payants, Tentatives, fiche client) |
 
 Les anciens documents à la racine (`AUDIT_…`, `RAPPORT_…`, `ROADMAP_…`, `TODO_…`, `RECAPITULATIF_…`, `GUIDE_INTEGRATION_MOMO…`, `PROCEDURE_DE_TEST…`) sont **dépassés** : ils parlent encore de FedaPay ou de Stripe comme moyen principal. Seuls comptent ce document, `A_FAIRE_DODO.md` et `ETAT_DU_SITE.md`.
 
@@ -222,7 +222,7 @@ Les anciens documents à la racine (`AUDIT_…`, `RAPPORT_…`, `ROADMAP_…`, `
 
 ## 10. État au 14 octobre 2026
 
-**Marche et testé en ligne** : site public, capture (2 à 12 s), studio, exports images et packs, liens de partage, limites des formules, sécurité des paiements (faux appels refusés), règles des pubs, accès administrateur, carte grisée.
+**Marche et testé en ligne** : site public, capture (2 à 12 s), studio, exports images et packs, liens de partage, limites des formules, sécurité des paiements (faux appels refusés), règles des pubs, accès administrateur, carte grisée. Tableau de bord version 2 : testé avec des ventes fictives (la base n'a encore aucune vente).
 
 **En ligne mais pas encore testé de bout en bout** :
 - un vrai paiement SasPay (jamais fait) ;
@@ -256,7 +256,7 @@ La liste détaillée, avec les cases à cocher, est dans **`A_FAIRE_DODO.md`**. 
 8. Lancement : 10 à 20 agences, un seul canal, premiers vrais avis.
 
 **Côté développement**
-- **Tableau de bord version 2** (plan validé, environ 15 h) : D0 vérifications (1 h), D1 onglet Ventes (4 h 30), D2 clients payants et relances (2 h 30), D3 fiche client (2 h), D4 tentatives de paiement et paniers abandonnés (2 h), D5 revenus par formule et courbes (1 h 30), D6 tests (1 h 30). Plus tard : e-mail à chaque vente (1 h 30, après Resend), pays et réseau du client si SasPay les fournit (environ 1 h).
+- **Tableau de bord version 2** : fait et en ligne le 14/10 (onglets Ventes, Clients payants, Tentatives, fiche client ; code dans `src/app/admin/SalesTabs.tsx` et `ui.tsx`). Reste : e-mail à chaque vente (1 h 30, après Resend) ; pays, réseau et frais réels du client (environ 1 h + une migration : SasPay les donne dans sa fiche « transaction », champs `country`, `network`, `gateway_fee`).
 - Après le domaine : mettre à jour `NEXT_PUBLIC_SITE_URL`, l'adresse support et les e-mails ; brancher la connexion par e-mail et code (branche `auth-email`).
 - Idées validées en attente : directeur artistique IA avec la clé du client, rappel avant la fin d'une formule, parcours express (3 visuels en 1 clic), bouton d'aide WhatsApp, factures PDF, validation des visuels par le client final, projets enregistrés en ligne, image d'aperçu des liens et sitemap, barre du studio plus simple sur téléphone, version anglaise.
 - Plus tard : la carte bancaire (attendre SasPay, ou Lemon Squeezy, KKiaPay…). Le site est déjà prêt (section 6).

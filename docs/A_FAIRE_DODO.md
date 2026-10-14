@@ -8,7 +8,7 @@ Liste mise à jour le 14 octobre 2026. Coche chaque ligne quand c'est fait, puis
 - **Stockage Vercel** : code corrigé (déploiement de 1,6 Go à 176 Mo) et anciens déploiements supprimés. Le compteur reste bloqué au-dessus de 10 Go : c'est un souci connu chez Vercel (voir point 0).
 - **Carte bancaire préparée mais pas activée** : bouton « Carte bancaire » grisé avec « Bientôt » sur la page Tarifs. Activable plus tard par une seule variable (voir point 11).
 - **Accès administrateur créé et testé** : tu es connecté à `/admin` (mot de passe + code). Nouvel outil `node scripts/admin-check.mjs` si une connexion est refusée.
-- **Plan du tableau de bord version 2** (ventes, clients, relances) : voir la section 📊 plus bas.
+- **Tableau de bord version 2 en ligne** : onglets Ventes, Clients payants, Tentatives de paiement, fiche client (voir la section 📊 plus bas).
 - **Document de reprise du projet** : `REPRISE_DU_PROJET.md` (tout ce qu'il faut pour reprendre le projet, même sans Claude).
 
 **Changements du 13/10 (soir) :**
@@ -87,15 +87,17 @@ L'accès est **séparé des comptes clients** : aucun compte client (même le ti
 
 ### Tableau de bord version 2 : suivre toutes les ventes (plan validé le 14/10, travail de Claude)
 
+**✅ En ligne depuis le 14/10** : onglets **Ventes**, **Clients payants**, **Tentatives de paiement** et **fiche client** (clic sur un e-mail). Testé avec des ventes fictives dans le navigateur (aucune écriture dans la base) ; à regarder avec tes premières vraies ventes. À essayer toi-même : le bouton « Export tableur (CSV) » dès la première vente.
+
 Total : **environ 15 h** pour les étapes 0 à 5, **environ 2 h 30** pour « plus tard ». Claude montre le résultat avant la mise en ligne.
 
-- [ ] **D0. Vérifications préalables (1 h)** : ce que SasPay renvoie (pays, réseau, motif d'échec) ; chaque tentative bien marquée payée / abandonnée / échouée dans la base.
-- [ ] **D1. Onglet « Ventes » en premier (4 h 30)** : ventes et revenu d'aujourd'hui, 7 jours, mois, depuis le début, achat moyen ; revenu net après les frais SasPay (3 % modifiable) ; liste de toutes les ventes (client, achat, montant, date, moyen) avec filtres ; export tableur (CSV) ; badge « nouvelles ventes depuis ta dernière visite ».
-- [ ] **D2. Clients payants (2 h 30)** : clients actifs avec formule, date de fin, jours restants, total payé ; « à relancer » (expire dans 7 jours ou expiré sans renouvellement) avec bouton e-mail ; revenu attendu des renouvellements du mois suivant.
-- [ ] **D3. Fiche client (2 h)** : en cliquant sur un compte, tous ses paiements, exports, crédits, inscription, dernière activité, tes actions.
-- [ ] **D4. Toutes les tentatives de paiement (2 h)** : payées, abandonnées, échouées ; taux de réussite ; paniers abandonnés à relancer.
-- [ ] **D5. Détails sur l'argent (1 h 30)** : revenu par formule et par durée (1 mois / 1 an) ; courbes par semaine et par mois.
-- [ ] **D6. Tests et mise en ligne (1 h 30)** : vérification, compilation, affichage 375 / 440 / 768 px, essais en lecture seule sur les vraies données.
+- [x] **D0. Vérifications préalables (1 h)** : ce que SasPay renvoie (pays, réseau, motif d'échec) ; chaque tentative bien marquée payée / abandonnée / échouée dans la base.
+- [x] **D1. Onglet « Ventes » en premier (4 h 30)** : ventes et revenu d'aujourd'hui, 7 jours, mois, depuis le début, achat moyen ; revenu net après les frais SasPay (3 % modifiable) ; liste de toutes les ventes (client, achat, montant, date, moyen) avec filtres ; export tableur (CSV) ; badge « nouvelles ventes depuis ta dernière visite ».
+- [x] **D2. Clients payants (2 h 30)** : clients actifs avec formule, date de fin, jours restants, total payé ; « à relancer » (expire dans 7 jours ou expiré sans renouvellement) avec bouton e-mail ; revenu attendu des renouvellements du mois suivant.
+- [x] **D3. Fiche client (2 h)** : en cliquant sur un compte, tous ses paiements, exports, crédits, inscription, dernière activité, tes actions.
+- [x] **D4. Toutes les tentatives de paiement (2 h)** : payées, abandonnées, échouées ; taux de réussite ; paniers abandonnés à relancer.
+- [x] **D5. Détails sur l'argent (1 h 30)** : revenu par formule et par durée (1 mois / 1 an) ; courbes par semaine et par mois.
+- [x] **D6. Tests et mise en ligne (1 h 30)** : vérification, compilation, affichage 375 / 440 / 768 px, essais en lecture seule sur les vraies données.
 - [ ] **Plus tard** : e-mail à chaque vente (1 h 30, après Resend) ; pays et réseau du client (environ 1 h, si SasPay les fournit).
 
 ## 📺 Pubs récompensées (formule gratuite)
@@ -175,4 +177,6 @@ Un paiement couvre 1 mois ou 1 an, sans renouvellement automatique. Packs de cr�
 - Outil `scripts/admin-check.mjs` pour comprendre un refus de connexion admin, sans rien envoyer (14/10)
 - Carte bancaire préparée, bouton grisé « Bientôt », activable par `NEXT_PUBLIC_CARD_PROVIDER` = `saspay` ou `stripe` ; protection contre un abonnement Stripe en plus d'une formule Mobile Money encore valable (14/10)
 - Anciens déploiements Vercel supprimés (13/10)
+- Tableau de bord version 2 : ventes, revenu net, export CSV, clients à relancer, renouvellements attendus, tentatives et paniers abandonnés, fiche client (14/10)
+- Les tentatives SasPay refusées ou annulées sont maintenant marquées « refusées » au lieu de rester « en attente » (14/10)
 - Tâches des anciens documents déjà réalisées : pages CGU / confidentialité / 404 / erreur, pied de page, formule verrouillée dans la base, Duo et Trio, délai de capture, page entière, mode sombre, liens de partage, packs App Store et Google Play, vidéo et GIF, projets enregistrés, export multi-formats, mise en ligne sur Vercel

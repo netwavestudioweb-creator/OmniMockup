@@ -14,8 +14,13 @@ import {
   ArrowLeft,
   LogOut,
   KeyRound,
+  Wallet,
+  UserCheck,
+  ListChecks,
 } from 'lucide-react';
 import { TEMPLATES_CATALOG } from '@/lib/shotsPresets';
+import { Card, Kpi, PLAN_LABEL, date, fmt, money } from './ui';
+import { AttemptsTab, CustomerSheet, CustomersTab, SalesTab } from './SalesTabs';
 
 /* ───────────── Types des réponses ───────────── */
 type Stats = {
@@ -86,12 +91,6 @@ type PaymentsData = {
 };
 
 /* ───────────── Libellés en français ───────────── */
-const fmt = (n: number | null | undefined) => new Intl.NumberFormat('fr-FR').format(Math.round(Number(n) || 0));
-const money = (n: number, cur: string) =>
-  cur === 'XOF' ? `${fmt(n)} FCFA` : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: cur }).format(Number(n) || 0);
-const date = (s: string) => new Date(s).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
-
-const PLAN_LABEL: Record<string, string> = { free: 'Gratuit', solo: 'Solo', pro: 'Pro', agence: 'Agence' };
 const LAYOUT_LABEL: Record<string, string> = { single: 'Solo (1 appareil)', 'dual-stacked': 'Duo', 'trio-ecosystem': 'Trio', 'before-after': 'Avant / Après' };
 const KIND_LABEL: Record<string, string> = { image: 'Images', pack: 'Packs', video: 'Vidéos et GIF' };
 const QUALITY_LABEL: Record<string, string> = { standard: 'Standard', hd: 'HD', '4k': '4K' };
@@ -114,22 +113,6 @@ const ENGINE_LABEL: Record<string, string> = { playwright: 'Notre moteur (local)
 const TEMPLATE_LABEL = Object.fromEntries(TEMPLATES_CATALOG.map((t) => [t.id, t.title]));
 
 /* ───────────── Petits composants ───────────── */
-const Card: React.FC<{ title: string; children: React.ReactNode; hint?: string; className?: string }> = ({ title, hint, children, className = '' }) => (
-  <section className={`rounded-2xl bg-zinc-900 border border-zinc-800 p-4 sm:p-5 ${className}`}>
-    <h2 className="text-sm font-bold text-zinc-100">{title}</h2>
-    {hint && <p className="text-[11px] text-zinc-400 mt-0.5">{hint}</p>}
-    <div className="mt-3">{children}</div>
-  </section>
-);
-
-const Kpi: React.FC<{ label: string; value: string; sub?: string; accent?: boolean }> = ({ label, value, sub, accent }) => (
-  <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4 sm:p-5 min-w-0">
-    <p className="text-xs text-zinc-400">{label}</p>
-    <p className={`mt-1 text-2xl sm:text-3xl font-black tracking-tight break-words ${accent ? 'text-lime-300' : 'text-white'}`}>{value}</p>
-    {sub && <p className="text-[11px] text-lime-300/90 mt-1">{sub}</p>}
-  </div>
-);
-
 const Bars: React.FC<{ data: Record<string, number>; labels?: Record<string, string>; color?: string; empty?: string }> = ({
   data,
   labels = {},
@@ -180,8 +163,11 @@ const DayChart: React.FC<{ series: Stats['series']; field: 'signups' | 'exports'
 };
 
 /* ───────────── Page ───────────── */
-type Tab = 'dashboard' | 'users' | 'payments' | 'analytics';
+type Tab = 'sales' | 'customers' | 'attempts' | 'dashboard' | 'users' | 'payments' | 'analytics';
 const TABS: { id: Tab; label: string; short: string; Icon: React.ElementType }[] = [
+  { id: 'sales', label: 'Ventes', short: 'Ventes', Icon: Wallet },
+  { id: 'customers', label: 'Clients payants', short: 'Clients', Icon: UserCheck },
+  { id: 'attempts', label: 'Tentatives de paiement', short: 'Tentatives', Icon: ListChecks },
   { id: 'dashboard', label: 'Tableau de bord', short: 'Résumé', Icon: LayoutDashboard },
   { id: 'users', label: 'Utilisateurs', short: 'Comptes', Icon: Users },
   { id: 'payments', label: 'Paiements', short: 'Paiements', Icon: CreditCard },
@@ -189,7 +175,8 @@ const TABS: { id: Tab; label: string; short: string; Icon: React.ElementType }[]
 ];
 
 export default function AdminPage() {
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const [tab, setTab] = useState<Tab>('sales');
+  const [sheetUser, setSheetUser] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [status, setStatus] = useState<'loading' | 'ok' | 'login' | 'setup' | 'error'>('loading');
 
@@ -251,14 +238,14 @@ export default function AdminPage() {
             </button>
           </div>
         </div>
-        <nav className="grid grid-cols-4 lg:flex lg:flex-col gap-1 px-2 pb-2 lg:px-3" aria-label="Sections">
+        <nav className="flex overflow-x-auto lg:overflow-visible lg:flex-col gap-1 px-2 pb-2 lg:px-3" aria-label="Sections">
           {TABS.map(({ id, label, short, Icon }) => (
             <button
               key={id}
               type="button"
               onClick={() => setTab(id)}
               aria-current={tab === id ? 'page' : undefined}
-              className={`flex flex-col lg:flex-row items-center gap-1 lg:gap-2 px-1 lg:px-3 py-2 lg:py-2.5 rounded-xl text-[11px] lg:text-sm font-semibold transition-colors ${
+              className={`shrink-0 min-w-[4.5rem] lg:min-w-0 flex flex-col lg:flex-row items-center gap-1 lg:gap-2 px-2 lg:px-3 py-2 lg:py-2.5 rounded-xl text-[11px] lg:text-sm font-semibold transition-colors ${
                 tab === id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`}
             >
@@ -280,16 +267,20 @@ export default function AdminPage() {
           )}
         </header>
 
-        {status === 'error' && <p className="text-sm text-rose-300">Les statistiques n’ont pas pu être chargées. Réessayez avec « Actualiser ».</p>}
-        {status === 'loading' && !stats && (
+        {status === 'error' && (tab === 'dashboard' || tab === 'analytics') && <p className="text-sm text-rose-300">Les statistiques n’ont pas pu être chargées. Réessayez avec « Actualiser ».</p>}
+        {status === 'loading' && !stats && (tab === 'dashboard' || tab === 'analytics') && (
           <p className="text-sm text-zinc-400 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Chargement…</p>
         )}
 
+        {tab === 'sales' && <SalesTab onOpenCustomer={setSheetUser} />}
+        {tab === 'customers' && <CustomersTab onOpenCustomer={setSheetUser} />}
+        {tab === 'attempts' && <AttemptsTab onOpenCustomer={setSheetUser} />}
         {tab === 'dashboard' && stats && <Dashboard s={stats} />}
         {tab === 'analytics' && stats && <Analytics s={stats} />}
-        {tab === 'users' && <UsersTab />}
+        {tab === 'users' && <UsersTab onOpenCustomer={setSheetUser} />}
         {tab === 'payments' && <PaymentsTab />}
       </main>
+      {sheetUser && <CustomerSheet userId={sheetUser} onClose={() => setSheetUser(null)} />}
     </div>
   );
 }
@@ -529,7 +520,7 @@ function Analytics({ s }: { s: Stats }) {
 }
 
 /* ───────────── Utilisateurs ───────────── */
-function UsersTab() {
+function UsersTab({ onOpenCustomer }: { onOpenCustomer: (id: string) => void }) {
   const [q, setQ] = useState('');
   const [page, setPage] = useState(0);
   const [data, setData] = useState<{ total: number; pageSize: number; users: AdminUser[] } | null>(null);
@@ -585,7 +576,7 @@ function UsersTab() {
 
       <ul className="space-y-3">
         {data?.users.map((u) => (
-          <UserRow key={u.id} user={u} onAct={act} />
+          <UserRow key={u.id} user={u} onAct={act} onOpen={() => onOpenCustomer(u.id)} />
         ))}
       </ul>
 
@@ -600,7 +591,15 @@ function UsersTab() {
   );
 }
 
-function UserRow({ user, onAct }: { user: AdminUser; onAct: (u: AdminUser, p: Record<string, unknown>, label: string) => void }) {
+function UserRow({
+  user,
+  onAct,
+  onOpen,
+}: {
+  user: AdminUser;
+  onAct: (u: AdminUser, p: Record<string, unknown>, label: string) => void;
+  onOpen: () => void;
+}) {
   const [plan, setPlan] = useState(user.plan);
   const [days, setDays] = useState('30');
   const [credits, setCredits] = useState('10');
@@ -610,7 +609,9 @@ function UserRow({ user, onAct }: { user: AdminUser; onAct: (u: AdminUser, p: Re
     <li className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4 space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="font-bold text-sm break-all">{user.email || '(sans e-mail)'}</p>
+          <button type="button" onClick={onOpen} className="font-bold text-sm break-all text-left hover:text-violet-300 underline-offset-2 hover:underline">
+            {user.email || '(sans e-mail)'}
+          </button>
           <p className="text-[11px] text-zinc-400">Inscrit le {date(user.createdAt)} · {fmt(user.exports30d)} export(s) sur 30 jours</p>
         </div>
         <div className="flex flex-wrap gap-1.5 text-[11px]">

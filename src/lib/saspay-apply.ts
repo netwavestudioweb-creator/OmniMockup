@@ -54,6 +54,16 @@ export type SaspayApplyResult =
  * notre table saspay_checkouts (écrite par le serveur), jamais de l'URL.
  */
 export async function applySaspayCheckout(checkoutRef: string): Promise<SaspayApplyResult> {
+  const result = await applySaspayCheckoutOnce(checkoutRef);
+  // Paiement refusé, annulé ou expiré chez SasPay : la tentative est marquée « échouée »
+  // (tableau de bord : tentatives et paniers abandonnés). Une erreur de notre côté la laisse « en attente ».
+  if (result.status === 'failed' && /^(session_|payment_|amount_mismatch)/.test(result.reason)) {
+    await createAdminClient().from('saspay_checkouts').update({ status: 'failed' }).eq('id', checkoutRef).eq('status', 'pending');
+  }
+  return result;
+}
+
+async function applySaspayCheckoutOnce(checkoutRef: string): Promise<SaspayApplyResult> {
   const admin = createAdminClient();
 
   const { data: row, error: rowError } = await admin

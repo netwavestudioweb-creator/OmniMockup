@@ -24,6 +24,7 @@ import {
   CreditPack,
 } from '@/lib/pricing';
 import { trackEvent } from '@/lib/tracking';
+import { CARD_PROVIDER, cardPaymentsEnabled } from '@/lib/paymentConfig';
 import {
   Check,
   X as XIcon,
@@ -46,9 +47,15 @@ export default function PricingPage() {
   const { user, profile } = useUser();
   const { currency, mobileMoneyRegion } = useCurrency();
 
-  // Paiement uniquement par Mobile Money (SasPay, en FCFA). La carte bancaire est retirée pour l'instant
-  // (Stripe n'ouvre pas de compte au Bénin, SasPay n'a pas encore la carte).
-  const paymentMethod = 'saspay' as const;
+  // Mobile Money (SasPay, en FCFA) toujours disponible. La carte bancaire se branche avec
+  // NEXT_PUBLIC_CARD_PROVIDER (saspay ou stripe) ; sans ce réglage, son bouton reste grisé (« Bientôt »).
+  const [method, setMethod] = useState<'mobile' | 'card'>('mobile');
+  useEffect(() => {
+    // Hors Afrique de l'Ouest et du Centre, la carte est proposée en premier quand elle est active
+    if (cardPaymentsEnabled && !mobileMoneyRegion) setMethod('card');
+  }, [mobileMoneyRegion]);
+  const useStripe = method === 'card' && CARD_PROVIDER === 'stripe';
+  const paymentMethod: 'stripe' | 'saspay' = useStripe ? 'stripe' : 'saspay';
   const [isAnnual, setIsAnnual] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -107,7 +114,37 @@ export default function PricingPage() {
       return;
     }
 
+    if (useStripe) {
+      startStripeCheckout({ plan: plan.id, billing: isAnnual ? 'annual' : 'monthly' }, plan.id);
+      return;
+    }
     startSaspayCheckout(plan.id, isAnnual ? 'annual' : 'monthly');
+  };
+
+  // Carte par Stripe (euros ou dollars) : redirection vers la page de paiement Stripe
+  const startStripeCheckout = async (
+    payload: { plan?: string; billing?: 'monthly' | 'annual'; pack?: string },
+    itemId: string
+  ) => {
+    setCheckoutError(null);
+    setLoadingPlan(itemId);
+    try {
+      trackEvent('checkout_start', { item_id: itemId, provider: 'stripe', billing: payload.billing });
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, currency: currency === 'USD' ? 'USD' : 'EUR' }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.url) {
+        throw new Error(data.error || 'Impossible de lancer le paiement par carte.');
+      }
+      window.location.href = data.url;
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setCheckoutError(e?.message || 'Erreur lors de la redirection vers la page de paiement.');
+      setLoadingPlan(null);
+    }
   };
 
   // Paiement SasPay (Mobile Money ou carte, en FCFA) : redirection vers la page hébergée
@@ -116,7 +153,7 @@ export default function PricingPage() {
     setLoadingPlan(itemId);
 
     try {
-      trackEvent('checkout_start', { item_id: itemId, provider: 'saspay', billing: billingCycle });
+      trackEvent('checkout_start', { item_id: itemId, provider: 'saspay', method, billing: billingCycle });
 
       const res = await fetch('/api/payments/saspay/create', {
         method: 'POST',
@@ -145,6 +182,10 @@ export default function PricingPage() {
       return;
     }
 
+    if (useStripe) {
+      startStripeCheckout({ pack: pack.id }, pack.id);
+      return;
+    }
     startSaspayCheckout(pack.id);
   };
 
@@ -184,6 +225,15 @@ export default function PricingPage() {
               setPaymentResult(null);
               document.getElementById('formules')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }}
+            onSwitchMethod={
+              cardPaymentsEnabled
+                ? () => {
+                    setMethod((m) => (m === 'card' ? 'mobile' : 'card'));
+                    setPaymentResult(null);
+                    document.getElementById('formules')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                : undefined
+            }
             onClose={() => setPaymentResult(null)}
           />
         )}
@@ -197,18 +247,53 @@ export default function PricingPage() {
 
         {/* SÉLECTEUR DE MOYEN DE PAIEMENT, DEVISE & TOGGLE ANNUEL/MENSUEL */}
         <div className="max-w-5xl mx-auto mb-10 flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-3xl bg-white border border-sand-200 shadow-sm">
-          {/* Moyen de paiement : Mobile Money uniquement */}
-          <div className="flex items-start gap-3 w-full md:w-auto md:max-w-md">
-            <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 shrink-0">
-              <Smartphone className="w-5 h-5 text-amber-600" />
+          {/* Moyen de paiement : Mobile Money, carte bancaire (grisée tant qu'elle n'est pas activée) */}
+          <div className="flex flex-col items-center md:items-start gap-1.5 w-full md:w-auto md:max-w-md">
+            <div className="flex items-center gap-1 p-1 bg-sand-100 rounded-2xl border border-sand-200 w-full md:w-auto" role="radiogroup" aria-label="Moyen de paiement">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={method === 'mobile'}
+                onClick={() => setMethod('mobile')}
+                className={`flex-1 md:flex-initial flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3.5 rounded-xl text-xs font-bold transition-all ${
+                  method === 'mobile' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                <Smartphone className="w-4 h-4 text-amber-600" />
+                <span className="whitespace-nowrap">Mobile Money</span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={method === 'card'}
+                aria-disabled={!cardPaymentsEnabled}
+                disabled={!cardPaymentsEnabled}
+                onClick={() => setMethod('card')}
+                title={cardPaymentsEnabled ? undefined : 'Paiement par carte bientôt disponible'}
+                className={`flex-1 md:flex-initial flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3.5 rounded-xl text-xs font-bold transition-all ${
+                  !cardPaymentsEnabled
+                    ? 'text-stone-400 cursor-not-allowed'
+                    : method === 'card'
+                      ? 'bg-white text-stone-900 shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                <CreditCard className={`w-4 h-4 ${cardPaymentsEnabled ? 'text-violet-600' : 'text-stone-400'}`} />
+                <span className="whitespace-nowrap">Carte bancaire</span>
+                {!cardPaymentsEnabled && (
+                  <span className="px-1.5 py-0.5 rounded-md bg-stone-200 text-stone-500 text-[9px] font-black uppercase tracking-wide">
+                    Bientôt
+                  </span>
+                )}
+              </button>
             </div>
-            <div>
-              <p className="text-xs font-bold text-stone-900">Paiement par Mobile Money, en FCFA</p>
-              <p className="text-[11px] text-stone-500 leading-relaxed">
-                Via SasPay : MTN, Moov, Celtiis, Orange, Wave… selon votre pays. Paiement unique pour 1 mois ou 1 an, sans
-                renouvellement automatique. Paiement par carte bientôt disponible.
-              </p>
-            </div>
+            <p className="text-[11px] text-stone-500 leading-relaxed text-center md:text-left">
+              {method === 'mobile'
+                ? 'Via SasPay, en FCFA : MTN, Moov, Celtiis, Orange, Wave… selon votre pays. Paiement unique pour 1 mois ou 1 an, sans renouvellement automatique.'
+                : CARD_PROVIDER === 'stripe'
+                  ? `Visa, Mastercard ou American Express via Stripe, débitée en ${currency === 'USD' ? 'dollars' : 'euros'}. Abonnement résiliable à tout moment depuis votre compte.`
+                  : 'Visa ou Mastercard via SasPay : choisissez « Carte » sur la page de paiement. Paiement unique pour 1 mois ou 1 an, sans renouvellement automatique.'}
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 w-full md:w-auto">
@@ -323,11 +408,14 @@ export default function PricingPage() {
                       </span>
                     </div>
 
-                    {/* Montant réellement payé par Mobile Money */}
-                    <p className="mt-1 text-[11px] font-bold text-amber-700">
-                      Payé en Mobile Money : {new Intl.NumberFormat('fr-FR').format(isAnnual ? plan.annualFcfa : plan.monthlyFcfa)} FCFA
-                      {isAnnual ? ' pour 1 an' : ' pour 1 mois'}
-                    </p>
+                    {/* Montant réellement payé via SasPay (Mobile Money ou carte), en FCFA */}
+                    {!useStripe && (
+                      <p className="mt-1 text-[11px] font-bold text-amber-700">
+                        {method === 'card' ? 'Payé par carte via SasPay' : 'Payé en Mobile Money'} :{' '}
+                        {new Intl.NumberFormat('fr-FR').format(isAnnual ? plan.annualFcfa : plan.monthlyFcfa)} FCFA
+                        {isAnnual ? ' pour 1 an' : ' pour 1 mois'}
+                      </p>
+                    )}
 
                     {/* Économie annuelle ou facturation */}
                     <div className="mt-2 text-[11px] font-semibold text-stone-600 flex flex-col gap-0.5">
@@ -342,7 +430,7 @@ export default function PricingPage() {
                         </>
                       ) : (
                         <span className="text-stone-500">
-                          1 mois, sans engagement ni renouvellement automatique
+                          {useStripe ? 'Facturation mensuelle, résiliable à tout moment' : '1 mois, sans engagement ni renouvellement automatique'}
                         </span>
                       )}
                     </div>
@@ -666,7 +754,11 @@ export default function PricingPage() {
                 Quels sont les moyens de paiement acceptés selon ma région ?
               </h4>
               <p className="leading-relaxed text-stone-500">
-                Pour l&apos;instant, par Mobile Money via SasPay (MTN, Moov, Celtiis, Orange, Wave… selon votre pays), en FCFA. Un paiement couvre 1 mois ou 1 an, sans renouvellement automatique : vous repayez seulement si vous voulez continuer. Le paiement par carte bancaire arrive bientôt.
+                Pour l&apos;instant, par Mobile Money via SasPay (MTN, Moov, Celtiis, Orange, Wave… selon votre pays), en FCFA. Un paiement couvre 1 mois ou 1 an, sans renouvellement automatique : vous repayez seulement si vous voulez continuer. {cardPaymentsEnabled
+                  ? CARD_PROVIDER === 'stripe'
+                    ? ' Vous pouvez aussi payer par carte Visa, Mastercard ou American Express via Stripe, en euros ou en dollars : c’est alors un abonnement, résiliable à tout moment depuis votre compte.'
+                    : ' Vous pouvez aussi payer par carte Visa ou Mastercard sur la même page SasPay.'
+                  : ' Le paiement par carte bancaire arrive bientôt.'}
               </p>
             </div>
 

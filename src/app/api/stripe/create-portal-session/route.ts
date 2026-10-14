@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { stripeEnabled } from '@/lib/paymentConfig';
 
 export async function POST(req: NextRequest) {
-  // Paiement par carte (Stripe) retiré du site pour l'instant : réactivable avec STRIPE_ENABLED=true
-  if (process.env.STRIPE_ENABLED !== 'true') {
+  // Carte par Stripe : active seulement si NEXT_PUBLIC_CARD_PROVIDER=stripe (voir src/lib/paymentConfig.ts)
+  if (!stripeEnabled()) {
     return NextResponse.json({ success: false, error: 'Le paiement par carte n’est pas disponible pour le moment.' }, { status: 410 });
   }
   try {

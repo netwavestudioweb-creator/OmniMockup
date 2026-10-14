@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { stripeEnabled } from '@/lib/paymentConfig';
 import { PLANS, CREDIT_PACKS, ORDER_BUMP, STRIPE_LOOKUP_KEYS, Currency } from '@/lib/pricing';
 
 /**
@@ -29,8 +30,8 @@ async function resolveStripePriceId(envKey: string, fallbackLookupKey: string): 
 }
 
 export async function POST(req: NextRequest) {
-  // Paiement par carte (Stripe) retiré du site pour l'instant : réactivable avec STRIPE_ENABLED=true
-  if (process.env.STRIPE_ENABLED !== 'true') {
+  // Carte par Stripe : active seulement si NEXT_PUBLIC_CARD_PROVIDER=stripe (voir src/lib/paymentConfig.ts)
+  if (!stripeEnabled()) {
     return NextResponse.json({ success: false, error: 'Le paiement par carte n’est pas disponible pour le moment.' }, { status: 410 });
   }
   try {
@@ -55,8 +56,30 @@ export async function POST(req: NextRequest) {
     const admin = createAdminClient();
 
     // ── Récupération ou création du customer Stripe ──────────────────────────
-    const { data: profile } = await admin.from('profiles').select('stripe_customer_id').eq('id', user.id).maybeSingle();
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('stripe_customer_id, plan, plan_expires_at')
+      .eq('id', user.id)
+      .maybeSingle();
     let customerId = profile?.stripe_customer_id as string | undefined;
+
+    // Formule déjà payée en Mobile Money et encore valable : pas d'abonnement par carte en plus
+    // (les packs de crédits restent possibles).
+    if (
+      planId &&
+      profile?.plan &&
+      profile.plan !== 'free' &&
+      profile.plan_expires_at &&
+      new Date(profile.plan_expires_at as string).getTime() > Date.now()
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Votre formule payée en Mobile Money est encore active. Vous pourrez passer à la carte à son expiration.',
+        },
+        { status: 409 }
+      );
+    }
 
     if (!customerId) {
       const customer = await stripe.customers.create({ email: user.email, metadata: { supabase_user_id: user.id } });

@@ -1,4 +1,5 @@
 import type { SectionCoordinates } from '@/types/analyzer';
+import { INTERNAL_ACCESS_ERROR, createBrowserRequestGuard, isPrivateIp } from '@/lib/security';
 
 export interface ExtractedSectionCandidate {
   id: string;
@@ -133,11 +134,27 @@ export async function captureWebPage(
         hasTouch: mobile,
         colorScheme,
       });
+      // Chaque requête de la page (redirections comprises) est vérifiée : pas d'accès au réseau interne
+      const isAllowed = createBrowserRequestGuard();
+      await context.route('**/*', async (route) =>
+        (await isAllowed(route.request().url())) ? route.continue() : route.abort('blockedbyclient')
+      );
       const page = await context.newPage();
       page.setDefaultTimeout(30000);
+      // Second contrôle : l'adresse IP réelle de chaque serveur qui répond (redirections comprises)
+      let reachedInternal = false;
+      page.on('response', (response) => {
+        response
+          .serverAddr()
+          .then((addr) => {
+            if (addr && isPrivateIp(addr.ipAddress)) reachedInternal = true;
+          })
+          .catch(() => {});
+      });
 
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
       await page.waitForTimeout(500 + delayMs);
+      if (reachedInternal) throw new InternalAccessError();
 
       if (hideBanners) {
         await page.addStyleTag({ content: cookieBannerCSS }).catch(() => {});
@@ -161,6 +178,8 @@ export async function captureWebPage(
 
       const { candidates, pageSize } = await extractDomSectionsPlaywright(page);
 
+      // Rien d'interne ne doit avoir été chargé pendant toute la capture
+      if (reachedInternal) throw new InternalAccessError();
       await browser.close();
       return { screenshotBase64, pageSize, candidates, pageTitle, domainName, faviconUrl, source: 'playwright' };
     } catch (err) {
@@ -168,6 +187,7 @@ export async function captureWebPage(
       throw err;
     }
   } catch (tier1Err) {
+    if (tier1Err instanceof InternalAccessError) throw tier1Err;
     console.warn(
       '[Capture Engine] Tier 1 (Playwright) indisponible, bascule sur Tier 2 (Puppeteer) :',
       (tier1Err as Error)?.message || tier1Err
@@ -208,10 +228,27 @@ export async function captureWebPage(
       });
       await page.setUserAgent(mobile ? MOBILE_UA : DESKTOP_UA);
       await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: colorScheme }]);
+      // Chaque requête de la page (redirections comprises) est vérifiée : pas d'accès au réseau interne
+      const isAllowed = createBrowserRequestGuard();
+      await page.setRequestInterception(true);
+      page.on('request', (request) => {
+        if (request.isInterceptResolutionHandled()) return;
+        isAllowed(request.url())
+          .then((ok) => (ok ? request.continue() : request.abort('blockedbyclient')))
+          .catch(() => {
+            // page déjà fermée : rien à faire
+          });
+      });
+      // Second contrôle : l'adresse IP réelle de chaque serveur qui répond (redirections comprises)
+      let reachedInternal = false;
+      page.on('response', (response) => {
+        if (isPrivateIp(response.remoteAddress()?.ip)) reachedInternal = true;
+      });
       const tLaunch = Date.now();
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
       const tGoto = Date.now();
       await new Promise((r) => setTimeout(r, 500 + delayMs));
+      if (reachedInternal) throw new InternalAccessError();
 
       if (hideBanners) {
         await page.addStyleTag({ content: cookieBannerCSS }).catch(() => {});
@@ -240,6 +277,8 @@ export async function captureWebPage(
         `[Capture Engine] Tier 2 : lancement ${tLaunch - t0} ms, chargement ${tGoto - tLaunch} ms, capture ${tShot - tGoto} ms, hauteur ${pageSize.height}px, ${Math.round(screenshotBuffer.length / 1024)} Ko`
       );
 
+      // Rien d'interne ne doit avoir été chargé pendant toute la capture
+      if (reachedInternal) throw new InternalAccessError();
       await closeQuickly(browser);
       return { screenshotBase64, pageSize, candidates, pageTitle, domainName, faviconUrl, source: 'puppeteer' };
     } catch (err) {
@@ -247,6 +286,7 @@ export async function captureWebPage(
       throw err;
     }
   } catch (tier2Err) {
+    if (tier2Err instanceof InternalAccessError) throw tier2Err;
     console.warn(
       '[Capture Engine] Tier 2 (Puppeteer) indisponible, bascule sur Tier 3 (Cloud Fallback API) :',
       (tier2Err as Error)?.message || tier2Err
@@ -263,6 +303,14 @@ export async function captureWebPage(
   }
   // Sur Vercel la fonction a 60 s au total : le secours ne doit pas dépasser 25 s
   return await captureWebPageCloudFallback(targetUrl, options, process.env.VERCEL ? 25000 : 45000);
+}
+
+/** La page a tenté d'atteindre le réseau interne : capture refusée, aucun autre moteur n'est essayé */
+class InternalAccessError extends Error {
+  constructor() {
+    super(INTERNAL_ACCESS_ERROR);
+    this.name = 'InternalAccessError';
+  }
 }
 
 /** Adresse dont le nom de domaine n'existe pas : inutile d'essayer un autre moteur */

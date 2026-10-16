@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getEffectivePlan } from '@/lib/plan';
-import { checkRateLimit, createRateLimitResponse } from '@/lib/security';
+import { createRateLimitResponse, checkRateLimitShared } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +50,7 @@ async function countActive(identity: Identity): Promise<number> {
 
 /** Créer un lien : { image: data URL JPEG/PNG, title, width, height } */
 export async function POST(req: NextRequest) {
-  const rl = checkRateLimit(req, { maxRequests: 20, windowMs: 60 * 1000 });
+  const rl = await checkRateLimitShared(req, 'share', { maxRequests: 20, windowMs: 60 * 1000 });
   if (!rl.allowed) return createRateLimitResponse(rl.retryAfterSeconds);
 
   const body = await req.json().catch(() => null);

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getEffectivePlan } from '@/lib/plan';
-import { checkRateLimit, createRateLimitResponse, getClientIp } from '@/lib/security';
+import { createRateLimitResponse, getClientIp, checkRateLimitShared } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * POST { action: 'grant', rewardId }     → { granted, reason, used, max }
  */
 export async function POST(req: NextRequest) {
-  const limit = checkRateLimit(req, { maxRequests: 20, windowMs: 60 * 1000 });
+  const limit = await checkRateLimitShared(req, 'ads', { maxRequests: 20, windowMs: 60 * 1000 });
   if (!limit.allowed) return createRateLimitResponse(limit.retryAfterSeconds);
 
   const body = await req.json().catch(() => ({}));

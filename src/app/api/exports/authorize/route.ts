@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getEffectivePlan } from '@/lib/plan';
-import { checkRateLimit, createRateLimitResponse, getClientIp } from '@/lib/security';
+import { createRateLimitResponse, getClientIp, checkRateLimitShared } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +21,7 @@ const DEV_PLANS = ['free', 'solo', 'pro', 'agence'];
  * Réponse : { allowed, quality, watermark, reason, used, limit, cost, balance, credits_used }
  */
 export async function POST(req: NextRequest) {
-  const limit = checkRateLimit(req, { maxRequests: 60, windowMs: 60 * 1000 });
+  const limit = await checkRateLimitShared(req, 'exports', { maxRequests: 60, windowMs: 60 * 1000 });
   if (!limit.allowed) return createRateLimitResponse(limit.retryAfterSeconds);
 
   const body = await req.json().catch(() => ({}));

@@ -506,7 +506,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   } | null>(null);
 
   const authorizeExport = async (kind: 'image' | 'pack' | 'video', quality: ExportQuality): Promise<ExportAuth | null> => {
-    const call = async (useCredits: boolean): Promise<ExportAuth | null> => {
+    const call = async (useCredits: boolean): Promise<ExportAuth | 'busy' | null> => {
       try {
         const res = await fetch('/api/exports/authorize', {
           method: 'POST',
@@ -519,7 +519,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             demoPlan: user?.id === 'test-user-id-999' ? userPlan : undefined,
           }),
         });
-        if (res.status === 429) return null;
+        if (res.status === 429) {
+          showExportNotice('error', 'Trop de demandes d’export d’un coup. Patientez une minute, puis réessayez.');
+          return 'busy';
+        }
+        if (!res.ok && res.status !== 403) return null;
         return (await res.json()) as ExportAuth;
       } catch {
         return null;
@@ -527,8 +531,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     };
 
     const first = await call(false);
-    // Serveur injoignable : l'export n'est pas bloqué, filigrane selon le forfait connu
-    if (!first) return { allowed: true, quality, watermark: planWatermark };
+    if (first === 'busy') return null;
+    if (!first) {
+      // Serveur injoignable : une formule payante n'est pas bloquée (filigrane selon la formule) ;
+      // la formule gratuite attend la réponse du serveur (sinon son quota se contournerait facilement)
+      if (userPlan !== 'free') return { allowed: true, quality, watermark: planWatermark };
+      showExportNotice('error', 'Connexion au serveur impossible pour le moment. Vérifiez votre connexion internet, puis réessayez.');
+      return null;
+    }
     if (first.allowed) return first;
 
     // Hors forfait mais payable en crédits : on demande l'accord
@@ -539,7 +549,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       setCreditOffer(null);
       if (!accepted) return null;
       const paid = await call(true);
-      if (paid?.allowed) {
+      if (paid && paid !== 'busy' && paid.allowed) {
         refreshProfile();
         if ((paid.balance ?? 0) <= 2) setUpsellModal({ open: true, mode: 'low_credits' });
         return paid;

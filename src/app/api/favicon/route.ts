@@ -15,7 +15,7 @@ const EMPTY_PNG = Buffer.from(
  * sans en-tête CORS : sans ce relais, l'export échouait sur tous les sites capturés.
  */
 export async function GET(req: NextRequest) {
-  const limit = checkRateLimit(req, { maxRequests: 120, windowMs: 60 * 1000 });
+  const limit = checkRateLimit(req, { maxRequests: 120, windowMs: 60 * 1000, key: 'favicon' });
   if (!limit.allowed) return createRateLimitResponse(limit.retryAfterSeconds);
 
   const domain = (req.nextUrl.searchParams.get('domain') || '').trim().toLowerCase();

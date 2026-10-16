@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { checkRateLimit, createRateLimitResponse } from '@/lib/security';
+import { createRateLimitResponse, checkRateLimitShared } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ function clean(value: unknown, max: number): string {
  * Candidature au programme "10 agences fondatrices".
  */
 export async function POST(req: NextRequest) {
-  const limit = checkRateLimit(req, { maxRequests: 5, windowMs: 10 * 60 * 1000 });
+  const limit = await checkRateLimitShared(req, 'founders', { maxRequests: 5, windowMs: 10 * 60 * 1000 });
   if (!limit.allowed) return createRateLimitResponse(limit.retryAfterSeconds);
 
   let body: Record<string, unknown> = {};

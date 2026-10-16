@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
-import { checkRateLimit, createRateLimitResponse } from '@/lib/security';
+import { createRateLimitResponse, checkRateLimitShared } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +33,7 @@ const ALLOWED_EVENTS = new Set([
 ]);
 
 export async function POST(req: NextRequest) {
-  const limit = checkRateLimit(req, { maxRequests: 60, windowMs: 60 * 1000 });
+  const limit = await checkRateLimitShared(req, 'events', { maxRequests: 60, windowMs: 60 * 1000 });
   if (!limit.allowed) return createRateLimitResponse(limit.retryAfterSeconds);
 
   try {

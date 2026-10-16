@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getEffectivePlan } from '@/lib/plan';
-import { checkRateLimit, createRateLimitResponse } from '@/lib/security';
+import { createRateLimitResponse, checkRateLimitShared } from '@/lib/security';
 import { logServerEvent } from '@/lib/admin';
 import { buildPitchPrompt, parseJsonReply } from '@/lib/pitchPrompt';
 
@@ -25,7 +25,7 @@ const clip = (v: unknown, max: number, fallback: string) =>
  * (contrôle et décompte dans authorize_pitch). Une génération qui échoue est remboursée.
  */
 export async function POST(req: NextRequest) {
-  const rl = checkRateLimit(req, { maxRequests: 10, windowMs: 60 * 1000 });
+  const rl = await checkRateLimitShared(req, 'generate-pitch', { maxRequests: 10, windowMs: 60 * 1000 });
   if (!rl.allowed) return createRateLimitResponse(rl.retryAfterSeconds);
 
   const body = await req.json().catch(() => ({}));

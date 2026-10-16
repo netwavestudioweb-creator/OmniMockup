@@ -8,7 +8,7 @@ import {
   SectionRecommendations,
   SmartAnalyzeResponse,
 } from '@/types/analyzer';
-import { checkRateLimit, createRateLimitResponse, validateSafeUrl } from '@/lib/security';
+import { createRateLimitResponse, validateSafeUrl, checkRateLimitShared } from '@/lib/security';
 import { createClient } from '@/lib/supabase/server';
 import { logServerEvent } from '@/lib/admin';
 import { checkUsageQuota, incrementUsageCount } from '@/lib/usage';
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
   const overallStartTime = Date.now();
 
   // 1. Contrôle du débit (Rate Limiting par IP : 10 req/min)
-  const rateLimit = checkRateLimit(req, { maxRequests: 10, windowMs: 60 * 1000 });
+  const rateLimit = await checkRateLimitShared(req, 'smart-analyze', { maxRequests: 10, windowMs: 60 * 1000 });
   if (!rateLimit.allowed) {
     return createRateLimitResponse(rateLimit.retryAfterSeconds);
   }

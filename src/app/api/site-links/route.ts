@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkRateLimit, createRateLimitResponse, validateSafeUrl } from '@/lib/security';
+import { createRateLimitResponse, validateSafeUrl, checkRateLimitShared } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 20;
@@ -66,7 +66,7 @@ async function fetchHtml(startUrl: string): Promise<{ html: string; finalUrl: UR
  * POST { url } → { success, pages: [{ url, label }] }
  */
 export async function POST(req: NextRequest) {
-  const rateLimit = checkRateLimit(req, { maxRequests: 10, windowMs: 60 * 1000 });
+  const rateLimit = await checkRateLimitShared(req, 'site-links', { maxRequests: 10, windowMs: 60 * 1000 });
   if (!rateLimit.allowed) return createRateLimitResponse(rateLimit.retryAfterSeconds);
 
   let url = '';

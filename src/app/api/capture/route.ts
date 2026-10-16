@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { captureWebPage } from '@/lib/browser';
 import { CaptureItemResult, CaptureResponse, SectionCoordinates } from '@/types/analyzer';
-import { checkRateLimit, createRateLimitResponse, validateSafeUrl } from '@/lib/security';
+import { createRateLimitResponse, validateSafeUrl, checkRateLimitShared } from '@/lib/security';
 import { logServerEvent } from '@/lib/admin';
 
 /** Cause d'un échec de capture, pour le tableau de bord (santé du site) */
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   const overallStartTime = Date.now();
 
   // 1. Contrôle du débit (Rate Limiting par IP : 10 req/min)
-  const rateLimit = checkRateLimit(req, { maxRequests: 10, windowMs: 60 * 1000 });
+  const rateLimit = await checkRateLimitShared(req, 'capture', { maxRequests: 10, windowMs: 60 * 1000 });
   if (!rateLimit.allowed) {
     return createRateLimitResponse(rateLimit.retryAfterSeconds);
   }

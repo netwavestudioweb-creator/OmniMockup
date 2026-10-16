@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createSaspayCheckout } from '@/lib/saspay';
 import { getSaspayItem } from '@/lib/saspay-apply';
-import { checkRateLimit, createRateLimitResponse } from '@/lib/security';
+import { createRateLimitResponse, checkRateLimitShared } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
  * Le prix vient de src/lib/pricing.ts ; le navigateur n'envoie que l'article choisi.
  */
 export async function POST(req: NextRequest) {
-  const limit = checkRateLimit(req, { maxRequests: 10, windowMs: 10 * 60 * 1000 });
+  const limit = await checkRateLimitShared(req, 'saspay-create', { maxRequests: 10, windowMs: 10 * 60 * 1000 });
   if (!limit.allowed) return createRateLimitResponse(limit.retryAfterSeconds);
 
   const supabase = createClient();

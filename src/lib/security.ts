@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import dns from 'dns/promises';
 import net from 'net';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 /**
  * ============================================================================
@@ -70,12 +72,16 @@ function isPrivateIPv4(ip: string): boolean {
  * Vérifie si une adresse IPv6 appartient à une plage privée ou réservée.
  */
 function isPrivateIPv6(ip: string): boolean {
-  const clean = ip.toLowerCase().trim();
+  const clean = ip.toLowerCase().trim().replace(/^\[|\]$/g, '');
 
   // Loopback (::1) ou non spécifiée (::)
   if (clean === '::1' || clean === '::' || clean === '0:0:0:0:0:0:0:1' || clean === '0:0:0:0:0:0:0:0') {
     return true;
   }
+
+  // Multicast ff00::/8, traduction IPv4 (NAT64 64:ff9b::/96), IPv4 compatible (::a.b.c.d)
+  if (clean.startsWith('ff') || clean.startsWith('64:ff9b:')) return true;
+  if (/^::\d+\.\d+\.\d+\.\d+$/.test(clean)) return true;
 
   // Unique Local Address (ULA) fc00::/7 (fc00:: - fdff::)
   if (clean.startsWith('fc') || clean.startsWith('fd')) {
@@ -134,7 +140,8 @@ export async function validateSafeUrl(rawUrl: string): Promise<ValidationResult>
     };
   }
 
-  const hostname = parsed.hostname.toLowerCase().trim();
+  // Les adresses IPv6 arrivent entre crochets (« [::1] ») : on les retire avant de vérifier
+  const hostname = parsed.hostname.toLowerCase().trim().replace(/^\[|\]$/g, '');
 
   // 2. Vérification des hôtes interdits directs
   if (
@@ -204,6 +211,71 @@ export async function validateSafeUrl(rawUrl: string): Promise<ValidationResult>
   return { valid: true, parsedUrl: parsed };
 }
 
+/** true si l'adresse IP (v4 ou v6) est interne, privée ou réservée */
+export function isPrivateIp(ip: string | null | undefined): boolean {
+  const clean = (ip || '').trim().replace(/^\[|\]$/g, '');
+  if (!clean) return false;
+  if (net.isIPv4(clean)) return isPrivateIPv4(clean);
+  if (net.isIPv6(clean)) return isPrivateIPv6(clean);
+  return false;
+}
+
+/** Message affiché quand une page tente d'atteindre le réseau interne pendant la capture */
+export const INTERNAL_ACCESS_ERROR =
+  'Accès refusé : cette page redirige vers une adresse interne ou privée, sa capture est bloquée pour des raisons de sécurité.';
+
+/**
+ * Filtre de CHAQUE requête faite par le navigateur de capture (redirections, images, cadres, scripts) :
+ * une page publique ne doit pas pouvoir faire charger une adresse interne au serveur.
+ * Les résolutions DNS sont mémorisées pendant la capture pour rester rapide.
+ */
+export function createBrowserRequestGuard() {
+  const verdicts = new Map<string, Promise<boolean>>();
+
+  const hostIsSafe = (hostname: string): Promise<boolean> => {
+    const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    let verdict = verdicts.get(host);
+    if (!verdict) {
+      verdict = (async () => {
+        if (
+          FORBIDDEN_HOSTS.has(host) ||
+          host.endsWith('.localhost') ||
+          host.endsWith('.local') ||
+          host.endsWith('.internal') ||
+          host.endsWith('.arpa')
+        ) {
+          return false;
+        }
+        if (net.isIPv4(host)) return !isPrivateIPv4(host);
+        if (net.isIPv6(host)) return !isPrivateIPv6(host);
+        try {
+          const records = await dns.lookup(host, { all: true });
+          return records.every((r) => (r.family === 4 ? !isPrivateIPv4(r.address) : !isPrivateIPv6(r.address)));
+        } catch {
+          // Domaine introuvable : le navigateur échouera de lui-même, sans risque
+          return true;
+        }
+      })();
+      verdicts.set(host, verdict);
+    }
+    return verdict;
+  };
+
+  /** true si la requête peut partir */
+  return async function isAllowed(rawUrl: string): Promise<boolean> {
+    let url: URL;
+    try {
+      url = new URL(rawUrl);
+    } catch {
+      return false;
+    }
+    // Contenus déjà dans la page (images en ligne, polices générées) : aucun accès réseau
+    if (url.protocol === 'data:' || url.protocol === 'blob:' || url.protocol === 'about:') return true;
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+    return hostIsSafe(url.hostname);
+  };
+}
+
 
 /**
  * ============================================================================
@@ -243,6 +315,10 @@ function cleanupExpiredEntries(windowMs: number) {
  * Extrait l'adresse IP cliente à partir des en-têtes HTTP de la requête.
  */
 export function getClientIp(req: NextRequest): string {
+  // Sur Vercel, cet en-tête est posé par Vercel lui-même (le visiteur ne peut pas le falsifier)
+  const vercelIp = req.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim();
+  if (vercelIp) return vercelIp;
+
   const forwarded = req.headers.get('x-forwarded-for');
   if (forwarded) {
     const firstIp = forwarded.split(',')[0]?.trim();
@@ -259,6 +335,8 @@ export function getClientIp(req: NextRequest): string {
 export interface RateLimitOptions {
   maxRequests?: number; // Défaut: 10 requêtes
   windowMs?: number; // Défaut: 60 000 ms (1 minute)
+  /** Nom de la route : chaque route a son propre compteur */
+  key?: string;
 }
 
 export interface RateLimitResult {
@@ -280,7 +358,7 @@ export function checkRateLimit(
 
   cleanupExpiredEntries(windowMs);
 
-  const ip = getClientIp(req);
+  const ip = `${options.key || 'global'}:${getClientIp(req)}`;
   let entry = ipRequestStore.get(ip);
 
   if (!entry) {
@@ -311,6 +389,41 @@ export function checkRateLimit(
     remaining: Math.max(0, maxRequests - entry.timestamps.length),
     retryAfterSeconds: 0,
   };
+}
+
+/**
+ * Limite commune à tous les serveurs (compteur dans la base) : sur Vercel, le compteur en mémoire
+ * est propre à chaque serveur et ne suffit pas. Le compteur en mémoire reste un premier filtre gratuit.
+ * Si la base ne répond pas (ou si la table n'existe pas encore), on garde le compteur en mémoire.
+ */
+export async function checkRateLimitShared(
+  req: NextRequest,
+  name: string,
+  options: RateLimitOptions = {}
+): Promise<RateLimitResult> {
+  const local = checkRateLimit(req, { ...options, key: name });
+  if (!local.allowed) return local;
+
+  const maxRequests = options.maxRequests ?? 10;
+  const windowSeconds = Math.max(1, Math.round((options.windowMs ?? 60 * 1000) / 1000));
+  try {
+    // Adresse IP gardée seulement sous forme d'empreinte
+    const ipHash = crypto.createHash('sha256').update(`rl:${getClientIp(req)}`).digest('hex').slice(0, 24);
+    const { data, error } = await createAdminClient().rpc('hit_rate_limit', {
+      p_bucket: `${name}:${ipHash}`,
+      p_max: maxRequests,
+      p_window_seconds: windowSeconds,
+    });
+    if (error || !data) return local;
+    const d = data as { allowed: boolean; hits: number; retry_after: number };
+    return {
+      allowed: !!d.allowed,
+      remaining: Math.max(0, maxRequests - (Number(d.hits) || 0)),
+      retryAfterSeconds: d.allowed ? 0 : Number(d.retry_after) || 1,
+    };
+  } catch {
+    return local;
+  }
 }
 
 /**

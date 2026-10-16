@@ -29,6 +29,7 @@ export const metadata: Metadata = {
 };
 
 import { UserProvider } from "@/context/UserContext";
+import { HERO_SCRIPT } from "@/lib/heroTest";
 import { CurrencyProvider } from "@/context/CurrencyContext";
 
 export default function RootLayout({
@@ -37,7 +38,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="overflow-x-hidden w-full max-w-full">
+    <html lang="fr" className="overflow-x-hidden w-full max-w-full" suppressHydrationWarning>
+      <head>
+        {/* Test de l'accroche : version choisie avant l'affichage (pas de clignotement) */}
+        <script dangerouslySetInnerHTML={{ __html: HERO_SCRIPT }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans bg-sand-50 text-stone-900 antialiased selection:bg-violet-100 selection:text-violet-900 min-h-screen flex flex-col overflow-x-hidden w-full max-w-full`}
       >

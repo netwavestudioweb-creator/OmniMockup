@@ -30,6 +30,8 @@ const ALLOWED_EVENTS = new Set([
   'photo_scene_used',
   'video_exported',
   'pitch_byok',
+  'hero_capture',
+  'signup_done',
 ]);
 
 export async function POST(req: NextRequest) {

@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { TEMPLATES_CATALOG } from '@/lib/shotsPresets';
 import { Card, Kpi, PLAN_LABEL, date, fmt, money } from './ui';
-import { AttemptsTab, CustomerSheet, CustomersTab, SalesTab } from './SalesTabs';
+import { AttemptsTab, CustomerSheet, CustomersTab, HeroTestCard, SalesTab } from './SalesTabs';
 
 /* ───────────── Types des réponses ───────────── */
 type Stats = {
@@ -379,6 +379,8 @@ function Dashboard({ s }: { s: Stats }) {
 
   return (
     <div className="space-y-5">
+      <HeroTestCard />
+
       {/* A. Vue d'ensemble */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
         <Kpi label="Utilisateurs inscrits" value={fmt(o.users_total)} sub={`+${fmt(o.users_new_7d)} sur 7 jours`} />

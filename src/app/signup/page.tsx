@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { createClient } from '@/lib/supabase/client';
+import { trackEvent } from '@/lib/tracking';
+import { getHeroVariant } from '@/lib/heroTest';
 import { safeRedirectPath } from '@/lib/safeRedirect';
 import {
   Layers,
@@ -71,6 +73,7 @@ function SignupForm() {
         return;
       }
 
+      trackEvent('signup_done', { hero: getHeroVariant(), method: 'email' });
       if (data.session) {
         router.push(redirectPath);
         router.refresh();
@@ -86,6 +89,8 @@ function SignupForm() {
   };
 
   const handleGoogleSignup = async () => {
+    // Inscription Google : comptée au clic (la suite se passe chez Google)
+    trackEvent('signup_done', { hero: getHeroVariant(), method: 'google' });
     setIsGoogleLoading(true);
     setErrorMessage(null);
 

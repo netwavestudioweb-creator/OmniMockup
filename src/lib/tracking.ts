@@ -32,7 +32,10 @@ export type TrackedEventName =
   | 'photo_scene_used'
   | 'video_exported'
   // Pitch IA avec la clé du client
-  | 'pitch_byok';
+  | 'pitch_byok'
+  // Test de l'accroche de l'accueil
+  | 'hero_capture'
+  | 'signup_done';
 
 export function trackEvent(
   eventName: TrackedEventName,

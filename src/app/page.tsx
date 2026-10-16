@@ -24,6 +24,7 @@ import { Footer } from '@/components/Footer';
 import { FounderApplicationForm } from '@/components/FounderApplicationForm';
 import { captureOne } from '@/lib/captureCache';
 import { trackEvent } from '@/lib/tracking';
+import { getHeroVariant } from '@/lib/heroTest';
 import { CaptureItemResult } from '@/types/analyzer';
 import { useCurrency } from '@/context/CurrencyContext';
 import { PLANS, formatPrice, getPlanMonthlyPrice, getPlanMonthlyEquivalent } from '@/lib/pricing';
@@ -34,7 +35,7 @@ import {
   ArrowRight,
   Zap,
   Download,
-  Copy,
+  Wallet,
   Link2,
   Aperture,
   Palette,
@@ -119,7 +120,7 @@ export default function HomePage() {
     } catch {
       // navigation privée : on compte quand même
     }
-    trackEvent('home_view', {});
+    trackEvent('home_view', { hero: getHeroVariant() });
   }, []);
   const savedDraft = projects[0] || null;
   const openProject = (project: StudioProject) => {
@@ -139,6 +140,7 @@ export default function HomePage() {
   const [heroMobileDevice, setHeroMobileDevice] = useState<'iphone' | 'watch'>('iphone');
 
   const handleAnalyzeUrl = async (urlToCapture: string, settings?: import('@/types/analyzer').CaptureSettings) => {
+    trackEvent('hero_capture', { hero: getHeroVariant() });
     setIsLoading(true);
     setErrorMessage(null);
     setLoadingSeconds(0);
@@ -244,9 +246,19 @@ export default function HomePage() {
 
               {/* Titre principal centré — Phrase complète sans coupure artificielle */}
               <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white max-w-4xl mx-auto leading-[1.1] mb-6">
-                Collez le lien de votre&nbsp;site.{' '}
-                <span className="block mt-1 sm:mt-2">
-                  Recevez des visuels qui <span className="shimmer-text">donnent envie de signer</span>.
+                {/* Version « court » */}
+                <span className="hero-court">
+                  Votre site.{' '}
+                  <span className="block mt-1 sm:mt-2">
+                    Prêt à <span className="shimmer-text">signer</span>.
+                  </span>
+                </span>
+                {/* Version « long » (accroche d'origine) */}
+                <span className="hero-long">
+                  Collez le lien de votre&nbsp;site.{' '}
+                  <span className="block mt-1 sm:mt-2">
+                    Recevez des visuels qui <span className="shimmer-text">donnent envie de signer</span>.
+                  </span>
                 </span>
               </h1>
 
@@ -308,8 +320,8 @@ export default function HomePage() {
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-700 hidden sm:block" />
                 <span className="flex items-center gap-1.5">
-                  <Copy className="w-4 h-4 text-emerald-400" />
-                  1 clic presse-papier
+                  <Wallet className="w-4 h-4 text-emerald-400" />
+                  Paiement unique, aucun prélèvement surprise
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-700 hidden sm:block" />
                 <span className="flex items-center gap-1.5">

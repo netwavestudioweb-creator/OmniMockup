@@ -449,3 +449,7 @@ body {
 .site-dark > footer .text-violet-600 {
   color: #a78bfa;
 }
+
+/* Test de l'accroche de l'accueil (src/lib/heroTest.ts) : une seule version visible */
+html[data-hero="court"] .hero-long { display: none; }
+html:not([data-hero="court"]) .hero-court { display: none; }

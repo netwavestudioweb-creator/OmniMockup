@@ -748,6 +748,70 @@ export function AttemptsTab({ onOpenCustomer }: { onOpenCustomer: (id: string) =
   );
 }
 
+/* ───────────── Test de l'accroche de l'accueil ───────────── */
+const HERO_TEXT: Record<'court' | 'long', string> = {
+  court: '« Votre site. Prêt à signer. »',
+  long: '« Collez le lien de votre site. Recevez des visuels qui donnent envie de signer. »',
+};
+
+export function HeroTestCard() {
+  const [data, setData] = useState<{ since: string | null; counts: Record<'court' | 'long', Record<string, number>> } | null>(null);
+  useEffect(() => {
+    fetch('/api/admin/hero-test', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setData)
+      .catch(() => null);
+  }, []);
+  if (!data) return null;
+
+  const rows = (['court', 'long'] as const).map((v) => {
+    const c = data.counts[v] || {};
+    const views = c.home_view || 0;
+    const captures = c.hero_capture || 0;
+    const signups = c.signup_done || 0;
+    const rate = (n: number) => (views ? `${Math.round((n / views) * 1000) / 10} %` : '—');
+    return { v, views, captures, signups, captureRate: rate(captures), signupRate: rate(signups) };
+  });
+  const enough = rows.every((r) => r.views >= 100);
+  const best = enough ? [...rows].sort((a, b) => b.signups / b.views - a.signups / a.views)[0] : null;
+
+  return (
+    <Card
+      title="Test de l'accroche de l'accueil"
+      hint={`Chaque visiteur voit une des deux phrases au hasard${data.since ? `, depuis le ${date(data.since)}` : ''}. On compare la part des visiteurs qui lancent une capture et qui s'inscrivent.`}
+    >
+      <div className="overflow-x-auto -mx-1">
+        <table className="w-full text-xs sm:text-sm min-w-[30rem]">
+          <thead>
+            <tr className="text-left text-zinc-400">
+              <th className="py-1.5 px-1 font-semibold">Accroche</th>
+              <th className="py-1.5 px-1 font-semibold text-right">Visites</th>
+              <th className="py-1.5 px-1 font-semibold text-right">Captures lancées</th>
+              <th className="py-1.5 px-1 font-semibold text-right">Inscriptions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-800">
+            {rows.map((r) => (
+              <tr key={r.v} className={best?.v === r.v ? 'text-lime-200' : ''}>
+                <td className="py-2 px-1">{HERO_TEXT[r.v]}</td>
+                <td className="py-2 px-1 text-right tabular-nums">{fmt(r.views)}</td>
+                <td className="py-2 px-1 text-right tabular-nums">{fmt(r.captures)} <span className="text-zinc-500">({r.captureRate})</span></td>
+                <td className="py-2 px-1 text-right tabular-nums">{fmt(r.signups)} <span className="text-zinc-500">({r.signupRate})</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-[11px] text-zinc-400">
+        {enough
+          ? `Pour l'instant, la meilleure est ${HERO_TEXT[best!.v]}. Garde-la quand l'écart reste net plusieurs semaines.`
+          : 'Pas encore assez de visites pour conclure : attends au moins 100 visites par accroche.'}{' '}
+        Les inscriptions par Google sont comptées au clic sur le bouton.
+      </p>
+    </Card>
+  );
+}
+
 /* ───────────── Fiche client ───────────── */
 type Sheet = {
   id: string;

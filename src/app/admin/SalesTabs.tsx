@@ -50,7 +50,10 @@ type SalesData = {
 };
 
 const DAY = 24 * 3600 * 1000;
-const PACK_LABEL = Object.fromEntries(CREDIT_PACKS.map((p) => [p.id, `${p.name} (${p.credits} crédits)`]));
+const PACK_LABEL: Record<string, string> = {
+  ...Object.fromEntries(CREDIT_PACKS.map((p) => [p.id, `${p.name} (${p.credits} crédits)`])),
+  test_200: 'Paiement de test (1 crédit)',
+};
 const CYCLE_LABEL: Record<string, string> = { monthly: '1 mois', annual: '1 an' };
 
 /** Libellé d'un achat : « Pro · 1 an » ou « Petit Pack (10 crédits) » */

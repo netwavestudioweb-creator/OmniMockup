@@ -661,6 +661,48 @@ function UserRow({
   );
 }
 
+/* ───────────── Paiement de test (200 FCFA) ───────────── */
+function TestPaymentCard() {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const start = async () => {
+    setBusy(true);
+    setMsg('');
+    try {
+      const res = await fetch('/api/payments/saspay/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item: 'test_200' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        setMsg('Connecte-toi d’abord à ton compte client sur le site (page Connexion), dans ce même navigateur, puis reviens ici.');
+        return;
+      }
+      if (!res.ok || !data.checkoutUrl) {
+        setMsg(data.error || 'Le paiement de test n’a pas pu être lancé.');
+        return;
+      }
+      window.location.href = data.checkoutUrl;
+    } catch {
+      setMsg('Le paiement de test n’a pas pu être lancé. Vérifie ta connexion.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Card
+      title="Test d’un vrai paiement Mobile Money (200 FCFA)"
+      hint="Pour vérifier tout le parcours : paiement SasPay, crédit ajouté au compte, vente dans le tableau de bord. Il faut être connecté à ton compte client dans ce même navigateur. Le compte reçoit 1 crédit."
+    >
+      <button type="button" onClick={start} disabled={busy} className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-sm font-bold disabled:opacity-60">
+        {busy ? 'Ouverture de SasPay…' : 'Payer 200 FCFA (test)'}
+      </button>
+      {msg && <p className="mt-2 text-xs text-amber-300" role="alert">{msg}</p>}
+    </Card>
+  );
+}
+
 /* ───────────── Paiements ───────────── */
 function PaymentsTab() {
   const [data, setData] = useState<PaymentsData | null>(null);
@@ -683,6 +725,7 @@ function PaymentsTab() {
 
   return (
     <div className="space-y-4">
+      <TestPaymentCard />
       <Card title="Derniers paiements" hint={totals ? `Total affiché : ${totals}` : 'Aucun paiement pour le moment.'}>
         {data.payments.length === 0 ? (
           <p className="text-xs text-zinc-500">Les paiements apparaîtront ici dès le premier achat (Stripe ou SasPay).</p>

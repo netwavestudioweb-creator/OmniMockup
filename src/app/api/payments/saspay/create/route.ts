@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createSaspayCheckout } from '@/lib/saspay';
-import { getSaspayItem } from '@/lib/saspay-apply';
+import { TEST_ITEM_ID, getSaspayItem } from '@/lib/saspay-apply';
+import { requireAdmin } from '@/lib/admin';
 import { createRateLimitResponse, checkRateLimitShared } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const item = getSaspayItem(String(body?.item || ''), body?.billingCycle);
   if (!item) {
+    return NextResponse.json({ success: false, error: 'Article inconnu.' }, { status: 400 });
+  }
+  // Paiement de test : seulement depuis le tableau de bord, avec la connexion administrateur
+  if (item.itemId === TEST_ITEM_ID && 'response' in (await requireAdmin())) {
     return NextResponse.json({ success: false, error: 'Article inconnu.' }, { status: 400 });
   }
 

@@ -1,8 +1,19 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Bot, Loader2, Monitor, Smartphone, Share2, Wand2 } from 'lucide-react';
+import { Bot, ExternalLink, KeyRound, Loader2, Monitor, Smartphone, Share2, Wand2 } from 'lucide-react';
 import type { DetectedSection, SmartAnalyzeResponse } from '@/types/analyzer';
+import {
+  ByokError,
+  PROVIDER_INFO,
+  analyzeSectionsWithOwnKey,
+  getSavedAi,
+  looksLikeKey,
+  saveAi,
+  type AiProvider,
+} from '@/lib/byokPitch';
+import type { ArtDirectorReply } from '@/lib/artDirectorPrompt';
+import { trackEvent } from '@/lib/tracking';
 
 interface AiDirectorPanelProps {
   url: string;
@@ -47,6 +58,52 @@ async function cropSection(fullPage: string, section: DetectedSection, maxWidth 
   return canvas.toDataURL('image/jpeg', 0.9);
 }
 
+/**
+ * Capture de la page prête pour l'IA du client : JPEG en base64 (sans préfixe), hauteur limitée
+ * (les IA refusent les images de plus de 8 000 pixels), plus étroite pour Claude.
+ */
+async function pageImageForAi(fullPage: string, provider: AiProvider): Promise<string> {
+  const img = await loadImage(fullPage);
+  const maxW = provider === 'claude' ? 1000 : 1440;
+  const scale = Math.min(1, maxW / img.naturalWidth, 7800 / img.naturalHeight);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(img.naturalWidth * scale);
+  canvas.height = Math.round(img.naturalHeight * scale);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('canvas');
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.8).replace(/^data:image\/\w+;base64,/, '');
+}
+
+/** Les notes de l'IA sont ajoutées aux sections repérées par le serveur (mêmes identifiants) */
+function mergeReply(result: SmartAnalyzeResponse, reply: ArtDirectorReply): SmartAnalyzeResponse {
+  const sections = result.sections.map((section) => {
+    const ai = reply.sections?.find((s) => s.id === section.id);
+    if (!ai) return section;
+    const score = typeof ai.marketingScore === 'number' ? ai.marketingScore : typeof ai.qualityScore === 'number' ? ai.qualityScore : 85;
+    return {
+      ...section,
+      label: ai.label || section.label,
+      description: ai.description || section.description,
+      visualAnalysis: ai.visualAnalysis,
+      verdict: ai.verdict || (score >= 85 ? 'excellent' : score >= 70 ? 'bon' : score >= 50 ? 'moyen' : 'faible'),
+      justification: ai.justification,
+      marketingScore: score,
+      qualityScore: typeof ai.qualityScore === 'number' ? ai.qualityScore : section.qualityScore,
+    } as DetectedSection;
+  });
+  const r = reply.recommendations;
+  return {
+    ...result,
+    sections,
+    recommendations: r
+      ? { mobile: r.mobile || [], desktop: r.desktop || [], social: r.social || [] }
+      : result.recommendations,
+    isFallback: false,
+    fallbackMessage: undefined,
+  };
+}
+
 const Thumb: React.FC<{ fullPage: string; section: DetectedSection }> = ({ fullPage, section }) => {
   const [src, setSrc] = useState<string>('');
   useEffect(() => {
@@ -75,14 +132,44 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
   const [usingId, setUsingId] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // IA du client (même clé que la Pitch IA, gardée dans son navigateur)
+  const [ai, setAi] = useState<{ provider: AiProvider; key: string } | null>(null);
+  const [byok, setByok] = useState(false);
+  const [setupProvider, setSetupProvider] = useState<AiProvider>('gemini');
+  const [setupKey, setSetupKey] = useState('');
+  const [setupError, setSetupError] = useState('');
+  useEffect(() => {
+    const saved = getSavedAi();
+    setAi(saved);
+    if (saved) setSetupProvider(saved.provider);
+  }, []);
 
   useEffect(() => () => {
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
+  /** Notes de l'IA du client sur une capture déjà faite par le serveur */
+  const scoreWithOwnAi = async (base: SmartAnalyzeResponse, own: { provider: AiProvider; key: string }) => {
+    try {
+      const image = await pageImageForAi(base.fullPageScreenshot, own.provider);
+      const candidates = base.sections.map((s) => ({ id: s.id, coordinates: s.coordinates, headingText: s.description }));
+      const reply = await analyzeSectionsWithOwnKey(own.provider, own.key, candidates, image);
+      setResult(mergeReply(base, reply));
+      setByok(true);
+      trackEvent('pitch_byok', { provider: own.provider, ok: true, feature: 'art_director' });
+    } catch (err) {
+      const e = err instanceof ByokError ? err : new ByokError('L’IA n’a pas pu répondre. Réessayez dans un instant.', 'other');
+      trackEvent('pitch_byok', { provider: own.provider, ok: false, kind: e.kind, feature: 'art_director' });
+      // Les sections repérées restent affichées, sans notes
+      setResult(base);
+      setError(e.message);
+    }
+  };
+
   const analyze = async () => {
     setState('loading');
     setError('');
+    setByok(false);
     setElapsed(0);
     timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
     try {
@@ -93,7 +180,10 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
       });
       const data = (await res.json()) as SmartAnalyzeResponse;
       if (!res.ok || !data.success) throw new Error(data.error || 'Analyse impossible.');
-      setResult(data);
+      // Sans IA du site, c'est l'IA du client qui note les sections (si sa clé est enregistrée)
+      const own = getSavedAi();
+      if (data.isFallback && own) await scoreWithOwnAi(data, own);
+      else setResult(data);
       setState('done');
     } catch (err) {
       setError((err as Error).message || 'Analyse impossible.');
@@ -101,6 +191,31 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
     } finally {
       if (timerRef.current) clearInterval(timerRef.current);
     }
+  };
+
+  /** Clé enregistrée après l'analyse : on note les sections déjà repérées, sans nouvelle capture */
+  const saveKeyAndScore = async () => {
+    if (!looksLikeKey(setupProvider, setupKey)) {
+      setSetupError(
+        setupProvider === 'claude'
+          ? 'Cette clé ne ressemble pas à une clé Claude (elle commence par « sk-ant- »).'
+          : 'Cette clé ne ressemble pas à une clé Gemini. Copiez-la en entier depuis Google AI Studio.'
+      );
+      return;
+    }
+    saveAi(setupProvider, setupKey);
+    const own = { provider: setupProvider, key: setupKey.trim() };
+    setAi(own);
+    setSetupKey('');
+    setSetupError('');
+    if (!result) return;
+    setState('loading');
+    setError('');
+    setElapsed(0);
+    timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
+    await scoreWithOwnAi(result, own);
+    if (timerRef.current) clearInterval(timerRef.current);
+    setState('done');
   };
 
   const use = async (section: DetectedSection) => {
@@ -142,6 +257,11 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
           <p className="text-[11px] text-zinc-400 leading-relaxed">
             L&apos;IA analyse toute la page, note chaque section et vous dit laquelle mettre en avant, avec sa justification.
           </p>
+          {ai && (
+            <p className="text-[11px] text-emerald-300 flex items-center gap-1">
+              <KeyRound className="w-3 h-3" /> Avec votre IA : {PROVIDER_INFO[ai.provider].label}
+            </p>
+          )}
           <button
             type="button"
             onClick={analyze}
@@ -171,12 +291,60 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
 
       {state === 'done' && result && (
         <div className="space-y-2.5">
+          {error && <p className="text-[11px] text-rose-400" role="alert">{error}</p>}
           {result.isFallback && (
-            <p className="text-[11px] text-amber-300 leading-relaxed">
-              {result.fallbackMessage || 'Analyse IA indisponible : sections détectées automatiquement (sans verdict).'}
-            </p>
+            <div className="p-3 rounded-xl bg-zinc-950/70 border border-indigo-500/30 space-y-2">
+              <p className="text-[11px] text-amber-300 leading-relaxed">
+                Sections repérées automatiquement, sans notes. Connectez votre IA (Gemini ou Claude) pour obtenir le verdict de chaque section.
+                Votre clé reste dans votre navigateur.
+              </p>
+              <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-zinc-900 border border-zinc-800" role="radiogroup" aria-label="Fournisseur d'IA">
+                {(['gemini', 'claude'] as AiProvider[]).map((prov) => (
+                  <button
+                    key={prov}
+                    type="button"
+                    role="radio"
+                    aria-checked={setupProvider === prov}
+                    onClick={() => {
+                      setSetupProvider(prov);
+                      setSetupError('');
+                    }}
+                    className={`py-1.5 rounded-md text-[11px] font-bold ${setupProvider === prov ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+                  >
+                    {PROVIDER_INFO[prov].label}
+                  </button>
+                ))}
+              </div>
+              <a
+                href={PROVIDER_INFO[setupProvider].getKeyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-300 underline"
+              >
+                Obtenir ma clé {setupProvider === 'claude' ? 'Claude' : 'Gemini'} <ExternalLink className="w-3 h-3" />
+              </a>
+              <input
+                type="password"
+                autoComplete="off"
+                value={setupKey}
+                onChange={(e) => setSetupKey(e.target.value)}
+                placeholder={setupProvider === 'claude' ? 'sk-ant-…' : 'Collez votre clé Gemini'}
+                aria-label={`Clé ${PROVIDER_INFO[setupProvider].label}`}
+                className="w-full px-2.5 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+              />
+              {setupError && <p className="text-[11px] text-rose-400" role="alert">{setupError}</p>}
+              <button
+                type="button"
+                onClick={saveKeyAndScore}
+                disabled={!setupKey.trim()}
+                className="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold disabled:opacity-50"
+              >
+                Noter les sections avec mon IA
+              </button>
+            </div>
           )}
-          {!result.isFallback && typeof result.usageLimit === 'number' && result.usageLimit < 1000 && (
+          {byok && ai && <p className="text-[11px] text-emerald-300">Notes rédigées par votre IA ({PROVIDER_INFO[ai.provider].label}).</p>}
+          {!result.isFallback && !byok && typeof result.usageLimit === 'number' && result.usageLimit < 1000 && (
             <p className="text-[11px] text-zinc-500">
               Analyses IA restantes ce mois : {Math.max(0, result.usageLimit - (result.usageCount ?? 0))} / {result.usageLimit}
             </p>

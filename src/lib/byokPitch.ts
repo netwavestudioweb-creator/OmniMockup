@@ -1,6 +1,7 @@
 'use client';
 
 import { buildPitchPrompt, parseJsonReply, type PitchInput, type PitchResult } from '@/lib/pitchPrompt';
+import { buildArtDirectorPrompt, type ArtDirectorCandidate, type ArtDirectorReply } from '@/lib/artDirectorPrompt';
 
 /**
  * Pitch IA avec la clé du client (Gemini ou Claude).
@@ -70,14 +71,17 @@ export class ByokError extends Error {
 const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
 const CLAUDE_MODEL = 'claude-opus-5-5';
 
-export async function generatePitchWithOwnKey(
+/**
+ * Appel à l'IA du client avec des images (captures en JPEG, base64 sans préfixe) et une consigne.
+ * Rend le texte de la réponse. Les erreurs sont traduites en messages clairs (ByokError).
+ */
+async function askOwnAi(
   provider: AiProvider,
   key: string,
-  input: Omit<PitchInput, 'sectionCount'>,
-  sections: string[]
-): Promise<PitchResult> {
-  const prompt = buildPitchPrompt({ ...input, sectionCount: sections.length });
-
+  prompt: string,
+  images: string[],
+  temperature: number
+): Promise<string> {
   if (provider === 'claude') {
     const { default: Anthropic } = await import('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey: key.trim(), dangerouslyAllowBrowser: true, maxRetries: 1 });
@@ -94,7 +98,7 @@ export async function generatePitchWithOwnKey(
             {
               role: 'user',
               content: [
-                ...sections.map((data) => ({
+                ...images.map((data) => ({
                   type: 'image' as const,
                   source: { type: 'base64' as const, media_type: 'image/jpeg' as const, data },
                 })),
@@ -106,8 +110,7 @@ export async function generatePitchWithOwnKey(
         { timeout: 120_000 }
       );
       if (response.stop_reason === 'refusal') throw new ByokError('Claude a refusé cette demande. Reformulez la description et réessayez.', 'other');
-      const text = response.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
-      return parseJsonReply(text);
+      return response.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
     } catch (err) {
       if (err instanceof ByokError) throw err;
       if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
@@ -126,16 +129,16 @@ export async function generatePitchWithOwnKey(
   // Gemini : chaque modèle est essayé à tour de rôle
   const { GoogleGenerativeAI } = await import('@google/generative-ai');
   const genAI = new GoogleGenerativeAI(key.trim());
-  const imageParts = sections.map((data) => ({ inlineData: { mimeType: 'image/jpeg', data } }));
+  const imageParts = images.map((data) => ({ inlineData: { mimeType: 'image/jpeg', data } }));
   let last = '';
   for (const name of GEMINI_MODELS) {
     try {
       const model = genAI.getGenerativeModel(
-        { model: name, generationConfig: { responseMimeType: 'application/json', temperature: 0.7 } },
+        { model: name, generationConfig: { responseMimeType: 'application/json', temperature } },
         { timeout: 60_000 }
       );
       const result = await model.generateContent(imageParts.length ? [prompt, ...imageParts] : prompt);
-      return parseJsonReply(result.response.text());
+      return result.response.text();
     } catch (err) {
       last = err instanceof Error ? err.message : String(err);
       if (/API key not valid|API_KEY_INVALID|PERMISSION_DENIED|\b403\b/i.test(last)) {
@@ -153,4 +156,25 @@ export async function generatePitchWithOwnKey(
       : 'L’IA n’a pas pu répondre. Réessayez dans un instant.',
     /\b503\b|overloaded|UNAVAILABLE/i.test(last) ? 'overloaded' : 'other'
   );
+}
+
+export async function generatePitchWithOwnKey(
+  provider: AiProvider,
+  key: string,
+  input: Omit<PitchInput, 'sectionCount'>,
+  sections: string[]
+): Promise<PitchResult> {
+  const prompt = buildPitchPrompt({ ...input, sectionCount: sections.length });
+  return parseJsonReply(await askOwnAi(provider, key, prompt, sections, 0.7));
+}
+
+/** Directeur artistique IA avec la clé du client : note chaque section repérée sur la capture de la page */
+export async function analyzeSectionsWithOwnKey(
+  provider: AiProvider,
+  key: string,
+  candidates: ArtDirectorCandidate[],
+  pageImage: string
+): Promise<ArtDirectorReply> {
+  const prompt = buildArtDirectorPrompt(candidates);
+  return parseJsonReply(await askOwnAi(provider, key, prompt, [pageImage], 0.2)) as unknown as ArtDirectorReply;
 }

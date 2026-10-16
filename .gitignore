@@ -44,3 +44,6 @@ Shots/
 *.png
 # Masques des scènes photo du studio : à publier
 !public/scenes/*.png
+
+# Logo des e-mails (doit être en ligne)
+!public/email/logo.png

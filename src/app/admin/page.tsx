@@ -109,7 +109,7 @@ const REASON_LABEL: Record<string, string> = {
   site_inaccessible: 'Site inaccessible',
   autre: 'Autre',
 };
-const ENGINE_LABEL: Record<string, string> = { playwright: 'Notre moteur (local)', puppeteer: 'Notre moteur', 'cloud-fallback': 'Service externe (Microlink)' };
+const ENGINE_LABEL: Record<string, string> = { playwright: 'Notre moteur (local)', puppeteer: 'Notre moteur', 'cloud-fallback': 'Service externe (Microlink)', cache: 'Mémoire (déjà capturé)' };
 const TEMPLATE_LABEL = Object.fromEntries(TEMPLATES_CATALOG.map((t) => [t.id, t.title]));
 
 /* ───────────── Petits composants ───────────── */

@@ -187,7 +187,10 @@ export async function captureWebPage(
       throw err;
     }
   } catch (tier1Err) {
-    if (tier1Err instanceof InternalAccessError) throw tier1Err;
+    // Page (ou redirection) vers le réseau interne bloquée par notre filtre : on s'arrête là
+    if (tier1Err instanceof InternalAccessError || /ERR_BLOCKED_BY_CLIENT/.test(String((tier1Err as Error)?.message))) {
+      throw new InternalAccessError();
+    }
     console.warn(
       '[Capture Engine] Tier 1 (Playwright) indisponible, bascule sur Tier 2 (Puppeteer) :',
       (tier1Err as Error)?.message || tier1Err
@@ -286,7 +289,10 @@ export async function captureWebPage(
       throw err;
     }
   } catch (tier2Err) {
-    if (tier2Err instanceof InternalAccessError) throw tier2Err;
+    // Page (ou redirection) vers le réseau interne bloquée par notre filtre : on s'arrête là
+    if (tier2Err instanceof InternalAccessError || /ERR_BLOCKED_BY_CLIENT/.test(String((tier2Err as Error)?.message))) {
+      throw new InternalAccessError();
+    }
     console.warn(
       '[Capture Engine] Tier 2 (Puppeteer) indisponible, bascule sur Tier 3 (Cloud Fallback API) :',
       (tier2Err as Error)?.message || tier2Err

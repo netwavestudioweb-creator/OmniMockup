@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { captureWebPage } from '@/lib/browser';
+import { captureKey, readStoredCapture, saveStoredCapture } from '@/lib/captureStore';
 import { CaptureItemResult, CaptureResponse, SectionCoordinates } from '@/types/analyzer';
 import { createRateLimitResponse, validateSafeUrl, checkRateLimitShared } from '@/lib/security';
 import { logServerEvent } from '@/lib/admin';
@@ -100,14 +101,39 @@ export async function POST(req: NextRequest) {
   const mobile = body?.mobile === true;
   const delayMs = typeof body?.delayMs === 'number' ? Math.max(0, Math.min(8000, body.delayMs)) : 0;
   const colorScheme = body?.colorScheme === 'dark' ? 'dark' : 'light';
+  // « fresh » : le client demande une capture neuve (site modifié depuis), sans passer par la mémoire
+  const fresh = body?.fresh === true;
 
   const results: CaptureItemResult[] = [];
 
   for (const target of targetsToProcess) {
     const itemStartTime = Date.now();
     try {
+      const key = captureKey(target.url, { fullPage, hideBanners, viewport: viewport || null, mobile, delayMs, colorScheme });
+      const stored = fresh ? null : await readStoredCapture(key);
+      if (stored) {
+        await logServerEvent('capture_result', { ok: true, engine: 'cache', ms: Date.now() - itemStartTime, mobile });
+        results.push({
+          url: target.url,
+          title: target.label || stored.pageTitle || target.url,
+          domainName: stored.domainName,
+          faviconUrl: stored.faviconUrl,
+          success: true,
+          screenshotBase64: stored.screenshotBase64,
+          capturedAt: stored.cachedAt,
+          durationMs: Date.now() - itemStartTime,
+          clip: target.clip,
+        });
+        continue;
+      }
       const captureRes = await captureWebPage(target.url, { fullPage, hideBanners, viewport, mobile, delayMs, colorScheme });
       await logServerEvent('capture_result', { ok: true, engine: captureRes.source, ms: Date.now() - itemStartTime, mobile });
+      await saveStoredCapture(key, {
+        screenshotBase64: captureRes.screenshotBase64,
+        pageTitle: captureRes.pageTitle,
+        domainName: captureRes.domainName,
+        faviconUrl: captureRes.faviconUrl,
+      });
       results.push({
         url: target.url,
         title: target.label || captureRes.pageTitle || target.url,

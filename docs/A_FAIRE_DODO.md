@@ -45,7 +45,7 @@ Cette liste remplace les anciens documents (`TODO_PERFECTIONNER_LE_SITE.md`, `RA
 
 ## 🟠 Ensuite
 
-- [ ] **6. Acheter le domaine `pitchmysite.com`** (libre au 13/10/2026)
+- [x] **6. Acheter le domaine `pitchmysite.com`** — ✅ acheté le 16/10/2026 sur Vercel (11,25 $/an, renouvellement automatique), relié au site, `www` redirige, HTTPS actif, `NEXT_PUBLIC_SITE_URL` mis à jour. **Reste : Supabase → Authentication → URL Configuration** (adresse du site `https://pitchmysite.com` et adresse autorisée `https://pitchmysite.com/**`) (libre au 13/10/2026)
   - Avant l'achat : vérifier que la marque n'est pas déposée à l'**OAPI** (Afrique de l'Ouest) et à l'**INPI** (France)
   - **Le plus simple : l'acheter dans Vercel** → ton équipe → onglet **Domains** → **Buy** → chercher `pitchmysite.com` (environ 10 à 20 $ par an, carte bancaire). Vercel gère alors tout seul les réglages du domaine (DNS)
   - Ou l'acheter ailleurs (Namecheap, OVH…), puis copier chez ce vendeur exactement ce que Vercel affiche (serveurs de noms ou deux lignes)
@@ -86,7 +86,7 @@ L'accès est **séparé des comptes clients** : aucun compte client (même le ti
   - le script affiche **3 valeurs** et une **clé pour l'application**.
 - [x] **T3. Copier les 3 valeurs dans Vercel** → Settings → Environment Variables → environnement **Production** : `ADMIN_PASSWORD_HASH`, `ADMIN_TOTP_SECRET`, `ADMIN_SESSION_SECRET`. Puis Deployments → ⋯ → **Redeploy**.
 - [x] **T4. Ajouter la clé dans l'application** : « Ajouter un code » → « Saisir une clé de configuration », nom « PitchMySite Admin », type « basé sur l'heure ». Ferme ensuite le terminal.
-- [x] **T5. Ouvrir** `https://omni-mockup.vercel.app/admin` : mot de passe + code à 6 chiffres. La session dure 12 h ; bouton « Déconnexion » dans le menu. Dis à Claude si quelque chose s'affiche mal.
+- [x] **T5. Ouvrir** `https://pitchmysite.com/admin` : mot de passe + code à 6 chiffres. La session dure 12 h ; bouton « Déconnexion » dans le menu. Dis à Claude si quelque chose s'affiche mal.
 - Après 5 erreurs, l'accès est bloqué 15 minutes.
 - Mot de passe oublié ou téléphone perdu : relance le script et remplace les 3 valeurs dans Vercel. Si la connexion est refusée : `node scripts/admin-check.mjs` dit si c'est le mot de passe ou le code.
 - **Ne donne jamais ces valeurs à personne, ni dans le chat** : Claude n'en a pas besoin.

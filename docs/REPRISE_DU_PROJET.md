@@ -10,7 +10,7 @@ Document de passation, mis à jour le **14 octobre 2026**. Il permet à n'import
 
 - **Le produit** : PitchMySite (ancien nom : OmniMockup). On colle le lien d'un site, l'outil le capture et produit des visuels de présentation (ordinateur, iPhone, iPad…), des vidéos, des PDF et des textes de vente, pour les freelances et les agences web.
 - **Le propriétaire** : Dodo (Cotonou, Bénin), entreprise NetWave Studio.
-- **Adresse du site** : https://omni-mockup.vercel.app (le domaine `pitchmysite.com` n'est pas encore acheté).
+- **Adresse du site** : https://pitchmysite.com (acheté sur Vercel le 16/10/2026, renouvellement automatique). L'ancienne adresse https://omni-mockup.vercel.app reste active.
 - **Code** : dépôt GitHub `netwavestudioweb-creator/OmniMockup`, branche `main`. **Chaque envoi sur `main` met le site en ligne automatiquement** (Vercel).
 - **Technique** : Next.js 14 (App Router), TypeScript, Tailwind ; base de données et comptes Supabase ; hébergement Vercel (formule gratuite Hobby).
 - **Paiement** : Mobile Money en FCFA par **SasPay**. La carte bancaire est préparée mais désactivée (bouton grisé « Bientôt »).
@@ -216,7 +216,7 @@ Règles :
 | 10/10 | Grosse journée (38 changements) : moteur de capture compatible Vercel, liens de partage, directeur artistique IA, lots 3 et 4 du studio |
 | 11 et 12/10 | Kits de marque, limites d'export et de Pitch IA vérifiées par le serveur, nettoyage de sécurité |
 | 13/10 | Nouveau nom **PitchMySite** et nouvelle accroche ; 13 modèles ; iPhone 18 Pro ; plan de fluidité (phases 1 à 5) ; exports qui ne bloquent plus ; pubs récompensées ; tableau de bord admin et accès séparé ; carte retirée (SasPay seul) ; Pitch IA avec la clé du client ; formules validées ; stockage Vercel corrigé |
-| 16/10 | Audit de sécurité (rapport `AUDIT_ET_CONCURRENCE.md`) : capture protégée contre le réseau interne (filtre de chaque requête + contrôle de l'IP de chaque réponse), anti-abus partagé dans la base (`rate_limits`, `hit_rate_limit`), quota gratuit non contournable, redirections de connexion limitées au site (`safeRedirect.ts`), en-têtes de protection, droits d'écriture retirés aux comptes, route `analyze` supprimée ; mémoire des captures 3 h (espace privé `captures-cache`) ; étude de la concurrence |
+| 16/10 | Domaine pitchmysite.com acheté et relié ; test de l'accroche ; message prêt à envoyer au prospect ; fichier Excel de 70 agences (5 continents) ; audit de sécurité (rapport `AUDIT_ET_CONCURRENCE.md`) : capture protégée contre le réseau interne (filtre de chaque requête + contrôle de l'IP de chaque réponse), anti-abus partagé dans la base (`rate_limits`, `hit_rate_limit`), quota gratuit non contournable, redirections de connexion limitées au site (`safeRedirect.ts`), en-têtes de protection, droits d'écriture retirés aux comptes, route `analyze` supprimée ; mémoire des captures 3 h (espace privé `captures-cache`) ; étude de la concurrence |
 | 14/10 | Carte bancaire préparée (grisée « Bientôt ») ; accès admin créé par Dodo et connexion réussie ; outil `admin-check.mjs` ; ce document ; **tableau de bord version 2 en ligne** (Ventes, Clients payants, Tentatives, fiche client) |
 
 Les anciens documents à la racine (`AUDIT_…`, `RAPPORT_…`, `ROADMAP_…`, `TODO_…`, `RECAPITULATIF_…`, `GUIDE_INTEGRATION_MOMO…`, `PROCEDURE_DE_TEST…`) sont **dépassés** : ils parlent encore de FedaPay ou de Stripe comme moyen principal. Seuls comptent ce document, `A_FAIRE_DODO.md` et `ETAT_DU_SITE.md`.

@@ -1,8 +1,13 @@
 # À faire par Dodo — PitchMySite
 
-Liste mise à jour le 14 octobre 2026. Coche chaque ligne quand c'est fait, puis préviens Claude pour la vérification.
+Liste mise à jour le 16 octobre 2026. Coche chaque ligne quand c'est fait, puis préviens Claude pour la vérification.
 
 > Ne colle jamais une clé secrète dans le chat ni dans ce fichier : ajoute-la directement sur Vercel.
+
+**Changements du 16/10 (audit de sécurité, voir `AUDIT_ET_CONCURRENCE.md`) :**
+- **Failles corrigées et vérifiées en ligne** : capture protégée contre les adresses internes et les redirections piégées, anti-abus qui fonctionne enfin (compteur partagé dans la base), quota gratuit non contournable, redirection piégée après connexion bloquée, en-têtes de protection, droits des comptes resserrés.
+- **Mémoire des captures** : un site capturé dans les 3 dernières heures revient en 1 à 3 s au lieu de 15 à 22 s, sans consommer le quota Microlink.
+- **Nouveau point urgent : passer Vercel en Pro** (point 0 bis).
 
 **Changements du 14/10 :**
 - **Stockage Vercel** : code corrigé (déploiement de 1,6 Go à 176 Mo) et anciens déploiements supprimés. Le compteur reste bloqué au-dessus de 10 Go : c'est un souci connu chez Vercel (voir point 0).
@@ -26,6 +31,7 @@ Cette liste remplace les anciens documents (`TODO_PERFECTIONNER_LE_SITE.md`, `RA
   - si le compteur reste au-dessus de 10 Go : écrire au support Vercel (vercel.com/help) ou sur community.vercel.com pour demander de libérer l'espace des déploiements supprimés (Claude a préparé le message le 13/10 ; d'autres utilisateurs ont le même souci) ;
   - dans **Settings → Security → Deployment Retention Policy**, choisir une durée courte (par exemple 30 jours).
 
+- [ ] **0 bis. Passer le projet Vercel en formule Pro (environ 20 $ par mois) avant d'ouvrir les ventes.** La formule gratuite (Hobby) interdit l'usage commercial : encaisser des paiements ou afficher des pubs. Vercel peut suspendre le site. Dans Vercel → ton équipe → **Settings → Billing → Upgrade to Pro**. Ça règle aussi la limite de stockage.
 - [ ] **1. Faire un vrai petit paiement SasPay en Mobile Money** depuis le site (page Tarifs, Petit Pack de crédits par exemple), puis prévenir Claude : il vérifiera que les crédits ou la formule se sont bien activés et que le paiement apparaît dans le tableau de bord.
 - [ ] **2. Tester la Pitch IA avec une vraie clé** (toi ou un collègue) :
   - créer une clé Gemini **gratuite** sur https://aistudio.google.com/apikey (1 minute avec un compte Google) ;
@@ -61,6 +67,7 @@ Cette liste remplace les anciens documents (`TODO_PERFECTIONNER_LE_SITE.md`, `RA
   - Activer la protection contre les mots de passe divulgués (Authentication → Policies)
   - Mettre le nom PitchMySite dans les e-mails de connexion
   - **Sauvegardes** : le forfait gratuit de Supabase ne fait pas de sauvegarde automatique. Avant d'avoir de vrais clients, passer au forfait Pro de Supabase ou prévoir un export régulier
+- [ ] **9 bis. Plus tard, dès les premières ventes : un deuxième moteur de capture rapide.** Microlink gratuit = environ 50 captures par jour, puis notre moteur, plus lent, prend le relais. Le moins cher : ouvrir un compte **ApiFlash** (environ 7 $ par mois pour 1 000 captures), mettre toi-même la clé dans Vercel, puis Claude le branche (environ 1 h). Avec beaucoup de clients : Microlink Pro (environ 49 $ par mois) ou ton propre petit serveur.
 - [ ] **10. Nettoyer Vercel** (facultatif) : supprimer les 3 variables FedaPay. Les variables Stripe peuvent rester : la carte est coupée tant que `NEXT_PUBLIC_CARD_PROVIDER` n'est pas défini.
 - [ ] **11. Plus tard : la carte bancaire**, pour les clients hors Afrique. Pistes : **Lemon Squeezy** (abonnements automatiques, clients du monde entier, le Bénin est dans sa liste de virements ; environ 5 % + 0,50 $ de frais) ou **KKiaPay** (Bénin, cartes et Mobile Money). Ou attendre que SasPay ouvre la carte (réponse du 13/10 : « pas disponible actuellement »). Tu ouvres le compte, Claude branche le site (environ 1 journée).
   - **Déjà prêt dans le site (14/10)** : le bouton « Carte bancaire » est visible mais grisé avec « Bientôt ». Le jour où la carte est ouverte, une seule variable à ajouter dans Vercel (Settings → Environment Variables), puis redéployer :
@@ -177,6 +184,9 @@ Un paiement couvre 1 mois ou 1 an, sans renouvellement automatique. Packs de cr�
 - Outil `scripts/admin-check.mjs` pour comprendre un refus de connexion admin, sans rien envoyer (14/10)
 - Carte bancaire préparée, bouton grisé « Bientôt », activable par `NEXT_PUBLIC_CARD_PROVIDER` = `saspay` ou `stripe` ; protection contre un abonnement Stripe en plus d'une formule Mobile Money encore valable (14/10)
 - Anciens déploiements Vercel supprimés (13/10)
+- Audit de sécurité et corrections vérifiées en ligne : capture protégée (adresses internes, redirections), anti-abus partagé, quota gratuit, redirections de connexion, en-têtes, droits des comptes (16/10)
+- Mémoire des captures côté serveur, 3 h (16/10)
+- Étude de la concurrence et arguments de vente : `AUDIT_ET_CONCURRENCE.md` (16/10)
 - Tableau de bord version 2 : ventes, revenu net, export CSV, clients à relancer, renouvellements attendus, tentatives et paniers abandonnés, fiche client (14/10)
 - Les tentatives SasPay refusées ou annulées sont maintenant marquées « refusées » au lieu de rester « en attente » (14/10)
 - Tâches des anciens documents déjà réalisées : pages CGU / confidentialité / 404 / erreur, pied de page, formule verrouillée dans la base, Duo et Trio, délai de capture, page entière, mode sombre, liens de partage, packs App Store et Google Play, vidéo et GIF, projets enregistrés, export multi-formats, mise en ligne sur Vercel

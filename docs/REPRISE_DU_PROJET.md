@@ -119,7 +119,9 @@ next.config.mjs        réglages Next.js (dont le navigateur Chrome limité aux 
 | `byokPitch.ts`, `pitchPrompt.ts` | Pitch IA avec la clé du client, consigne commune |
 | `adminAuth.ts`, `admin.ts` | Mot de passe et code admin, session, journal, enregistrement des paiements |
 | `rewardedAd.ts` | Pubs Google |
-| `security.ts` | Limites de requêtes, refus des adresses internes |
+| `security.ts` | Limites de requêtes (compteur partagé dans la base, repli en mémoire), refus des adresses internes, filtre des requêtes du navigateur de capture |
+| `captureStore.ts` | Mémoire des captures côté serveur (3 h) |
+| `safeRedirect.ts` | Adresse de retour après connexion limitée au site |
 | `shotsPresets.ts`, `photoScenes.ts`, `studioDraft.ts` | Modèles, scènes photo, projets enregistrés |
 | `tracking.ts` | Envoi des événements d'usage |
 
@@ -214,6 +216,7 @@ Règles :
 | 10/10 | Grosse journée (38 changements) : moteur de capture compatible Vercel, liens de partage, directeur artistique IA, lots 3 et 4 du studio |
 | 11 et 12/10 | Kits de marque, limites d'export et de Pitch IA vérifiées par le serveur, nettoyage de sécurité |
 | 13/10 | Nouveau nom **PitchMySite** et nouvelle accroche ; 13 modèles ; iPhone 18 Pro ; plan de fluidité (phases 1 à 5) ; exports qui ne bloquent plus ; pubs récompensées ; tableau de bord admin et accès séparé ; carte retirée (SasPay seul) ; Pitch IA avec la clé du client ; formules validées ; stockage Vercel corrigé |
+| 16/10 | Audit de sécurité (rapport `AUDIT_ET_CONCURRENCE.md`) : capture protégée contre le réseau interne (filtre de chaque requête + contrôle de l'IP de chaque réponse), anti-abus partagé dans la base (`rate_limits`, `hit_rate_limit`), quota gratuit non contournable, redirections de connexion limitées au site (`safeRedirect.ts`), en-têtes de protection, droits d'écriture retirés aux comptes, route `analyze` supprimée ; mémoire des captures 3 h (espace privé `captures-cache`) ; étude de la concurrence |
 | 14/10 | Carte bancaire préparée (grisée « Bientôt ») ; accès admin créé par Dodo et connexion réussie ; outil `admin-check.mjs` ; ce document ; **tableau de bord version 2 en ligne** (Ventes, Clients payants, Tentatives, fiche client) |
 
 Les anciens documents à la racine (`AUDIT_…`, `RAPPORT_…`, `ROADMAP_…`, `TODO_…`, `RECAPITULATIF_…`, `GUIDE_INTEGRATION_MOMO…`, `PROCEDURE_DE_TEST…`) sont **dépassés** : ils parlent encore de FedaPay ou de Stripe comme moyen principal. Seuls comptent ce document, `A_FAIRE_DODO.md` et `ETAT_DU_SITE.md`.
@@ -236,6 +239,8 @@ Les anciens documents à la racine (`AUDIT_…`, `RAPPORT_…`, `ROADMAP_…`, `
 - les e-mails fiables (Resend) ;
 - le domaine ;
 - les sauvegardes de la base.
+
+**Point critique** : la formule gratuite de Vercel (Hobby) interdit l'usage commercial ; passer en Pro avant d'ouvrir les ventes.
 
 **Problème en cours** : le compteur « Functions Storage » de Vercel reste au-dessus de 10 Go alors que les anciens déploiements sont supprimés. C'est un souci connu côté Vercel : attendre, puis écrire au support si besoin (`A_FAIRE_DODO.md`, point 0).
 

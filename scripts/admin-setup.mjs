@@ -97,7 +97,7 @@ Puis : Deployments → ⋯ → Redeploy, pour que le site les prenne en compte.
 (ou lien direct pour les applications qui l'acceptent :)
 otpauth://totp/PitchMySite:Admin?secret=${totpSecret}&issuer=PitchMySite&digits=6&period=30
 
-Ensuite, ouvre https://omni-mockup.vercel.app/admin :
+Ensuite, ouvre https://pitchmysite.com/admin :
 mot de passe + le code à 6 chiffres affiché par l'application.
 
 ⚠️  Ferme ce terminal après avoir copié les valeurs. Ne les envoie à personne.

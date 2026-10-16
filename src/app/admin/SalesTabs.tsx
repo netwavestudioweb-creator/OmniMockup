@@ -554,8 +554,8 @@ export function CustomersTab({ onOpenCustomer }: { onOpenCustomer: (id: string) 
       r.email || '',
       r.expired ? 'Votre formule PitchMySite est terminée' : 'Votre formule PitchMySite se termine bientôt',
       r.expired
-        ? `Bonjour,\n\nVotre formule ${PLAN_LABEL[r.plan] || r.plan} PitchMySite est terminée depuis le ${date(r.planExpiresAt as string)}. Vos projets vous attendent : vous pouvez la renouveler en quelques secondes par Mobile Money sur https://omni-mockup.vercel.app/pricing\n\nUne question ? Répondez simplement à ce message.\n\nDodo, PitchMySite`
-        : `Bonjour,\n\nVotre formule ${PLAN_LABEL[r.plan] || r.plan} PitchMySite se termine le ${date(r.planExpiresAt as string)}. Pour continuer sans interruption, vous pouvez la renouveler par Mobile Money sur https://omni-mockup.vercel.app/pricing\n\nUne question ? Répondez simplement à ce message.\n\nDodo, PitchMySite`
+        ? `Bonjour,\n\nVotre formule ${PLAN_LABEL[r.plan] || r.plan} PitchMySite est terminée depuis le ${date(r.planExpiresAt as string)}. Vos projets vous attendent : vous pouvez la renouveler en quelques secondes par Mobile Money sur https://pitchmysite.com/pricing\n\nUne question ? Répondez simplement à ce message.\n\nDodo, PitchMySite`
+        : `Bonjour,\n\nVotre formule ${PLAN_LABEL[r.plan] || r.plan} PitchMySite se termine le ${date(r.planExpiresAt as string)}. Pour continuer sans interruption, vous pouvez la renouveler par Mobile Money sur https://pitchmysite.com/pricing\n\nUne question ? Répondez simplement à ce message.\n\nDodo, PitchMySite`
     );
 
   return (
@@ -659,7 +659,7 @@ export function AttemptsTab({ onOpenCustomer }: { onOpenCustomer: (id: string) =
     mailto(
       c.email || '',
       'Votre paiement PitchMySite n’est pas allé au bout',
-      `Bonjour,\n\nVous avez commencé à prendre ${itemLabel(c.kind, c.item, c.cycle)} sur PitchMySite le ${date(c.createdAt)}, mais le paiement n’est pas allé au bout. Avez-vous rencontré un souci avec le Mobile Money ?\n\nVous pouvez réessayer ici : https://omni-mockup.vercel.app/pricing\nEt si besoin, répondez simplement à ce message, je vous aide.\n\nDodo, PitchMySite`
+      `Bonjour,\n\nVous avez commencé à prendre ${itemLabel(c.kind, c.item, c.cycle)} sur PitchMySite le ${date(c.createdAt)}, mais le paiement n’est pas allé au bout. Avez-vous rencontré un souci avec le Mobile Money ?\n\nVous pouvez réessayer ici : https://pitchmysite.com/pricing\nEt si besoin, répondez simplement à ce message, je vous aide.\n\nDodo, PitchMySite`
     );
 
   return (

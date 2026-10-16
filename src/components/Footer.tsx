@@ -17,9 +17,6 @@ export const Footer: React.FC = () => {
               <span className="font-bold tracking-tight text-stone-900 text-sm">
                 Pitch<span className="text-violet-600">MySite</span> Studio
               </span>
-              <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-violet-100 text-violet-800 border border-violet-200">
-                v1.0
-              </span>
             </div>
             <p className="text-[11px] text-stone-500 font-sans mt-0.5">
               Studio de mockups 3D, cadres Apple &amp; exports 4K instantanés.

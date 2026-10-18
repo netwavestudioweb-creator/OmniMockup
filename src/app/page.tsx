@@ -27,7 +27,14 @@ import { trackEvent } from '@/lib/tracking';
 import { getHeroVariant } from '@/lib/heroTest';
 import { CaptureItemResult } from '@/types/analyzer';
 import { useCurrency } from '@/context/CurrencyContext';
-import { PLANS, formatPrice, getPlanMonthlyPrice, getPlanMonthlyEquivalent } from '@/lib/pricing';
+import {
+  PLANS,
+  formatPrice,
+  getPlanMonthlyPrice,
+  getPlanAnnualPrice,
+  getPlanMonthlyEquivalent,
+  getPlanAnnualSavings,
+} from '@/lib/pricing';
 import {
   Loader2,
   Monitor,
@@ -100,7 +107,7 @@ const AGENCY_USES = [
 ];
 
 export default function HomePage() {
-  const { currency } = useCurrency();
+  const { currency, mobileMoneyRegion } = useCurrency();
 
   const [activeCaptureItem, setActiveCaptureItem] = useState<CaptureItemResult | null>(null);
   // Mes projets : mockups enregistrés sur cet appareil, le plus récent proposé à la reprise
@@ -135,6 +142,7 @@ export default function HomePage() {
   const captureAbortRef = useRef<AbortController | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [activePricingPlan, setActivePricingPlan] = useState<number>(2); // 0=Découverte, 1=Solo, 2=Pro (recommandé), 3=Agence
+  const [isAnnualPricing, setIsAnnualPricing] = useState<boolean>(true);
   const [activeStep, setActiveStep] = useState<number>(0); // 0=01 Collez, 1=02 Personnalisez, 2=03 Exportez
   const [activeUseCase, setActiveUseCase] = useState<number>(0); // index dans AGENCY_USES
   const [heroMobileDevice, setHeroMobileDevice] = useState<'iphone' | 'watch'>('iphone');
@@ -1116,15 +1124,52 @@ export default function HomePage() {
                 </p>
               </div>
 
+              {/* Toggle Facturation Annuel / Mensuel (Annuel par défaut avec 2 mois offerts) */}
+              <div className="flex items-center justify-center gap-3 max-w-xs mx-auto mb-10 p-1.5 rounded-full bg-zinc-950/80 border border-zinc-800 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => setIsAnnualPricing(false)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    !isAnnualPricing
+                      ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Mensuel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsAnnualPricing(true)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    isAnnualPricing
+                      ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <span>Annuel</span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[9px] font-black tracking-wide ${
+                      isAnnualPricing
+                        ? 'bg-violet-900/60 text-violet-200 border border-violet-400/30'
+                        : 'bg-emerald-500/20 text-emerald-400'
+                    }`}
+                  >
+                    -17% (2 mois offerts)
+                  </span>
+                </button>
+              </div>
+
               {/* Plans Homepage configurés dynamiquement avec la source unique src/lib/pricing.ts */}
               {(() => {
-                // Descriptions et avantages repris de la liste officielle des forfaits (src/lib/pricing.ts)
                 const homepagePlans = [
                   {
                     id: 0,
                     name: 'Découverte',
                     price: formatPrice(0, currency),
                     period: 'Gratuit à vie',
+                    fcfa: null,
+                    billedInfo: null,
                     desc: PLANS[0].description,
                     cta: 'Commencer gratuitement',
                     href: '#',
@@ -1133,42 +1178,33 @@ export default function HomePage() {
                     badge: '100% Gratuit',
                     features: PLANS[0].features,
                   },
-                  {
-                    id: 1,
-                    name: 'Solo',
-                    price: formatPrice(getPlanMonthlyPrice(PLANS[1], currency), currency),
-                    period: 'par mois',
-                    desc: PLANS[1].description,
-                    cta: 'Choisir Solo',
-                    href: '/pricing',
-                    highlighted: false,
-                    badge: null,
-                    features: PLANS[1].features,
-                  },
-                  {
-                    id: 2,
-                    name: 'Pro',
-                    price: formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency),
-                    period: `par mois (${formatPrice(getPlanMonthlyEquivalent(PLANS[2], currency), currency)} en annuel)`,
-                    desc: PLANS[2].description,
-                    cta: 'Débloquer Pro',
-                    href: '/pricing',
-                    highlighted: true,
-                    badge: 'Populaire',
-                    features: PLANS[2].features,
-                  },
-                  {
-                    id: 3,
-                    name: 'Agence',
-                    price: formatPrice(getPlanMonthlyPrice(PLANS[3], currency), currency),
-                    period: 'par mois',
-                    desc: PLANS[3].description,
-                    cta: 'Choisir Agence',
-                    href: '/pricing',
-                    highlighted: false,
-                    badge: null,
-                    features: PLANS[3].features,
-                  },
+                  ...[PLANS[1], PLANS[2], PLANS[3]].map((p, idx) => {
+                    const monthlyPrice = getPlanMonthlyPrice(p, currency);
+                    const annualPrice = getPlanAnnualPrice(p, currency);
+                    const eq = getPlanMonthlyEquivalent(p, currency);
+                    const displayPrice = isAnnualPricing ? eq : monthlyPrice;
+                    const isPop = p.id === 'pro';
+
+                    return {
+                      id: idx + 1,
+                      name: p.name,
+                      price: formatPrice(displayPrice, currency),
+                      period: 'par mois',
+                      fcfa: mobileMoneyRegion
+                        ? `soit ${new Intl.NumberFormat('fr-FR').format(isAnnualPricing ? p.annualFcfa : p.monthlyFcfa)} FCFA${isAnnualPricing ? ' pour 1 an' : ' pour 1 mois'}`
+                        : null,
+                      billedInfo: isAnnualPricing
+                        ? `Facturé ${formatPrice(annualPrice, currency)} / an`
+                        : null,
+                      desc: p.description,
+                      cta: p.id === 'pro' ? 'Débloquer Pro' : `Choisir ${p.name}`,
+                      href: '/pricing',
+                      onCtaClick: undefined,
+                      highlighted: isPop,
+                      badge: isPop ? 'Populaire' : null,
+                      features: p.features,
+                    };
+                  }),
                 ];
 
                 return (
@@ -1194,8 +1230,18 @@ export default function HomePage() {
                             <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">{plan.name}</p>
                             <div className="flex items-baseline gap-1">
                               <span className="text-3xl font-black text-white font-mono whitespace-nowrap shrink-0">{plan.price}</span>
-                              <span className="text-xs text-zinc-500">/ {plan.period}</span>
+                              <span className="text-xs text-zinc-400">/ {plan.period}</span>
                             </div>
+                            {plan.fcfa && (
+                              <p className="text-[11px] font-bold text-violet-400 font-mono mt-1">
+                                {plan.fcfa}
+                              </p>
+                            )}
+                            {plan.billedInfo && (
+                              <p className="text-[10px] text-zinc-400 mt-0.5 font-medium">
+                                {plan.billedInfo}
+                              </p>
+                            )}
                             <p className="text-xs text-zinc-400 mt-2 leading-relaxed min-h-[34px]">{plan.desc}</p>
 
                             <ul className="flex flex-col gap-2 mt-4 pt-4 border-t border-zinc-800 text-xs">
@@ -1291,8 +1337,18 @@ export default function HomePage() {
                               <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{activePlan.name}</p>
                               <div className="flex items-baseline gap-1 mt-1">
                                 <span className="text-3xl font-black text-white font-mono">{activePlan.price}</span>
-                                <span className="text-xs text-zinc-500">/ {activePlan.period}</span>
+                                <span className="text-xs text-zinc-400">/ {activePlan.period}</span>
                               </div>
+                              {activePlan.fcfa && (
+                                <p className="text-[11px] font-bold text-violet-400 font-mono mt-1">
+                                  {activePlan.fcfa}
+                                </p>
+                              )}
+                              {activePlan.billedInfo && (
+                                <p className="text-[10px] text-zinc-400 mt-0.5 font-medium">
+                                  {activePlan.billedInfo}
+                                </p>
+                              )}
                               <p className="text-xs text-zinc-400 mt-2 leading-relaxed">{activePlan.desc}</p>
                             </div>
 

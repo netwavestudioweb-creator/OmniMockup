@@ -408,6 +408,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const [isCopying, setIsCopying] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(true);
+  // Confirmation avant de quitter : évite les sorties accidentelles (surtout sur téléphone)
+  const [confirmQuit, setConfirmQuit] = useState(false);
 
   // État du Kit Vente & Pitch IA
   const [salesKitOpen, setSalesKitOpen] = useState(false);
@@ -2248,6 +2250,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     preset: FramePresetOption;
   } | null>(null);
   const lastSceneShotRef = useRef('');
+  const sceneBgRef = useRef('');
 
   const applyPhotoScene = async (scene: PhotoScene) => {
     trackEvent('photo_scene_used', { scene: scene.id });
@@ -2291,11 +2294,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         height: scene.height,
         ratioClass: 'aspect-auto',
       });
+      sceneBgRef.current = `url(${img}) center/cover no-repeat`;
       setConfig((p) => ({
         ...p,
         aspectRatio: 'libre',
         bgType: 'texture',
-        bgValue: `url(${img}) center/cover no-repeat`,
+        bgValue: sceneBgRef.current,
         bgTransparent: false,
       }));
       setMockupHidden(true);
@@ -2322,8 +2326,28 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }
     photoScenePrevRef.current = null;
     lastSceneShotRef.current = '';
+    sceneBgRef.current = '';
     setPhotoScene(null);
   };
+
+  // Un fond choisi pendant une scène photo ne doit jamais cacher le site : on quitte la scène
+  // (l'appareil réapparaît, le format d'avant revient) en gardant le nouveau fond.
+  useEffect(() => {
+    if (!photoScene || !sceneBgRef.current || config.bgValue === sceneBgRef.current) return;
+    const prev = photoScenePrevRef.current;
+    if (prev) {
+      setMockupHidden(prev.mockupHidden);
+      setCurrentFramePreset(prev.preset);
+      setConfig((p) => ({ ...p, aspectRatio: prev.preset.ratioId }));
+    } else {
+      setMockupHidden(false);
+    }
+    photoScenePrevRef.current = null;
+    lastSceneShotRef.current = '';
+    sceneBgRef.current = '';
+    setPhotoScene(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.bgValue]);
 
   useEffect(() => {
     if (!pendingPhotoScene || (!mobileScreenshot && mobileCaptureState !== 'error')) return;
@@ -2393,7 +2417,46 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         `${shadowOffsetX}px ${shadowOffsetY}px 24px rgba(0, 0, 0, ${effectiveAlpha}), 0 2px 8px rgba(0, 0, 0, ${(Number(effectiveAlpha) * 0.35).toFixed(2)})`;
 
   return (
-    <div className={`w-screen h-screen flex flex-col bg-[#0b0b0e] text-zinc-150 select-none overflow-hidden font-sans fixed inset-0 z-50 ${STUDIO_FONT_VARIABLES}`}>
+    <div className={`w-screen h-[100dvh] flex flex-col bg-[#0b0b0e] text-zinc-150 select-none overflow-hidden font-sans fixed inset-0 z-50 ${STUDIO_FONT_VARIABLES}`}>
+      {confirmQuit && onClose && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+          onClick={() => setConfirmQuit(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quit-title"
+            className="w-full max-w-sm p-5 rounded-2xl bg-zinc-900 border border-zinc-750 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="quit-title" className="text-base font-bold text-white">
+              Quitter le studio ?
+            </h2>
+            <p className="mt-2 text-sm text-zinc-300 leading-relaxed">
+              Votre mockup est enregistré dans ce navigateur. Vous le retrouverez sur l&apos;accueil avec le bouton
+              « Reprendre ».
+            </p>
+            <div className="mt-5 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="min-h-[44px] px-4 rounded-xl text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-750 transition-colors"
+              >
+                Quitter
+              </button>
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setConfirmQuit(false)}
+                className="min-h-[44px] px-4 rounded-xl text-sm font-bold text-white bg-violet-600 hover:bg-violet-500 transition-colors"
+              >
+                Rester dans le studio
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {/* 1. TOP BAR PRO (Shots.so / Rotato App Header)                         */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
@@ -2407,17 +2470,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {onClose && (
               <button
                 type="button"
-                onClick={onClose}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-850/90 border border-zinc-800/80 hover:border-zinc-700 text-xs font-semibold transition-all active:scale-95 shrink-0"
+                onClick={() => setConfirmQuit(true)}
+                className="flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 px-2.5 py-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-850/90 border border-zinc-800/80 hover:border-zinc-700 text-xs font-semibold transition-all active:scale-95 shrink-0"
                 title="Quitter le studio et revenir à l'accueil"
+                aria-label="Quitter le studio"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowLeft className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                 <span className="hidden lg:inline">Quitter</span>
               </button>
             )}
 
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-violet-500 text-white flex items-center justify-center shadow-lg shadow-violet-600/30 ring-1 ring-white/15 shrink-0">
+              <div className="hidden sm:flex w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-violet-500 text-white items-center justify-center shadow-lg shadow-violet-600/30 ring-1 ring-white/15 shrink-0">
                 <Sparkles className="w-4 h-4 text-amber-200" />
               </div>
               <div className="min-w-0 hidden sm:block">
@@ -2453,11 +2517,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             <button
               type="button"
               onClick={() => setShowTemplatesModal(true)}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-750 hover:border-zinc-650 text-zinc-200 hover:text-white text-xs font-semibold transition-all active:scale-95 shrink-0 shadow-xs"
+              className="hidden md:flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 px-3 py-1.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-750 hover:border-zinc-650 text-zinc-200 hover:text-white text-xs font-semibold transition-all active:scale-95 shrink-0 shadow-xs"
               title="Modèles de mise en scène prêts à l'emploi (raccourci : T)"
+              aria-label="Modèles"
             >
               <Layout className="w-3.5 h-3.5 text-violet-400" />
-              <span>Modèles</span>
+              <span className="hidden lg:inline">Modèles</span>
             </button>
           </div>
 
@@ -2493,22 +2558,22 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 type="button"
                 onClick={handleUndo}
                 disabled={!canUndo}
-                className="p-2 rounded-l-xl text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                className="flex items-center justify-center min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 p-2 rounded-l-xl text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                 title="Annuler (Ctrl+Z)"
                 aria-label="Annuler"
               >
-                <Undo2 className="w-3.5 h-3.5" />
+                <Undo2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
               </button>
               <div className="w-px h-4 bg-zinc-750" />
               <button
                 type="button"
                 onClick={handleRedo}
                 disabled={!canRedo}
-                className="p-2 rounded-r-xl text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                className="flex items-center justify-center min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 p-2 rounded-r-xl text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                 title="Rétablir (Ctrl+Y)"
                 aria-label="Rétablir"
               >
-                <Redo2 className="w-3.5 h-3.5" />
+                <Redo2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
               </button>
             </div>
 
@@ -2516,7 +2581,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             <button
               type="button"
               onClick={() => setSalesKitOpen(true)}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-950/40 hover:bg-violet-900/60 border border-violet-500/40 hover:border-violet-400 text-violet-200 hover:text-white text-xs font-bold transition-all shadow-xs active:scale-95"
+              aria-label="Pitch IA"
+              className="flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 px-3 py-1.5 rounded-xl bg-violet-950/40 hover:bg-violet-900/60 border border-violet-500/40 hover:border-violet-400 text-violet-200 hover:text-white text-xs font-bold transition-all shadow-xs active:scale-95"
               title="Rédiger un post LinkedIn, une proposition commerciale et une étude de cas avec l'IA"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -2541,7 +2607,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 onClick={() => setShowExportMenu((v) => !v)}
                 disabled={isExporting || isExportingPack}
                 aria-expanded={showExportMenu}
-                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-violet-600/30 ring-1 ring-white/20 transition-all active:scale-95 disabled:opacity-60"
+                className="flex items-center gap-1.5 sm:gap-2 min-h-[44px] lg:min-h-0 px-3 sm:px-4 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-violet-600/30 ring-1 ring-white/20 transition-all active:scale-95 disabled:opacity-60"
                 title="Exporter l'image, la vidéo ou le pack réseaux sociaux (raccourci : E)"
               >
                 {isExporting || isExportingPack ? (
@@ -2842,7 +2908,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             <button
               type="button"
               onClick={() => setShowRightPanel((p) => !p)}
-              className="hidden sm:flex items-center justify-center p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-750 text-zinc-400 hover:text-white transition-all"
+              className="hidden sm:flex items-center justify-center min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 p-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-750 text-zinc-400 hover:text-white transition-all"
               title={showRightPanel ? 'Masquer les réglages' : 'Afficher les réglages'}
               aria-label={showRightPanel ? 'Masquer les réglages' : 'Afficher les réglages'}
             >
@@ -2858,7 +2924,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               <button
                 type="button"
                 onClick={() => setUserDropdownOpen((p) => !p)}
-                className="flex items-center gap-1.5 sm:gap-2 pl-1.5 pr-2 py-1 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-750 hover:border-zinc-650 transition-all shadow-xs text-xs"
+                className="flex items-center gap-1.5 sm:gap-2 min-h-[44px] lg:min-h-0 pl-1.5 pr-2 py-1 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-750 hover:border-zinc-650 transition-all shadow-xs text-xs"
                 title="Gestion de compte et abonnement"
               >
                 {/* Avatar utilisateur */}
@@ -3057,7 +3123,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       {/* ═════════════════════════════════════════════════════════════════════ */}
       <div className="flex-1 min-h-0 w-full flex flex-col lg:flex-row overflow-hidden relative">
         {/* ── ZONE DE PRÉVISUALISATION CENTRALE (CANVAS FLUIDE GÉANT) ── */}
-        <main className="flex-1 min-h-[260px] lg:h-full relative flex flex-col items-center justify-center p-3 sm:p-8 bg-[#090a0f] overflow-hidden select-none">
+        <main className="flex-1 min-h-[180px] lg:min-h-0 lg:h-full relative flex flex-col items-center justify-center p-3 sm:p-8 bg-[#090a0f] overflow-hidden select-none">
           {/* Mode Présentation: Flottant 'Quitter la présentation (Échap)' */}
           {presentationMode && (
             <div className="absolute top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2 rounded-full bg-[#07080c]/90 backdrop-blur-xl border border-zinc-800 text-white shadow-2xl animate-fade-in select-none">
@@ -3072,6 +3138,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 <span>Quitter (Échap)</span>
               </button>
             </div>
+          )}
+
+          {/* Scène photo : retour bien visible au mockup d'avant */}
+          {photoScene && !presentationMode && (
+            <button
+              type="button"
+              onClick={exitPhotoScene}
+              className="absolute top-3 left-3 z-40 flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-white text-zinc-900 text-sm font-bold shadow-xl hover:bg-zinc-100 active:scale-95 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Revenir à mon mockup
+            </button>
           )}
 
           {/* Grille d'établi design professionnelle (Dot Matrix) */}
@@ -3755,7 +3833,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           </div>
 
           {/* ── BARRE DE CONTRÔLES FLOTTANTE AU BAS DU CANVAS (STYLE SHOTS.SO) ── */}
-          <div data-tour="formats" className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100%-1rem)] overflow-x-auto no-scrollbar bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl px-3 py-1.5 shadow-2xl flex items-center gap-3 text-xs select-none whitespace-nowrap">
+          <div data-tour="formats" className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100%-1rem)] overflow-x-auto no-scrollbar bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl px-3 py-1 lg:py-1.5 shadow-2xl [&_button]:min-h-[36px] [&_button]:min-w-[32px] lg:[&_button]:min-h-0 lg:[&_button]:min-w-0 flex items-center gap-3 text-xs select-none whitespace-nowrap">
             {/* Formats rapides (même réglage que « Format du canevas ») */}
             <div className="flex items-center gap-1">
               {(['geo-16-9', 'geo-4-3', 'geo-1-1', 'ig-portrait', 'geo-9-16'] as const).map((id) => {
@@ -3846,25 +3924,20 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         {/* 3. PANNEAU LATÉRAL D'INSPECTION (STYLE DAVINCI / RESOLVE / FIGMA) */}
         {/* ═════════════════════════════════════════════════════════════════ */}
         {showRightPanel && !presentationMode && (
-          <aside className={`w-full lg:w-[380px] xl:w-[410px] ${mobileSheetOpen ? 'max-h-[55%]' : 'max-h-12'} lg:max-h-none lg:h-full bg-[#0a0b10] border-t lg:border-t-0 lg:border-l border-zinc-850/80 flex flex-col shrink-0 z-20 overflow-hidden shadow-2xl`}>
-          {/* Header Mobile Déplier / Replier */}
-          <button
-            type="button"
-            onClick={() => setMobileSheetOpen(!mobileSheetOpen)}
-            className="lg:hidden w-full px-4 py-3 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between text-zinc-200"
-          >
-            <div className="flex items-center gap-2">
+          <aside className={`w-full lg:w-[380px] xl:w-[410px] ${mobileSheetOpen ? 'max-h-[62%]' : ''} lg:max-h-none lg:h-full bg-[#0a0b10] border-t lg:border-t-0 lg:border-l border-zinc-850/80 flex flex-col shrink-0 z-20 overflow-hidden shadow-2xl`}>
+          {/* EN-TÊTE : déplier / replier (téléphone) + mode Simple / Expert */}
+          <div className="flex px-2 lg:px-4 py-1 lg:py-2.5 border-b border-zinc-850/80 bg-[#08090d] items-center justify-between gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setMobileSheetOpen(!mobileSheetOpen)}
+              aria-expanded={mobileSheetOpen}
+              className="lg:hidden flex items-center gap-2 min-h-[44px] px-2 rounded-xl text-zinc-200 hover:bg-zinc-850 transition-colors"
+            >
               <Sliders className="w-4 h-4 text-violet-400" />
-              <span className="text-xs font-bold font-mono">
-                {mobileSheetOpen ? 'Réduire les réglages' : 'Ouvrir les réglages du studio'}
-              </span>
-            </div>
-            {mobileSheetOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-          </button>
-
-          {/* EN-TÊTE : mode Simple / Expert */}
-          <div className={`${mobileSheetOpen ? 'flex' : 'hidden lg:flex'} px-4 py-2.5 border-b border-zinc-850/80 bg-[#08090d] items-center justify-between shrink-0`}>
-            <span className="text-xs font-bold text-zinc-200 flex items-center gap-2">
+              <span className="text-xs font-bold">{mobileSheetOpen ? 'Réduire' : 'Ouvrir les réglages'}</span>
+              {mobileSheetOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </button>
+            <span className="hidden lg:flex text-xs font-bold text-zinc-200 items-center gap-2">
               Réglages
               {draftSavedAt && (
                 <span className="text-[10px] font-medium text-zinc-500" title="Votre travail est enregistré dans ce navigateur">
@@ -3877,7 +3950,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 type="button"
                 onClick={toggleExpertMode}
                 aria-pressed={expertMode}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
+                className={`flex items-center gap-1.5 min-h-[36px] lg:min-h-0 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
                   expertMode
                     ? 'bg-violet-600/20 border-violet-500/50 text-violet-200'
                     : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white'
@@ -3900,7 +3973,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           </div>
 
           {/* ONGLETS (un seul niveau) */}
-          <div data-tour="panel" className={`${mobileSheetOpen ? 'block' : 'hidden lg:block'} px-3 py-2.5 border-b border-zinc-850/80 bg-[#090a0f] shrink-0`}>
+          <div data-tour="panel" className={`${mobileSheetOpen ? 'block' : 'hidden lg:block'} px-3 py-2 lg:py-2.5 border-b border-zinc-850/80 bg-[#090a0f] shrink-0`}>
             <div className={`grid ${expertMode ? 'grid-cols-7' : 'grid-cols-5'} gap-1 p-1 rounded-xl bg-zinc-900/90 border border-zinc-800`} role="tablist">
               {([
                 { key: 'mockup', main: 'mockup', label: 'Appareil', icon: Monitor, expert: false },
@@ -3929,7 +4002,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           setActiveTab(t.key);
                         }
                       }}
-                      className={`flex flex-col items-center gap-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                      className={`flex flex-col items-center justify-center gap-1 min-h-[44px] lg:min-h-0 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                         active ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-200'
                       }`}
                     >
@@ -3945,7 +4018,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           <div
             className={`${
               mobileSheetOpen ? 'flex' : 'hidden lg:flex'
-            } flex-col flex-1 min-h-0 p-4 sm:p-5 space-y-6 overflow-y-auto studio-scrollbar lg:max-h-[calc(100vh-120px)]`}
+            } flex-col flex-1 min-h-0 p-4 sm:p-5 space-y-6 overflow-y-auto overscroll-contain studio-scrollbar lg:max-h-[calc(100vh-120px)]`}
           >
             {/* ══════════ ONGLET PRINCIPAL MOCKUP ══════════ */}
             {activeMainTab === 'mockup' && (
@@ -4610,8 +4683,24 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             )}
 
             {/* ══════════ ONGLET 3 : 3D, CAMÉRA & OMBRES ══════════ */}
+            {activeTab === '3d' && photoScene && (
+              <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-100 leading-relaxed">
+                Les angles ne s&apos;appliquent pas à une scène photo : le site y est déjà placé dans la photo.
+                <button
+                  type="button"
+                  onClick={exitPhotoScene}
+                  className="mt-2 flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-white text-zinc-900 font-bold"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Revenir à mon mockup
+                </button>
+              </div>
+            )}
             {activeTab === '3d' && (
-              <div className="space-y-5 animate-fade-in">
+              <div
+                className={`space-y-5 animate-fade-in ${photoScene ? 'opacity-40 pointer-events-none' : ''}`}
+                aria-disabled={!!photoScene}
+              >
                 {/* Poses 3D Rapides en 1 Clic */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">

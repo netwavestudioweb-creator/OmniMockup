@@ -215,7 +215,7 @@ export default function HomePage() {
 
   if (activeCaptureItem) {
     return (
-      <div className="fixed inset-0 z-50 w-screen h-screen bg-zinc-950 overflow-hidden flex flex-col select-none">
+      <div className="fixed inset-0 z-50 w-screen h-[100dvh] bg-zinc-950 overflow-hidden flex flex-col select-none">
         <SceneEditor
           captureItem={activeCaptureItem}
           initialMockup="browser"

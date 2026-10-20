@@ -24,10 +24,10 @@ export const PhotoScenesPanel: React.FC<PhotoScenesPanelProps> = ({ activeId, lo
         <button
           type="button"
           onClick={onExit}
-          className="text-[11px] font-semibold text-violet-300 hover:text-white flex items-center gap-1"
+          className="min-h-[44px] lg:min-h-0 px-2 text-[11px] font-semibold text-violet-300 hover:text-white flex items-center gap-1"
         >
           <Undo2 className="w-3 h-3" />
-          Revenir à l&apos;appareil 3D
+          Revenir à mon mockup
         </button>
       )}
     </div>
@@ -67,6 +67,7 @@ export const PhotoScenesPanel: React.FC<PhotoScenesPanelProps> = ({ activeId, lo
     )}
     <p className="text-[10px] text-zinc-500 leading-relaxed">
       La page s&apos;affiche en perspective dans l&apos;écran de la photo. Textes, logos et annotations restent disponibles.
+      Choisir un fond ou un appareil vous ramène à votre mockup.
       Photos Unsplash, libres de droits.
     </p>
   </div>

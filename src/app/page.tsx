@@ -21,7 +21,6 @@ import { listProjects, newProjectId, type StudioProject } from '@/lib/studioDraf
 import { ProjectsModal } from '@/components/ProjectsModal';
 
 import { Footer } from '@/components/Footer';
-import { FounderApplicationForm } from '@/components/FounderApplicationForm';
 import { captureOne } from '@/lib/captureCache';
 import { trackEvent } from '@/lib/tracking';
 import { getHeroVariant } from '@/lib/heroTest';
@@ -73,36 +72,28 @@ import {
 
 const AGENCY_USES = [
   {
-    label: 'Devis',
+    label: 'Proposition',
     icon: Wand2,
-    title: 'Propositions commerciales',
-    sub: 'Gagnez le client',
-    desc: 'Montrez à votre prospect à quoi ressemblera son futur site, ou présentez vos réalisations dans des mockups dignes d\'une grande agence.',
+    title: 'Proposition commerciale',
+    sub: 'Signez plus de clients',
+    desc: 'Le site de votre prospect ou vos réalisations, mis en scène sur ordinateur et téléphone, avec le texte de vente rédigé par la Pitch IA. À glisser dans votre devis ou à envoyer sur WhatsApp.',
     gradient: 'from-violet-600 to-indigo-600',
-  },
-  {
-    label: 'Livraison',
-    icon: BadgeCheck,
-    title: 'Livraison du site au client',
-    sub: 'Marquez la fin du projet',
-    desc: 'Remettez le site avec un kit de visuels prêts à publier : ordinateur, mobile et tablette, dans les formats des réseaux sociaux.',
-    gradient: 'from-indigo-600 to-fuchsia-600',
-  },
-  {
-    label: 'Portfolio',
-    icon: Layout,
-    title: 'Portfolio & page Réalisations',
-    sub: 'Valorisez votre travail',
-    desc: 'Mettez à jour votre page Réalisations en quelques minutes, avec un rendu homogène pour tous vos projets.',
-    gradient: 'from-fuchsia-600 to-rose-600',
   },
   {
     label: 'Réseaux',
     icon: Users,
-    title: 'Annonce sur LinkedIn & Instagram',
-    sub: 'Attirez les prochains clients',
-    desc: 'Annoncez chaque site livré avec un visuel au bon format : 1.91:1 pour LinkedIn, 1:1 et 9:16 pour Instagram.',
-    gradient: 'from-amber-500 to-orange-500',
+    title: 'Réseaux sociaux',
+    sub: 'Annoncez chaque site livré',
+    desc: 'Un visuel au bon format pour LinkedIn, Instagram et le statut WhatsApp, ou tout le pack de formats en un clic.',
+    gradient: 'from-indigo-600 to-fuchsia-600',
+  },
+  {
+    label: 'Stores',
+    icon: Smartphone,
+    title: "Stores d'applications",
+    sub: 'Pour les applis mobiles',
+    desc: "Des captures aux tailles exactes de l'App Store et de Google Play, prêtes à envoyer, depuis le menu Exporter du studio.",
+    gradient: 'from-fuchsia-600 to-rose-600',
   },
 ];
 
@@ -272,8 +263,8 @@ export default function HomePage() {
 
               {/* Sous-titre centré — Complet et équilibré */}
               <p className="text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-8">
-                Votre site est capturé automatiquement et mis en scène sur ordinateur, téléphone et tablette. Prêt pour
-                LinkedIn, Instagram, le statut WhatsApp ou votre proposition commerciale, en quelques secondes.
+                Préparez en 2 minutes les visuels et le texte qui font signer un client, au lieu de 2 heures sur Figma.
+                Pour votre proposition commerciale, vos réseaux sociaux ou les stores d&apos;applications.
               </p>
 
               {/* Champ de saisie d'URL centré et aéré — Pièce maîtresse */}
@@ -341,11 +332,11 @@ export default function HomePage() {
               {/* Lancement (sans fausse preuve sociale) */}
               <div className="animate-fade-in delay-500 flex items-center justify-center mb-12 sm:mb-16">
                 <a
-                  href="#agences-fondatrices"
+                  href="#usages"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 text-xs sm:text-sm text-zinc-300 font-medium hover:border-violet-400/40 hover:text-white transition-colors"
                 >
                   <Rocket className="w-4 h-4 text-violet-400" />
-                  Lancé en octobre 2026 · Nous cherchons 10 agences fondatrices
+                  Proposition commerciale · Réseaux sociaux · Stores d&apos;applis
                   <ArrowRight className="w-3.5 h-3.5" />
                 </a>
               </div>
@@ -975,21 +966,21 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* ═══════════ USAGES POUR UNE AGENCE ═══════════ */}
-          <section className="cv-auto bg-zinc-900 py-20 sm:py-28">
+          {/* ═══════════ LES 3 USAGES ═══════════ */}
+          <section className="cv-auto bg-zinc-900 py-20 sm:py-28 scroll-mt-20" id="usages">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center max-w-3xl mx-auto mb-14">
-                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Pour les agences</p>
+                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">À quoi ça sert</p>
                 <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-4">
-                  Un visuel pro à chaque <span className="shimmer-text">étape du projet</span>
+                  3 usages, <span className="shimmer-text">un seul lien à coller</span>
                 </h2>
                 <p className="text-zinc-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-                  De la proposition commerciale à l&apos;annonce du site livré, vos réalisations sont présentées comme elles le méritent.
+                  Ce qui vous prenait des heures sur Figma se prépare en quelques minutes, à partir de l&apos;adresse du site.
                 </p>
               </div>
 
-              {/* Desktop 2x2 Grid */}
-              <div className="hidden sm:grid sm:grid-cols-2 gap-5">
+              {/* Ordinateur : 3 colonnes */}
+              <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {AGENCY_USES.map((uc, i) => (
                   <div key={i} className="group relative p-6 sm:p-7 rounded-2xl bg-zinc-800/40 border border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800/70 transition-all flex flex-col gap-4">
                     <div className="flex items-center gap-3">
@@ -1090,24 +1081,6 @@ export default function HomePage() {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
-            </div>
-          </section>
-
-          {/* ═══════════ PROGRAMME AGENCES FONDATRICES ═══════════ */}
-          <section className="bg-zinc-950 pb-20 sm:pb-28 scroll-mt-20" id="agences-fondatrices">
-            <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-10">
-                <span className="inline-block text-[11px] font-black uppercase tracking-[0.2em] text-violet-400 bg-violet-950/60 border border-violet-800/60 px-3.5 py-1 rounded-full mb-3">
-                  Lancé en octobre 2026
-                </span>
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-4">
-                  Devenez l&apos;une des <span className="shimmer-text">10 agences fondatrices</span>
-                </h2>
-                <p className="text-zinc-400 text-sm sm:text-base leading-relaxed">
-                  1 mois de plan Pro offert. En échange, nous vous demandons simplement un retour honnête sur l&apos;outil après l&apos;avoir utilisé sur vos projets clients.
-                </p>
-              </div>
-              <FounderApplicationForm />
             </div>
           </section>
 

@@ -396,3 +396,5 @@ npm run dev
 - **Libellés renommés** dans la fenêtre Pitch IA : « Offre $100M » / « Méthode Alex Hormozi » / « Méthode Fabric » → « Offre irrésistible » / « Valeur, garantie et bonus » / « Opportunités de revenus ». La consigne interdit à l'IA de citer ces noms.
 - **Testé en local :** import d'un lien YouTube (miniature dans le studio à 375 px), ouverture de la fenêtre Pitch IA. **Non testé :** génération réelle (il faut une clé IA de Dodo).
 - **Remarqué :** le bouton « Pitch IA » n'est visible qu'en grand écran (pas sur téléphone ni tablette) → à traiter avec l'ergonomie mobile.
+- **Ergonomie du studio sur téléphone mise en ligne** (`b9c34fb`) : hauteur réelle de l'écran (100dvh), panneau de réglages agrandi, confirmation avant de quitter, fond qui ne cache plus le site après une scène photo, bouton « ← Revenir à mon mockup », boutons de 44 px, Pitch IA visible sur téléphone. Reste : test sur un vrai iPhone par Dodo.
+- **Dépôt GitHub remis en public** : en privé, Vercel Hobby bloquait le déploiement (auteur Git ≠ propriétaire du compte Vercel).

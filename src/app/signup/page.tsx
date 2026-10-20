@@ -273,8 +273,8 @@ function SignupForm() {
               <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 font-mono">
                 Lancé en octobre 2026
               </p>
-              <Link href="/#agences-fondatrices" className="text-xs font-semibold text-violet-200 hover:text-white transition-colors">
-                Agence web ? Rejoignez les 10 agences fondatrices : 1 mois Pro offert →
+              <Link href="/#usages" className="text-xs font-semibold text-violet-200 hover:text-white transition-colors">
+                Proposition commerciale, réseaux sociaux, stores d&apos;applis : voir les 3 usages →
               </Link>
             </div>
           </div>

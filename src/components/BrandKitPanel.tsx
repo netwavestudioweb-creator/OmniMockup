@@ -85,10 +85,10 @@ export const BrandKitPanel: React.FC<BrandKitPanelProps> = ({ userId, onApply })
   }
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-950/40 to-zinc-900 border border-violet-500/25 space-y-3">
+    <div className="p-4 rounded-2xl bg-zinc-900 border border-pms-accent/25 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-white uppercase font-mono flex items-center gap-1.5">
-          <Briefcase className="w-3.5 h-3.5 text-violet-300" />
+        <span className="text-xs font-bold text-white flex items-center gap-1.5">
+          <Briefcase className="w-3.5 h-3.5 text-pms-accent-soft" />
           Kit de marque
         </span>
         {kit && !editing && (
@@ -108,7 +108,7 @@ export const BrandKitPanel: React.FC<BrandKitPanelProps> = ({ userId, onApply })
           <p className="text-[11px] text-zinc-400 leading-relaxed">
             Enregistrez une fois le logo, les couleurs, la police et la signature de votre agence, puis appliquez-les en un clic sur chaque mockup.
           </p>
-          <button type="button" onClick={startEdit} className="w-full py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold">
+          <button type="button" onClick={startEdit} className="min-h-[44px] lg:min-h-0 w-full py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white text-xs font-bold">
             Créer mon kit de marque
           </button>
         </>
@@ -141,7 +141,7 @@ export const BrandKitPanel: React.FC<BrandKitPanelProps> = ({ userId, onApply })
               setApplied(true);
               setTimeout(() => setApplied(false), 2000);
             }}
-            className="w-full py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold flex items-center justify-center gap-1.5"
+            className="min-h-[44px] lg:min-h-0 w-full py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white text-xs font-bold flex items-center justify-center gap-1.5"
           >
             {applied ? <Check className="w-3.5 h-3.5" /> : <Wand2 className="w-3.5 h-3.5" />}
             {applied ? 'Appliqué' : 'Appliquer à ce mockup'}
@@ -170,7 +170,7 @@ export const BrandKitPanel: React.FC<BrandKitPanelProps> = ({ userId, onApply })
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="flex-1 py-2 rounded-lg border border-zinc-750 text-zinc-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5"
+              className="min-h-[44px] lg:min-h-0 flex-1 py-2 rounded-lg border border-zinc-750 text-zinc-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5"
             >
               <Upload className="w-3.5 h-3.5" />
               {draft.logo ? 'Changer le logo' : 'Ajouter le logo (PNG, 400 Ko max)'}
@@ -203,8 +203,8 @@ export const BrandKitPanel: React.FC<BrandKitPanelProps> = ({ userId, onApply })
                 type="button"
                 onClick={() => setDraft((d) => ({ ...d, font: f.id }))}
                 aria-pressed={draft.font === f.id}
-                className={`px-2 py-1 rounded-lg border text-[11px] ${
-                  draft.font === f.id ? 'bg-violet-600 border-violet-500 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-300'
+                className={`min-h-[44px] lg:min-h-0 px-2 py-1 rounded-lg border text-[11px] ${
+                  draft.font === f.id ? 'bg-pms-accent border-pms-accent text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-300'
                 }`}
                 style={{ fontFamily: f.family }}
               >
@@ -222,10 +222,10 @@ export const BrandKitPanel: React.FC<BrandKitPanelProps> = ({ userId, onApply })
             className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white"
           />
           <div className="flex gap-2">
-            <button type="button" onClick={save} disabled={saving} className="flex-1 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold disabled:opacity-60">
+            <button type="button" onClick={save} disabled={saving} className="min-h-[44px] lg:min-h-0 flex-1 py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white text-xs font-bold disabled:opacity-60">
               {saving ? 'Enregistrement…' : 'Enregistrer le kit'}
             </button>
-            <button type="button" onClick={() => setEditing(false)} className="px-3 py-2 rounded-xl text-zinc-400 hover:text-white text-xs font-semibold">
+            <button type="button" onClick={() => setEditing(false)} className="min-h-[44px] lg:min-h-0 px-3 py-2 rounded-xl text-zinc-400 hover:text-white text-xs font-semibold">
               Annuler
             </button>
           </div>

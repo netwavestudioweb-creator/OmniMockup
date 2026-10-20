@@ -111,7 +111,7 @@ export const CaptureGallery: React.FC<CaptureGalleryProps> = ({
             <button
               type="button"
               onClick={handleDownloadAll}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-medium text-xs shadow-lg shadow-brand-600/20 transition-all glow-btn"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pms-accent hover:bg-pms-accent-hover text-white font-medium text-xs shadow-lg shadow-brand-600/20 transition-all glow-btn"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Télécharger tout ({successfulCaptures.length})</span>

@@ -13,7 +13,7 @@ const STEPS: TourStep[] = [
   {
     target: '[data-tour="panel"]',
     title: '1. Réglez votre mockup',
-    text: "Choisissez l'appareil, l'angle, le fond et vos textes. Le mode Expert affiche tous les réglages avancés.",
+    text: "Choisissez l'appareil, l'angle, le fond et vos textes. Le bouton « Plus de réglages » affiche les options avancées.",
   },
   {
     target: '[data-tour="formats"]',
@@ -23,7 +23,7 @@ const STEPS: TourStep[] = [
   {
     target: '[data-tour="export"]',
     title: '3. Exportez',
-    text: "Téléchargez l'image, le pack réseaux sociaux, la vidéo ou le statut WhatsApp. Raccourci : touche E.",
+    text: "Téléchargez l'image, le pack réseaux sociaux, la vidéo ou le statut WhatsApp.",
   },
 ];
 
@@ -82,8 +82,8 @@ export const StudioTour: React.FC = () => {
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1024;
   const vh = typeof window !== 'undefined' ? window.innerHeight : 768;
   const cardW = Math.min(300, vw - 24);
-  const below = rect ? rect.bottom + 180 < vh : true;
-  const top = rect ? (below ? rect.bottom + 12 : Math.max(12, rect.top - 172)) : vh / 2 - 80;
+  const below = rect ? rect.bottom + 210 < vh : true;
+  const top = rect ? (below ? rect.bottom + 12 : Math.max(12, rect.top - 202)) : vh / 2 - 100;
   const left = rect ? Math.min(Math.max(12, rect.left + rect.width / 2 - cardW / 2), vw - cardW - 12) : vw / 2 - cardW / 2;
 
   return (
@@ -91,7 +91,7 @@ export const StudioTour: React.FC = () => {
       {/* Voile avec découpe autour de l'élément mis en avant */}
       {rect ? (
         <div
-          className="absolute rounded-2xl ring-2 ring-violet-400 transition-all duration-300 pointer-events-none"
+          className="absolute rounded-2xl ring-2 ring-pms-accent transition-all duration-300 pointer-events-none"
           style={{
             top: rect.top - 6,
             left: rect.left - 6,
@@ -109,21 +109,21 @@ export const StudioTour: React.FC = () => {
         style={{ top, left, width: cardW }}
       >
         <div className="flex items-center justify-between">
-          <h3 id="studio-tour-title" className="text-sm font-bold text-white">{current.title}</h3>
-          <span className="text-[10px] text-zinc-500 font-mono">
+          <h3 id="studio-tour-title" className="text-[15px] font-bold text-white">{current.title}</h3>
+          <span className="text-[13px] text-zinc-400 tabular-nums">
             {step + 1}/{STEPS.length}
           </span>
         </div>
-        <p className="text-xs text-zinc-300 leading-relaxed">{current.text}</p>
+        <p className="text-[14px] text-zinc-200 leading-relaxed">{current.text}</p>
         <div className="flex items-center justify-between pt-1">
-          <button type="button" onClick={finish} className="text-xs font-semibold text-zinc-400 hover:text-white">
+          <button type="button" onClick={finish} className="min-h-[44px] px-3 -ml-3 text-[14px] font-semibold text-zinc-300 hover:text-white">
             Passer
           </button>
           <button
             type="button"
             autoFocus
             onClick={() => (last ? finish() : setStep(step + 1))}
-            className="px-4 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold"
+            className="min-h-[44px] px-5 rounded-xl bg-pms-accent hover:bg-pms-accent-hover text-white text-[14px] font-bold"
           >
             {last ? 'Commencer' : 'Suivant'}
           </button>

@@ -58,7 +58,7 @@ export const TechStackPicker: React.FC<TechStackPickerProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-violet-600" />
+            <Sparkles className="w-3.5 h-3.5 text-pms-accent" />
             <span>Badges Stack Technique</span>
           </h4>
           <p className="text-[11px] text-stone-500">
@@ -85,7 +85,7 @@ export const TechStackPicker: React.FC<TechStackPickerProps> = ({
               key={tech.id}
               type="button"
               onClick={() => toggleTech(tech.id)}
-              className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-left transition-all ${
+              className={`min-h-[44px] lg:min-h-0 flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-left transition-all ${
                 isSelected
                   ? 'bg-stone-900 text-white border-stone-800 shadow-xs font-semibold'
                   : 'bg-white hover:bg-sand-50 text-stone-700 border-sand-200'
@@ -115,9 +115,9 @@ export const TechStackPicker: React.FC<TechStackPickerProps> = ({
                   key={pos}
                   type="button"
                   onClick={() => onPositionChange(pos)}
-                  className={`py-1 px-2 rounded-md text-[10px] font-medium border text-center capitalize ${
+                  className={`min-h-[44px] lg:min-h-0 py-1 px-2 rounded-md text-[10px] font-medium border text-center capitalize ${
                     position === pos
-                      ? 'bg-violet-600 text-white border-violet-500 shadow-2xs font-bold'
+                      ? 'bg-pms-accent text-white border-pms-accent shadow-2xs font-bold'
                       : 'bg-white text-stone-600 border-sand-200 hover:bg-sand-50'
                   }`}
                 >
@@ -137,7 +137,7 @@ export const TechStackPicker: React.FC<TechStackPickerProps> = ({
                   key={style}
                   type="button"
                   onClick={() => onThemeStyleChange(style)}
-                  className={`py-1 px-2 rounded-md text-[10px] font-medium border text-center ${
+                  className={`min-h-[44px] lg:min-h-0 py-1 px-2 rounded-md text-[10px] font-medium border text-center ${
                     themeStyle === style
                       ? 'bg-stone-900 text-white border-stone-800 shadow-2xs font-bold'
                       : 'bg-white text-stone-600 border-sand-200 hover:bg-sand-50'

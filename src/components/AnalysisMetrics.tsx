@@ -234,7 +234,7 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
               id="capture-selected-button"
               onClick={onCaptureSelected}
               disabled={selectedCount === 0 || isCapturing}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 via-indigo-600 to-accent-cyan hover:from-brand-500 hover:to-indigo-500 text-white font-medium text-xs shadow-lg shadow-brand-600/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all glow-btn ml-1"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pms-accent hover:bg-pms-accent-hover to-accent-cyan text-white font-medium text-xs shadow-lg shadow-brand-600/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all glow-btn ml-1"
             >
               {isCapturing ? (
                 <>

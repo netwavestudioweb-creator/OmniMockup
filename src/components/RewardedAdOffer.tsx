@@ -99,7 +99,7 @@ export const RewardedAdOffer: React.FC<{ onRewarded: () => void }> = ({ onReward
             {state === 'loading' || state === 'playing' ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <PlayCircle className="w-4 h-4 text-violet-600" />
+              <PlayCircle className="w-4 h-4 text-pms-accent" />
             )}
             {state === 'loading' ? 'Chargement de la pub…' : state === 'playing' ? 'Pub en cours…' : 'Regarder une pub (environ 30 s)'}
           </button>

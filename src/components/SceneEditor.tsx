@@ -208,39 +208,39 @@ function extractMagicGradients(base64Image: string): Promise<{ name: string; val
 // Palettes prédéfinies luxueuses style macOS / Apple Wallpapers / Shots.so
 const GRADIENT_PRESETS = [
   {
-    name: 'macOS Sonoma Flow',
+    name: 'Vagues claires',
     value: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 25%, #db2777 50%, #f97316 75%, #06b6d4 100%)',
   },
   {
-    name: 'Tahoe Warm Sunset',
+    name: 'Couchant chaud',
     value: 'linear-gradient(135deg, #f97316 0%, #ea580c 30%, #c2410c 60%, #7c2d12 100%)',
   },
   {
-    name: 'Big Sur Pacific',
+    name: 'Pacifique',
     value: 'linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #0f172a 100%)',
   },
   {
-    name: 'Ventura Amber',
+    name: 'Ambre doux',
     value: 'linear-gradient(135deg, #f59e0b 0%, #d97706 40%, #b45309 70%, #78350f 100%)',
   },
   {
-    name: 'Aurora Borealis Glow',
+    name: 'Aurore boréale',
     value: 'linear-gradient(135deg, #047857 0%, #0d9488 40%, #0e7490 70%, #1e1b4b 100%)',
   },
   {
-    name: 'Dark Obsidian Studio',
+    name: 'Studio sombre',
     value: 'linear-gradient(135deg, #09090b 0%, #18181b 50%, #27272a 100%)',
   },
   {
-    name: 'Clean Dune Sand',
+    name: 'Sable',
     value: 'linear-gradient(135deg, #fdfbf7 0%, #f4efe6 50%, #eae3d2 100%)',
   },
   {
-    name: 'Rose Quartz & Amethyst',
+    name: 'Quartz rose',
     value: 'linear-gradient(135deg, #f472b6 0%, #c084fc 50%, #6366f1 100%)',
   },
   {
-    name: 'Cyberpunk Neon',
+    name: 'Néon',
     value: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%)',
   },
 ];
@@ -341,8 +341,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   // Configuration d'état de la scène
   const [config, setConfig] = useState<SceneConfig>({
     aspectRatio: '16:9',
-    bgType: 'gradient',
-    bgValue: GRADIENT_PRESETS[0].value,
+    // Fond par défaut sobre (gris clair uni) : le mockup ressort sans effet « dégradé violet »
+    bgType: 'solid',
+    bgValue: '#E9E9EB',
     bgTransparent: false,
     bgNoise: false,
     mockupType: initialMockup,
@@ -450,6 +451,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   // ══ ONGLETS PRINCIPAUX DU STUDIO (MOCKUP vs FRAME style Shots.so) ══
   const [activeMainTab, setActiveMainTab] = useState<'mockup' | 'frame'>('mockup');
+  // Changer d'onglet ramène les réglages en haut : sinon on arrive au milieu de la liste sans savoir où l'on est
+  const inspectorScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    inspectorScrollRef.current?.scrollTo({ top: 0 });
+  }, [activeTab, activeMainTab]);
   const [showFrameSizePopover, setShowFrameSizePopover] = useState<boolean>(false);
   const [currentFramePreset, setCurrentFramePreset] = useState<FramePresetOption>(FRAME_PRESETS[0]); // 16:9 1920 × 1080
   const [showAllSolidColors, setShowAllSolidColors] = useState<boolean>(false);
@@ -2449,7 +2455,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 type="button"
                 autoFocus
                 onClick={() => setConfirmQuit(false)}
-                className="min-h-[44px] px-4 rounded-xl text-sm font-bold text-white bg-violet-600 hover:bg-violet-500 transition-colors"
+                className="min-h-[44px] px-4 rounded-xl text-sm font-bold text-white bg-pms-accent hover:bg-pms-accent transition-colors"
               >
                 Rester dans le studio
               </button>
@@ -2461,9 +2467,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       {/* 1. TOP BAR PRO (Shots.so / Rotato App Header)                         */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {!presentationMode && (
-        <header className="h-14 sm:h-16 px-2 sm:px-5 lg:px-6 border-b border-zinc-800/90 bg-[#08090e]/95 backdrop-blur-2xl flex items-center justify-between gap-2.5 z-30 shrink-0 relative select-none">
+        <header className="h-14 sm:h-16 px-2 sm:px-5 lg:px-6 border-b border-zinc-800/90 bg-[#08090e]/95 backdrop-blur-2xl flex items-center justify-between gap-2.5 z-[45] shrink-0 relative select-none">
           {/* Ligne d'accentuation subtile en haut */}
-          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent pointer-events-none" />
+          <div className="absolute top-0 inset-x-0 h-px bg-pms-accent pointer-events-none" />
 
           {/* ── GAUCHE : Quitter, Marque PitchMySite, Site Cible & Templates ── */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
@@ -2481,15 +2487,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             )}
 
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="hidden sm:flex w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-violet-500 text-white items-center justify-center shadow-lg shadow-violet-600/30 ring-1 ring-white/15 shrink-0">
+              <div className="hidden sm:flex w-8 h-8 rounded-xl bg-pms-accent text-white items-center justify-center shadow-lg ring-1 ring-white/15 shrink-0">
                 <Sparkles className="w-4 h-4 text-amber-200" />
               </div>
               <div className="min-w-0 hidden sm:block">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs sm:text-sm font-black tracking-tight text-white truncate">
-                    Pitch<span className="text-violet-400">MySite</span>
+                    Pitch<span className="text-pms-accent-soft">MySite</span>
                   </span>
-                  <span className="px-1.5 py-0.2 rounded-md bg-violet-500/15 text-violet-300 border border-violet-500/30 text-[9px] font-bold tracking-wider uppercase shrink-0">
+                  <span className="px-1.5 py-0.2 rounded-md bg-pms-accent/15 text-pms-accent-soft border border-pms-accent/30 text-[9px] font-bold tracking-wider uppercase shrink-0">
                     Studio
                   </span>
                 </div>
@@ -2521,7 +2527,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               title="Modèles de mise en scène prêts à l'emploi (raccourci : T)"
               aria-label="Modèles"
             >
-              <Layout className="w-3.5 h-3.5 text-violet-400" />
+              <Layout className="w-3.5 h-3.5 text-pms-accent-soft" />
               <span className="hidden lg:inline">Modèles</span>
             </button>
           </div>
@@ -2540,7 +2546,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 aria-pressed={(config.layoutMode || 'single') === l.id}
                 className={`px-3.5 py-1 rounded-xl text-xs font-semibold transition-all ${
                   (config.layoutMode || 'single') === l.id
-                    ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
+                    ? 'bg-pms-accent text-white shadow-md'
                     : 'text-zinc-400 hover:text-zinc-200'
                 }`}
                 title={l.title}
@@ -2582,7 +2588,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               type="button"
               onClick={() => setSalesKitOpen(true)}
               aria-label="Pitch IA"
-              className="flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 px-3 py-1.5 rounded-xl bg-violet-950/40 hover:bg-violet-900/60 border border-violet-500/40 hover:border-violet-400 text-violet-200 hover:text-white text-xs font-bold transition-all shadow-xs active:scale-95"
+              className="flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 px-3 py-1.5 rounded-xl bg-pms-accent-hover/40 hover:bg-pms-accent-hover/60 border border-pms-accent/40 hover:border-pms-accent text-pms-accent-soft hover:text-white text-xs font-bold transition-all shadow-xs active:scale-95"
               title="Rédiger un post LinkedIn, une proposition commerciale et une étude de cas avec l'IA"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -2607,8 +2613,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 onClick={() => setShowExportMenu((v) => !v)}
                 disabled={isExporting || isExportingPack}
                 aria-expanded={showExportMenu}
-                className="flex items-center gap-1.5 sm:gap-2 min-h-[44px] lg:min-h-0 px-3 sm:px-4 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-violet-600/30 ring-1 ring-white/20 transition-all active:scale-95 disabled:opacity-60"
+                className="flex items-center justify-center gap-1.5 sm:gap-2 min-w-[44px] min-h-[44px] lg:min-h-0 px-3 sm:px-4 py-1.5 rounded-xl bg-pms-accent hover:bg-pms-accent-hover text-white font-bold text-xs sm:text-sm shadow-lg ring-1 ring-white/20 transition-all active:scale-95 disabled:opacity-60"
                 title="Exporter l'image, la vidéo ou le pack réseaux sociaux (raccourci : E)"
+                aria-label="Exporter"
               >
                 {isExporting || isExportingPack ? (
                   <>
@@ -2622,18 +2629,53 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   </>
                 ) : (
                   <>
-                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span>Exporter</span>
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+                    <Download className="w-4 h-4" />
+                    {/* Sur téléphone, l'icône seule : la barre du haut tient sur une ligne */}
+                    <span className="hidden sm:inline">Exporter</span>
+                    <ChevronDown className={`hidden sm:block w-3.5 h-3.5 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
                   </>
                 )}
               </button>
 
               {showExportMenu && (
-                <div className="absolute right-0 mt-2.5 w-[min(20rem,calc(100vw-1.5rem))] bg-[#0c0d14] border border-zinc-800 rounded-2xl shadow-2xl shadow-black/80 p-4 z-50 animate-slide-up text-xs space-y-4">
+                <div className="absolute right-0 mt-2.5 w-[min(20rem,calc(100vw-1.5rem))] max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain bg-[#0c0d14] border border-zinc-800 rounded-2xl shadow-2xl shadow-black/80 p-4 z-50 animate-slide-up text-xs space-y-4">
+                  {/* Téléphone : les 3 actions les plus utilisées d'abord, en gros boutons */}
+                  <div className="lg:hidden space-y-2">
+                    <button
+                      type="button"
+                      onClick={handleExportImage}
+                      disabled={isExporting}
+                      className="w-full min-h-[48px] flex items-center justify-center gap-2 rounded-xl bg-pms-accent hover:bg-pms-accent-hover text-white text-[15px] font-bold disabled:opacity-50"
+                    >
+                      <Download className="w-4 h-4" />
+                      Télécharger l&apos;image
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportWhatsAppStatus}
+                      disabled={isExporting}
+                      className="w-full min-h-[48px] flex items-center justify-center gap-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-[15px] font-semibold disabled:opacity-50"
+                    >
+                      <Smartphone className="w-4 h-4 text-emerald-400" />
+                      Statut WhatsApp
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowShare(true);
+                        setShowExportMenu(false);
+                      }}
+                      className="w-full min-h-[48px] flex items-center justify-center gap-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-[15px] font-semibold"
+                    >
+                      <Link2 className="w-4 h-4 text-pms-accent-soft" />
+                      Lien de partage pour le client
+                    </button>
+                    <p className="pt-2 text-[13px] font-semibold text-zinc-400">Toutes les options</p>
+                  </div>
+
                   {/* Format de fichier */}
                   <div className="space-y-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Format du fichier</span>
+                    <span className="text-[12px] lg:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Format du fichier</span>
                     <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
                       {([
                         { id: 'png', label: 'PNG', hint: 'Qualité maximale, fond transparent possible' },
@@ -2646,8 +2688,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           onClick={() => setExportFormat(f.id)}
                           aria-pressed={exportFormat === f.id}
                           title={f.hint}
-                          className={`py-1.5 rounded-lg font-bold transition-all ${
-                            exportFormat === f.id ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:text-white'
+                          className={`min-h-[40px] lg:min-h-0 py-1.5 rounded-lg font-bold transition-all ${
+                            exportFormat === f.id ? 'bg-pms-accent text-white' : 'text-zinc-400 hover:text-white'
                           }`}
                         >
                           {f.label}
@@ -2658,7 +2700,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                   {/* Qualité (dimensions réelles du fichier) */}
                   <div className="space-y-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Qualité</span>
+                    <span className="text-[12px] lg:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Qualité</span>
                     <div className="space-y-1">
                       {([
                         { id: 'standard', label: 'Standard', allowed: true, plan: '' },
@@ -2673,9 +2715,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             type="button"
                             onClick={() => setExportQuality(q.id)}
                             aria-pressed={active}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all ${
+                            className={`w-full min-h-[44px] lg:min-h-0 flex items-center justify-between px-3 py-2 rounded-xl border transition-all ${
                               active
-                                ? 'bg-violet-600/15 border-violet-500/60 text-white'
+                                ? 'bg-pms-accent/15 border-pms-accent/60 text-white'
                                 : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700'
                             }`}
                           >
@@ -2683,7 +2725,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                               {!q.allowed && <Lock className="w-3 h-3 text-amber-400" />}
                               {q.label}
                             </span>
-                            <span className="font-mono text-[10px] text-zinc-400">
+                            <span className="font-mono text-[12px] lg:text-[10px] text-zinc-400">
                               {size.width} × {size.height}
                               {!q.allowed && (
                                 <span className="ml-1.5 text-amber-400 font-sans font-bold">
@@ -2695,7 +2737,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         );
                       })}
                     </div>
-                    <p className="text-[10px] text-zinc-500">
+                    <p className="text-[12px] lg:text-[10px] text-zinc-500">
                       Format du canevas : {currentFramePreset.name} ({currentFramePreset.ratioLabel}). Modifiable en bas de l&apos;écran.
                     </p>
                   </div>
@@ -2704,7 +2746,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     type="button"
                     onClick={handleExportImage}
                     disabled={isExporting}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-violet-600/30 disabled:opacity-60"
+                    className="w-full py-2.5 rounded-xl bg-pms-accent hover:bg-pms-accent-hover text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-60"
                   >
                     {isExporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                     <span>Télécharger l&apos;image</span>
@@ -2712,7 +2754,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                   {/* Autres exports */}
                   <div className="pt-3 border-t border-zinc-800 space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Autres exports</span>
+                    <span className="text-[12px] lg:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Autres exports</span>
                     {canShareFiles && (
                       <button
                         type="button"
@@ -2723,7 +2765,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <ExternalLink className="w-4 h-4 text-sky-400" />
                         <span className="flex-1">
                           <span className="font-semibold block">Partager…</span>
-                          <span className="text-[10px] text-zinc-500">WhatsApp, Telegram, e-mail… avec l&apos;image jointe</span>
+                          <span className="text-[12px] lg:text-[10px] text-zinc-500">WhatsApp, Telegram, e-mail… avec l&apos;image jointe</span>
                         </span>
                       </button>
                     )}
@@ -2736,7 +2778,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       <Smartphone className="w-4 h-4 text-emerald-400" />
                       <span className="flex-1">
                         <span className="font-semibold block">Statut WhatsApp</span>
-                        <span className="text-[10px] text-zinc-500">Format vertical 9:16, JPG léger</span>
+                        <span className="text-[12px] lg:text-[10px] text-zinc-500">Format vertical 9:16, JPG léger</span>
                       </span>
                     </button>
                     <button
@@ -2751,7 +2793,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       {copySuccess ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-zinc-400" />}
                       <span className="flex-1">
                         <span className="font-semibold block">{copySuccess ? 'Copié !' : 'Copier l\'image'}</span>
-                        <span className="text-[10px] text-zinc-500">À coller dans un e-mail, Slack, WhatsApp Web…</span>
+                        <span className="text-[12px] lg:text-[10px] text-zinc-500">À coller dans un e-mail, Slack, WhatsApp Web…</span>
                       </span>
                     </button>
                     <button
@@ -2766,7 +2808,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       <Layers className="w-4 h-4 text-emerald-400" />
                       <span className="flex-1">
                         <span className="font-semibold block">Pack réseaux sociaux (5 fichiers)</span>
-                        <span className="text-[10px] text-zinc-500">16:9, LinkedIn, Instagram carré et portrait, Story / statut WhatsApp</span>
+                        <span className="text-[12px] lg:text-[10px] text-zinc-500">16:9, LinkedIn, Instagram carré et portrait, Story / statut WhatsApp</span>
                       </span>
                     </button>
                     {([
@@ -2786,7 +2828,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <Smartphone className="w-4 h-4 text-sky-400" />
                         <span className="flex-1">
                           <span className="font-semibold block">{pk.label}</span>
-                          <span className="text-[10px] text-zinc-500">{pk.hint}</span>
+                          <span className="text-[12px] lg:text-[10px] text-zinc-500">{pk.hint}</span>
                         </span>
                       </button>
                     ))}
@@ -2798,10 +2840,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left"
                     >
-                      <Link2 className="w-4 h-4 text-violet-400" />
+                      <Link2 className="w-4 h-4 text-pms-accent-soft" />
                       <span className="flex-1">
                         <span className="font-semibold block">Lien de partage</span>
-                        <span className="text-[10px] text-zinc-500">Une page pour que votre client voie et télécharge le mockup</span>
+                        <span className="text-[12px] lg:text-[10px] text-zinc-500">Une page pour que votre client voie et télécharge le mockup</span>
                       </span>
                     </button>
                     <button
@@ -2810,10 +2852,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       disabled={isAddingSlide}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left disabled:opacity-50"
                     >
-                      {isAddingSlide ? <RefreshCw className="w-4 h-4 animate-spin text-violet-400" /> : <FilePlus className="w-4 h-4 text-violet-400" />}
+                      {isAddingSlide ? <RefreshCw className="w-4 h-4 animate-spin text-pms-accent-soft" /> : <FilePlus className="w-4 h-4 text-pms-accent-soft" />}
                       <span className="flex-1">
                         <span className="font-semibold block">{slideAddedNote || 'Ajouter à la présentation'}</span>
-                        <span className="text-[10px] text-zinc-500">Garde cette scène comme une page du PDF client</span>
+                        <span className="text-[12px] lg:text-[10px] text-zinc-500">Garde cette scène comme une page du PDF client</span>
                       </span>
                     </button>
                     <button
@@ -2824,15 +2866,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-zinc-200 hover:bg-zinc-900 text-left"
                     >
-                      <FileText className="w-4 h-4 text-violet-400" />
+                      <FileText className="w-4 h-4 text-pms-accent-soft" />
                       <span className="flex-1">
                         <span className="font-semibold block">
                           Présentation client / carrousel
                           {presentationSlides.length > 0 && (
-                            <span className="ml-1.5 px-1.5 py-0.5 rounded bg-violet-600 text-white text-[10px]">{presentationSlides.length}</span>
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded bg-pms-accent text-white text-[12px] lg:text-[10px]">{presentationSlides.length}</span>
                           )}
                         </span>
-                        <span className="text-[10px] text-zinc-500">PDF pour un devis, carrousel LinkedIn ou Instagram</span>
+                        <span className="text-[12px] lg:text-[10px] text-zinc-500">PDF pour un devis, carrousel LinkedIn ou Instagram</span>
                       </span>
                     </button>
                     <div className="px-3 py-2 rounded-xl space-y-2">
@@ -2840,7 +2882,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <Video className="w-4 h-4 text-amber-400 shrink-0" />
                         <span className="flex-1">
                           <span className="font-semibold block">Vidéo animée</span>
-                          <span className="text-[10px] text-zinc-500">
+                          <span className="text-[12px] lg:text-[10px] text-zinc-500">
                             {VIDEO_ANIMATIONS.find((v) => v.id === videoPreset)?.hint}
                             {videoAsGif
                               ? ', GIF 720 px'
@@ -2860,7 +2902,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             aria-checked={videoAsGif === o.gif}
                             onClick={() => setVideoAsGif(o.gif)}
                             disabled={isExportingVideo}
-                            className={`py-1 rounded-md text-[11px] font-bold ${videoAsGif === o.gif ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-white'}`}
+                            className={`py-1 rounded-md text-[12px] lg:text-[11px] font-bold ${videoAsGif === o.gif ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-white'}`}
                           >
                             {o.label}
                           </button>
@@ -2875,7 +2917,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             aria-checked={videoPreset === v.id}
                             onClick={() => setVideoPreset(v.id)}
                             disabled={isExportingVideo}
-                            className={`py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${
+                            className={`py-1.5 rounded-lg text-[12px] lg:text-[11px] font-semibold border transition-all ${
                               videoPreset === v.id
                                 ? 'bg-amber-500/15 border-amber-500/50 text-amber-200'
                                 : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
@@ -2915,7 +2957,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               {showRightPanel ? (
                 <PanelRightClose className="w-4 h-4 text-zinc-400" />
               ) : (
-                <PanelRightOpen className="w-4 h-4 text-violet-400" />
+                <PanelRightOpen className="w-4 h-4 text-pms-accent-soft" />
               )}
             </button>
 
@@ -2929,7 +2971,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               >
                 {/* Avatar utilisateur */}
                 <div className="relative">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-violet-600 to-fuchsia-600 text-white flex items-center justify-center font-bold text-[11px] shadow-sm uppercase">
+                  <div className="w-7 h-7 rounded-lg bg-pms-accent text-white flex items-center justify-center font-bold text-[11px] shadow-sm uppercase">
                     {user?.email ? user.email.slice(0, 2) : <UserIcon className="w-3.5 h-3.5 text-white" />}
                   </div>
                   <span
@@ -2945,7 +2987,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     userPlan === 'agence'
                       ? 'bg-amber-400/15 text-amber-300 border-amber-400/30'
                       : userPlan === 'pro'
-                      ? 'bg-violet-500/20 text-violet-300 border-violet-500/40'
+                      ? 'bg-pms-accent/20 text-pms-accent-soft border-pms-accent/40'
                       : userPlan === 'solo'
                       ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                       : 'bg-zinc-800 text-zinc-400 border-zinc-700'
@@ -2958,7 +3000,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </>
                   ) : userPlan === 'pro' ? (
                     <>
-                      <Zap className="w-2.5 h-2.5 text-violet-400" />
+                      <Zap className="w-2.5 h-2.5 text-pms-accent-soft" />
                       <span>Pro</span>
                     </>
                   ) : userPlan === 'solo' ? (
@@ -2992,7 +3034,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           userPlan === 'agence'
                             ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
                             : userPlan === 'pro'
-                            ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                            ? 'bg-pms-accent/20 text-pms-accent-soft border border-pms-accent/30'
                             : userPlan === 'solo'
                             ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                             : 'bg-zinc-800 text-zinc-300 border border-zinc-700'
@@ -3001,7 +3043,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         {userPlan === 'agence' ? (
                           <Crown className="w-3 h-3 text-amber-300" />
                         ) : userPlan === 'pro' ? (
-                          <Zap className="w-3 h-3 text-violet-400" />
+                          <Zap className="w-3 h-3 text-pms-accent-soft" />
                         ) : (
                           <Shield className="w-3 h-3 text-zinc-400" />
                         )}
@@ -3035,7 +3077,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <Link
                           href="/pricing"
                           onClick={() => setUserDropdownOpen(false)}
-                          className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-[11px] transition-all shadow-md shadow-violet-600/30"
+                          className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-pms-accent hover:bg-pms-accent-hover text-white font-bold text-[11px] transition-all shadow-md"
                         >
                           <Sparkles className="w-3 h-3 text-amber-300" />
                           <span>Passer au Pro</span>
@@ -3094,9 +3136,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <Link
                           href="/signup"
                           onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-violet-400 hover:text-violet-300 hover:bg-zinc-850/80 transition-colors font-bold"
+                          className="flex items-center gap-2.5 px-4 py-2 text-pms-accent-soft hover:text-pms-accent-soft hover:bg-zinc-850/80 transition-colors font-bold"
                         >
-                          <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                          <Sparkles className="w-3.5 h-3.5 text-pms-accent-soft" />
                           <span>Créer un compte gratuit</span>
                         </Link>
 
@@ -3126,18 +3168,28 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         <main className="flex-1 min-h-[180px] lg:min-h-0 lg:h-full relative flex flex-col items-center justify-center p-3 sm:p-8 bg-[#090a0f] overflow-hidden select-none">
           {/* Mode Présentation: Flottant 'Quitter la présentation (Échap)' */}
           {presentationMode && (
-            <div className="absolute top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2 rounded-full bg-[#07080c]/90 backdrop-blur-xl border border-zinc-800 text-white shadow-2xl animate-fade-in select-none">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-semibold text-zinc-200">Mode Présentation</span>
+            <div className="absolute top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-2 py-2 rounded-full bg-[#07080c]/90 border border-zinc-800 text-white animate-fade-in select-none">
               <button
                 type="button"
                 onClick={() => setPresentationMode(false)}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-[11px] font-mono transition-all active:scale-95 border border-zinc-700"
+                className="flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-white text-zinc-900 text-[14px] font-semibold transition-all active:scale-95"
               >
-                <Minimize2 className="w-3 h-3" />
-                <span>Quitter (Échap)</span>
+                <Minimize2 className="w-4 h-4" />
+                <span>Fermer l&apos;aperçu</span>
               </button>
             </div>
+          )}
+
+          {/* Téléphone : voir le mockup en plein écran d'un toucher */}
+          {!presentationMode && (
+            <button
+              type="button"
+              onClick={() => setPresentationMode(true)}
+              className="lg:hidden absolute top-2 right-2 z-40 flex items-center gap-1.5 min-h-[44px] px-3 rounded-full bg-black/70 text-white text-[13px] font-semibold active:scale-95 transition-all"
+            >
+              <Maximize2 className="w-4 h-4" />
+              Voir en grand
+            </button>
           )}
 
           {/* Scène photo : retour bien visible au mockup d'avant */}
@@ -3152,22 +3204,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             </button>
           )}
 
-          {/* Grille d'établi design professionnelle (Dot Matrix) */}
-          <div
-            className="absolute inset-0 opacity-[0.045] pointer-events-none"
-            style={{
-              backgroundImage: `radial-gradient(circle, #ffffff 1.2px, transparent 1.2px)`,
-              backgroundSize: '24px 24px',
-            }}
-          />
-
-          {/* Halo d'ambiance lumineux d'arrière-plan */}
-          <div className="absolute w-[640px] h-[420px] rounded-full bg-violet-600/10 blur-[130px] pointer-events-none studio-ambient-glow" />
 
           {/* CONTENEUR DE ZOOM DU CANVAS */}
           <div
             ref={canvasAreaRef}
-            className="w-full h-full flex items-center justify-center transition-transform duration-200"
+            className="w-full flex-1 min-h-0 flex items-center justify-center transition-transform duration-200"
             style={{ transform: `scale(${canvasZoom / 100})` }}
           >
             {/* CADRE D'AFFICHAGE (taille à l'écran) */}
@@ -3312,7 +3353,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   >
                     {([
                       { key: 'before', label: config.beforeLabel ?? 'Avant', shot: beforeScreenshot, accent: 'bg-zinc-900/85 text-zinc-100' },
-                      { key: 'after', label: config.afterLabel ?? 'Après', shot: currentScreenshot, accent: 'bg-violet-600 text-white' },
+                      { key: 'after', label: config.afterLabel ?? 'Après', shot: currentScreenshot, accent: 'bg-pms-accent text-white' },
                     ] as const).map((side) => (
                       <div key={side.key} className="relative w-[48.5%] flex flex-col items-center gap-[4%]">
                         <span className={`px-4 py-1.5 rounded-full text-[18px] font-extrabold tracking-wide shadow-lg ${side.accent}`}>
@@ -3575,7 +3616,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   >
                     <span className="whitespace-pre-wrap leading-tight block drop-shadow-md">{txt.text}</span>
                     {isSelected && (
-                      <span data-export-hide className="absolute inset-0 rounded-lg ring-2 ring-violet-500 pointer-events-none" />
+                      <span data-export-hide className="absolute inset-0 rounded-lg ring-2 ring-pms-accent pointer-events-none" />
                     )}
                     {isSelected && (
                       <button
@@ -3615,7 +3656,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={lg.src} alt="Logo" className="w-full h-auto object-contain pointer-events-none drop-shadow-md" />
                     {isSelected && (
-                      <span data-export-hide className="absolute inset-0 rounded-lg ring-2 ring-violet-500 pointer-events-none" />
+                      <span data-export-hide className="absolute inset-0 rounded-lg ring-2 ring-pms-accent pointer-events-none" />
                     )}
                     {isSelected && (
                       <button
@@ -3658,12 +3699,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           ? 'bg-amber-950/85 border-amber-500/40 text-amber-200 shadow-amber-950/50'
                           : callout.colorTheme === 'rose'
                           ? 'bg-rose-950/85 border-rose-500/40 text-rose-200 shadow-rose-950/50'
-                          : 'bg-zinc-950/85 border-violet-500/40 text-white shadow-violet-950/40'
+                          : 'bg-zinc-950/85 border-pms-accent/40 text-white'
                       }`}
                     >
-                      <span className="w-2 h-2 rounded-full bg-violet-400 animate-ping" />
+                      <span className="w-2 h-2 rounded-full bg-pms-accent animate-ping" />
                       {callout.badge && (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-violet-600 text-white">
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-pms-accent text-white">
                           {callout.badge}
                         </span>
                       )}
@@ -3674,7 +3715,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     {/* Pointer pin tail */}
                     <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-zinc-900 mx-auto -mt-0.5 filter drop-shadow-md" />
                     {isSelected && (
-                      <span data-export-hide className="absolute inset-0 rounded-lg ring-2 ring-violet-500 pointer-events-none" />
+                      <span data-export-hide className="absolute inset-0 rounded-lg ring-2 ring-pms-accent pointer-events-none" />
                     )}
                     {isSelected && (
                       <button
@@ -3741,7 +3782,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         ? 'bg-black/75 border-white/20 text-white shadow-black/50'
                         : techThemeStyle === 'light-glass'
                         ? 'bg-white/85 border-white/60 text-stone-900 shadow-stone-950/20'
-                        : 'bg-stone-950/95 border-violet-500/50 text-violet-300 ring-2 ring-violet-500/30'
+                        : 'bg-stone-950/95 border-pms-accent/50 text-pms-accent-soft ring-2 ring-pms-accent/30'
                     }`}
                   >
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -3792,10 +3833,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
               {/* REPÈRES D'ALIGNEMENT (jamais exportés) */}
               {snapGuides.v && (
-                <div data-export-hide data-snap-guide="v" className="absolute top-0 bottom-0 left-1/2 w-px bg-fuchsia-400/90 z-[60] pointer-events-none" />
+                <div data-export-hide data-snap-guide="v" className="absolute top-0 bottom-0 left-1/2 w-px bg-pms-accent/90 z-[60] pointer-events-none" />
               )}
               {snapGuides.h && (
-                <div data-export-hide data-snap-guide="h" className="absolute left-0 right-0 top-1/2 h-px bg-fuchsia-400/90 z-[60] pointer-events-none" />
+                <div data-export-hide data-snap-guide="h" className="absolute left-0 right-0 top-1/2 h-px bg-pms-accent/90 z-[60] pointer-events-none" />
               )}
 
               {/* WATERMARK : FREE vs PRO (Marque blanche) */}
@@ -3803,12 +3844,17 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 <Link
                   data-watermark
                   href="/pricing"
-                  className="absolute bottom-3 right-3 z-40 px-2.5 py-1 rounded-lg bg-black/65 hover:bg-violet-950/80 backdrop-blur-md text-white/90 hover:text-white text-[10px] font-mono font-semibold flex items-center gap-1.5 shadow-sm border border-white/20 hover:border-violet-400 transition-all select-none group"
+                  onClick={(e) => {
+                    // Rester dans le studio : on ouvre la fenêtre des formules au lieu de quitter la page
+                    e.preventDefault();
+                    setUpsellModal({ open: true, mode: 'feature_locked' });
+                  }}
+                  className="absolute bottom-3 right-3 z-40 px-2.5 py-1 rounded-lg bg-black/65 hover:bg-pms-accent-hover/80 backdrop-blur-md text-white/90 hover:text-white text-[10px] font-mono font-semibold flex items-center gap-1.5 shadow-sm border border-white/20 hover:border-pms-accent transition-all select-none group"
                   title="Créé avec PitchMySite. Débloquez le plan Pro pour supprimer le filigrane."
                 >
-                  <Layers className="w-3 h-3 text-violet-400 group-hover:scale-110 transition-transform" />
+                  <Layers className="w-3 h-3 text-pms-accent-soft group-hover:scale-110 transition-transform" />
                   <span>Réalisé avec PitchMySite</span>
-                  <span data-export-hide className="text-[9px] bg-violet-600/60 px-1 py-0.5 rounded text-violet-200 group-hover:bg-violet-600 font-sans">
+                  <span data-export-hide className="text-[9px] bg-pms-accent/60 px-1 py-0.5 rounded text-pms-accent-soft group-hover:bg-pms-accent font-sans">
                     Retirer
                   </span>
                 </Link>
@@ -3822,7 +3868,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               {/* EFFET VFX HALO LUMINEUX */}
               {vfxGlow && (
                 <div className="absolute inset-0 pointer-events-none z-[15] flex items-center justify-center">
-                  <div className="w-[82%] h-[75%] rounded-full bg-violet-600/30 blur-3xl animate-pulse" />
+                  <div className="w-[82%] h-[75%] rounded-full bg-pms-accent/30 blur-3xl animate-pulse" />
                 </div>
               )}
 
@@ -3833,7 +3879,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           </div>
 
           {/* ── BARRE DE CONTRÔLES FLOTTANTE AU BAS DU CANVAS (STYLE SHOTS.SO) ── */}
-          <div data-tour="formats" className="absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100%-1rem)] overflow-x-auto no-scrollbar bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl px-3 py-1 lg:py-1.5 shadow-2xl [&_button]:min-h-[36px] [&_button]:min-w-[32px] lg:[&_button]:min-h-0 lg:[&_button]:min-w-0 flex items-center gap-3 text-xs select-none whitespace-nowrap">
+          <div data-tour="formats" className="relative shrink-0 mt-2 lg:mt-0 lg:absolute lg:bottom-5 lg:left-1/2 lg:-translate-x-1/2 z-40 max-w-full lg:max-w-[calc(100%-1rem)] overflow-x-auto no-scrollbar bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl px-3 py-1 lg:py-1.5 shadow-2xl [&_button]:min-h-[44px] [&_button]:min-w-[40px] lg:[&_button]:min-h-0 lg:[&_button]:min-w-0 [&_button]:text-[13px] [&_span]:text-[13px] lg:[&_button]:text-[11px] lg:[&_span]:text-[11px] flex items-center gap-3 text-xs select-none whitespace-nowrap">
             {/* Formats rapides (même réglage que « Format du canevas ») */}
             <div className="flex items-center gap-1">
               {(['geo-16-9', 'geo-4-3', 'geo-1-1', 'ig-portrait', 'geo-9-16'] as const).map((id) => {
@@ -3847,7 +3893,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     onClick={() => selectFramePreset(fp)}
                     aria-pressed={active}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                      active ? 'bg-violet-600 text-white shadow-xs' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                      active ? 'bg-pms-accent text-white shadow-xs' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                     }`}
                     title={`${fp.desc} — ${fp.width} × ${fp.height}`}
                   >
@@ -3860,7 +3906,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 onClick={() => setShowFrameSizePopover(true)}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
                   !['geo-16-9', 'geo-4-3', 'geo-1-1', 'ig-portrait', 'geo-9-16'].includes(currentFramePreset.id)
-                    ? 'bg-violet-600 text-white'
+                    ? 'bg-pms-accent text-white'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                 }`}
                 title="Tous les formats : Instagram, LinkedIn, YouTube, Pinterest, App Store…"
@@ -3913,7 +3959,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               className="flex items-center gap-1 px-2 py-1 text-[11px] text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors font-medium"
               title="Remettre l'appareil droit et centré"
             >
-              <RotateCcw className="w-3 h-3 text-violet-400" />
+              <RotateCcw className="w-3 h-3 text-pms-accent-soft" />
               <span>Recentrer</span>
             </button>
 
@@ -3933,14 +3979,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               aria-expanded={mobileSheetOpen}
               className="lg:hidden flex items-center gap-2 min-h-[44px] px-2 rounded-xl text-zinc-200 hover:bg-zinc-850 transition-colors"
             >
-              <Sliders className="w-4 h-4 text-violet-400" />
-              <span className="text-xs font-bold">{mobileSheetOpen ? 'Réduire' : 'Ouvrir les réglages'}</span>
+              <Sliders className="w-4 h-4 text-pms-accent-soft" />
+              <span className="text-[13px] font-bold">{mobileSheetOpen ? 'Réduire' : 'Réglages'}</span>
               {mobileSheetOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
             </button>
             <span className="hidden lg:flex text-xs font-bold text-zinc-200 items-center gap-2">
               Réglages
               {draftSavedAt && (
-                <span className="text-[10px] font-medium text-zinc-500" title="Votre travail est enregistré dans ce navigateur">
+                <span className="text-[12px] lg:text-[10px] font-medium text-zinc-500" title="Votre travail est enregistré dans ce navigateur">
                   · Enregistré
                 </span>
               )}
@@ -3950,15 +3996,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 type="button"
                 onClick={toggleExpertMode}
                 aria-pressed={expertMode}
-                className={`flex items-center gap-1.5 min-h-[36px] lg:min-h-0 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
+                className={`flex items-center gap-1.5 min-h-[44px] lg:min-h-0 px-2.5 py-1 rounded-lg border text-[12px] lg:text-[11px] font-semibold transition-all ${
                   expertMode
-                    ? 'bg-violet-600/20 border-violet-500/50 text-violet-200'
+                    ? 'bg-pms-accent/20 border-pms-accent/50 text-pms-accent-soft'
                     : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white'
                 }`}
                 title={expertMode ? 'Revenir aux réglages essentiels' : 'Afficher tous les réglages avancés'}
               >
                 <SlidersHorizontal className="w-3 h-3" />
-                <span>{expertMode ? 'Mode Expert' : 'Mode Simple'}</span>
+                <span>{expertMode ? 'Moins de réglages' : 'Plus de réglages'}</span>
               </button>
               <button
                 type="button"
@@ -4002,7 +4048,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           setActiveTab(t.key);
                         }
                       }}
-                      className={`flex flex-col items-center justify-center gap-1 min-h-[44px] lg:min-h-0 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                      className={`flex flex-col items-center justify-center gap-1 min-h-[44px] lg:min-h-0 py-1.5 rounded-lg text-[12px] lg:text-[10px] font-bold transition-all ${
                         active ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-200'
                       }`}
                     >
@@ -4016,6 +4062,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
           {/* CONTENU DE L'INSPECTEUR DÉFILABLE */}
           <div
+            ref={inspectorScrollRef}
             className={`${
               mobileSheetOpen ? 'flex' : 'hidden lg:flex'
             } flex-col flex-1 min-h-0 p-4 sm:p-5 space-y-6 overflow-y-auto overscroll-contain studio-scrollbar lg:max-h-[calc(100vh-120px)]`}
@@ -4027,6 +4074,255 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {activeTab === 'mockup' && (
 
               <div className="space-y-5 animate-fade-in">
+                {/* Ordre pensé pour le téléphone : l'essentiel d'abord (appareil, disposition), les outils avancés ensuite */}
+                {/* Modèle d'appareil (9 options) */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300">
+                    Modèle d&apos;Appareil
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { type: 'browser' as MockupType, label: 'Web', icon: Monitor },
+                      { type: 'macbook' as MockupType, label: 'MacBook', icon: Laptop },
+                      { type: 'laptop' as MockupType, label: 'PC portable', icon: Laptop },
+                      { type: 'imac' as MockupType, label: 'iMac', icon: Tv },
+                      { type: 'ipad' as MockupType, label: 'iPad', icon: Tablet },
+                      { type: 'iphone' as MockupType, label: 'iPhone', icon: Smartphone },
+                      { type: 'android' as MockupType, label: 'Android', icon: Smartphone },
+                      { type: 'watch' as MockupType, label: 'Watch', icon: Watch },
+                      { type: 'flat' as MockupType, label: 'Sans appareil', icon: Layers },
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      const isSelected = config.mockupType === item.type;
+                      return (
+                        <button
+                          key={item.type}
+                          type="button"
+                          onClick={() => {
+                            if (photoScene) exitPhotoScene();
+                            setConfig((p) => ({
+                              ...p,
+                              mockupType: item.type,
+                              // Le téléphone choisi est aussi utilisé en Duo et en Trio
+                              phoneModel: item.type === 'android' ? 'android' : item.type === 'iphone' ? 'iphone' : p.phoneModel,
+                            }));
+                          }}
+                          className={`min-h-[44px] lg:min-h-0 py-2 px-1.5 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1.5 transition-all ${
+                            isSelected
+                              ? 'bg-pms-accent text-white border-pms-accent shadow-md font-bold'
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span className="text-[12px] lg:text-[10px] truncate">{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Disposition Solo vs Duo vs Trio */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300">
+                    Disposition
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfig((p) => ({ ...p, layoutMode: 'single' }))}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        (config.layoutMode || 'single') === 'single'
+                          ? 'bg-pms-accent/20 border-pms-accent text-white ring-1 ring-pms-accent/50'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="font-bold text-xs text-white">Solo</div>
+                      <div className="text-[12px] lg:text-[10px] text-zinc-400 mt-0.5">1 appareil</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfig((p) => ({ ...p, layoutMode: 'dual-stacked' }))}
+                      className={`p-2.5 rounded-xl border text-left transition-all relative ${
+                        config.layoutMode === 'dual-stacked'
+                          ? 'bg-pms-accent/20 border-pms-accent text-white ring-1 ring-pms-accent/50'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="font-bold text-xs text-white">Duo</div>
+                      <div className="text-[12px] lg:text-[10px] text-zinc-400 mt-0.5">Ordinateur + téléphone</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfig((p) => ({ ...p, layoutMode: 'trio-ecosystem' }))}
+                      className={`p-2.5 rounded-xl border text-left transition-all relative ${
+                        config.layoutMode === 'trio-ecosystem'
+                          ? 'bg-pms-accent/20 border-pms-accent text-white ring-1 ring-pms-accent/50'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="font-bold text-xs text-white">Trio</div>
+                      <div className="text-[12px] lg:text-[10px] text-zinc-400 mt-0.5">+ tablette</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfig((p) => ({ ...p, layoutMode: 'before-after' }))}
+                      aria-pressed={config.layoutMode === 'before-after'}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        config.layoutMode === 'before-after'
+                          ? 'bg-pms-accent/20 border-pms-accent text-white ring-1 ring-pms-accent/50'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <div className="font-bold text-xs text-white">Avant / Après</div>
+                      <div className="text-[12px] lg:text-[10px] text-zinc-400 mt-0.5">Refonte d&apos;un site</div>
+                    </button>
+                  </div>
+
+                  {config.layoutMode === 'before-after' && (
+                    <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+                      <p className="text-[12px] lg:text-[11px] text-zinc-400 leading-relaxed">
+                        « Après » = le site capturé ({captureItem.domainName || 'votre image'}). Ajoutez l&apos;ancien site pour « Avant ».
+                      </p>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="url"
+                          inputMode="url"
+                          value={beforeUrl}
+                          onChange={(e) => setBeforeUrl(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && captureBeforeSite()}
+                          placeholder="ancien-site.com ou web.archive.org/…"
+                          aria-label="Adresse de l'ancien site"
+                          className="flex-1 min-w-0 px-2.5 py-2 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white focus:outline-none focus:border-pms-accent"
+                        />
+                        <button
+                          type="button"
+                          onClick={captureBeforeSite}
+                          disabled={beforeCaptureState === 'loading' || !beforeUrl.trim()}
+                          className="min-h-[44px] lg:min-h-0 px-3 py-2 rounded-lg bg-pms-accent hover:bg-pms-accent text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          {beforeCaptureState === 'loading' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                          Capturer
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => beforeFileRef.current?.click()}
+                        className="min-h-[44px] lg:min-h-0 w-full py-2 rounded-lg border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 text-xs font-semibold"
+                      >
+                        …ou importer une capture de l&apos;ancien site
+                      </button>
+                      <input ref={beforeFileRef} type="file" accept="image/*" className="hidden" aria-label="Importer une capture de l'ancien site" onChange={handleBeforeImageUpload} />
+                      {beforeCaptureState === 'error' && (
+                        <p className="text-[12px] lg:text-[11px] text-rose-400" role="alert">{beforeError}</p>
+                      )}
+                      <p className="text-[12px] lg:text-[10px] text-zinc-500">
+                        L&apos;ancien site n&apos;est plus en ligne ? Cherchez-le sur web.archive.org et collez l&apos;adresse de l&apos;archive.
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={config.beforeLabel ?? 'Avant'}
+                          onChange={(e) => setConfig((p) => ({ ...p, beforeLabel: e.target.value }))}
+                          maxLength={24}
+                          aria-label="Libellé de gauche"
+                          className="px-2.5 py-1.5 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white"
+                        />
+                        <input
+                          type="text"
+                          value={config.afterLabel ?? 'Après'}
+                          onChange={(e) => setConfig((p) => ({ ...p, afterLabel: e.target.value }))}
+                          maxLength={24}
+                          aria-label="Libellé de droite"
+                          className="px-2.5 py-1.5 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Téléphone (Duo / Trio), couleur de l'appareil et écran du téléphone */}
+                {(phoneVisible || ['ipad', 'watch'].includes(config.mockupType)) && (
+                  <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+                    {(config.layoutMode === 'dual-stacked' || config.layoutMode === 'trio-ecosystem') && (
+                      <p className="text-[12px] lg:text-[11px] text-zinc-400">
+                        Téléphone : <span className="font-semibold text-zinc-200">iPhone 18 Pro</span>
+                      </p>
+                    )}
+
+                    <div className="space-y-1.5">
+                      <span className="text-[12px] lg:text-[10px] font-mono font-bold text-zinc-400 uppercase">Couleur de l&apos;appareil</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {([
+                          // Les 4 coloris de l'iPhone 18 Pro d'abord, puis les teintes classiques
+                          { id: 'deep-black', label: 'Noir profond (iPhone 18 Pro)', swatch: 'bg-neutral-900' },
+                          { id: 'silver', label: 'Argent (iPhone 18 Pro)', swatch: 'bg-zinc-300' },
+                          { id: 'glacier', label: 'Bleu glacier (iPhone 18 Pro)', swatch: 'bg-sky-200' },
+                          { id: 'burgundy', label: 'Bordeaux (iPhone 18 Pro)', swatch: 'bg-rose-900' },
+                          { id: 'graphite', label: 'Graphite', swatch: 'bg-stone-800' },
+                          { id: 'titanium', label: 'Titane', swatch: 'bg-stone-500' },
+                          { id: 'midnight', label: 'Bleu nuit', swatch: 'bg-slate-800' },
+                          { id: 'gold', label: 'Or', swatch: 'bg-amber-200' },
+                        ] as { id: DeviceColor; label: string; swatch: string }[]).map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setConfig((p) => ({ ...p, deviceColor: c.id }))}
+                            aria-pressed={(config.deviceColor || 'graphite') === c.id}
+                            aria-label={c.label}
+                            title={c.label}
+                            className={`w-7 h-7 rounded-full border-2 transition-transform ${c.swatch} ${
+                              (config.deviceColor || 'graphite') === c.id ? 'border-pms-accent scale-110' : 'border-zinc-700 hover:scale-105'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {phoneVisible && canCaptureMobile && (
+                      <div className="space-y-1.5">
+                        <span className="text-[12px] lg:text-[10px] font-mono font-bold text-zinc-400 uppercase">Écran du téléphone</span>
+                        <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-950 border border-zinc-800">
+                          {([
+                            { id: 'mobile', label: 'Version mobile' },
+                            { id: 'desktop', label: 'Même image' },
+                          ] as const).map((o) => (
+                            <button
+                              key={o.id}
+                              type="button"
+                              onClick={() => setConfig((p) => ({ ...p, phoneScreen: o.id }))}
+                              aria-pressed={(config.phoneScreen || 'mobile') === o.id}
+                              className={`min-h-[44px] lg:min-h-0 py-1.5 rounded-lg text-[12px] lg:text-[11px] font-bold transition-all ${
+                                (config.phoneScreen || 'mobile') === o.id ? 'bg-pms-accent text-white' : 'text-zinc-400 hover:text-white'
+                              }`}
+                            >
+                              {o.label}
+                            </button>
+                          ))}
+                        </div>
+                        {(config.phoneScreen || 'mobile') === 'mobile' && (
+                          <p className="text-[12px] lg:text-[10px] text-zinc-500 flex items-center gap-1.5" role="status">
+                            {mobileCaptureState === 'loading' && (
+                              <>
+                                <RefreshCw className="w-3 h-3 animate-spin text-pms-accent-soft" />
+                                Capture de la version mobile du site…
+                              </>
+                            )}
+                            {mobileCaptureState === 'done' && <>✓ Le téléphone affiche la vraie version mobile du site.</>}
+                            {mobileCaptureState === 'error' && (
+                              <>
+                                Version mobile indisponible : le téléphone affiche l&apos;image de l&apos;ordinateur.{' '}
+                                <button type="button" onClick={() => setMobileCaptureState('idle')} className="text-pms-accent-soft font-semibold">
+                                  Réessayer
+                                </button>
+                              </>
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Directeur artistique IA : choisir la meilleure section de la page */}
                 {canCaptureMobile && (
                   <AiDirectorPanel
@@ -4054,125 +4350,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   />
                 )}
 
-                {/* Disposition Solo vs Duo vs Trio */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
-                    Disposition
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setConfig((p) => ({ ...p, layoutMode: 'single' }))}
-                      className={`p-2.5 rounded-xl border text-left transition-all ${
-                        (config.layoutMode || 'single') === 'single'
-                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/50'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <div className="font-bold text-xs text-white">Solo</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">1 appareil</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfig((p) => ({ ...p, layoutMode: 'dual-stacked' }))}
-                      className={`p-2.5 rounded-xl border text-left transition-all relative ${
-                        config.layoutMode === 'dual-stacked'
-                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/50'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <div className="font-bold text-xs text-white">Duo</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">Ordinateur + téléphone</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfig((p) => ({ ...p, layoutMode: 'trio-ecosystem' }))}
-                      className={`p-2.5 rounded-xl border text-left transition-all relative ${
-                        config.layoutMode === 'trio-ecosystem'
-                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/50'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <div className="font-bold text-xs text-white">Trio</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">+ tablette</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfig((p) => ({ ...p, layoutMode: 'before-after' }))}
-                      aria-pressed={config.layoutMode === 'before-after'}
-                      className={`p-2.5 rounded-xl border text-left transition-all ${
-                        config.layoutMode === 'before-after'
-                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/50'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <div className="font-bold text-xs text-white">Avant / Après</div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">Refonte d&apos;un site</div>
-                    </button>
-                  </div>
-
-                  {config.layoutMode === 'before-after' && (
-                    <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
-                      <p className="text-[11px] text-zinc-400 leading-relaxed">
-                        « Après » = le site capturé ({captureItem.domainName || 'votre image'}). Ajoutez l&apos;ancien site pour « Avant ».
-                      </p>
-                      <div className="flex gap-1.5">
-                        <input
-                          type="url"
-                          inputMode="url"
-                          value={beforeUrl}
-                          onChange={(e) => setBeforeUrl(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && captureBeforeSite()}
-                          placeholder="ancien-site.com ou web.archive.org/…"
-                          aria-label="Adresse de l'ancien site"
-                          className="flex-1 min-w-0 px-2.5 py-2 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white focus:outline-none focus:border-violet-500"
-                        />
-                        <button
-                          type="button"
-                          onClick={captureBeforeSite}
-                          disabled={beforeCaptureState === 'loading' || !beforeUrl.trim()}
-                          className="px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1.5"
-                        >
-                          {beforeCaptureState === 'loading' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                          Capturer
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => beforeFileRef.current?.click()}
-                        className="w-full py-2 rounded-lg border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 text-xs font-semibold"
-                      >
-                        …ou importer une capture de l&apos;ancien site
-                      </button>
-                      <input ref={beforeFileRef} type="file" accept="image/*" className="hidden" aria-label="Importer une capture de l'ancien site" onChange={handleBeforeImageUpload} />
-                      {beforeCaptureState === 'error' && (
-                        <p className="text-[11px] text-rose-400" role="alert">{beforeError}</p>
-                      )}
-                      <p className="text-[10px] text-zinc-500">
-                        L&apos;ancien site n&apos;est plus en ligne ? Cherchez-le sur web.archive.org et collez l&apos;adresse de l&apos;archive.
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          value={config.beforeLabel ?? 'Avant'}
-                          onChange={(e) => setConfig((p) => ({ ...p, beforeLabel: e.target.value }))}
-                          maxLength={24}
-                          aria-label="Libellé de gauche"
-                          className="px-2.5 py-1.5 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white"
-                        />
-                        <input
-                          type="text"
-                          value={config.afterLabel ?? 'Après'}
-                          onChange={(e) => setConfig((p) => ({ ...p, afterLabel: e.target.value }))}
-                          maxLength={24}
-                          aria-label="Libellé de droite"
-                          className="px-2.5 py-1.5 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
                 <PhotoScenesPanel
                   activeId={photoScene?.id || null}
                   loadingId={photoSceneLoading}
@@ -4181,146 +4358,17 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   onExit={exitPhotoScene}
                 />
 
-                {/* Modèle d'appareil (9 options) */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
-                    Modèle d&apos;Appareil
-                  </label>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {[
-                      { type: 'browser' as MockupType, label: 'Web', icon: Monitor },
-                      { type: 'macbook' as MockupType, label: 'MacBook', icon: Laptop },
-                      { type: 'laptop' as MockupType, label: 'PC portable', icon: Laptop },
-                      { type: 'imac' as MockupType, label: 'iMac', icon: Tv },
-                      { type: 'ipad' as MockupType, label: 'iPad', icon: Tablet },
-                      { type: 'iphone' as MockupType, label: 'iPhone', icon: Smartphone },
-                      { type: 'android' as MockupType, label: 'Android', icon: Smartphone },
-                      { type: 'watch' as MockupType, label: 'Watch', icon: Watch },
-                      { type: 'flat' as MockupType, label: 'Flat', icon: Layers },
-                    ].map((item) => {
-                      const Icon = item.icon;
-                      const isSelected = config.mockupType === item.type;
-                      return (
-                        <button
-                          key={item.type}
-                          type="button"
-                          onClick={() => {
-                            if (photoScene) exitPhotoScene();
-                            setConfig((p) => ({
-                              ...p,
-                              mockupType: item.type,
-                              // Le téléphone choisi est aussi utilisé en Duo et en Trio
-                              phoneModel: item.type === 'android' ? 'android' : item.type === 'iphone' ? 'iphone' : p.phoneModel,
-                            }));
-                          }}
-                          className={`py-2 px-1.5 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1.5 transition-all ${
-                            isSelected
-                              ? 'bg-violet-600 text-white border-violet-500 shadow-md font-bold'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                          <span className="text-[10px] truncate">{item.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Téléphone (Duo / Trio), couleur de l'appareil et écran du téléphone */}
-                {(phoneVisible || ['ipad', 'watch'].includes(config.mockupType)) && (
-                  <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
-                    {(config.layoutMode === 'dual-stacked' || config.layoutMode === 'trio-ecosystem') && (
-                      <p className="text-[11px] text-zinc-400">
-                        Téléphone : <span className="font-semibold text-zinc-200">iPhone 18 Pro</span>
-                      </p>
-                    )}
-
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Couleur de l&apos;appareil</span>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {([
-                          // Les 4 coloris de l'iPhone 18 Pro d'abord, puis les teintes classiques
-                          { id: 'deep-black', label: 'Noir profond (iPhone 18 Pro)', swatch: 'bg-neutral-900' },
-                          { id: 'silver', label: 'Argent (iPhone 18 Pro)', swatch: 'bg-zinc-300' },
-                          { id: 'glacier', label: 'Bleu glacier (iPhone 18 Pro)', swatch: 'bg-sky-200' },
-                          { id: 'burgundy', label: 'Bordeaux (iPhone 18 Pro)', swatch: 'bg-rose-900' },
-                          { id: 'graphite', label: 'Graphite', swatch: 'bg-stone-800' },
-                          { id: 'titanium', label: 'Titane', swatch: 'bg-stone-500' },
-                          { id: 'midnight', label: 'Bleu nuit', swatch: 'bg-slate-800' },
-                          { id: 'gold', label: 'Or', swatch: 'bg-amber-200' },
-                        ] as { id: DeviceColor; label: string; swatch: string }[]).map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => setConfig((p) => ({ ...p, deviceColor: c.id }))}
-                            aria-pressed={(config.deviceColor || 'graphite') === c.id}
-                            aria-label={c.label}
-                            title={c.label}
-                            className={`w-7 h-7 rounded-full border-2 transition-transform ${c.swatch} ${
-                              (config.deviceColor || 'graphite') === c.id ? 'border-violet-400 scale-110' : 'border-zinc-700 hover:scale-105'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    {phoneVisible && canCaptureMobile && (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Écran du téléphone</span>
-                        <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-950 border border-zinc-800">
-                          {([
-                            { id: 'mobile', label: 'Version mobile' },
-                            { id: 'desktop', label: 'Même image' },
-                          ] as const).map((o) => (
-                            <button
-                              key={o.id}
-                              type="button"
-                              onClick={() => setConfig((p) => ({ ...p, phoneScreen: o.id }))}
-                              aria-pressed={(config.phoneScreen || 'mobile') === o.id}
-                              className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                                (config.phoneScreen || 'mobile') === o.id ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:text-white'
-                              }`}
-                            >
-                              {o.label}
-                            </button>
-                          ))}
-                        </div>
-                        {(config.phoneScreen || 'mobile') === 'mobile' && (
-                          <p className="text-[10px] text-zinc-500 flex items-center gap-1.5" role="status">
-                            {mobileCaptureState === 'loading' && (
-                              <>
-                                <RefreshCw className="w-3 h-3 animate-spin text-violet-400" />
-                                Capture de la version mobile du site…
-                              </>
-                            )}
-                            {mobileCaptureState === 'done' && <>✓ Le téléphone affiche la vraie version mobile du site.</>}
-                            {mobileCaptureState === 'error' && (
-                              <>
-                                Version mobile indisponible : le téléphone affiche l&apos;image de l&apos;ordinateur.{' '}
-                                <button type="button" onClick={() => setMobileCaptureState('idle')} className="text-violet-300 font-semibold">
-                                  Réessayer
-                                </button>
-                              </>
-                            )}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* Finition du Cadre */}
                 <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Thème</span>
+                      <span className="text-[12px] lg:text-[10px] font-mono font-bold text-zinc-400 uppercase">Thème</span>
                       <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                         <button
                           type="button"
                           onClick={() => setConfig((p) => ({ ...p, deviceTheme: 'light' }))}
-                          className={`flex-1 py-1 rounded text-[11px] font-medium flex items-center justify-center gap-1 transition-all ${
-                            config.deviceTheme === 'light' ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                          className={`min-h-[44px] lg:min-h-0 flex-1 py-1 rounded text-[12px] lg:text-[11px] font-medium flex items-center justify-center gap-1 transition-all ${
+                            config.deviceTheme === 'light' ? 'bg-pms-accent text-white font-bold' : 'text-zinc-400 hover:text-white'
                           }`}
                         >
                           <Sun className="w-3 h-3" />
@@ -4329,7 +4377,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <button
                           type="button"
                           onClick={() => setConfig((p) => ({ ...p, deviceTheme: 'dark' }))}
-                          className={`flex-1 py-1 rounded text-[11px] font-medium flex items-center justify-center gap-1 transition-all ${
+                          className={`min-h-[44px] lg:min-h-0 flex-1 py-1 rounded text-[12px] lg:text-[11px] font-medium flex items-center justify-center gap-1 transition-all ${
                             config.deviceTheme === 'dark' ? 'bg-zinc-800 text-white font-bold' : 'text-zinc-400 hover:text-white'
                           }`}
                         >
@@ -4340,18 +4388,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
 
                     <div className="space-y-1.5">
-                      <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Style</span>
+                      <span className="text-[12px] lg:text-[10px] font-mono font-bold text-zinc-400 uppercase">Style</span>
                       <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                         {(['default', 'glass'] as const).map((st) => (
                           <button
                             key={st}
                             type="button"
                             onClick={() => setConfig((p) => ({ ...p, deviceStyle: st }))}
-                            className={`flex-1 py-1 rounded text-[11px] font-medium capitalize transition-all ${
-                              config.deviceStyle === st ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                            className={`min-h-[44px] lg:min-h-0 flex-1 py-1 rounded text-[12px] lg:text-[11px] font-medium capitalize transition-all ${
+                              config.deviceStyle === st ? 'bg-pms-accent text-white font-bold' : 'text-zinc-400 hover:text-white'
                             }`}
                           >
-                            {st === 'default' ? 'Standard' : 'Glass'}
+                            {st === 'default' ? 'Standard' : 'Verre'}
                           </button>
                         ))}
                       </div>
@@ -4360,7 +4408,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                   {/* Rayon d'angle */}
                   <div className="space-y-1.5">
-                    <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase">Rayon d&apos;angle</span>
+                    <span className="text-[12px] lg:text-[10px] font-mono font-bold text-zinc-400 uppercase">Rayon d&apos;angle</span>
                     <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                       {[
                         { id: 'sharp', label: 'Droit (0px)' },
@@ -4371,8 +4419,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           key={r.id}
                           type="button"
                           onClick={() => setConfig((p) => ({ ...p, cornerRadius: r.id as CornerRadius }))}
-                          className={`py-1 text-[10px] font-medium rounded transition-all ${
-                            config.cornerRadius === r.id ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                          className={`min-h-[44px] lg:min-h-0 py-1 text-[12px] lg:text-[10px] font-medium rounded transition-all ${
+                            config.cornerRadius === r.id ? 'bg-pms-accent text-white font-bold' : 'text-zinc-400 hover:text-white'
                           }`}
                         >
                           {r.label}
@@ -4386,15 +4434,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* ── STYLE NAVIGATEUR (Shots.so) ── */}
                 {(config.mockupType === 'browser' || config.mockupType === 'macbook' || config.mockupType === 'laptop' || config.mockupType === 'imac') && (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Style Navigateur</label>
+                    <label className="text-xs font-bold text-zinc-300">Style Navigateur</label>
                     <div className="grid grid-cols-3 gap-1.5">
                       {[
                         { id: 'safari-light' as const, label: 'Safari', sub: 'Clair', dot: 'bg-red-500' },
                         { id: 'chrome-light' as const, label: 'Chrome', sub: 'Clair', dot: 'bg-blue-500' },
-                        { id: 'arc-light' as const, label: 'Arc', sub: 'Clair', dot: 'bg-purple-500' },
+                        { id: 'arc-light' as const, label: 'Arc', sub: 'Clair', dot: 'bg-pms-accent' },
                         { id: 'safari-dark' as const, label: 'Safari', sub: 'Sombre', dot: 'bg-red-700' },
                         { id: 'chrome-dark' as const, label: 'Chrome', sub: 'Sombre', dot: 'bg-blue-700' },
-                        { id: 'arc-dark' as const, label: 'Arc', sub: 'Sombre', dot: 'bg-purple-700' },
+                        { id: 'arc-dark' as const, label: 'Arc', sub: 'Sombre', dot: 'bg-pms-accent' },
                       ].map((bs) => {
                         const isCurrent = (config.browserStyle || browserStyle) === bs.id;
                         return (
@@ -4408,15 +4456,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             }}
                             className={`p-2 rounded-xl border text-left transition-all ${
                               isCurrent
-                                ? 'bg-violet-600/25 border-violet-500 ring-1 ring-violet-500/40'
+                                ? 'bg-pms-accent/25 border-pms-accent ring-1 ring-pms-accent/40'
                                 : 'bg-zinc-900 border-zinc-800 hover:border-zinc-600'
                             }`}
                           >
                             <div className="flex items-center gap-1.5 mb-1">
                               <span className={`w-2 h-2 rounded-full ${bs.dot}`} />
-                              <span className="text-[10px] font-bold text-white">{bs.label}</span>
+                              <span className="text-[12px] lg:text-[10px] font-bold text-white">{bs.label}</span>
                             </div>
-                            <span className={`text-[9px] ${isCurrent ? 'text-violet-300' : 'text-zinc-500'}`}>{bs.sub}</span>
+                            <span className={`text-[12px] lg:text-[9px] ${isCurrent ? 'text-pms-accent-soft' : 'text-zinc-500'}`}>{bs.sub}</span>
                           </button>
                         );
                       })}
@@ -4427,8 +4475,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* ── BARRE D'ADRESSE PERSONNALISÉE ── */}
                 {(config.mockupType === 'browser' || config.mockupType === 'macbook' || config.mockupType === 'laptop' || config.mockupType === 'imac') && (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Barre d&apos;Adresse</label>
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 focus-within:border-violet-500/60 transition-colors">
+                    <label className="text-xs font-bold text-zinc-300">Barre d&apos;Adresse</label>
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 focus-within:border-pms-accent/60 transition-colors">
                       <Globe className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                       <input
                         type="text"
@@ -4448,7 +4496,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                 {/* ── GRILLE D'ALIGNEMENT 3×3 ── */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Position Rapide</label>
+                  <label className="text-xs font-bold text-zinc-300">Position Rapide</label>
                   <div className="flex items-center gap-3">
                     <div className="grid grid-cols-3 gap-1">
                       {[
@@ -4463,7 +4511,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           title={title}
                           className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all ${
                             pos === 'mc'
-                              ? 'bg-violet-600/20 border-violet-500/40 hover:bg-violet-600/40'
+                              ? 'bg-pms-accent/20 border-pms-accent/40 hover:bg-pms-accent/40'
                               : 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-600'
                           }`}
                         >
@@ -4474,7 +4522,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     <button
                       type="button"
                       onClick={() => applyAlignment('mc')}
-                      className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all font-semibold"
+                      className="min-h-[44px] lg:min-h-0 px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[12px] lg:text-[10px] text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all font-semibold"
                     >
                       Auto
                     </button>
@@ -4483,7 +4531,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                 {/* ── SYSTÈME D'OMBRES AVANCÉ (Shots.so) ── */}
                 <div className="space-y-3 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                  <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
                     <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
                     Ombres
                   </label>
@@ -4498,9 +4546,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         key={sh.id}
                         type="button"
                         onClick={() => setShadowType(sh.id)}
-                        className={`py-2 px-1 rounded-xl border text-[10px] font-semibold transition-all ${
+                        className={`min-h-[44px] lg:min-h-0 py-2 px-1 rounded-xl border text-[12px] lg:text-[10px] font-semibold transition-all ${
                           shadowType === sh.id
-                            ? 'bg-violet-600 text-white border-violet-500'
+                            ? 'bg-pms-accent text-white border-pms-accent'
                             : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white'
                         }`}
                       >
@@ -4511,18 +4559,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   {shadowType !== 'none' && (
                     <>
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[10px] font-mono">
+                        <div className="flex items-center justify-between text-[12px] lg:text-[10px] font-mono">
                           <span className="text-zinc-400">Opacité</span>
-                          <span className="text-violet-400 font-bold">{shadowOpacity}%</span>
+                          <span className="text-pms-accent-soft font-bold">{shadowOpacity}%</span>
                         </div>
                         <input
                           type="range" min="0" max="100" value={shadowOpacity}
                           onChange={(e) => setShadowOpacity(Number(e.target.value))}
-                          className="w-full accent-violet-600 h-1.5 rounded-lg cursor-pointer"
+                          className="w-full accent-pms-accent h-1.5 rounded-lg cursor-pointer"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[10px] font-mono">
+                        <div className="flex items-center justify-between text-[12px] lg:text-[10px] font-mono">
                           <span className="text-zinc-400">Angle de Lumière</span>
                           <span className="text-amber-400 font-bold">{shadowLightAngle}°</span>
                         </div>
@@ -4540,10 +4588,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {autoGradients.length > 0 && (
                   <div className="flex items-center justify-between p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
                     <div className="flex items-center gap-2">
-                      <div className="p-1.5 rounded-xl bg-violet-600/20 text-violet-400">
+                      <div className="p-1.5 rounded-xl bg-pms-accent/20 text-pms-accent-soft">
                         <Sparkles className="w-4 h-4" />
                       </div>
-                      <span className="text-xs font-bold text-white">Magic Preset</span>
+                      <span className="text-xs font-bold text-white">Couleurs tirées du site</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <button
@@ -4554,7 +4602,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
-                      <span className="text-[10px] font-mono text-zinc-400 min-w-[28px] text-center">
+                      <span className="text-[12px] lg:text-[10px] font-mono text-zinc-400 min-w-[28px] text-center">
                         {magicPresetIdx + 1}/{autoGradients.length}
                       </span>
                       <button
@@ -4571,18 +4619,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                 {/* ── ZONE DE DROP MEDIA (MokupCapture.PNG) ── */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                  <label className="text-xs font-bold text-zinc-300">
                     Média
                   </label>
                   <button
                     type="button"
                     onClick={() => replaceImgInputRef.current?.click()}
-                    className="w-full h-24 rounded-2xl border-2 border-dashed border-zinc-800 hover:border-violet-500/60 bg-zinc-900/60 hover:bg-zinc-900 transition-all flex flex-col items-center justify-center gap-1.5 group"
+                    className="w-full h-24 rounded-2xl border-2 border-dashed border-zinc-800 hover:border-pms-accent/60 bg-zinc-900/60 hover:bg-zinc-900 transition-all flex flex-col items-center justify-center gap-1.5 group"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-zinc-800 group-hover:bg-violet-600/20 group-hover:text-violet-400 flex items-center justify-center text-zinc-400 transition-colors">
+                    <div className="w-8 h-8 rounded-xl bg-zinc-800 group-hover:bg-pms-accent/20 group-hover:text-pms-accent-soft flex items-center justify-center text-zinc-400 transition-colors">
                       <Plus className="w-4 h-4" />
                     </div>
-                    <span className="text-[11px] text-zinc-400 group-hover:text-zinc-200">
+                    <span className="text-[12px] lg:text-[11px] text-zinc-400 group-hover:text-zinc-200">
                       Remplacer l&apos;image ou déposer un fichier
                     </span>
                   </button>
@@ -4591,10 +4639,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* ── FENÊTRE & ÉCHELLE UI (MokupCapture.PNG) ── */}
                 <div className="space-y-3 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                    <label className="text-xs font-bold text-zinc-300">
                       Échelle UI
                     </label>
-                    <span className="text-xs font-mono font-bold text-violet-400">{uiScale}%</span>
+                    <span className="text-xs font-mono font-bold text-pms-accent-soft">{uiScale}%</span>
                   </div>
                   <input
                     type="range"
@@ -4606,7 +4654,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       setUiScale(val);
                       setConfig((p) => ({ ...p, mockupScale: Math.round(val * 0.85) }));
                     }}
-                    className="w-full accent-violet-600 h-1.5 rounded-lg cursor-pointer"
+                    className="w-full accent-pms-accent h-1.5 rounded-lg cursor-pointer"
                   />
                   <div className="grid grid-cols-4 gap-1.5 pt-1">
                     {[
@@ -4652,9 +4700,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                               if (found) setCurrentFramePreset(found);
                             }
                           }}
-                          className={`py-1.5 rounded-lg border text-[10px] font-mono font-bold transition-all text-center ${
+                          className={`py-1.5 rounded-lg border text-[12px] lg:text-[10px] font-mono font-bold transition-all text-center ${
                             isActive
-                              ? 'bg-violet-600 text-white border-violet-500 shadow-xs'
+                              ? 'bg-pms-accent text-white border-pms-accent shadow-xs'
                               : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
                           }`}
                         >
@@ -4669,7 +4717,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setMockupHidden((v) => !v)}
-                  className={`w-full py-2.5 px-4 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                  className={`min-h-[44px] lg:min-h-0 w-full py-2.5 px-4 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
                     mockupHidden
                       ? 'bg-rose-600/20 border-rose-500/50 text-rose-300 hover:bg-rose-600/30'
                       : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800'
@@ -4704,23 +4752,23 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* Poses 3D Rapides en 1 Clic */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
-                      Poses 3D Rapides (1 Clic)
+                    <label className="text-xs font-bold text-zinc-300">
+                      Angles prêts à l’emploi
                     </label>
                     <button
                       type="button"
                       onClick={handleReset3D}
-                      className="text-[11px] font-mono text-violet-400 hover:text-violet-300 font-bold"
+                      className="min-h-[44px] lg:min-h-0 px-2 text-[12px] lg:text-[11px] text-pms-accent-soft hover:text-white font-bold"
                     >
-                      Reset (0°)
+                      Remettre droit
                     </button>
                   </div>
                   <div className="grid grid-cols-4 gap-1.5">
                     {[
                       { label: 'À Plat', tx: 0, ty: 0, rot: 0 },
-                      { label: 'Iso G.', tx: 14, ty: -18, rot: -6 },
-                      { label: 'Iso D.', tx: 14, ty: 18, rot: 6 },
-                      { label: 'Hero 3D', tx: -12, ty: 0, rot: 4 },
+                      { label: 'Incliné à gauche', tx: 14, ty: -18, rot: -6 },
+                      { label: 'Incliné à droite', tx: 14, ty: 18, rot: 6 },
+                      { label: 'Perspective', tx: -12, ty: 0, rot: 4 },
                     ].map((pose, i) => (
                       <button
                         key={i}
@@ -4733,11 +4781,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             mockupRotation: pose.rot,
                           }))
                         }
-                        className={`py-2 px-1 rounded-xl border text-xs font-semibold text-center transition-all ${
+                        className={`min-h-[44px] lg:min-h-0 py-2 px-1 rounded-xl border text-xs font-semibold text-center transition-all ${
                           config.mockupTiltX === pose.tx &&
                           config.mockupTiltY === pose.ty &&
                           config.mockupRotation === pose.rot
-                            ? 'bg-violet-600 text-white border-violet-500 font-bold shadow-md'
+                            ? 'bg-pms-accent text-white border-pms-accent font-bold shadow-md'
                             : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
                         }`}
                       >
@@ -4753,7 +4801,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs font-mono text-zinc-300">
                       <span>Tilt Vertical (Haut / Bas)</span>
-                      <span className="font-bold text-violet-400">{config.mockupTiltX || 0}°</span>
+                      <span className="font-bold text-pms-accent-soft">{config.mockupTiltX || 0}°</span>
                     </div>
                     <input
                       type="range"
@@ -4761,14 +4809,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       max="30"
                       value={config.mockupTiltX || 0}
                       onChange={(e) => setConfig((p) => ({ ...p, mockupTiltX: Number(e.target.value) }))}
-                      className="w-full accent-violet-600 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                      className="w-full accent-pms-accent cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs font-mono text-zinc-300">
                       <span>Tilt Horizontal (Gauche / Droite)</span>
-                      <span className="font-bold text-violet-400">{config.mockupTiltY || 0}°</span>
+                      <span className="font-bold text-pms-accent-soft">{config.mockupTiltY || 0}°</span>
                     </div>
                     <input
                       type="range"
@@ -4776,14 +4824,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       max="30"
                       value={config.mockupTiltY || 0}
                       onChange={(e) => setConfig((p) => ({ ...p, mockupTiltY: Number(e.target.value) }))}
-                      className="w-full accent-violet-600 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                      className="w-full accent-pms-accent cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs font-mono text-zinc-300">
                       <span>Rotation Angulaire (Angle Z)</span>
-                      <span className="font-bold text-violet-400">{config.mockupRotation || 0}°</span>
+                      <span className="font-bold text-pms-accent-soft">{config.mockupRotation || 0}°</span>
                     </div>
                     <input
                       type="range"
@@ -4791,7 +4839,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       max="40"
                       value={config.mockupRotation || 0}
                       onChange={(e) => setConfig((p) => ({ ...p, mockupRotation: Number(e.target.value) }))}
-                      className="w-full accent-violet-600 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                      className="w-full accent-pms-accent cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
                     />
                   </div>
                 </div>
@@ -4801,7 +4849,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 <div className="space-y-2 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
                   <div className="flex items-center justify-between text-xs font-mono">
                     <span className="font-bold text-zinc-300 uppercase">Échelle & Taille du Mockup</span>
-                    <span className="text-violet-400 font-bold">{config.mockupScale}%</span>
+                    <span className="text-pms-accent-soft font-bold">{config.mockupScale}%</span>
                   </div>
                   <input
                     type="range"
@@ -4809,7 +4857,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     max="140"
                     value={config.mockupScale}
                     onChange={(e) => setConfig((p) => ({ ...p, mockupScale: Number(e.target.value) }))}
-                    className="w-full accent-violet-600 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                    className="w-full accent-pms-accent cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
                   />
                 </div>
 
@@ -4817,12 +4865,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* Ombre portée 3D */}
                 <div className="space-y-2 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-zinc-300 uppercase font-mono">Ombre Portée Réaliste</span>
+                    <span className="text-xs font-bold text-zinc-300">Ombre Portée Réaliste</span>
                     <input
                       type="checkbox"
                       checked={config.shadowEnabled}
                       onChange={(e) => setConfig((p) => ({ ...p, shadowEnabled: e.target.checked }))}
-                      className="w-4 h-4 accent-violet-600 rounded cursor-pointer"
+                      className="w-4 h-4 accent-pms-accent rounded cursor-pointer"
                     />
                   </div>
                   {config.shadowEnabled && (
@@ -4832,7 +4880,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       max="100"
                       value={config.shadowIntensity}
                       onChange={(e) => setConfig((p) => ({ ...p, shadowIntensity: Number(e.target.value) }))}
-                      className="w-full accent-violet-600 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+                      className="w-full accent-pms-accent cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
                     />
                   )}
                 </div>
@@ -4844,7 +4892,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {activeTab === 'annotate' && (
               <div className="space-y-5 animate-fade-in">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Ajouter</label>
+                  <label className="text-xs font-bold text-zinc-300">Ajouter</label>
                   <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                     {([
                       { kind: 'arrow', label: 'Flèche', icon: MoveUpRight },
@@ -4860,7 +4908,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           key={tool.kind}
                           type="button"
                           onClick={() => handleAddAnnotation(tool.kind)}
-                          className="py-2 rounded-xl border bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:border-violet-500/60 text-[10px] font-semibold flex flex-col items-center gap-1 transition-all"
+                          className="min-h-[44px] lg:min-h-0 py-2 rounded-xl border bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:border-pms-accent/60 text-[12px] lg:text-[10px] font-semibold flex flex-col items-center gap-1 transition-all"
                           title={tool.kind === 'blur' ? 'Cacher une information sensible (e-mail, nom, chiffre…)' : tool.kind === 'loupe' ? 'Agrandir un détail de la page dans un cercle' : `Ajouter : ${tool.label}`}
                         >
                           <Icon className="w-4 h-4" />
@@ -4872,8 +4920,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Couleur</label>
-                  <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-zinc-300">Couleur</label>
+                  <div className="flex flex-wrap items-center gap-3 lg:gap-2">
                     {[
                       { c: '#ef4444', n: 'Rouge' },
                       { c: '#f59e0b', n: 'Orange' },
@@ -4896,7 +4944,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           aria-label={n}
                           aria-pressed={active}
                           title={n}
-                          className={`w-7 h-7 rounded-full border-2 transition-transform ${active ? 'border-violet-400 scale-110' : 'border-zinc-700 hover:scale-105'}`}
+                          className={`w-10 h-10 lg:w-7 lg:h-7 shrink-0 rounded-full border-2 transition-transform ${active ? 'border-pms-accent scale-110' : 'border-zinc-700 hover:scale-105'}`}
                           style={{ background: c }}
                         />
                       );
@@ -4909,8 +4957,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   if (!loupe || !currentScreenshot) return null;
                   return (
                     <div className="space-y-2 p-3 rounded-xl bg-zinc-900 border border-zinc-800">
-                      <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">Loupe : détail à agrandir</label>
-                      <p className="text-[11px] text-zinc-500">Cliquez sur la page à l&apos;endroit à montrer.</p>
+                      <label className="text-xs font-bold text-zinc-300">Loupe : détail à agrandir</label>
+                      <p className="text-[12px] lg:text-[11px] text-zinc-500">Cliquez sur la page à l&apos;endroit à montrer.</p>
                       <div className="max-h-56 overflow-y-auto rounded-lg border border-zinc-800">
                         <div
                           className="relative cursor-crosshair"
@@ -4927,7 +4975,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={currentScreenshot} alt="" className="w-full block select-none pointer-events-none" />
                           <span
-                            className="absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-2 border-violet-400 bg-violet-500/30 pointer-events-none"
+                            className="absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-2 border-pms-accent bg-pms-accent/30 pointer-events-none"
                             style={{ left: `${loupe.srcX ?? 50}%`, top: `${loupe.srcY ?? 10}%` }}
                           />
                         </div>
@@ -4940,7 +4988,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             role="radio"
                             aria-checked={(loupe.zoom ?? 2) === z}
                             onClick={() => handleUpdateAnnotation(loupe.id, { zoom: z })}
-                            className={`py-1.5 rounded-lg text-xs font-bold ${(loupe.zoom ?? 2) === z ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+                            className={`min-h-[44px] lg:min-h-0 py-1.5 rounded-lg text-xs font-bold ${(loupe.zoom ?? 2) === z ? 'bg-pms-accent text-white' : 'text-zinc-400 hover:text-white'}`}
                           >
                             ×{z}
                           </button>
@@ -4952,7 +5000,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                 {(config.annotations || []).length > 0 ? (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                    <label className="text-xs font-bold text-zinc-300">
                       Sur l&apos;image ({(config.annotations || []).length})
                     </label>
                     <div className="space-y-1.5">
@@ -4960,7 +5008,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         <div
                           key={a.id}
                           className={`flex items-center gap-2 p-2 rounded-xl border transition-all ${
-                            selectedAnnotationId === a.id ? 'border-violet-500 bg-violet-500/10' : 'border-zinc-800 bg-zinc-900'
+                            selectedAnnotationId === a.id ? 'border-pms-accent bg-pms-accent/10' : 'border-zinc-800 bg-zinc-900'
                           }`}
                         >
                           <button
@@ -4995,14 +5043,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-[11px] text-zinc-500 leading-relaxed">
+                  <p className="text-[12px] lg:text-[11px] text-zinc-500 leading-relaxed">
                     Ajoutez une flèche ou un cadre pour montrer une fonctionnalité à votre client, ou floutez une information
                     privée avant d&apos;envoyer l&apos;image.
                   </p>
                 )}
 
-                <p className="text-[11px] text-zinc-500 leading-relaxed">
-                  Faites glisser une annotation sur l&apos;image pour la placer ; les poignées violettes la redimensionnent.
+                <p className="text-[12px] lg:text-[11px] text-zinc-500 leading-relaxed">
+                  Faites glisser une annotation sur l&apos;image pour la placer ; les poignées bleues la redimensionnent.
                   Le flou est appliqué sur l&apos;image exportée : l&apos;information cachée n&apos;est pas récupérable.
                 </p>
               </div>
@@ -5015,10 +5063,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
                   <div className="flex items-center justify-between text-xs font-mono">
                     <span className="font-bold text-white uppercase flex items-center gap-1.5">
-                      <Move className="w-3.5 h-3.5 text-violet-400" />
+                      <Move className="w-3.5 h-3.5 text-pms-accent-soft" />
                       <span>Défilement Web (Haut ↕ Bas)</span>
                     </span>
-                    <span className="text-violet-400 font-bold">{config.cropOffsetY || 0}%</span>
+                    <span className="text-pms-accent-soft font-bold">{config.cropOffsetY || 0}%</span>
                   </div>
                   <input
                     type="range"
@@ -5026,9 +5074,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     max="100"
                     value={config.cropOffsetY || 0}
                     onChange={(e) => setConfig((p) => ({ ...p, cropOffsetY: Number(e.target.value) }))}
-                    className="w-full accent-violet-600 cursor-pointer h-2 bg-zinc-800 rounded-lg"
+                    className="w-full accent-pms-accent cursor-pointer h-2 bg-zinc-800 rounded-lg"
                   />
-                  <div className="flex justify-between text-[11px] text-zinc-400 font-mono">
+                  <div className="flex justify-between text-[12px] lg:text-[11px] text-zinc-400 font-mono">
                     <span>▲ Haut de page</span>
                     <span>Tarifs / Features</span>
                     <span>Footer ▼</span>
@@ -5038,10 +5086,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* Remplacement manuel de l'image */}
                 <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
                   <div className="flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-violet-400" />
-                    <span className="text-xs font-bold text-white uppercase font-mono">Remplacer la capture</span>
+                    <Upload className="w-4 h-4 text-pms-accent-soft" />
+                    <span className="text-xs font-bold text-white">Remplacer la capture</span>
                   </div>
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[12px] lg:text-[11px] text-zinc-400">
                     Vous souhaitez utiliser une capture locale spécifique ou un mockup personnalisé ?
                   </p>
                   <input
@@ -5054,7 +5102,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   <button
                     type="button"
                     onClick={() => replaceImgInputRef.current?.click()}
-                    className="w-full py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-white text-xs font-semibold border border-zinc-700 transition-colors flex items-center justify-center gap-2"
+                    className="min-h-[44px] lg:min-h-0 w-full py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-white text-xs font-semibold border border-zinc-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <ImageIcon className="w-4 h-4 text-zinc-400" />
                     <span>Choisir un fichier PNG/JPG</span>
@@ -5066,17 +5114,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {/* ══════════ ONGLET 5 : TEXTES, LOGOS & TECH STACK ══════════ */}
             {activeTab === 'branding' && (
               <div className="space-y-5 animate-fade-in">
-                {/* Kit de marque de l'agence */}
-                <BrandKitPanel userId={user?.id} onApply={handleApplyBrandKit} />
-
                 {/* Calques de textes */}
                 <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white uppercase font-mono">Titres & Textes</span>
+                    <span className="text-xs font-bold text-white">Titres & Textes</span>
                     <button
                       type="button"
                       onClick={handleAddText}
-                      className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold flex items-center gap-1 transition-all"
+                      className="min-h-[44px] lg:min-h-0 px-2.5 py-1 rounded-lg bg-pms-accent hover:bg-pms-accent text-white text-[12px] lg:text-[11px] font-bold flex items-center gap-1 transition-all"
                     >
                       <Plus className="w-3 h-3" />
                       <span>Ajouter</span>
@@ -5084,7 +5129,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   </div>
 
                   {config.texts.length === 0 ? (
-                    <p className="text-[11px] text-zinc-400">Aucun titre ajouté sur la composition.</p>
+                    <p className="text-[12px] lg:text-[11px] text-zinc-400">Aucun titre ajouté sur la composition.</p>
                   ) : (
                     <div className="space-y-2">
                       {config.texts.map((txt) => (
@@ -5092,7 +5137,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           key={txt.id}
                           onClick={() => setSelectedTextId(txt.id)}
                           className={`p-2.5 rounded-xl border text-xs cursor-pointer flex items-center justify-between ${
-                            selectedTextId === txt.id ? 'bg-violet-950/40 border-violet-500 text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-300'
+                            selectedTextId === txt.id ? 'bg-pms-accent-hover/40 border-pms-accent text-white' : 'bg-zinc-950 border-zinc-800 text-zinc-300'
                           }`}
                         >
                           <span className="truncate max-w-[200px] font-medium">{txt.text}</span>
@@ -5127,9 +5172,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             type="button"
                             onClick={() => handleUpdateText(activeText.id, { fontFamily: f.id })}
                             aria-pressed={studioFontFamily(activeText.fontFamily) === f.family}
-                            className={`px-2 py-1 rounded-lg border text-[11px] ${
+                            className={`min-h-[44px] lg:min-h-0 px-2 py-1 rounded-lg border text-[12px] lg:text-[11px] ${
                               studioFontFamily(activeText.fontFamily) === f.family
-                                ? 'bg-violet-600 border-violet-500 text-white'
+                                ? 'bg-pms-accent border-pms-accent text-white'
                                 : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:text-white'
                             }`}
                             style={{ fontFamily: f.family }}
@@ -5149,7 +5194,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             type="button"
                             onClick={() => handleUpdateText(activeText.id, { fontWeight: w.id })}
                             aria-pressed={activeText.fontWeight === w.id}
-                            className={`py-1 rounded-md text-[11px] font-semibold ${
+                            className={`min-h-[44px] lg:min-h-0 py-1 rounded-md text-[12px] lg:text-[11px] font-semibold ${
                               activeText.fontWeight === w.id ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'
                             }`}
                           >
@@ -5170,7 +5215,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           max="64"
                           value={activeText.fontSize}
                           onChange={(e) => handleUpdateText(activeText.id, { fontSize: Number(e.target.value) })}
-                          className="flex-1 accent-violet-600"
+                          className="flex-1 accent-pms-accent"
                         />
                         <span className="text-xs font-mono text-zinc-400">{activeText.fontSize}px</span>
                       </div>
@@ -5178,31 +5223,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   )}
                 </div>
 
-                {/* Badges Tech Stack Développeur */}
-                <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white uppercase font-mono">Tech Stack Développeur</span>
-                    <span className="text-[10px] text-zinc-400">{selectedTechIds.length} sélectionnés</span>
-                  </div>
-                  <TechStackPicker
-                    selectedTechIds={selectedTechIds}
-                    onChange={setSelectedTechIds}
-                    position={techPosition}
-                    onPositionChange={setTechPosition}
-                    themeStyle={techThemeStyle}
-                    onThemeStyleChange={setTechThemeStyle}
-                  />
-                </div>
-
                 {/* Logo Client / Watermark */}
                 <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white uppercase font-mono">Logo Personnalisé</span>
+                    <span className="text-xs font-bold text-white">Logo Personnalisé</span>
                     <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
                     <button
                       type="button"
                       onClick={() => logoInputRef.current?.click()}
-                      className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white text-[11px] font-bold flex items-center gap-1 transition-all"
+                      className="min-h-[44px] lg:min-h-0 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white text-[12px] lg:text-[11px] font-bold flex items-center gap-1 transition-all"
                     >
                       <Plus className="w-3 h-3" />
                       <span>Ajouter Logo</span>
@@ -5226,6 +5255,27 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
                   )}
                 </div>
+                {/* Kit de marque de l'agence */}
+                <BrandKitPanel userId={user?.id} onApply={handleApplyBrandKit} />
+
+                {/* Technologies du site : utile aux développeurs seulement, donc rangé dans « Plus de réglages » */}
+                {expertMode && (
+                <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white">Technologies du site</span>
+                    <span className="text-[12px] lg:text-[10px] text-zinc-400">{selectedTechIds.length} sélectionnés</span>
+                  </div>
+                  <TechStackPicker
+                    selectedTechIds={selectedTechIds}
+                    onChange={setSelectedTechIds}
+                    position={techPosition}
+                    onPositionChange={setTechPosition}
+                    themeStyle={techThemeStyle}
+                    onThemeStyleChange={setTechThemeStyle}
+                  />
+                </div>
+                )}
+
               </div>
             )}
 
@@ -5234,11 +5284,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               <div className="space-y-6 animate-fade-in">
                 {/* 1. Badges de confiance (données réelles saisies par l'utilisateur) */}
                 <div className="space-y-3">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                  <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
                     <span>Badges de confiance</span>
                   </label>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  <p className="text-[12px] lg:text-[11px] text-zinc-400 leading-relaxed">
                     Mettez en avant un résultat <strong className="text-zinc-200">réel</strong> du projet. Ajoutez un badge, puis remplacez le texte par vos vraies données. Faites-le glisser sur l&apos;image pour le placer.
                   </p>
 
@@ -5259,11 +5309,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           }`}
                           title={tb.hint}
                         >
-                          <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
+                          <span className="text-[12px] lg:text-[11px] font-bold text-white flex items-center gap-1.5">
                             <span>{tb.icon}</span>
                             {tb.label}
                           </span>
-                          <span className="text-[9px] text-zinc-400 font-mono">{isActive ? '✓ Sur l\'image (cliquer pour retirer)' : '+ Ajouter'}</span>
+                          <span className="text-[12px] lg:text-[9px] text-zinc-400 font-mono">{isActive ? '✓ Sur l\'image (cliquer pour retirer)' : '+ Ajouter'}</span>
                         </button>
                       );
                     })}
@@ -5304,18 +5354,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* 2. Bulles d'annotations / Callouts de vente */}
                 <div className="space-y-3 pt-4 border-t border-zinc-800/80">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      <Tag className="w-4 h-4 text-violet-400" />
+                    <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+                      <Tag className="w-4 h-4 text-pms-accent-soft" />
                       <span>Bulles d&apos;explication</span>
                     </label>
                   </div>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  <p className="text-[12px] lg:text-[11px] text-zinc-400 leading-relaxed">
                     Pointez une fonctionnalité du site directement sur l&apos;image pour l&apos;expliquer à votre client.
                   </p>
 
                   {/* Presets rapides en 1 clic */}
                   <div className="space-y-1.5">
-                    <span className="text-[10px] font-mono uppercase text-zinc-400">Exemples (modifiables) :</span>
+                    <span className="text-[12px] lg:text-[10px] font-mono uppercase text-zinc-400">Exemples (modifiables) :</span>
                     <div className="grid grid-cols-2 gap-1.5">
                       <button
                         type="button"
@@ -5328,7 +5378,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       <button
                         type="button"
                         onClick={() => handleAddCallout('⚡ Chargement rapide', 'violet')}
-                        className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-violet-400 hover:border-violet-500/50 transition-all flex items-center gap-1.5"
+                        className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-pms-accent-soft hover:border-pms-accent/50 transition-all flex items-center gap-1.5"
                       >
                         <span>⚡</span>
                         <span className="truncate">Chargement rapide</span>
@@ -5356,7 +5406,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   <button
                     type="button"
                     onClick={() => handleAddCallout('Votre texte', 'violet')}
-                    className="w-full py-2.5 px-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-violet-600/20 transition-all"
+                    className="min-h-[44px] lg:min-h-0 w-full py-2.5 px-3 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Ajouter une bulle</span>
@@ -5365,7 +5415,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   {/* Liste des callouts actifs pour édition */}
                   {(config.callouts || []).length > 0 && (
                     <div className="space-y-2 pt-2">
-                      <span className="text-[10px] font-mono uppercase text-zinc-400">
+                      <span className="text-[12px] lg:text-[10px] font-mono uppercase text-zinc-400">
                         Bulles sur l&apos;image ({(config.callouts || []).length}) :
                       </span>
                       <div className="space-y-2">
@@ -5374,7 +5424,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             key={c.id}
                             className={`p-3 rounded-xl border bg-zinc-900 space-y-2.5 transition-all ${
                               selectedCalloutId === c.id
-                                ? 'border-violet-500 ring-1 ring-violet-500/30'
+                                ? 'border-pms-accent ring-1 ring-pms-accent/30'
                                 : 'border-zinc-800'
                             }`}
                           >
@@ -5384,7 +5434,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                                 value={c.text}
                                 onChange={(e) => handleUpdateCallout(c.id, { text: e.target.value })}
                                 onFocus={() => setSelectedCalloutId(c.id)}
-                                className="flex-1 px-2.5 py-1.5 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white focus:outline-none focus:border-violet-500 font-medium"
+                                className="flex-1 px-2.5 py-1.5 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white focus:outline-none focus:border-pms-accent font-medium"
                                 placeholder="Texte de l'argument..."
                               />
                               <button
@@ -5397,13 +5447,13 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                               </button>
                             </div>
 
-                            <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                            <div className="flex items-center justify-between text-[12px] lg:text-[10px] font-mono text-zinc-400">
                               <span className="flex items-center gap-1.5">
                                 <span>Couleur :</span>
                                 <div className="flex gap-1">
                                   {(['violet', 'emerald', 'amber', 'blue', 'rose', 'dark'] as const).map((color) => {
                                     const colorMap: Record<string, string> = {
-                                      violet: 'bg-violet-500',
+                                      violet: 'bg-pms-accent',
                                       emerald: 'bg-emerald-500',
                                       amber: 'bg-amber-500',
                                       blue: 'bg-blue-500',
@@ -5433,7 +5483,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                                       tailPosition: e.target.value as any,
                                     })
                                   }
-                                  className="bg-zinc-950 text-white border border-zinc-800 rounded px-1.5 py-0.5 text-[10px] focus:outline-none"
+                                  className="bg-zinc-950 text-white border border-zinc-800 rounded px-1.5 py-0.5 text-[12px] lg:text-[10px] focus:outline-none"
                                 >
                                   <option value="bottom-left">Bas Gauche</option>
                                   <option value="bottom-right">Bas Droite</option>
@@ -5448,7 +5498,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
                   )}
 
-                  <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-300 leading-relaxed flex items-start gap-2">
+                  <div className="p-3 rounded-xl bg-pms-accent/10 border border-pms-accent/20 text-[12px] lg:text-[11px] text-pms-accent-soft leading-relaxed flex items-start gap-2">
                     <span className="text-base leading-none">💡</span>
                     <span>
                       <strong>Astuce :</strong> faites glisser une bulle ou un badge directement sur l&apos;image pour le placer.
@@ -5464,193 +5514,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {/* ══════════ ONGLET PRINCIPAL 2 : FRAME & ARRIÈRE-PLANS (SHOTS.SO) ══════════ */}
             {activeMainTab === 'frame' && (
               <div className="space-y-6 animate-fade-in">
-                {/* Mes styles */}
-                <SavedStylesPanel getCurrent={getCurrentStyle} onApply={applySavedStyle} />
-
-                {/* 1. Format & Résolution du Canvas (Bouton Popover) */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
-                    Format & Dimensions du Canvas
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowFrameSizePopover(true)}
-                    className="w-full p-3 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-violet-500/60 flex items-center justify-between transition-all group shadow-sm hover:bg-zinc-850"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-7 rounded-lg bg-zinc-950 border border-zinc-750 flex items-center justify-center text-[10px] font-mono font-bold text-violet-400 group-hover:border-violet-500">
-                        {currentFramePreset.ratioLabel}
-                      </div>
-                      <div className="text-left">
-                        <div className="text-xs font-bold text-white group-hover:text-violet-300 transition-colors">
-                          {currentFramePreset.name}
-                        </div>
-                        <div className="text-[10px] text-zinc-500 font-mono">
-                          {currentFramePreset.width} × {currentFramePreset.height} • {currentFramePreset.category}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-zinc-400 group-hover:text-white">
-                      <span className="text-[10px] font-medium hidden sm:inline">Changer</span>
-                      <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
-                    </div>
-                  </button>
-                </div>
-
-                {expertMode && (<>
-                {/* 2. Effets & Watermark (FrameCapture.PNG) */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
-                    Effets & Filigrane
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Portrait Blur */}
-                    <button
-                      type="button"
-                      onClick={() => setPortraitBlur((v) => !v)}
-                      className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
-                        portraitBlur
-                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/40'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
-                      }`}
-                    >
-                      <div className={`p-2 rounded-xl ${portraitBlur ? 'bg-violet-600 text-white' : 'bg-zinc-800 text-zinc-300'}`}>
-                        <Camera className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white">Portrait</div>
-                        <div className="text-[10px] text-zinc-500">{portraitBlur ? 'Activé' : 'Flou de champ'}</div>
-                      </div>
-                    </button>
-
-                    {/* Watermark */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveMainTab('mockup');
-                        setActiveTab('branding');
-                      }}
-                      className="p-3 rounded-2xl border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850 text-left flex items-center gap-2.5 transition-all"
-                    >
-                      <div className="p-2 rounded-xl bg-zinc-800 text-zinc-300">
-                        <Droplets className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white">Watermark</div>
-                        <div className="text-[10px] text-zinc-500">Logo de marque</div>
-                      </div>
-                    </button>
-
-                    {/* Bg Effects */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const patterns: ('none' | 'grid' | 'dots' | 'mesh' | 'noise')[] = ['none', 'grid', 'dots', 'mesh', 'noise'];
-                        const currentIdx = patterns.indexOf(config.bgPattern || 'none');
-                        const nextPat = patterns[(currentIdx + 1) % patterns.length];
-                        setConfig((p) => ({ ...p, bgPattern: nextPat }));
-                      }}
-                      className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
-                        (config.bgPattern || 'none') !== 'none'
-                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/40'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
-                      }`}
-                    >
-                      <div className={`p-2 rounded-xl ${(config.bgPattern || 'none') !== 'none' ? 'bg-violet-600 text-white' : 'bg-zinc-800 text-zinc-300'}`}>
-                        <Grid className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white">Bg Effects</div>
-                        <div className="text-[10px] text-zinc-500 capitalize">{config.bgPattern || 'Aucun'}</div>
-                      </div>
-                    </button>
-
-                    {/* VFX Glow */}
-                    <button
-                      type="button"
-                      onClick={() => setVfxGlow((v) => !v)}
-                      className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
-                        vfxGlow
-                          ? 'bg-violet-600/20 border-violet-500 text-white ring-1 ring-violet-500/40'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
-                      }`}
-                    >
-                      <div className={`p-2 rounded-xl ${vfxGlow ? 'bg-violet-600 text-white' : 'bg-zinc-800 text-zinc-300'}`}>
-                        <Sparkles className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white">VFX Glow</div>
-                        <div className="text-[10px] text-zinc-500">{vfxGlow ? 'Activé' : 'Halo doux'}</div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* 3. Scène & Ombres (Overlays Feuilles / Stores / Palmiers / Formes 3D) */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
-                    Scène & Ombres Portées (Overlays)
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSceneOverlay('none');
-                        setConfig((p) => ({ ...p, sceneOverlay: 'none' }));
-                      }}
-                      className={`p-2.5 rounded-2xl border text-center transition-all ${
-                        (sceneOverlay === 'none' || !sceneOverlay)
-                          ? 'bg-violet-600 text-white border-violet-500 font-bold shadow-md'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <EyeOff className="w-4 h-4 mx-auto mb-1 opacity-70" />
-                      <span className="text-[11px] font-medium">Aucun</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const overlays: SceneOverlayPreset[] = ['blinds', 'leaves', 'palm', 'window'];
-                        const next = sceneOverlay === 'none' ? 'palm' : overlays[(overlays.indexOf(sceneOverlay) + 1) % overlays.length] || 'blinds';
-                        setSceneOverlay(next);
-                        setConfig((p) => ({ ...p, sceneOverlay: next }));
-                      }}
-                      className={`p-2.5 rounded-2xl border text-center transition-all ${
-                        sceneOverlay !== 'none' && sceneOverlay !== 'shapes'
-                          ? 'bg-violet-600 text-white border-violet-500 font-bold shadow-md'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <Sun className="w-4 h-4 mx-auto mb-1 text-amber-300" />
-                      <span className="text-[11px] font-medium capitalize">
-                        {sceneOverlay === 'blinds' ? 'Stores' : sceneOverlay === 'leaves' ? 'Feuilles' : sceneOverlay === 'palm' ? 'Palmier' : sceneOverlay === 'window' ? 'Fenêtre' : 'Ombre'}
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = sceneOverlay === 'shapes' ? 'none' : 'shapes';
-                        setSceneOverlay(next);
-                        setConfig((p) => ({ ...p, sceneOverlay: next }));
-                      }}
-                      className={`p-2.5 rounded-2xl border text-center transition-all ${
-                        sceneOverlay === 'shapes'
-                          ? 'bg-violet-600 text-white border-violet-500 font-bold shadow-md'
-                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <Layers className="w-4 h-4 mx-auto mb-1 text-violet-300" />
-                      <span className="text-[11px] font-medium">Formes 3D</span>
-                    </button>
-                  </div>
-                </div>
-
-                </>)}
+                {/* Les fonds d'abord : c'est ce qu'on vient chercher dans cet onglet */}
                 {/* 4. Arrière-Plans (FrameCapture.PNG, Frame1.PNG, Frame2.PNG) */}
                 <div className="space-y-4 pt-1">
-                  <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                  <label className="text-xs font-bold text-zinc-300">
                     Arrière-Plan
                   </label>
 
@@ -5662,18 +5529,18 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       onClick={() => setConfig((p) => ({ ...p, bgTransparent: !p.bgTransparent }))}
                       className={`p-2 rounded-xl border text-center transition-all ${
                         config.bgTransparent
-                          ? 'bg-violet-600 text-white border-violet-500 font-bold'
+                          ? 'bg-pms-accent text-white border-pms-accent font-bold'
                           : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
                       }`}
                     >
                       <div className="w-4 h-4 mx-auto mb-1 border border-zinc-600 rounded-xs bg-[linear-gradient(45deg,#444_25%,transparent_25%),linear-gradient(-45deg,#444_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#444_75%)] bg-[size:6px_6px]" />
-                      <span className="text-[10px] block truncate">Transp.</span>
+                      <span className="text-[12px] lg:text-[10px] block truncate">Transp.</span>
                     </button>
 
                     {/* Couleur Unie */}
                     <label className="p-2 rounded-xl border text-center transition-all bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white cursor-pointer relative">
                       <Pipette className="w-4 h-4 mx-auto mb-1 text-amber-400" />
-                      <span className="text-[10px] block truncate">Couleur</span>
+                      <span className="text-[12px] lg:text-[10px] block truncate">Couleur</span>
                       <input
                         type="color"
                         value={config.bgType === 'solid' ? config.bgValue : '#ffffff'}
@@ -5696,7 +5563,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       className="p-2 rounded-xl border text-center transition-all bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
                     >
                       <ImageUp className="w-4 h-4 mx-auto mb-1 text-emerald-400" />
-                      <span className="text-[10px] block truncate">Image</span>
+                      <span className="text-[12px] lg:text-[10px] block truncate">Image</span>
                     </button>
 
                     {/* Flouté Web */}
@@ -5705,12 +5572,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       onClick={() => setConfig((p) => ({ ...p, bgType: 'blurred-image', bgTransparent: false }))}
                       className={`p-2 rounded-xl border text-center transition-all ${
                         config.bgType === 'blurred-image' && !config.bgTransparent
-                          ? 'bg-violet-600 text-white border-violet-500 font-bold'
+                          ? 'bg-pms-accent text-white border-pms-accent font-bold'
                           : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
                       }`}
                     >
                       <Flame className="w-4 h-4 mx-auto mb-1 text-pink-400" />
-                      <span className="text-[10px] block truncate">Flou Web</span>
+                      <span className="text-[12px] lg:text-[10px] block truncate">Flou Web</span>
                     </button>
                   </div>
 
@@ -5720,15 +5587,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                   {/* ── MAGIC ✨ (Généré par les couleurs réelles de la capture) ── */}
                   {autoGradients.length > 0 && !config.bgTransparent && (
-                    <div className="p-3.5 rounded-2xl bg-gradient-to-br from-violet-950/40 via-zinc-900 to-zinc-900 border border-violet-500/30 space-y-2.5">
+                    <div className="p-3.5 rounded-2xl bg-zinc-900 border border-pms-accent/30 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                          <span className="text-xs font-bold text-white">Magic ✨</span>
+                          <Sparkles className="w-3.5 h-3.5 text-pms-accent-soft" />
+                          <span className="text-xs font-bold text-white">Couleurs tirées du site</span>
                         </div>
-                        <span className="text-[10px] text-violet-300 font-mono">Auto IA</span>
+                        <span className="text-[12px] lg:text-[10px] text-pms-accent-soft font-mono">Auto IA</span>
                       </div>
-                      <p className="text-[10px] text-zinc-400">
+                      <p className="text-[12px] lg:text-[10px] text-zinc-400">
                         Extrait les teintes dominantes de votre capture pour un accord parfait.
                       </p>
                       <div className="grid grid-cols-3 gap-2 pt-1">
@@ -5745,7 +5612,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                               }))
                             }
                             className={`h-11 rounded-xl border transition-all transform hover:scale-105 ${
-                              config.bgValue === grad.value ? 'ring-2 ring-violet-400 border-white' : 'border-zinc-700'
+                              config.bgValue === grad.value ? 'ring-2 ring-pms-accent border-white' : 'border-zinc-700'
                             }`}
                             style={{ background: grad.value }}
                             title={grad.name}
@@ -5759,13 +5626,13 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   {!config.bgTransparent && (
                     <div className="space-y-2 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono">
+                        <span className="text-xs font-bold text-zinc-300">
                           Couleurs Unies
                         </span>
                         <button
                           type="button"
                           onClick={() => setShowAllSolidColors((v) => !v)}
-                          className="text-[10px] text-zinc-400 hover:text-white flex items-center gap-0.5"
+                          className="text-[12px] lg:text-[10px] text-zinc-400 hover:text-white flex items-center gap-0.5"
                         >
                           <span>{showAllSolidColors ? 'Réduire' : 'Voir tout'}</span>
                           {showAllSolidColors ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -5787,7 +5654,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             }
                             className={`w-7 h-7 rounded-lg border transition-all transform hover:scale-110 ${
                               config.bgType === 'solid' && config.bgValue === c
-                                ? 'ring-2 ring-violet-500 border-white scale-105'
+                                ? 'ring-2 ring-pms-accent border-white scale-105'
                                 : 'border-zinc-750'
                             }`}
                             style={{ backgroundColor: c }}
@@ -5807,12 +5674,12 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             <div className="flex items-center gap-1.5">
                               <span className="text-xs font-bold text-white capitalize">{cat.name}</span>
                               {cat.badge && (
-                                <span className="px-1.5 py-0.2 rounded-md bg-violet-600/30 border border-violet-500/40 text-violet-300 text-[9px] font-bold">
+                                <span className="px-1.5 py-0.2 rounded-md bg-pms-accent/30 border border-pms-accent/40 text-pms-accent-soft text-[12px] lg:text-[9px] font-bold">
                                   {cat.badge}
                                 </span>
                               )}
                             </div>
-                            <span className="text-[10px] text-zinc-500 font-mono">
+                            <span className="text-[12px] lg:text-[10px] text-zinc-500 font-mono">
                               {cat.presets.length} presets
                             </span>
                           </div>
@@ -5832,7 +5699,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                                 }
                                 className={`h-12 rounded-xl border transition-all transform hover:scale-105 relative overflow-hidden group flex items-end p-1 ${
                                   config.bgValue === preset.value
-                                    ? 'ring-2 ring-violet-400 border-white shadow-lg'
+                                    ? 'ring-2 ring-pms-accent border-white shadow-lg'
                                     : 'border-zinc-750 hover:border-zinc-600'
                                 }`}
                                 style={{ background: preset.value }}
@@ -5849,6 +5716,190 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
                   )}
                 </div>
+                {/* Mes styles */}
+                <SavedStylesPanel getCurrent={getCurrentStyle} onApply={applySavedStyle} />
+
+                {/* 1. Format & Résolution du Canvas (Bouton Popover) */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300">
+                    Format & Dimensions du Canvas
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowFrameSizePopover(true)}
+                    className="w-full p-3 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-pms-accent/60 flex items-center justify-between transition-all group shadow-sm hover:bg-zinc-850"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-7 rounded-lg bg-zinc-950 border border-zinc-750 flex items-center justify-center text-[12px] lg:text-[10px] font-mono font-bold text-pms-accent-soft group-hover:border-pms-accent">
+                        {currentFramePreset.ratioLabel}
+                      </div>
+                      <div className="text-left">
+                        <div className="text-xs font-bold text-white group-hover:text-pms-accent-soft transition-colors">
+                          {currentFramePreset.name}
+                        </div>
+                        <div className="text-[12px] lg:text-[10px] text-zinc-500 font-mono">
+                          {currentFramePreset.width} × {currentFramePreset.height} • {currentFramePreset.category}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-zinc-400 group-hover:text-white">
+                      <span className="text-[12px] lg:text-[10px] font-medium hidden sm:inline">Changer</span>
+                      <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
+                    </div>
+                  </button>
+                </div>
+
+                {expertMode && (<>
+                {/* 2. Effets & Watermark (FrameCapture.PNG) */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300">
+                    Effets & Filigrane
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Portrait Blur */}
+                    <button
+                      type="button"
+                      onClick={() => setPortraitBlur((v) => !v)}
+                      className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
+                        portraitBlur
+                          ? 'bg-pms-accent/20 border-pms-accent text-white ring-1 ring-pms-accent/40'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-xl ${portraitBlur ? 'bg-pms-accent text-white' : 'bg-zinc-800 text-zinc-300'}`}>
+                        <Camera className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">Portrait</div>
+                        <div className="text-[12px] lg:text-[10px] text-zinc-500">{portraitBlur ? 'Activé' : 'Flou de champ'}</div>
+                      </div>
+                    </button>
+
+                    {/* Watermark */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveMainTab('mockup');
+                        setActiveTab('branding');
+                      }}
+                      className="p-3 rounded-2xl border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850 text-left flex items-center gap-2.5 transition-all"
+                    >
+                      <div className="p-2 rounded-xl bg-zinc-800 text-zinc-300">
+                        <Droplets className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">Filigrane</div>
+                        <div className="text-[12px] lg:text-[10px] text-zinc-500">Logo de marque</div>
+                      </div>
+                    </button>
+
+                    {/* Bg Effects */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const patterns: ('none' | 'grid' | 'dots' | 'mesh' | 'noise')[] = ['none', 'grid', 'dots', 'mesh', 'noise'];
+                        const currentIdx = patterns.indexOf(config.bgPattern || 'none');
+                        const nextPat = patterns[(currentIdx + 1) % patterns.length];
+                        setConfig((p) => ({ ...p, bgPattern: nextPat }));
+                      }}
+                      className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
+                        (config.bgPattern || 'none') !== 'none'
+                          ? 'bg-pms-accent/20 border-pms-accent text-white ring-1 ring-pms-accent/40'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-xl ${(config.bgPattern || 'none') !== 'none' ? 'bg-pms-accent text-white' : 'bg-zinc-800 text-zinc-300'}`}>
+                        <Grid className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">Effets de fond</div>
+                        <div className="text-[12px] lg:text-[10px] text-zinc-500 capitalize">{config.bgPattern || 'Aucun'}</div>
+                      </div>
+                    </button>
+
+                    {/* VFX Glow */}
+                    <button
+                      type="button"
+                      onClick={() => setVfxGlow((v) => !v)}
+                      className={`p-3 rounded-2xl border text-left flex items-center gap-2.5 transition-all ${
+                        vfxGlow
+                          ? 'bg-pms-accent/20 border-pms-accent text-white ring-1 ring-pms-accent/40'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-850'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-xl ${vfxGlow ? 'bg-pms-accent text-white' : 'bg-zinc-800 text-zinc-300'}`}>
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">Lueur</div>
+                        <div className="text-[12px] lg:text-[10px] text-zinc-500">{vfxGlow ? 'Activé' : 'Halo doux'}</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Scène & Ombres (Overlays Feuilles / Stores / Palmiers / Formes 3D) */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-300">
+                    Scène & Ombres Portées (Overlays)
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSceneOverlay('none');
+                        setConfig((p) => ({ ...p, sceneOverlay: 'none' }));
+                      }}
+                      className={`p-2.5 rounded-2xl border text-center transition-all ${
+                        (sceneOverlay === 'none' || !sceneOverlay)
+                          ? 'bg-pms-accent text-white border-pms-accent font-bold shadow-md'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <EyeOff className="w-4 h-4 mx-auto mb-1 opacity-70" />
+                      <span className="text-[12px] lg:text-[11px] font-medium">Aucun</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const overlays: SceneOverlayPreset[] = ['blinds', 'leaves', 'palm', 'window'];
+                        const next = sceneOverlay === 'none' ? 'palm' : overlays[(overlays.indexOf(sceneOverlay) + 1) % overlays.length] || 'blinds';
+                        setSceneOverlay(next);
+                        setConfig((p) => ({ ...p, sceneOverlay: next }));
+                      }}
+                      className={`p-2.5 rounded-2xl border text-center transition-all ${
+                        sceneOverlay !== 'none' && sceneOverlay !== 'shapes'
+                          ? 'bg-pms-accent text-white border-pms-accent font-bold shadow-md'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <Sun className="w-4 h-4 mx-auto mb-1 text-amber-300" />
+                      <span className="text-[12px] lg:text-[11px] font-medium capitalize">
+                        {sceneOverlay === 'blinds' ? 'Stores' : sceneOverlay === 'leaves' ? 'Feuilles' : sceneOverlay === 'palm' ? 'Palmier' : sceneOverlay === 'window' ? 'Fenêtre' : 'Ombre'}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = sceneOverlay === 'shapes' ? 'none' : 'shapes';
+                        setSceneOverlay(next);
+                        setConfig((p) => ({ ...p, sceneOverlay: next }));
+                      }}
+                      className={`p-2.5 rounded-2xl border text-center transition-all ${
+                        sceneOverlay === 'shapes'
+                          ? 'bg-pms-accent text-white border-pms-accent font-bold shadow-md'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <Layers className="w-4 h-4 mx-auto mb-1 text-pms-accent-soft" />
+                      <span className="text-[12px] lg:text-[11px] font-medium">Formes 3D</span>
+                    </button>
+                  </div>
+                </div>
+
+                </>)}
               </div>
             )}
 
@@ -5856,9 +5907,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               <button
                 type="button"
                 onClick={toggleExpertMode}
-                className="w-full p-3 rounded-xl border border-dashed border-zinc-800 text-[11px] text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+                className="w-full min-h-[44px] p-3 rounded-xl border border-dashed border-zinc-700 text-[13px] text-zinc-300 hover:text-white hover:border-zinc-600 transition-colors"
               >
-                Besoin de plus de réglages (ombres, style du navigateur, effets, badges…) ? <span className="font-bold text-violet-300">Passer en Mode Expert</span>
+                Besoin de plus de réglages (ombres, style du navigateur, effets, badges…) ? <span className="font-bold text-pms-accent-soft">Afficher plus de réglages</span>
               </button>
             )}
 
@@ -5909,7 +5960,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   : '';
         if (!progress && !exportNotice) return null;
         const tone = progress
-          ? 'bg-zinc-900/95 border-violet-500/40 text-zinc-100'
+          ? 'bg-zinc-900/95 border-pms-accent/40 text-zinc-100'
           : exportNotice?.kind === 'error'
             ? 'bg-rose-950/95 border-rose-500/50 text-rose-100'
             : 'bg-emerald-950/95 border-emerald-500/50 text-emerald-100';
@@ -5920,7 +5971,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             className={`fixed z-[140] left-1/2 -translate-x-1/2 bottom-4 sm:bottom-6 w-[calc(100%-2rem)] max-w-md px-4 py-3 rounded-2xl border shadow-2xl backdrop-blur-md flex items-start gap-3 text-sm ${tone}`}
           >
             {progress ? (
-              <RefreshCw className="w-4 h-4 mt-0.5 shrink-0 animate-spin text-violet-300" />
+              <RefreshCw className="w-4 h-4 mt-0.5 shrink-0 animate-spin text-pms-accent-soft" />
             ) : exportNotice?.kind === 'error' ? (
               <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-rose-300" />
             ) : (
@@ -6032,7 +6083,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               <button
                 type="button"
                 onClick={() => creditOffer.resolve(true)}
-                className="flex-1 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold"
+                className="flex-1 py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white text-xs font-bold"
               >
                 Utiliser mes crédits
               </button>

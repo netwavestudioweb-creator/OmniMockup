@@ -153,13 +153,13 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-violet-100 text-violet-700">
-              <Sparkles className="w-5 h-5 text-violet-600" />
+            <div className="p-2 rounded-xl bg-pms-accent-tint text-pms-accent">
+              <Sparkles className="w-5 h-5 text-pms-accent" />
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900 flex items-center gap-2">
                 Analyse & Découpe Intelligente
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-800 border border-violet-200 font-sans font-semibold">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-pms-accent-tint text-pms-accent border border-pms-accent-tint font-sans font-semibold">
                   Gemini Vision
                 </span>
               </h2>
@@ -175,7 +175,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
           type="button"
           onClick={handleLaunchCapture}
           disabled={selectedIds.size === 0 || isCapturing}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-xs sm:text-sm shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all self-start md:self-auto"
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-semibold text-xs sm:text-sm shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all self-start md:self-auto"
         >
           <Camera className="w-4 h-4" />
           <span>
@@ -204,7 +204,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
             onClick={() => setActiveTab('desktop')}
             className={`px-3 sm:px-3.5 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               activeTab === 'desktop'
-                ? 'bg-violet-600 text-white shadow-xs'
+                ? 'bg-pms-accent text-white shadow-xs'
                 : 'text-stone-600 hover:text-stone-900'
             }`}
           >
@@ -217,7 +217,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
             onClick={() => setActiveTab('mobile')}
             className={`px-3 sm:px-3.5 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               activeTab === 'mobile'
-                ? 'bg-violet-600 text-white shadow-xs'
+                ? 'bg-pms-accent text-white shadow-xs'
                 : 'text-stone-600 hover:text-stone-900'
             }`}
           >
@@ -230,7 +230,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
             onClick={() => setActiveTab('social')}
             className={`px-3 sm:px-3.5 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               activeTab === 'social'
-                ? 'bg-violet-600 text-white shadow-xs'
+                ? 'bg-pms-accent text-white shadow-xs'
                 : 'text-stone-600 hover:text-stone-900'
             }`}
           >
@@ -244,10 +244,10 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
           <button
             type="button"
             onClick={handleSelectRecommended}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 text-xs font-semibold transition-all"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-pms-accent-tint hover:bg-pms-accent-tint text-pms-accent border border-pms-accent-tint text-xs font-semibold transition-all"
             title="Sélectionner les sections recommandées pour ce format"
           >
-            <Sparkles className="w-3 h-3 text-violet-600" />
+            <Sparkles className="w-3 h-3 text-pms-accent" />
             <span>Recommandées</span>
           </button>
 
@@ -283,7 +283,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
               onClick={() => toggleSection(section.id)}
               className={`group relative rounded-2xl p-4 cursor-pointer transition-all duration-200 border flex flex-col justify-between space-y-4 ${
                 isSelected
-                  ? 'bg-violet-50/40 border-violet-500 shadow-md ring-2 ring-violet-200'
+                  ? 'bg-pms-accent-tint border-pms-accent shadow-md ring-2 ring-pms-accent-tint'
                   : 'bg-white hover:bg-sand-50/50 border-sand-200 hover:border-sand-300 hover:shadow-sm'
               }`}
             >
@@ -300,8 +300,8 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
                     </h3>
 
                     {isRecommended && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-violet-100 text-violet-800 border border-violet-200">
-                        <Sparkles className="w-2.5 h-2.5 text-violet-600" />
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-pms-accent-tint text-pms-accent border border-pms-accent-tint">
+                        <Sparkles className="w-2.5 h-2.5 text-pms-accent" />
                         Recommandé
                       </span>
                     )}
@@ -318,7 +318,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
                 <div
                   className={`w-5 h-5 rounded-md flex items-center justify-center transition-all flex-shrink-0 border ${
                     isSelected
-                      ? 'bg-violet-600 border-violet-600 text-white shadow-xs'
+                      ? 'bg-pms-accent border-pms-accent text-white shadow-xs'
                       : 'bg-white border-sand-300 group-hover:border-stone-400 text-transparent'
                   }`}
                 >
@@ -342,10 +342,10 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
                 <div className="p-3 rounded-xl bg-sand-100/80 border border-sand-200/90 text-stone-700 relative group/da transition-all hover:bg-sand-100">
                   <div className="flex items-center justify-between gap-1.5 mb-1.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="p-0.5 rounded bg-violet-100 text-violet-700">
-                        <Sparkles className="w-3 h-3 text-violet-600" />
+                      <span className="p-0.5 rounded bg-pms-accent-tint text-pms-accent">
+                        <Sparkles className="w-3 h-3 text-pms-accent" />
                       </span>
-                      <span className="font-bold text-violet-800 text-[10px] uppercase tracking-wider">
+                      <span className="font-bold text-pms-accent text-[10px] uppercase tracking-wider">
                         Avis DA Marketing
                       </span>
                     </div>
@@ -370,7 +370,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
                         <Info className="w-3.5 h-3.5 text-stone-400 hover:text-stone-700 transition-colors" />
                         {section.visualAnalysis && (
                           <div className="hidden group-hover/tooltip:block absolute z-30 bottom-full right-0 mb-2 w-64 p-2.5 rounded-xl bg-stone-900 text-stone-200 text-[11px] shadow-xl pointer-events-none border border-stone-700">
-                            <span className="font-semibold text-violet-400 text-[10px] uppercase block mb-1">
+                            <span className="font-semibold text-pms-accent-soft text-[10px] uppercase block mb-1">
                               Analyse Visuelle
                             </span>
                             <p className="leading-snug">{section.visualAnalysis}</p>
@@ -395,8 +395,8 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
                 <div className="flex items-center gap-3">
                   {typeof section.marketingScore === 'number' && (
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] uppercase font-semibold text-violet-700">Impact DA :</span>
-                      <span className="font-bold text-violet-800">{section.marketingScore}%</span>
+                      <span className="text-[10px] uppercase font-semibold text-pms-accent">Impact DA :</span>
+                      <span className="font-bold text-pms-accent">{section.marketingScore}%</span>
                     </div>
                   )}
 
@@ -432,7 +432,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
           type="button"
           onClick={handleLaunchCapture}
           disabled={selectedIds.size === 0 || isCapturing}
-          className="flex items-center justify-center gap-2 px-7 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-xs sm:text-sm shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          className="flex items-center justify-center gap-2 px-7 py-3 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-semibold text-xs sm:text-sm shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           <Camera className="w-4 h-4" />
           <span>

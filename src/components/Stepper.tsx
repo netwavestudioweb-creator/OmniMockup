@@ -50,11 +50,11 @@ export const Stepper: React.FC<StepperProps> = ({
 
           {/* Affichage Mobile & Tablette Portrait (< 1024px) : Étape actuelle avec titre et indicateur "Étape X sur 5" */}
           <div className="lg:hidden flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
-            <div className="w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-xs">
+            <div className="w-6 h-6 rounded-full bg-pms-accent text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-xs">
               {currentStep}
             </div>
             <div className="min-w-0 flex-1">
-              <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-violet-700 block leading-tight">
+              <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-pms-accent block leading-tight">
                 Étape {currentStep} sur 5
               </span>
               <span className="text-xs font-bold text-stone-900 truncate block leading-tight">
@@ -80,9 +80,9 @@ export const Stepper: React.FC<StepperProps> = ({
                 onClick={() => isAccessible && onStepChange(step.id)}
                 className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
                   isCurrent
-                    ? 'bg-violet-600 text-white shadow-sm ring-2 ring-violet-200'
+                    ? 'bg-pms-accent text-white shadow-sm ring-2 ring-pms-accent-tint'
                     : isCompleted
-                    ? 'bg-violet-50 text-violet-800 hover:bg-violet-100 border border-violet-200'
+                    ? 'bg-pms-accent-tint text-pms-accent hover:bg-pms-accent-tint border border-pms-accent-tint'
                     : isAccessible
                     ? 'bg-sand-100 text-stone-700 hover:bg-sand-200 border border-sand-200'
                     : 'text-stone-400 cursor-not-allowed opacity-60'
@@ -91,9 +91,9 @@ export const Stepper: React.FC<StepperProps> = ({
                 <div
                   className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                     isCurrent
-                      ? 'bg-white text-violet-700'
+                      ? 'bg-white text-pms-accent'
                       : isCompleted
-                      ? 'bg-violet-600 text-white'
+                      ? 'bg-pms-accent text-white'
                       : 'bg-sand-200 text-stone-600'
                   }`}
                 >
@@ -114,9 +114,9 @@ export const Stepper: React.FC<StepperProps> = ({
               key={s}
               className={`h-1.5 rounded-full transition-all duration-300 shrink-0 ${
                 s === currentStep
-                  ? 'w-4 sm:w-8 bg-violet-600 shadow-xs'
+                  ? 'w-4 sm:w-8 bg-pms-accent shadow-xs'
                   : s < currentStep
-                  ? 'w-2 sm:w-4 bg-violet-400'
+                  ? 'w-2 sm:w-4 bg-pms-accent'
                   : 'w-2 sm:w-4 bg-sand-200'
               }`}
             />

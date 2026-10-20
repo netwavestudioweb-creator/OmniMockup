@@ -20,7 +20,7 @@ export const PageCard: React.FC<PageCardProps> = ({
       onClick={() => onToggle(page.id)}
       className={`group relative flex flex-col justify-between p-5 rounded-2xl cursor-pointer transition-all duration-200 border ${
         isSelected
-          ? 'bg-violet-50/50 border-violet-500 shadow-md ring-2 ring-violet-200'
+          ? 'bg-pms-accent-tint border-pms-accent shadow-md ring-2 ring-pms-accent-tint'
           : 'bg-white hover:bg-sand-50/50 border-sand-200 hover:border-sand-300 hover:shadow-sm'
       }`}
     >
@@ -31,7 +31,7 @@ export const PageCard: React.FC<PageCardProps> = ({
           <div
             className={`w-5 h-5 rounded-md flex items-center justify-center transition-all flex-shrink-0 border ${
               isSelected
-                ? 'bg-violet-600 border-violet-600 text-white shadow-xs'
+                ? 'bg-pms-accent border-pms-accent text-white shadow-xs'
                 : 'bg-white border-sand-300 group-hover:border-stone-400 text-transparent'
             }`}
           >
@@ -41,12 +41,12 @@ export const PageCard: React.FC<PageCardProps> = ({
           <span
             className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
               page.source === 'sitemap'
-                ? 'bg-violet-50 text-violet-800 border-violet-200'
+                ? 'bg-pms-accent-tint text-pms-accent border-pms-accent-tint'
                 : 'bg-sand-100 text-stone-700 border-sand-200'
             }`}
           >
             {page.source === 'sitemap' ? (
-              <Compass className="w-3 h-3 text-violet-600" />
+              <Compass className="w-3 h-3 text-pms-accent" />
             ) : (
               <Network className="w-3 h-3 text-stone-500" />
             )}

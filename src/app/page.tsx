@@ -20,7 +20,6 @@ const SceneEditor = dynamic(() => loadSceneEditor().then((m) => m.SceneEditor), 
 import { listProjects, newProjectId, type StudioProject } from '@/lib/studioDraft';
 import { ProjectsModal } from '@/components/ProjectsModal';
 
-import { Footer } from '@/components/Footer';
 import { captureOne } from '@/lib/captureCache';
 import { trackEvent } from '@/lib/tracking';
 import { getHeroVariant } from '@/lib/heroTest';
@@ -32,70 +31,20 @@ import {
   getPlanMonthlyPrice,
   getPlanAnnualPrice,
   getPlanMonthlyEquivalent,
-  getPlanAnnualSavings,
 } from '@/lib/pricing';
+import { Loader2 } from 'lucide-react';
 import {
-  Loader2,
-  Monitor,
-  Smartphone,
-  ArrowRight,
-  Zap,
-  Download,
-  Wallet,
-  Link2,
-  Aperture,
-  Palette,
-  ScanLine,
-  CheckCircle2,
-  XCircle,
-  X as XIcon,
-  ChevronDown,
-  ChevronUp,
-  ChevronLeft,
-  ChevronRight,
-  Sparkles,
-  Globe,
-  Layout,
-  Shield,
-  Wand2,
-  Rocket,
-  Users,
-  BadgeCheck,
-  Watch,
-  Camera,
-  Bot,
-  FileText,
-  Video,
-  PenLine,
-  FolderOpen,
-} from 'lucide-react';
-
-const AGENCY_USES = [
-  {
-    label: 'Proposition',
-    icon: Wand2,
-    title: 'Proposition commerciale',
-    sub: 'Signez plus de clients',
-    desc: 'Le site de votre prospect ou vos réalisations, mis en scène sur ordinateur et téléphone, avec le texte de vente rédigé par la Pitch IA. À glisser dans votre devis ou à envoyer sur WhatsApp.',
-    gradient: 'from-violet-600 to-indigo-600',
-  },
-  {
-    label: 'Réseaux',
-    icon: Users,
-    title: 'Réseaux sociaux',
-    sub: 'Annoncez chaque site livré',
-    desc: 'Un visuel au bon format pour LinkedIn, Instagram et le statut WhatsApp, ou tout le pack de formats en un clic.',
-    gradient: 'from-indigo-600 to-fuchsia-600',
-  },
-  {
-    label: 'Stores',
-    icon: Smartphone,
-    title: "Stores d'applications",
-    sub: 'Pour les applis mobiles',
-    desc: "Des captures aux tailles exactes de l'App Store et de Google Play, prêtes à envoyer, depuis le menu Exporter du studio.",
-    gradient: 'from-fuchsia-600 to-rose-600',
-  },
-];
+  HeroShowcase,
+  FormatShot,
+  StepShot,
+  SmallPhone,
+  ExamplesCarousel,
+  FooterLaptop,
+  FORMATS,
+  BRANDS_NOTICE,
+  type FormatId,
+} from '@/components/home/HomeStage';
+import { SUPPORT_EMAIL } from '@/lib/contact';
 
 export default function HomePage() {
   const { currency, mobileMoneyRegion } = useCurrency();
@@ -131,12 +80,24 @@ export default function HomePage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loadingSeconds, setLoadingSeconds] = useState(0);
   const captureAbortRef = useRef<AbortController | null>(null);
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [activePricingPlan, setActivePricingPlan] = useState<number>(2); // 0=Découverte, 1=Solo, 2=Pro (recommandé), 3=Agence
   const [isAnnualPricing, setIsAnnualPricing] = useState<boolean>(true);
-  const [activeStep, setActiveStep] = useState<number>(0); // 0=01 Collez, 1=02 Personnalisez, 2=03 Exportez
-  const [activeUseCase, setActiveUseCase] = useState<number>(0); // index dans AGENCY_USES
-  const [heroMobileDevice, setHeroMobileDevice] = useState<'iphone' | 'watch'>('iphone');
+
+  // « Un lien, trois formats » : le format choisi par le visiteur
+  const [format, setFormat] = useState<FormatId>('devis');
+
+  // Entrées au défilement : chaque section apparaît une fois (rien sans JavaScript ni si l'animation est réduite)
+  useEffect(() => {
+    if (activeCaptureItem) return;
+    document.documentElement.classList.add('reveal-ready');
+    const els = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.isIntersecting && (e.target.classList.add('is-in'), io.unobserve(e.target))),
+      { rootMargin: '0px 0px -12% 0px' }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [activeCaptureItem]);
 
   const handleAnalyzeUrl = async (urlToCapture: string, settings?: import('@/types/analyzer').CaptureSettings) => {
     trackEvent('hero_capture', { hero: getHeroVariant() });
@@ -221,1311 +182,552 @@ export default function HomePage() {
     );
   }
 
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  const display = 'text-[clamp(2.125rem,1.5rem+2.6vw,3.5rem)] leading-[1.02] tracking-[-0.02em] font-normal';
+  const head = 'text-[clamp(2rem,1.4rem+2vw,2.75rem)] leading-[1.05] tracking-[-0.02em] font-normal';
+  const lead = 'text-[clamp(1.25rem,1.1rem+0.6vw,1.5rem)] leading-snug';
+  const current = FORMATS.find((f) => f.id === format) || FORMATS[0];
+
   return (
-    <div className="site-dark min-h-screen bg-zinc-950 text-white flex flex-col selection:bg-violet-500/30 selection:text-violet-200 w-full max-w-full overflow-x-hidden">
+    <div className="font-archivo min-h-screen bg-pms-paper text-pms-ink flex flex-col w-full max-w-full overflow-x-clip selection:bg-pms-accent selection:text-white">
       <Navbar />
       {showProjects && <ProjectsModal onClose={() => setShowProjects(false)} onOpen={openProject} onChange={setProjects} />}
-          {/* ═══════════ HERO SECTION ═══════════ */}
-          <section className="relative hero-mesh noise overflow-hidden">
-            {/* Background elements */}
-            <div className="absolute inset-0 dot-grid opacity-60 pointer-events-none" />
-            <div className="absolute top-0 left-1/4 w-[700px] h-[700px] rounded-full bg-violet-700/10 blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-indigo-700/10 blur-[100px] pointer-events-none" />
 
-            <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-20 sm:pb-28 flex flex-col items-center text-center">
-              {/* Badge centré */}
-              <div className="animate-fade-in inline-flex items-center gap-2 px-4 py-2 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs sm:text-sm font-semibold mb-6 shadow-sm">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
-                </span>
-                Pour les agences web &amp; freelances
-                <span className="px-1.5 py-0.5 rounded-md bg-violet-500/20 text-violet-200 text-[10px] font-bold border border-violet-400/30">NEW</span>
-              </div>
+      {/* ═══ Accroche : la carte rayée à gauche, à droite le site de Wave mis en scène ═══ */}
+      <section className="p-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:min-h-[calc(100svh-64px)]">
+        <div className="h-[48svh] lg:h-auto lg:order-2 lg:sticky lg:top-[76px] lg:max-h-[calc(100svh-88px)]">
+          <HeroShowcase />
+        </div>
 
-              {/* Titre principal centré — Phrase complète sans coupure artificielle */}
-              <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white max-w-4xl mx-auto leading-[1.1] mb-6">
-                {/* Version « court » */}
-                <span className="hero-court">
-                  Votre site.{' '}
-                  <span className="block mt-1 sm:mt-2">
-                    Prêt à <span className="shimmer-text">signer</span>.
-                  </span>
-                </span>
-                {/* Version « long » (accroche d'origine) */}
-                <span className="hero-long">
-                  Collez le lien de votre&nbsp;site.{' '}
-                  <span className="block mt-1 sm:mt-2">
-                    Recevez des visuels qui <span className="shimmer-text">donnent envie de signer</span>.
-                  </span>
-                </span>
-              </h1>
+        <div className="relative -mt-6 lg:mt-0 lg:order-1 rounded-lg bg-pms-surface overflow-hidden flex flex-col">
+          {/* La rayure : la seule décoration de la page, reprise au-dessus du pied de page */}
+          <div className="flex h-10 lg:h-14 shrink-0" aria-hidden="true">
+            {Array.from({ length: 40 }).map((_, i) => (
+              <div key={i} className={`w-7 shrink-0 ${i % 2 === 0 ? 'bg-pms-ink' : 'bg-pms-surface'}`} />
+            ))}
+          </div>
 
-              {/* Sous-titre centré — Complet et équilibré */}
-              <p className="text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-8">
-                Préparez en 2 minutes les visuels et le texte qui font signer un client, au lieu de 2 heures sur Figma.
-                Pour votre proposition commerciale, vos réseaux sociaux ou les stores d&apos;applications.
-              </p>
+          <div className="flex-1 flex flex-col justify-center px-5 sm:px-10 lg:px-14 py-10 lg:py-14">
+            <h1 className={`${display} max-w-[20ch]`}>
+              <span className="hero-court">Votre site, prêt à faire signer.</span>
+              <span className="hero-long">Un lien, des visuels qui font signer.</span>
+            </h1>
+            <p className={`mt-6 ${lead} text-pms-ink max-w-[36ch]`}>
+              Préparez en 2 minutes les visuels et le texte qui font signer un client, au lieu de 2 heures sur Figma.
+            </p>
 
-              {/* Champ de saisie d'URL centré et aéré — Pièce maîtresse */}
-              <div className="animate-fade-in delay-300 w-full max-w-3xl mx-auto mb-8">
-                {savedDraft && (
-                  <div className="mb-4 p-3 rounded-2xl bg-violet-500/10 border border-violet-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
-                    <p className="text-xs sm:text-sm text-violet-100 min-w-0">
-                      Reprendre votre dernier mockup :{' '}
-                      <strong className="text-white">
-                        {savedDraft.name}
-                      </strong>
-                      <span className="text-violet-300/80">
-                        {' '}· {new Date(savedDraft.updatedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
-                      </span>
-                    </p>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => openProject(savedDraft)}
-                        className="px-3.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors"
-                      >
-                        Reprendre
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowProjects(true)}
-                        className="px-3 py-1.5 rounded-xl text-violet-200 hover:text-white hover:bg-violet-500/15 text-xs font-semibold transition-colors"
-                      >
-                        Mes projets ({projects.length})
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <UrlInputForm
-                  onAnalyze={handleAnalyzeUrl}
-                  onUploadImage={handleUploadImage}
-                  isLoading={isLoading}
-                  errorMessage={errorMessage}
-                />
-              </div>
-
-              {/* Éléments de réassurance centrés */}
-              <div className="animate-fade-in delay-400 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-xs sm:text-sm text-zinc-400 font-medium mb-6">
-                <span className="flex items-center gap-1.5">
-                  <Zap className="w-4 h-4 text-violet-400" />
-                  Résultat en quelques secondes
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-700 hidden sm:block" />
-                <span className="flex items-center gap-1.5">
-                  <Download className="w-4 h-4 text-indigo-400" />
-                  Export jusqu&apos;en 4K (plan Pro)
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-700 hidden sm:block" />
-                <span className="flex items-center gap-1.5">
-                  <Wallet className="w-4 h-4 text-emerald-400" />
-                  Paiement unique, aucun prélèvement surprise
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-700 hidden sm:block" />
-                <span className="flex items-center gap-1.5">
-                  <Shield className="w-4 h-4 text-amber-400" />
-                  Essai sans inscription ni carte bancaire
-                </span>
-              </div>
-
-              {/* Lancement (sans fausse preuve sociale) */}
-              <div className="animate-fade-in delay-500 flex items-center justify-center mb-12 sm:mb-16">
-                <a
-                  href="#usages"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 text-xs sm:text-sm text-zinc-300 font-medium hover:border-violet-400/40 hover:text-white transition-colors"
-                >
-                  <Rocket className="w-4 h-4 text-violet-400" />
-                  Proposition commerciale · Réseaux sociaux · Stores d&apos;applis
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </a>
-              </div>
-
-              {/* Prévisualisation Produit 3D — Spécifique PC (MacBook Pro) et Mobile (iPhone 16 Pro) */}
-              <div className="animate-fade-in delay-500 relative w-full max-w-4xl mx-auto">
-                {/* ═══════════ AFFICHAGE PC (Grand Écran) : MacBook Pro M3 Traité avec Netwave Studio ═══════════ */}
-                <div className="hidden sm:block">
-                  <div className="animate-float glow-violet rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 shadow-2xl w-full bg-zinc-950">
-                    {/* Barre d'en-tête navigateur macOS */}
-                    <div className="bg-zinc-900 px-5 py-3.5 border-b border-white/8 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1.5">
-                          <div className="w-3 h-3 rounded-full bg-rose-500/80" />
-                          <div className="w-3 h-3 rounded-full bg-amber-500/80" />
-                          <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
-                        </div>
-                        <span className="text-[11px] font-mono text-zinc-500 ml-2">MacBook Pro M3</span>
-                      </div>
-                      
-                      {/* Barre d'adresse URL réelle */}
-                      <div className="flex-1 max-w-md mx-4 px-3 py-1.5 rounded-lg bg-zinc-800/90 text-xs font-mono text-zinc-300 flex items-center justify-between border border-zinc-700/60 shadow-inner">
-                        <div className="flex items-center gap-2 truncate">
-                          <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          <span className="text-zinc-200 font-semibold truncate">https://netwavestudio.com</span>
-                        </div>
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono shrink-0 ml-2">SSL ACTIF</span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-0.5 rounded-md bg-violet-500/20 text-violet-300 text-[11px] font-bold border border-violet-500/30 flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" /> Traitement 3D
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Vrai contenu traité : Netwave Studio & PitchMySite */}
-                    <div className="relative bg-gradient-to-br from-zinc-950 via-zinc-900 to-black p-6 sm:p-8 text-left overflow-hidden">
-                      {/* Halos lumineux en arrière-plan */}
-                      <div className="absolute top-0 right-1/4 w-72 h-72 bg-violet-600/15 rounded-full blur-3xl pointer-events-none" />
-                      <div className="absolute bottom-0 left-1/4 w-60 h-60 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
-
-                      <div className="relative z-10 space-y-6">
-                        {/* Mini Navbar du site capturé */}
-                        <div className="flex items-center justify-between pb-4 border-b border-white/5">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center font-black text-white text-xs shadow-md">
-                              NW
-                            </div>
-                            <span className="font-bold text-white text-sm tracking-tight">NETWAVE STUDIO</span>
-                          </div>
-                          <div className="flex items-center gap-6 text-xs text-zinc-400 font-medium">
-                            <span className="hover:text-white transition-colors cursor-pointer">Services</span>
-                            <span className="hover:text-white transition-colors cursor-pointer">Méthodologie</span>
-                            <span className="hover:text-white transition-colors cursor-pointer">Réalisations</span>
-                            <span className="hover:text-white transition-colors cursor-pointer">Tarifs</span>
-                          </div>
-                          <span className="px-3 py-1 rounded-lg bg-white/10 text-white text-xs font-semibold border border-white/15">
-                            Lancer mon projet →
-                          </span>
-                        </div>
-
-                        {/* Hero Section réelle du site capturé */}
-                        <div className="grid grid-cols-12 gap-6 items-center pt-2">
-                          <div className="col-span-7 space-y-4">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-semibold">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                              Agence Web & Créateurs Numériques
-                            </div>
-                            <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight">
-                              Des expériences web <span className="shimmer-text">qui captivent</span> et convertissent.
-                            </h2>
-                            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                              Conception de sites ultra-rapides, interfaces immersives et mockups 3D nouvelle génération pour propulser vos offres.
-                            </p>
-                            <div className="flex items-center gap-3 pt-1">
-                              <div className="px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold shadow-lg shadow-violet-600/30">
-                                Découvrir nos réalisations
-                              </div>
-                              <div className="px-4 py-2 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-semibold border border-zinc-700">
-                                Réserver un appel
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Carte d'illustration visuelle */}
-                          <div className="col-span-5">
-                            <div className="p-4 rounded-2xl bg-zinc-900/90 border border-violet-500/30 shadow-xl space-y-2.5">
-                              <div className="flex items-center gap-2 text-xs font-semibold text-white">
-                                <Layout className="w-3.5 h-3.5 text-violet-400" />
-                                Formats prêts à envoyer
-                              </div>
-                              {[
-                                { name: 'Présentation client', ratio: '16:9' },
-                                { name: 'Post LinkedIn', ratio: '1.91:1' },
-                                { name: 'Post Instagram', ratio: '1:1' },
-                              ].map((row) => (
-                                <div key={row.name} className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/80 border border-zinc-700/50 text-[11px]">
-                                  <span className="text-zinc-300">{row.name}</span>
-                                  <span className="font-bold font-mono text-emerald-400">{row.ratio}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Barre d'action inférieure sur PC avec caractéristiques du traitement */}
-                    <div className="bg-zinc-950 border-t border-white/8 px-6 py-3.5 flex items-center justify-between">
-                      <div className="flex items-center gap-4 text-xs text-zinc-400">
-                        <span className="flex items-center gap-1.5 font-medium text-zinc-300">
-                          <Monitor className="w-4 h-4 text-violet-400" /> MacBook Pro M3
-                        </span>
-                        <span className="text-zinc-700">|</span>
-                        <span>Perspective 3D : 14°</span>
-                        <span className="text-zinc-700">|</span>
-                        <span className="text-emerald-400 font-semibold">Rendu 4K Ultra-HD</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                        className="px-4 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md"
-                      >
-                        Tester avec mon site <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+            <div className="mt-8 -mx-2 sm:-mx-4">
+              {savedDraft && (
+                <div className="mx-2 sm:mx-4 mb-5 p-4 rounded-lg bg-pms-paper flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <p className="text-[15px] text-pms-muted min-w-0">
+                    Reprendre votre dernier mockup : <strong className="font-semibold text-pms-ink">{savedDraft.name}</strong>
+                    {', '}
+                    {new Date(savedDraft.updatedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                  </p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => openProject(savedDraft)}
+                      className="min-h-[44px] px-4 rounded-md bg-pms-accent hover:bg-pms-accent-hover text-white text-[15px] font-semibold transition-colors"
+                    >
+                      Reprendre
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowProjects(true)}
+                      className="min-h-[44px] px-3 rounded-md text-pms-accent hover:underline text-[15px] font-semibold"
+                    >
+                      Mes projets ({projects.length})
+                    </button>
                   </div>
                 </div>
+              )}
+              <UrlInputForm onAnalyze={handleAnalyzeUrl} onUploadImage={handleUploadImage} isLoading={isLoading} errorMessage={errorMessage} />
+            </div>
 
-                {/* ═══════════ AFFICHAGE MOBILE : Carrousel iPhone 16 Pro & Apple Watch Ultra ═══════════ */}
-                <div className="block sm:hidden">
-                  <div className="flex flex-col items-center gap-4">
-                    {/* Sélecteur d'appareil mobile : iPhone vs Montre connectée */}
-                    <div className="flex p-1 rounded-xl bg-zinc-900 border border-zinc-800 shadow-inner w-full max-w-[280px]">
-                      <button
-                        type="button"
-                        onClick={() => setHeroMobileDevice('iphone')}
-                        className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                          heroMobileDevice === 'iphone'
-                            ? 'bg-violet-600 text-white shadow-md'
-                            : 'text-zinc-400 hover:text-white'
-                        }`}
-                      >
-                        <Smartphone className="w-3.5 h-3.5" />
-                        Téléphone
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setHeroMobileDevice('watch')}
-                        className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                          heroMobileDevice === 'watch'
-                            ? 'bg-violet-600 text-white shadow-md'
-                            : 'text-zinc-400 hover:text-white'
-                        }`}
-                      >
-                        <Watch className="w-3.5 h-3.5" />
-                        Montre
-                      </button>
-                    </div>
+            <p className="mt-6 text-[15px] text-pms-muted max-w-[46ch]">
+              Essai sans inscription ni carte bancaire.{' '}
+              {mobileMoneyRegion
+                ? 'Paiement unique en FCFA par Mobile Money, sans prélèvement automatique.'
+                : 'Paiement unique, sans abonnement automatique.'}
+            </p>
+            <nav className="mt-8 flex flex-wrap gap-x-7 gap-y-2 text-[15px] font-semibold" aria-label="Sur cette page">
+              <a href="#usages" className="min-h-[44px] inline-flex items-center text-pms-accent hover:underline underline-offset-4">Les formats</a>
+              <a href="#pricing" className="min-h-[44px] inline-flex items-center text-pms-accent hover:underline underline-offset-4">Les tarifs</a>
+              <a href="#questions" className="min-h-[44px] inline-flex items-center text-pms-accent hover:underline underline-offset-4">Vos questions</a>
+            </nav>
+          </div>
+        </div>
+      </section>
 
-                    {/* VUE 1 : téléphone — vrai mockup réalisé avec PitchMySite */}
-                    {heroMobileDevice === 'iphone' ? (
-                      <div className="w-full max-w-[300px] mx-auto relative animate-fade-in">
-                        {/* Halo lumineux violet derrière le téléphone */}
-                        <div className="absolute inset-0 -z-10 rounded-[40px] blur-3xl opacity-50 bg-gradient-to-b from-violet-600/40 via-indigo-600/20 to-transparent scale-110" />
+      {/* ═══ Un lien → trois formats : ce que vous donnez à gauche, ce que vous recevez à droite ═══ */}
+      <section id="usages" aria-labelledby="usages-titre" className="scroll-mt-16 mt-3 md:grid md:grid-cols-2">
+        <div className="relative bg-pms-field text-white px-5 sm:px-10 lg:px-[68px] pt-16 pb-28 md:min-h-[90svh] flex flex-col">
+          <p className="text-[15px] text-white/70">Le lien que vous collez</p>
+          <code className="mt-3 block font-archivo text-[clamp(1.25rem,1.1rem+0.6vw,1.5rem)] leading-snug break-all max-w-[34ch]">
+            https://www.netflix.com
+          </code>
 
-                        {/* Vrai mockup réalisé avec PitchMySite : boutique en ligne Al Kareem Parfumerie (avec son accord) */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src="/images/mockup-al-kareem-boutique.webp"
-                          alt="Mockup iPhone de la page Boutique d’Al Kareem Parfumerie, réalisé avec PitchMySite"
-                          width={619}
-                          height={1233}
-                          className="w-[78%] mx-auto h-auto object-contain drop-shadow-[0_30px_60px_rgba(124,58,237,0.45)] animate-float"
-                          loading="eager"
-                        />
+          <p className="mt-12 text-[15px] text-white/70" id="format-label">Choisissez un format</p>
+          <div className="mt-3 flex flex-col gap-2 max-w-sm" role="radiogroup" aria-labelledby="format-label">
+            {FORMATS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                role="radio"
+                aria-checked={format === f.id}
+                onClick={() => setFormat(f.id)}
+                className={`min-h-[52px] px-4 rounded-md text-left flex items-center justify-between gap-4 transition-colors ${
+                  format === f.id ? 'bg-white text-pms-ink' : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                <span className="text-[17px] font-semibold">{f.label}</span>
+                <span className={`text-[15px] tabular-nums ${format === f.id ? 'text-pms-muted' : 'text-white/70'}`}>{f.ratio}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-8 text-[17px] leading-relaxed text-white/85 max-w-[40ch]" aria-live="polite">
+            {current.desc}
+          </p>
 
-                        <div className="mt-4 flex justify-center">
-                          <div className="bg-black/80 backdrop-blur-sm border border-zinc-700/60 text-[10px] font-semibold text-zinc-300 px-3 py-1.5 rounded-full shadow-xl flex items-center gap-1.5 text-center">
-                            <Sparkles className="w-3 h-3 text-violet-400 shrink-0" />
-                            Page Boutique d’Al Kareem Parfumerie · réalisé avec PitchMySite
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      /* VUE 2 : Apple Watch Ultra connectée */
-                      <div className="w-full max-w-[240px] mx-auto flex flex-col items-center animate-fade-in">
-                        {/* Bracelet supérieur */}
-                        <div className="w-28 h-3.5 bg-gradient-to-b from-zinc-800 to-zinc-700 rounded-t-lg shadow-sm border-t border-zinc-600" />
+          <h2 id="usages-titre" className={`absolute bottom-8 left-5 sm:left-10 lg:left-[68px] ${head}`}>Un lien collé,</h2>
+        </div>
 
-                        {/* Boîtier Apple Watch Ultra titane */}
-                        <div className="w-full relative rounded-[38px] p-2.5 bg-gradient-to-b from-zinc-700 via-zinc-800 to-zinc-900 shadow-2xl border-2 border-zinc-600">
-                          {/* Couronne numérique à droite */}
-                          <div className="absolute -right-2 top-8 w-2 h-9 bg-gradient-to-b from-zinc-500 via-zinc-600 to-zinc-500 rounded-r-md border border-zinc-400 shadow-sm flex items-center justify-center">
-                            <div className="w-0.5 h-6 bg-zinc-800 rounded-full" />
-                          </div>
+        <div className="relative bg-pms-paper px-5 sm:px-10 pt-24 pb-28 md:pt-16 min-h-[70svh] md:min-h-[90svh] flex items-start justify-center">
+          <div className="relative w-full flex justify-center">
+            {FORMATS.map((f) => (
+              <div
+                key={f.id}
+                aria-hidden={format !== f.id}
+                className={`${format === f.id ? 'relative opacity-100' : 'absolute inset-x-0 top-0 opacity-0 pointer-events-none'} flex justify-center transition-opacity duration-700 motion-reduce:transition-none`}
+              >
+                <FormatShot format={f.id} />
+              </div>
+            ))}
+          </div>
+          <p className={`absolute bottom-8 right-5 sm:right-10 lg:right-[68px] ${head} text-right`}>trois formats.</p>
+        </div>
+      </section>
 
-                          {/* Bouton latéral droit */}
-                          <div className="absolute -right-1.5 top-20 w-1.5 h-7 bg-zinc-600 rounded-r-sm border border-zinc-500" />
+      {/* ═══ Le problème : grand aplat d'encre ═══ */}
+      <section data-reveal className="bg-pms-field text-white mt-3">
+        <div className="px-5 sm:px-10 lg:px-[68px] py-20 sm:py-28">
+          <h2 className={`${head} max-w-[22ch]`}>Vos clients jugent un site sur une image</h2>
+          <p className="mt-6 text-[17px] leading-relaxed text-white/85 max-w-[56ch]">
+            Proposition commerciale, livraison, portfolio : la première impression se joue sur un visuel. Une capture plate fait
+            paraître un site soigné comme un site bâclé.
+          </p>
+          <div className="mt-14 grid gap-12 md:grid-cols-2 max-w-5xl">
+            <div>
+              <h3 className={`${lead} text-white/70`}>Sans PitchMySite</h3>
+              <ul className="mt-5 space-y-4 text-[17px] leading-relaxed text-white/85">
+                <li>Des captures plates qui ne mettent pas votre travail en valeur.</li>
+                <li>Des heures non facturées à préparer des visuels sur Figma pour chaque client.</li>
+                <li>Des captures à refaire à la main à chaque modification du site.</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className={lead}>Avec PitchMySite</h3>
+              <ul className="mt-5 space-y-4 text-[17px] leading-relaxed text-white">
+                <li>Vous collez l&apos;adresse : les pages sont capturées, bannières de cookies masquées.</li>
+                <li>Le site est mis en scène sur ordinateur, téléphone et tablette, angle et fond réglables.</li>
+                <li>Un lien de partage pour votre client, à votre marque avec le plan Agence.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
 
-                          {/* Écran montre tactile */}
-                          <div className="relative rounded-[28px] overflow-hidden aspect-[4/5] bg-black p-3.5 flex flex-col justify-between text-left border border-white/10 shadow-inner">
-                            {/* En-tête montre */}
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-mono font-bold text-amber-400">09:41</span>
-                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                            </div>
+      {/* ═══ Exemples : un client réel et des sites connus, chacun mis en scène ═══ */}
+      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pt-20 sm:pt-28">
+        <h2 className={head}>Des sites que vous connaissez</h2>
+        <p className="mt-5 mb-10 text-[17px] leading-relaxed text-pms-ink max-w-[52ch]">
+          Une boutique en ligne, une page produit, un logiciel : chaque site a été collé tel quel, puis mis en scène en quelques
+          clics.
+        </p>
+        <ExamplesCarousel />
+        <p className="mt-4 text-[13px] text-pms-muted max-w-[70ch]">{BRANDS_NOTICE}</p>
+      </section>
 
-                            {/* Contenu montre Netwave Studio */}
-                            <div className="space-y-1.5 my-auto">
-                              <div className="flex items-center gap-1.5">
-                                <div className="w-4 h-4 rounded-sm bg-violet-600 flex items-center justify-center font-bold text-white text-[8px]">
-                                  NW
-                                </div>
-                                <span className="text-[11px] font-black text-white tracking-tight">NETWAVE</span>
-                              </div>
-                              <p className="text-[10px] font-bold text-zinc-200">Studio Web & 3D</p>
-                              <div className="flex items-center gap-1 text-[9px] text-emerald-400 font-mono">
-                                <CheckCircle2 className="w-3 h-3" /> Mockup Prêt 4K
-                              </div>
-                            </div>
+      {/* ═══ Comment ça marche : chaque phrase a son image juste à côté, qui montre exactement ce qu'elle dit ═══ */}
+      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pt-20 sm:pt-28">
+        <h2 className={head}>Comment ça marche</h2>
+        <ol className="mt-12 flex flex-col gap-16 lg:gap-20">
+          {[
+            { t: 'D’abord, collez le lien du site.', d: 'Ou déposez votre propre capture si le site est en local ou protégé par un mot de passe.' },
+            { t: 'Ensuite, choisissez l’appareil et le format.', d: 'MacBook, iPhone, iPad, Android ; l’angle, le fond et le format de chaque réseau.' },
+            { t: 'Enfin, exportez ou partagez.', d: 'Image jusqu’en 4K, vidéo, PDF pour un devis, ou un lien à envoyer à votre client.' },
+          ].map((s, i) => (
+            <li key={s.t} className="grid gap-8 lg:grid-cols-12 lg:gap-10 lg:items-center">
+              <div className="lg:col-span-5">
+                <p className={lead}>{s.t}</p>
+                <p className="mt-3 text-[17px] leading-relaxed text-pms-muted max-w-[36ch]">{s.d}</p>
+              </div>
+              <div className="lg:col-start-7 lg:col-span-6">
+                <StepShot step={i as 0 | 1 | 2} />
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
 
-                            {/* Bouton d'action tactile montre */}
-                            <button
-                              type="button"
-                              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                              className="w-full py-1.5 px-2 rounded-lg bg-violet-600 text-[10px] font-bold text-white text-center shadow-md active:scale-95 transition-transform"
-                            >
-                              Ouvrir en 3D
-                            </button>
-                          </div>
-                        </div>
+      {/* ═══ Ce que contient le studio : une petite preuve à côté de chaque texte ═══ */}
+      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] py-20 sm:py-28">
+        <h2 className={`${head}`}>Ce que contient le studio</h2>
+        <div className="mt-16 grid gap-16 xl:grid-cols-2 xl:gap-x-16 xl:gap-y-20">
+          <article className="flex flex-col sm:flex-row gap-5 max-w-[640px]">
+            <div className="sm:w-[360px] shrink-0 h-[160px] rounded-lg bg-pms-surface overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/demo/netflix-desktop.jpg" alt="" width={1440} height={900} loading="lazy" className="w-full h-full object-cover object-left-top" />
+            </div>
+            <div className="sm:w-[250px]">
+              <h3 className="text-[17px] font-semibold">Une capture propre</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Plusieurs pages du site, la version mobile ou sombre.</p>
+              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Les bannières de cookies sont masquées toutes seules.</p>
+            </div>
+          </article>
 
-                        {/* Bracelet inférieur */}
-                        <div className="w-28 h-3.5 bg-gradient-to-b from-zinc-700 to-zinc-800 rounded-b-lg shadow-sm border-b border-zinc-600" />
-                      </div>
-                    )}
-
-                    {/* Contrôles du carrousel mobile (Précédent / Puces / Suivant) */}
-                    <div className="flex items-center justify-center gap-3 mt-1">
-                      <button
-                        type="button"
-                        onClick={() => setHeroMobileDevice((prev) => (prev === 'iphone' ? 'watch' : 'iphone'))}
-                        className="p-1.5 rounded-lg bg-zinc-800/80 border border-zinc-700 text-zinc-300 hover:text-white"
-                        aria-label="Appareil précédent"
-                      >
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                      </button>
-                      <div className="flex gap-1.5">
-                        {(['iphone', 'watch'] as const).map((d) => (
-                          <button
-                            key={d}
-                            type="button"
-                            onClick={() => setHeroMobileDevice(d)}
-                            className="h-6 min-w-6 px-1 flex items-center justify-center"
-                            aria-label={d === 'iphone' ? 'Téléphone' : 'Montre'}
-                            aria-pressed={heroMobileDevice === d}
-                          >
-                            <span
-                              className={`h-1.5 rounded-full transition-all ${
-                                heroMobileDevice === d ? 'w-5 bg-violet-500' : 'w-2 bg-zinc-700'
-                              }`}
-                            />
-                          </button>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setHeroMobileDevice((prev) => (prev === 'iphone' ? 'watch' : 'iphone'))}
-                        className="p-1.5 rounded-lg bg-zinc-800/80 border border-zinc-700 text-zinc-300 hover:text-white"
-                        aria-label="Appareil suivant"
-                      >
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <p className="text-[11px] text-zinc-400 font-medium">
-                      {heroMobileDevice === 'iphone'
-                        ? '📱 Mockup téléphone · capture réelle de la version mobile du site'
-                        : '⌚ Montre connectée · même mockup en version montre'}
-                    </p>
-                  </div>
-                </div>
-
+          <article className="flex flex-col sm:flex-row gap-5 max-w-[640px]">
+            <div className="sm:w-[360px] shrink-0 h-[200px] rounded-lg bg-pms-surface overflow-hidden flex items-start justify-center pt-5">
+              <div className="w-[118px]">
+                <SmallPhone site="wave" />
               </div>
             </div>
-          </section>
+            <div className="sm:w-[250px]">
+              <h3 className="text-[17px] font-semibold">Neuf appareils</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">MacBook, PC portable, iMac, iPad, iPhone, Android, montre, navigateur et cadre plat.</p>
+              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Avec la vraie version mobile du site sur le téléphone.</p>
+            </div>
+          </article>
 
-          {/* ═══════════ SOCIAL PROOF BAR ═══════════ */}
-          <section className="border-y border-white/5 bg-zinc-900/40 py-5 overflow-hidden">
-            <div className="max-w-5xl mx-auto px-4 flex flex-wrap items-center justify-center gap-6 sm:gap-10">
-              {[
-                { icon: Globe, label: 'Capture depuis l\'URL' },
-                { icon: Zap, label: 'Résultat en quelques secondes' },
-                { icon: Monitor, label: 'MacBook, iPhone, iPad' },
-                { icon: ScanLine, label: 'Jusqu\'en 4K (Pro)' },
-                { icon: BadgeCheck, label: 'Marque blanche (Agence)' },
-                { icon: Shield, label: 'Sans inscription pour tester' },
-              ].map((item, i) => (
-                <React.Fragment key={i}>
-                  <span className="flex items-center gap-2 text-sm text-zinc-400 font-semibold whitespace-nowrap">
-                    <item.icon className="w-4 h-4 text-violet-400" />
-                    {item.label}
-                  </span>
-                  {i < 5 && <span className="w-1 h-1 rounded-full bg-zinc-700 hidden sm:block" />}
-                </React.Fragment>
+          <article className="flex flex-col sm:flex-row gap-5 max-w-[640px]">
+            <div className="sm:w-[360px] shrink-0 h-[120px] rounded-lg bg-pms-surface p-5 flex flex-wrap content-center gap-2">
+              {['Offre irrésistible', 'Audit des revenus', 'E-mail de prospection', 'Post LinkedIn'].map((t, i) => (
+                <span key={t} className={`px-3 py-1.5 rounded-md text-[13px] font-semibold ${i === 0 ? 'bg-pms-ink text-white' : 'bg-pms-paper text-pms-ink'}`}>
+                  {t}
+                </span>
               ))}
             </div>
-          </section>
-
-          {/* ═══════════ OLD WAY → NEW WAY ═══════════ */}
-          <section className="cv-auto bg-zinc-950 py-20 sm:py-28">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center max-w-3xl mx-auto mb-14">
-                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Le problème</p>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-4">
-                  Vos clients jugent un site <span className="shimmer-text">sur une image</span>
-                </h2>
-                <p className="text-zinc-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-                  Proposition commerciale, livraison, portfolio : la première impression se joue sur un visuel. Une capture plate fait paraître un site à 3 000 € comme un site à 300 €.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {/* Problems — Red */}
-                <div className="rounded-2xl bg-rose-950/40 border border-rose-500/25 p-6 sm:p-8 flex flex-col gap-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center shrink-0">
-                      <XCircle className="w-5 h-5 text-rose-400" />
-                    </div>
-                    <h3 className="font-bold text-rose-200 text-base sm:text-lg">Sans PitchMySite</h3>
-                  </div>
-                  {[
-                    'Des captures plates qui ne mettent pas votre travail en valeur',
-                    'Des heures non facturées à préparer des visuels sur Figma pour chaque client',
-                    'Des captures d\'écran à refaire à la main à chaque modification du site',
-                    'Des propositions commerciales qui ressemblent à celles de vos concurrents',
-                    'Un portfolio d\'agence qui ne reflète pas le niveau de vos réalisations',
-                  ].map((pb, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <XCircle className="w-4 h-4 text-rose-500 mt-1 shrink-0" />
-                      <span className="text-rose-300/85 text-sm leading-relaxed">{pb}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Solutions — Green */}
-                <div className="rounded-2xl bg-emerald-950/40 border border-emerald-500/25 p-6 sm:p-8 flex flex-col gap-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                    </div>
-                    <h3 className="font-bold text-emerald-200 text-base sm:text-lg">Avec PitchMySite</h3>
-                  </div>
-                  {[
-                    'Collez l\'URL : les pages sont capturées automatiquement, sans capture manuelle',
-                    'Les bannières cookies et popups sont masquées automatiquement',
-                    'Mise en scène sur MacBook, iPhone et iPad, angle et fond réglables',
-                    'Tous les formats (présentation, LinkedIn, Instagram) en quelques clics',
-                    'Un lien de partage pour votre client, à votre marque avec le plan Agence',
-                  ].map((sol, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-1 shrink-0" />
-                      <span className="text-emerald-300/85 text-sm leading-relaxed">{sol}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="sm:w-[250px]">
+              <h3 className="text-[17px] font-semibold">Pitch IA</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Les textes de vente rédigés à partir du site : offre, audit, e-mail, post LinkedIn.</p>
+              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Avec votre propre clé IA (Groq et Gemini sont gratuits).</p>
             </div>
-          </section>
+          </article>
 
-          {/* ═══════════ HOW IT WORKS — 3 ÉTAPES ═══════════ */}
-          <section className="cv-auto bg-zinc-900 py-20 sm:py-28">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center max-w-3xl mx-auto mb-14">
-                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Fonctionnement Intuitif</p>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-4">
-                  Trois étapes simples pour un <span className="shimmer-text">résultat instantané</span>
-                </h2>
-                <p className="text-zinc-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-                  Aucun logiciel à installer. Entrez votre URL et visualisez directement votre projet dans un appareil premium.
+          <article className="flex flex-col sm:flex-row gap-5 max-w-[640px]">
+            <div className="sm:w-[360px] shrink-0 h-[120px] rounded-lg bg-pms-surface p-5 flex items-end gap-3">
+              {[
+                ['16:9', 'w-16 h-9'],
+                ['1:1', 'w-12 h-12'],
+                ['4:5', 'w-10 h-[50px]'],
+                ['9:16', 'w-[34px] h-[60px]'],
+              ].map(([r, size]) => (
+                <div key={r} className="flex flex-col items-center gap-1.5">
+                  <div className={`${size} rounded bg-pms-ink`} />
+                  <span className="text-[13px] tabular-nums text-pms-muted">{r}</span>
+                </div>
+              ))}
+            </div>
+            <div className="sm:w-[250px]">
+              <h3 className="text-[17px] font-semibold">Tous les formats</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">LinkedIn, Instagram, statut WhatsApp, carrousels, App Store et Google Play.</p>
+              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Le pack de formats s’exporte en un clic.</p>
+            </div>
+          </article>
+
+          <article className="flex flex-col sm:flex-row gap-5 max-w-[640px]">
+            <div className="sm:w-[360px] shrink-0 h-[120px] rounded-lg bg-pms-surface p-5 flex flex-col justify-center gap-2">
+              <span className="text-[13px] text-pms-muted">Lien à envoyer au client</span>
+              <span className="flex items-center gap-2">
+                <span className="flex-1 truncate rounded-md bg-pms-paper px-3 py-2 text-[15px]">pitchmysite.com/p/mon-client</span>
+                <span className="rounded-md bg-pms-accent px-3 py-2 text-[13px] font-semibold text-white">Copier</span>
+              </span>
+            </div>
+            <div className="sm:w-[250px]">
+              <h3 className="text-[17px] font-semibold">Lien de partage</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Votre client voit le mockup et le télécharge, sans créer de compte.</p>
+              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">À votre nom et à votre logo avec le plan Agence.</p>
+            </div>
+          </article>
+        </div>
+        <p className="mt-20 text-[17px] leading-relaxed text-pms-muted max-w-[60ch]">
+          Et aussi : scènes photo réalistes, directeur artistique IA, présentation client en PDF, vidéos et GIF, annotations et
+          floutage, kit de marque, et tous vos projets enregistrés.
+        </p>
+      </section>
+
+      {/* ═══ Tarifs ═══ */}
+      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] py-20 sm:py-28 bg-pms-surface scroll-mt-16" id="pricing">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h2 className={head}>Les tarifs</h2>
+            <p className="mt-5 text-[17px] leading-relaxed text-pms-ink max-w-[46ch]">
+              Gratuit pour tester. Ensuite, un paiement couvre un mois ou un an, sans renouvellement automatique.
+            </p>
+          </div>
+          <div className="inline-flex self-start md:self-auto p-1 rounded-md bg-pms-paper" role="group" aria-label="Durée">
+            <button
+              type="button"
+              onClick={() => setIsAnnualPricing(false)}
+              aria-pressed={!isAnnualPricing}
+              className={`min-h-[44px] px-4 rounded text-[15px] font-semibold transition-colors ${
+                !isAnnualPricing ? 'bg-pms-ink text-white' : 'text-pms-muted hover:text-pms-ink'
+              }`}
+            >
+              Mensuel
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAnnualPricing(true)}
+              aria-pressed={isAnnualPricing}
+              className={`min-h-[44px] px-4 rounded text-[15px] font-semibold transition-colors ${
+                isAnnualPricing ? 'bg-pms-ink text-white' : 'text-pms-muted hover:text-pms-ink'
+              }`}
+            >
+              Annuel, 2 mois offerts
+            </button>
+          </div>
+        </div>
+
+        {(() => {
+          const homepagePlans = [
+            {
+              id: 0,
+              name: 'Découverte',
+              price: formatPrice(0, currency),
+              period: 'gratuit à vie',
+              fcfa: null as string | null,
+              billedInfo: null as string | null,
+              desc: PLANS[0].description,
+              cta: 'Commencer gratuitement',
+              href: '#',
+              onCtaClick: scrollToTop as (() => void) | undefined,
+              highlighted: false,
+              features: PLANS[0].features,
+            },
+            ...[PLANS[1], PLANS[2], PLANS[3]].map((p, idx) => {
+              const monthlyPrice = getPlanMonthlyPrice(p, currency);
+              const annualPrice = getPlanAnnualPrice(p, currency);
+              const eq = getPlanMonthlyEquivalent(p, currency);
+              const displayPrice = isAnnualPricing ? eq : monthlyPrice;
+              return {
+                id: idx + 1,
+                name: p.name,
+                price: formatPrice(displayPrice, currency),
+                period: 'par mois',
+                fcfa: mobileMoneyRegion
+                  ? `soit ${new Intl.NumberFormat('fr-FR').format(isAnnualPricing ? p.annualFcfa : p.monthlyFcfa)} FCFA${isAnnualPricing ? ' pour 1 an' : ' pour 1 mois'}`
+                  : null,
+                billedInfo: isAnnualPricing ? `Facturé ${formatPrice(annualPrice, currency)} par an` : null,
+                desc: p.description,
+                cta: `Choisir ${p.name}`,
+                href: '/pricing',
+                onCtaClick: undefined as (() => void) | undefined,
+                highlighted: p.id === 'pro',
+                features: p.features,
+              };
+            }),
+          ];
+
+          const renderPlan = (plan: (typeof homepagePlans)[number]) => (
+            <div
+              key={plan.id}
+              className={`flex flex-col justify-between p-6 rounded-lg ${plan.highlighted ? 'bg-pms-field text-white' : 'bg-pms-paper text-pms-ink'}`}
+            >
+              <div>
+                <h3 className="text-[22px] leading-tight font-semibold">{plan.name}</h3>
+                <p className="mt-4 flex items-baseline gap-1.5">
+                  <span className="text-[2.25rem] leading-none tabular-nums whitespace-nowrap">{plan.price}</span>
+                  <span className={`text-[15px] ${plan.highlighted ? 'text-white/75' : 'text-pms-muted'}`}>{plan.period}</span>
                 </p>
+                {plan.fcfa && <p className="mt-2 text-[15px] font-semibold">{plan.fcfa}</p>}
+                {plan.billedInfo && (
+                  <p className={`mt-1 text-[15px] ${plan.highlighted ? 'text-white/75' : 'text-pms-muted'}`}>{plan.billedInfo}</p>
+                )}
+                <p className={`mt-4 text-[15px] leading-relaxed ${plan.highlighted ? 'text-white/85' : 'text-pms-muted'}`}>
+                  {plan.highlighted && 'La formule que nous conseillons. '}
+                  {plan.desc}
+                </p>
+                <ul className="mt-6 space-y-2 text-[15px] leading-snug">
+                  {plan.features
+                    .filter((f) => f.included)
+                    .map((f) => (
+                      <li key={f.name}>{f.name}</li>
+                    ))}
+                </ul>
               </div>
+              {plan.onCtaClick ? (
+                <button
+                  type="button"
+                  onClick={plan.onCtaClick}
+                  className="mt-8 w-full min-h-[44px] rounded-md bg-pms-surface hover:bg-pms-line text-[15px] font-semibold transition-colors"
+                >
+                  {plan.cta}
+                </button>
+              ) : (
+                <Link
+                  href={plan.href}
+                  className={`mt-8 w-full min-h-[44px] flex items-center justify-center rounded-md text-[15px] font-semibold transition-colors ${
+                    plan.highlighted ? 'bg-pms-accent text-white hover:bg-pms-accent-hover' : 'bg-pms-surface hover:bg-pms-line'
+                  }`}
+                >
+                  {plan.cta}
+                </Link>
+              )}
+            </div>
+          );
 
-              {/* Desktop View: 3 cols side-by-side */}
-              <div className="hidden sm:grid sm:grid-cols-3 gap-5">
-                {[
-                  {
-                    step: '01',
-                    icon: Link2,
-                    title: 'Collez votre URL',
-                    desc: "Entrez l\'adresse web de votre choix ou glissez une capture d\'écran. Le moteur capture la page en haute définition.",
-                    gradient: 'from-violet-600 to-indigo-600',
-                    glow: 'shadow-violet-600/20',
-                  },
-                  {
-                    step: '02',
-                    icon: Palette,
-                    title: 'Personnalisez en 3D',
-                    desc: "Sélectionnez un MacBook Pro, iPhone 18 Pro ou iPad, réglez l\'angle de perspective et admirez le rendu en temps réel.",
-                    gradient: 'from-indigo-600 to-fuchsia-600',
-                    glow: 'shadow-indigo-600/20',
-                  },
-                  {
-                    step: '03',
-                    icon: Download,
-                    title: 'Exportez et partagez',
-                    desc: "Téléchargez votre mockup jusqu'en 4K, en vidéo ou en PDF, ou envoyez un lien à votre client.",
-                    gradient: 'from-fuchsia-600 to-rose-600',
-                    glow: 'shadow-fuchsia-600/20',
-                  },
-                ].map((item, i) => (
-                  <div key={i} className="relative p-7 rounded-2xl bg-zinc-800/50 border border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800/80 transition-all group flex flex-col items-center sm:items-start text-center sm:text-left gap-5">
-                    <span className="absolute top-4 right-5 font-mono text-xs font-bold text-zinc-500">{item.step}</span>
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${item.gradient} flex items-center justify-center shadow-lg ${item.glow} group-hover:scale-110 transition-transform`}>
-                      <item.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold text-white mb-2">{item.title}</h3>
-                      <p className="text-sm text-zinc-400 leading-relaxed">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Mobile View: Interactive Step Card (no vertical stacking) */}
-              <div className="block sm:hidden">
-                {/* Step Tabs */}
-                <div className="flex p-1 rounded-xl bg-zinc-950/80 border border-zinc-800 mb-5">
-                  {[
-                    { idx: 0, label: '01 · URL' },
-                    { idx: 1, label: '02 · 3D' },
-                    { idx: 2, label: '03 · Export' },
-                  ].map((s) => (
+          const activePlan = homepagePlans[activePricingPlan] || homepagePlans[2];
+          return (
+            <>
+              <div className="mt-12 hidden lg:grid lg:grid-cols-4 gap-3 items-stretch">{homepagePlans.map(renderPlan)}</div>
+              <div className="mt-10 lg:hidden">
+                <div className="flex p-1 rounded-md bg-pms-paper max-w-md" role="tablist" aria-label="Formules">
+                  {homepagePlans.map((tab) => (
                     <button
-                      key={s.idx}
+                      key={tab.id}
                       type="button"
-                      onClick={() => setActiveStep(s.idx)}
-                      className={`flex-1 py-2 px-1 rounded-lg text-xs font-bold transition-all text-center ${
-                        activeStep === s.idx
-                          ? 'bg-violet-600 text-white shadow-md'
-                          : 'text-zinc-400 hover:text-zinc-200'
+                      role="tab"
+                      aria-selected={activePricingPlan === tab.id}
+                      onClick={() => setActivePricingPlan(tab.id)}
+                      className={`flex-1 min-h-[44px] px-1 rounded text-[15px] font-semibold transition-colors ${
+                        activePricingPlan === tab.id ? 'bg-pms-ink text-white' : 'text-pms-muted hover:text-pms-ink'
                       }`}
                     >
-                      {s.label}
+                      {tab.name}
                     </button>
                   ))}
                 </div>
-
-                {/* Active Step Content */}
-                {(() => {
-                  const steps = [
-                    {
-                      step: '01',
-                      icon: Link2,
-                      title: 'Collez votre URL',
-                      desc: "Entrez l\'adresse web de votre choix ou glissez une capture d\'écran. Le moteur capture la page en haute définition.",
-                      gradient: 'from-violet-600 to-indigo-600',
-                      glow: 'shadow-violet-600/30',
-                    },
-                    {
-                      step: '02',
-                      icon: Palette,
-                      title: 'Personnalisez en 3D',
-                      desc: "Sélectionnez un MacBook Pro, iPhone 18 Pro ou iPad, réglez l\'angle de perspective et admirez le rendu en temps réel.",
-                      gradient: 'from-indigo-600 to-fuchsia-600',
-                      glow: 'shadow-indigo-600/30',
-                    },
-                    {
-                      step: '03',
-                      icon: Download,
-                      title: 'Exportez et partagez',
-                      desc: "Téléchargez votre mockup jusqu'en 4K, en vidéo ou en PDF, ou envoyez un lien à votre client.",
-                      gradient: 'from-fuchsia-600 to-rose-600',
-                      glow: 'shadow-fuchsia-600/30',
-                    },
-                  ];
-                  const current = steps[activeStep];
-                  return (
-                    <div className="p-6 rounded-2xl bg-zinc-800/70 border border-zinc-700/80 flex flex-col items-center text-center gap-4 shadow-xl">
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-xs font-mono font-bold text-violet-400 bg-violet-500/10 px-2.5 py-1 rounded-md border border-violet-500/20">
-                          Étape {current.step} / 03
-                        </span>
-                        <div className="flex gap-1.5">
-                          {steps.map((_, dotIdx) => (
-                            <button
-                              key={dotIdx}
-                              type="button"
-                              onClick={() => setActiveStep(dotIdx)}
-                              className="h-6 min-w-6 px-1 flex items-center justify-center"
-                              aria-label={`Étape ${dotIdx + 1}`}
-                              aria-pressed={activeStep === dotIdx}
-                            >
-                              <span
-                                className={`h-2 rounded-full transition-all ${
-                                  activeStep === dotIdx ? 'w-5 bg-violet-500' : 'w-2 bg-zinc-700'
-                                }`}
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${current.gradient} flex items-center justify-center shadow-lg ${current.glow} my-1`}>
-                        <current.icon className="w-7 h-7 text-white" />
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-bold text-white mb-2">{current.title}</h3>
-                        <p className="text-sm text-zinc-300 leading-relaxed">{current.desc}</p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setActiveStep((prev) => (prev + 1) % steps.length)}
-                        className="mt-2 w-full py-2.5 px-4 rounded-xl bg-zinc-700/60 hover:bg-zinc-700 text-xs font-bold text-zinc-200 border border-zinc-600 flex items-center justify-center gap-2"
-                      >
-                        {activeStep < 2 ? 'Étape suivante' : 'Revoir depuis le début'}
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  );
-                })()}
+                <div className="mt-4 max-w-md">{renderPlan(activePlan)}</div>
               </div>
-            </div>
-          </section>
-
-          {/* ═══════════ FEATURES / ALL THAT YOU GET ═══════════ */}
-          <section className="cv-auto bg-gradient-to-b from-zinc-950 to-zinc-900 py-20 sm:py-28">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center max-w-3xl mx-auto mb-14">
-                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Fonctionnalités Clés</p>
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-4">
-                  Tout ce qu&apos;il faut pour <span className="shimmer-text">impressionner vos clients</span>
-                </h2>
-                <p className="text-zinc-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-                  Une boîte à outils complète et élégante conçue pour sublimer tous vos supports de communication.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-                {[
-                  {
-                    icon: Monitor,
-                    title: '9 appareils',
-                    desc: 'MacBook, PC portable, iMac, iPad, iPhone, Android, montre, navigateur seul et cadre plat.',
-                    gradient: 'from-violet-600 to-indigo-600',
-                  },
-                  {
-                    icon: Camera,
-                    title: 'Scènes photo réalistes',
-                    desc: 'Votre site en perspective sur un bureau ou dans une main, avec la vraie version mobile.',
-                    gradient: 'from-emerald-600 to-cyan-600',
-                  },
-                  {
-                    icon: Bot,
-                    title: 'Directeur artistique IA',
-                    desc: "L'IA analyse la page et vous dit quelle section mettre en avant, et pourquoi.",
-                    gradient: 'from-indigo-600 to-fuchsia-600',
-                  },
-                  {
-                    icon: FileText,
-                    title: 'Présentation client PDF',
-                    desc: 'Plusieurs mockups et vos textes dans un PDF prêt à joindre à un devis.',
-                    gradient: 'from-fuchsia-600 to-rose-600',
-                  },
-                  {
-                    icon: Link2,
-                    title: 'Lien de partage',
-                    desc: 'Une page pour votre client : il voit le mockup et le télécharge, sans créer de compte.',
-                    gradient: 'from-amber-500 to-orange-500',
-                  },
-                  {
-                    icon: Video,
-                    title: 'Vidéos et GIF animés',
-                    desc: "Rotation 3D, entrée, zoom, ou défilement de la page entière dans l'écran.",
-                    gradient: 'from-rose-600 to-pink-600',
-                  },
-                  {
-                    icon: Layout,
-                    title: 'Tous les formats',
-                    desc: 'LinkedIn, Instagram, statut WhatsApp, carrousels, App Store et Google Play.',
-                    gradient: 'from-cyan-600 to-indigo-600',
-                  },
-                  {
-                    icon: Zap,
-                    title: 'Capture intelligente',
-                    desc: 'Plusieurs pages du site, version mobile, version sombre, bannières cookies masquées.',
-                    gradient: 'from-violet-600 to-fuchsia-600',
-                  },
-                  {
-                    icon: PenLine,
-                    title: 'Annotations et flou',
-                    desc: 'Flèches, cadres, étapes, loupe, et vrai floutage des informations privées.',
-                    gradient: 'from-orange-500 to-rose-600',
-                  },
-                  {
-                    icon: Palette,
-                    title: 'Kit de marque',
-                    desc: 'Votre logo, vos couleurs et votre police appliqués en un clic sur chaque mockup.',
-                    gradient: 'from-pink-600 to-violet-600',
-                  },
-                  {
-                    icon: FolderOpen,
-                    title: 'Mes projets',
-                    desc: 'Chaque mockup est enregistré : rouvrez-le, dupliquez-le, rangez-le par client.',
-                    gradient: 'from-indigo-600 to-cyan-600',
-                  },
-                  {
-                    icon: Aperture,
-                    title: 'Studio 3D en direct',
-                    desc: 'Angle, inclinaison, ombres, fonds dégradés, photos et motifs, réglés en temps réel.',
-                    gradient: 'from-emerald-600 to-teal-600',
-                  },
-                ].map((feature, i) => (
-                  <div key={i} className="group p-3.5 sm:p-5 rounded-2xl bg-zinc-800/40 border border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800/70 transition-all flex flex-col items-center sm:items-start text-center sm:text-left gap-2 sm:gap-3">
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                      <feature.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                    </div>
-                    <h3 className="font-bold text-white text-xs sm:text-sm">{feature.title}</h3>
-                    <p className="text-[11px] sm:text-xs text-zinc-400 leading-relaxed">{feature.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* ═══════════ LES 3 USAGES ═══════════ */}
-          <section className="cv-auto bg-zinc-900 py-20 sm:py-28 scroll-mt-20" id="usages">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center max-w-3xl mx-auto mb-14">
-                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">À quoi ça sert</p>
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-4">
-                  3 usages, <span className="shimmer-text">un seul lien à coller</span>
-                </h2>
-                <p className="text-zinc-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-                  Ce qui vous prenait des heures sur Figma se prépare en quelques minutes, à partir de l&apos;adresse du site.
-                </p>
-              </div>
-
-              {/* Ordinateur : 3 colonnes */}
-              <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {AGENCY_USES.map((uc, i) => (
-                  <div key={i} className="group relative p-6 sm:p-7 rounded-2xl bg-zinc-800/40 border border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800/70 transition-all flex flex-col gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${uc.gradient} flex items-center justify-center shadow-lg shrink-0`}>
-                        <uc.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-white text-base">{uc.title}</h3>
-                        <p className="text-xs text-violet-400 font-semibold mt-0.5">{uc.sub}</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-zinc-400 leading-relaxed">{uc.desc}</p>
-                    <button
-                      type="button"
-                      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                      className="self-start flex items-center gap-1.5 text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors group-hover:gap-2.5"
-                    >
-                      Tester avec le site d&apos;un client
-                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Mobile : onglets (pas d'empilement vertical) */}
-              <div className="block sm:hidden">
-                {(() => {
-                  const current = AGENCY_USES[activeUseCase] ?? AGENCY_USES[0];
-                  return (
-                    <div className="flex flex-col gap-4">
-                      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                        {AGENCY_USES.map((c, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setActiveUseCase(idx)}
-                            className={`shrink-0 py-2 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                              activeUseCase === idx ? 'bg-violet-600 text-white shadow-md' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-                            }`}
-                          >
-                            <c.icon className="w-3.5 h-3.5" />
-                            {c.label}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="p-6 rounded-2xl bg-zinc-800/60 border border-zinc-700/70 flex flex-col gap-4 shadow-xl">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${current.gradient} flex items-center justify-center shadow-lg shrink-0`}>
-                            <current.icon className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-white text-base">{current.title}</h3>
-                            <p className="text-xs text-violet-400 font-semibold mt-0.5">{current.sub}</p>
-                          </div>
-                        </div>
-                        <p className="text-sm text-zinc-300 leading-relaxed">{current.desc}</p>
-                        <button
-                          type="button"
-                          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                          className="self-start flex items-center gap-1.5 text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors"
-                        >
-                          Tester avec le site d&apos;un client
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              <p className="mt-8 text-center text-sm text-zinc-400">
-                <BadgeCheck className="inline w-4 h-4 text-violet-400 mr-1.5 -mt-0.5" />
-                Marque blanche (plan Agence) : vos pages de partage portent le nom et le logo de votre agence, sans mention de PitchMySite.
+              <p className="mt-10 text-[17px] leading-relaxed max-w-[60ch]">
+                Vous lancez un SaaS et n&apos;avez besoin que de quelques visuels ?{' '}
+                <Link href="/pricing#credits" className="text-pms-accent font-semibold underline underline-offset-4">
+                  Les packs de crédits
+                </Link>{' '}
+                se paient une fois, sans abonnement.
               </p>
-            </div>
-          </section>
+            </>
+          );
+        })()}
+      </section>
 
-          {/* ═══════════ FONDATEURS SAAS (cible secondaire) ═══════════ */}
-          <section className="cv-auto bg-zinc-950 py-16 sm:py-20">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-indigo-950/60 to-zinc-900 border border-indigo-500/25">
-                <div className="flex items-start gap-4">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-600 to-fuchsia-600 flex items-center justify-center shrink-0">
-                    <Rocket className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-white mb-1.5">Vous lancez votre SaaS ?</h2>
-                    <p className="text-sm text-zinc-400 leading-relaxed max-w-xl">
-                      Tous vos visuels de lancement (Product Hunt, X, LinkedIn) en quelques minutes, sans abonnement : payez seulement les crédits dont vous avez besoin.
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href="/pricing#credits"
-                  className="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-zinc-900 font-bold text-sm hover:bg-zinc-100 transition-colors"
-                >
-                  Voir les packs de crédits
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-          </section>
-
-          {/* ═══════════ PRICING ═══════════ */}
-          <section className="bg-zinc-900 py-20 sm:py-28" id="pricing">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center max-w-3xl mx-auto mb-14">
-                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">Tarification Transparente</p>
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-4">
-                  Une offre claire, <span className="shimmer-text">sans aucun coût caché</span>
-                </h2>
-                <p className="text-zinc-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-                  Commencez gratuitement sans engagement. Choisissez la formule qui correspond au volume de vos créations.
-                </p>
-              </div>
-
-              {/* Toggle Facturation Annuel / Mensuel (Annuel par défaut avec 2 mois offerts) */}
-              <div className="flex items-center justify-center gap-3 max-w-xs mx-auto mb-10 p-1.5 rounded-full bg-zinc-950/80 border border-zinc-800 shadow-inner">
-                <button
-                  type="button"
-                  onClick={() => setIsAnnualPricing(false)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
-                    !isAnnualPricing
-                      ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  Mensuel
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsAnnualPricing(true)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    isAnnualPricing
-                      ? 'bg-violet-600 text-white shadow-md shadow-violet-600/30'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  <span>Annuel</span>
-                  <span
-                    className={`px-1.5 py-0.5 rounded-full text-[9px] font-black tracking-wide ${
-                      isAnnualPricing
-                        ? 'bg-violet-900/60 text-violet-200 border border-violet-400/30'
-                        : 'bg-emerald-500/20 text-emerald-400'
-                    }`}
-                  >
-                    -17% (2 mois offerts)
-                  </span>
-                </button>
-              </div>
-
-              {/* Plans Homepage configurés dynamiquement avec la source unique src/lib/pricing.ts */}
-              {(() => {
-                const homepagePlans = [
-                  {
-                    id: 0,
-                    name: 'Découverte',
-                    price: formatPrice(0, currency),
-                    period: 'Gratuit à vie',
-                    fcfa: null,
-                    billedInfo: null,
-                    desc: PLANS[0].description,
-                    cta: 'Commencer gratuitement',
-                    href: '#',
-                    onCtaClick: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
-                    highlighted: false,
-                    badge: '100% Gratuit',
-                    features: PLANS[0].features,
-                  },
-                  ...[PLANS[1], PLANS[2], PLANS[3]].map((p, idx) => {
-                    const monthlyPrice = getPlanMonthlyPrice(p, currency);
-                    const annualPrice = getPlanAnnualPrice(p, currency);
-                    const eq = getPlanMonthlyEquivalent(p, currency);
-                    const displayPrice = isAnnualPricing ? eq : monthlyPrice;
-                    const isPop = p.id === 'pro';
-
-                    return {
-                      id: idx + 1,
-                      name: p.name,
-                      price: formatPrice(displayPrice, currency),
-                      period: 'par mois',
-                      fcfa: mobileMoneyRegion
-                        ? `soit ${new Intl.NumberFormat('fr-FR').format(isAnnualPricing ? p.annualFcfa : p.monthlyFcfa)} FCFA${isAnnualPricing ? ' pour 1 an' : ' pour 1 mois'}`
-                        : null,
-                      billedInfo: isAnnualPricing
-                        ? `Facturé ${formatPrice(annualPrice, currency)} / an`
-                        : null,
-                      desc: p.description,
-                      cta: p.id === 'pro' ? 'Débloquer Pro' : `Choisir ${p.name}`,
-                      href: '/pricing',
-                      onCtaClick: undefined,
-                      highlighted: isPop,
-                      badge: isPop ? 'Populaire' : null,
-                      features: p.features,
-                    };
-                  }),
-                ];
-
-                return (
-                  <>
-                    {/* Desktop View: 4 colonnes claires (Découverte gratuite en point d'ancrage) */}
-                    <div className="hidden lg:grid lg:grid-cols-4 gap-4 items-stretch">
-                      {homepagePlans.map((plan) => (
-                        <div
-                          key={plan.id}
-                          className={`relative flex flex-col justify-between p-6 rounded-2xl border transition-all ${
-                            plan.highlighted
-                              ? 'bg-gradient-to-b from-violet-600/15 via-zinc-900 to-zinc-900 border-violet-500/60 shadow-2xl shadow-violet-600/20 scale-[1.02] z-10'
-                              : 'bg-zinc-800/40 border-zinc-700/50 hover:border-zinc-600'
-                          }`}
-                        >
-                          {plan.badge && (
-                            <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-0.5 rounded-full bg-violet-600 text-white text-[11px] font-black uppercase tracking-wider shadow-lg">
-                              {plan.badge}
-                            </span>
-                          )}
-
-                          <div>
-                            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1.5">{plan.name}</p>
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-3xl font-black text-white font-mono whitespace-nowrap shrink-0">{plan.price}</span>
-                              <span className="text-xs text-zinc-400">/ {plan.period}</span>
-                            </div>
-                            {plan.fcfa && (
-                              <p className="text-[11px] font-bold text-violet-400 font-mono mt-1">
-                                {plan.fcfa}
-                              </p>
-                            )}
-                            {plan.billedInfo && (
-                              <p className="text-[10px] text-zinc-400 mt-0.5 font-medium">
-                                {plan.billedInfo}
-                              </p>
-                            )}
-                            <p className="text-xs text-zinc-400 mt-2 leading-relaxed min-h-[34px]">{plan.desc}</p>
-
-                            <ul className="flex flex-col gap-2 mt-4 pt-4 border-t border-zinc-800 text-xs">
-                              {plan.features.filter((f) => f.included).map((f, j) => (
-                                <li
-                                  key={j}
-                                  className={`flex items-start gap-2 ${
-                                    f.included ? 'text-zinc-300' : 'text-zinc-500 line-through opacity-70'
-                                  }`}
-                                >
-                                  {f.included ? (
-                                    <CheckCircle2
-                                      className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
-                                        plan.highlighted ? 'text-violet-400' : 'text-emerald-500'
-                                      }`}
-                                    />
-                                  ) : (
-                                    <XIcon className="w-3.5 h-3.5 mt-0.5 shrink-0 text-zinc-500 stroke-[2]" />
-                                  )}
-                                  <span>{f.name}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div className="mt-6 pt-4 border-t border-zinc-800/80">
-                            {plan.onCtaClick ? (
-                              <button
-                                type="button"
-                                onClick={plan.onCtaClick}
-                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs bg-zinc-700/70 hover:bg-zinc-700 text-zinc-200 border border-zinc-600 transition-all active:scale-[0.98]"
-                              >
-                                <span>{plan.cta}</span>
-                                <ArrowRight className="w-3.5 h-3.5" />
-                              </button>
-                            ) : (
-                              <Link
-                                href={plan.href}
-                                className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs transition-all active:scale-[0.98] ${
-                                  plan.highlighted
-                                    ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-600/30'
-                                    : 'bg-zinc-700/70 hover:bg-zinc-700 text-zinc-200 border border-zinc-600'
-                                }`}
-                              >
-                                <span>{plan.cta}</span>
-                                <ArrowRight className="w-3.5 h-3.5" />
-                              </Link>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Tablet & Mobile View: Sélecteur d'onglets pour les 4 plans */}
-                    <div className="block lg:hidden">
-                      <div className="flex p-1.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 max-w-md mx-auto w-full shadow-inner mb-6">
-                        {homepagePlans.map((tab) => (
-                          <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => setActivePricingPlan(tab.id)}
-                            className={`flex-1 py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center ${
-                              activePricingPlan === tab.id
-                                ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30 font-black'
-                                : 'text-zinc-400 hover:text-zinc-200'
-                            }`}
-                          >
-                            {tab.id === 2 ? '★ ' : ''}{tab.name}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Carte active sélectionnée */}
-                      {(() => {
-                        const activePlan = homepagePlans[activePricingPlan] || homepagePlans[2];
-                        return (
-                          <div
-                            className={`max-w-sm mx-auto p-6 sm:p-7 rounded-2xl border transition-all ${
-                              activePlan.highlighted
-                                ? 'bg-gradient-to-b from-violet-600/15 via-zinc-900 to-zinc-900 border-violet-500/70 shadow-2xl shadow-violet-600/20'
-                                : 'bg-zinc-900 border-zinc-700'
-                            }`}
-                          >
-                            {activePlan.badge && (
-                              <div className="mb-2">
-                                <span className="inline-block px-3 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-black uppercase">
-                                  {activePlan.badge}
-                                </span>
-                              </div>
-                            )}
-
-                            <div>
-                              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{activePlan.name}</p>
-                              <div className="flex items-baseline gap-1 mt-1">
-                                <span className="text-3xl font-black text-white font-mono">{activePlan.price}</span>
-                                <span className="text-xs text-zinc-400">/ {activePlan.period}</span>
-                              </div>
-                              {activePlan.fcfa && (
-                                <p className="text-[11px] font-bold text-violet-400 font-mono mt-1">
-                                  {activePlan.fcfa}
-                                </p>
-                              )}
-                              {activePlan.billedInfo && (
-                                <p className="text-[10px] text-zinc-400 mt-0.5 font-medium">
-                                  {activePlan.billedInfo}
-                                </p>
-                              )}
-                              <p className="text-xs text-zinc-400 mt-2 leading-relaxed">{activePlan.desc}</p>
-                            </div>
-
-                            <ul className="flex flex-col gap-2.5 my-5 pt-4 border-t border-zinc-800 text-xs">
-                              {activePlan.features.filter((f) => f.included).map((f, j) => (
-                                <li
-                                  key={j}
-                                  className={`flex items-start gap-2 ${
-                                    f.included ? 'text-zinc-300' : 'text-zinc-500 line-through opacity-70'
-                                  }`}
-                                >
-                                  {f.included ? (
-                                    <CheckCircle2
-                                      className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
-                                        activePlan.highlighted ? 'text-violet-400' : 'text-emerald-500'
-                                      }`}
-                                    />
-                                  ) : (
-                                    <XIcon className="w-3.5 h-3.5 mt-0.5 shrink-0 text-zinc-500 stroke-[2]" />
-                                  )}
-                                  <span>{f.name}</span>
-                                </li>
-                              ))}
-                            </ul>
-
-                            {activePlan.onCtaClick ? (
-                              <button
-                                type="button"
-                                onClick={activePlan.onCtaClick}
-                                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-xs bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 transition-all active:scale-[0.98]"
-                              >
-                                <span>{activePlan.cta}</span>
-                                <ArrowRight className="w-3.5 h-3.5" />
-                              </button>
-                            ) : (
-                              <Link
-                                href={activePlan.href}
-                                className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-xs transition-all active:scale-[0.98] ${
-                                  activePlan.highlighted
-                                    ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-600/30'
-                                    : 'bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700'
-                                }`}
-                              >
-                                <span>{activePlan.cta}</span>
-                                <ArrowRight className="w-3.5 h-3.5" />
-                              </Link>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </section>
-
-          {/* ═══════════ FAQ ═══════════ */}
-          <section className="cv-auto bg-zinc-950 py-20 sm:py-28">
-            <div className="max-w-3xl mx-auto px-4 sm:px-6">
-              <div className="text-center max-w-2xl mx-auto mb-14">
-                <p className="text-xs font-bold text-violet-400 uppercase tracking-[0.2em] mb-3">FAQ</p>
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-4">
-                  Questions <span className="shimmer-text">fréquemment posées</span>
-                </h2>
-                <p className="text-zinc-400 text-sm sm:text-base leading-relaxed">
-                  Tout ce que vous devez savoir pour démarrer et créer vos mockups 3D en toute simplicité.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                {[
-                  {
-                    q: 'Puis-je utiliser les mockups pour mes clients et à des fins commerciales ?',
-                    a: 'Oui. Les visuels que vous créez avec PitchMySite peuvent être utilisés dans vos propositions commerciales, vos livrables clients, votre portfolio et vos publications, y compris à des fins commerciales.',
-                  },
-                  {
-                    q: 'Comment fonctionne la marque blanche ?',
-                    a: 'Dès le plan Pro, vos images, vidéos et PDF ne portent plus aucun filigrane. Avec le plan Agence, les pages de partage envoyées à vos clients affichent aussi le nom et le logo de votre agence (votre kit de marque), sans aucune mention d\'PitchMySite.',
-                  },
-                  {
-                    q: 'Que deviennent les captures des sites de mes clients ?',
-                    a: 'La page est chargée par notre moteur de capture, puis l\'image est envoyée directement à votre navigateur. Nous ne conservons pas les captures sur nos serveurs, sauf si vous créez un lien de partage : l\'image est alors hébergée jusqu\'à ce que vous supprimiez le lien.',
-                  },
-                  {
-                    q: 'Faut-il créer un compte pour tester ?',
-                    a: 'Non. Vous pouvez tester le studio et exporter jusqu\'à 3 images par jour (avec un filigrane discret) sans compte ni carte bancaire. Les exports HD sans filigrane commencent avec le plan Pro.',
-                  },
-                  {
-                    q: 'Le site du client est en local ou protégé par mot de passe : comment faire ?',
-                    a: 'Déposez simplement votre propre capture d\'écran (PNG, JPG ou WebP) : vous profitez de la même mise en scène.',
-                  },
-                  {
-                    q: 'Comment puis-je payer ?',
-                    a: 'Pour l\'instant par Mobile Money via SasPay (MTN, Moov, Celtiis, Orange, Wave… selon votre pays), en FCFA. Le paiement par carte bancaire arrive bientôt.',
-                  },
-                  {
-                    q: 'Puis-je annuler à tout moment ?',
-                    a: 'Il n\'y a rien à annuler : un paiement couvre 1 mois ou 1 an, sans renouvellement automatique. Vous repayez seulement si vous voulez continuer.',
-                  },
-                ].map((faq, i) => (
-                  <div
-                    key={i}
-                    className={`rounded-2xl border transition-all overflow-hidden ${
-                      openFaq === i
-                        ? 'bg-zinc-900 border-violet-500/30'
-                        : 'bg-zinc-900/60 border-zinc-800 hover:border-zinc-700'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      className="w-full flex items-center justify-between gap-4 p-5 sm:p-6 text-left"
-                      onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                    >
-                      <span className="font-semibold text-white text-sm sm:text-base leading-snug">{faq.q}</span>
-                      <span className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${openFaq === i ? 'bg-violet-600' : 'bg-zinc-800'}`}>
-                        {openFaq === i
-                          ? <ChevronUp className="w-4 h-4 text-white" />
-                          : <ChevronDown className="w-4 h-4 text-zinc-300" />
-                        }
-                      </span>
-                    </button>
-                    {openFaq === i && (
-                      <div className="px-5 sm:px-6 pb-5 sm:pb-6 animate-fade-in text-left">
-                        <p className="text-sm text-zinc-400 leading-relaxed">{faq.a}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* ═══════════ CTA FINAL ═══════════ */}
-          <section className="cv-auto relative bg-zinc-900 py-20 sm:py-28 overflow-hidden">
-            <div className="absolute inset-0 hero-mesh opacity-70" />
-            <div className="absolute inset-0 dot-grid opacity-40" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-violet-700/15 blur-[100px] pointer-events-none" />
-
-            <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center">
-
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-5">
-                Testez avec le site de <span className="shimmer-text">votre dernier client</span>
-              </h2>
-              <p className="text-zinc-400 text-sm sm:text-base mb-10 leading-relaxed max-w-2xl mx-auto">
-                Collez son URL, choisissez l&apos;appareil et exportez. Gratuit pour tester, sans filigrane dès le plan Pro.
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <button
-                  type="button"
-                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                  className="group w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-base flex items-center justify-center gap-2.5 transition-all shadow-2xl shadow-violet-600/35 active:scale-[0.98]"
-                >
-                  <Wand2 className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                  <span>Tester avec le site d&apos;un client</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-                <Link
-                  href="/pricing"
-                  className="w-full sm:w-auto px-8 py-4 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-semibold text-base flex items-center justify-center gap-2.5 border border-zinc-700 hover:border-zinc-600 transition-all active:scale-[0.98]"
-                >
-                  Voir les tarifs
-                </Link>
-              </div>
-
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-xs text-zinc-500">
-                <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-emerald-400" /> Sans carte bancaire</span>
-                <span className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5 text-violet-400" /> Sans inscription pour tester</span>
-                <span className="flex items-center gap-1.5"><Smartphone className="w-3.5 h-3.5 text-indigo-400" /> Mobile, Tablette & Desktop</span>
-              </div>
-            </div>
-          </section>
-
-
-
-      {/* Overlay de chargement */}
-      {isLoading && (
-        <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-zinc-900 rounded-3xl p-7 sm:p-9 max-w-sm w-full text-center shadow-2xl border border-zinc-800 space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-violet-600/20 text-violet-400 flex items-center justify-center mx-auto animate-pulse-glow">
-              <Loader2 className="w-7 h-7 animate-spin" />
-            </div>
-            <h3 className="text-base sm:text-lg font-bold text-white">Capture du site en cours…</h3>
-            <p className="text-xs sm:text-sm text-violet-300 font-semibold" aria-live="polite">
-              {loadingSeconds < 8
-                ? 'Ouverture de la page et prise de la photo'
-                : loadingSeconds < 20
-                  ? 'Les pages longues ou chargées d’images prennent un peu plus de temps'
-                  : 'Ce site est lent à répondre, encore quelques secondes'}
+      {/* ═══ Questions : à lire d'un coup d'œil, sans menus dépliants ═══ */}
+      <section data-reveal id="questions" className="scroll-mt-16 px-5 sm:px-10 lg:px-[68px] py-20 sm:py-28 lg:grid lg:grid-cols-[1fr_3fr] lg:gap-16">
+        <h2 className={head}>Vos questions</h2>
+        <div className="mt-10 lg:mt-0 md:columns-2 md:gap-14 text-[17px] leading-[1.55]">
+          {[
+            {
+              q: 'Puis-je utiliser les mockups pour mes clients et à des fins commerciales ?',
+              a: 'Oui. Les visuels que vous créez avec PitchMySite peuvent servir dans vos propositions commerciales, vos livrables clients, votre portfolio et vos publications.',
+            },
+            {
+              q: 'Comment fonctionne la marque blanche ?',
+              a: 'Dès le plan Pro, vos images, vidéos et PDF ne portent plus de filigrane. Avec le plan Agence, les pages de partage affichent aussi le nom et le logo de votre agence, sans mention de PitchMySite.',
+            },
+            {
+              q: 'Que deviennent les captures des sites de mes clients ?',
+              a: 'La page est chargée par notre moteur de capture, puis l’image est envoyée directement à votre navigateur. Nous ne conservons pas les captures, sauf si vous créez un lien de partage : l’image est alors hébergée jusqu’à ce que vous supprimiez le lien.',
+            },
+            {
+              q: 'Faut-il créer un compte pour tester ?',
+              a: 'Non. Vous pouvez tester le studio et exporter jusqu’à 3 images par jour, avec un filigrane discret, sans compte ni carte bancaire.',
+            },
+            {
+              q: 'Le site du client est en local ou protégé par un mot de passe ?',
+              a: 'Déposez votre propre capture d’écran (PNG, JPG ou WebP) : vous profitez de la même mise en scène.',
+            },
+            {
+              q: 'Comment payer ?',
+              a: 'Par Mobile Money via SasPay (MTN, Moov, Celtiis, Orange, Wave, selon votre pays), en FCFA. Le paiement par carte bancaire arrive bientôt.',
+            },
+            {
+              q: 'Puis-je arrêter à tout moment ?',
+              a: 'Il n’y a rien à résilier : un paiement couvre 1 mois ou 1 an, sans renouvellement automatique. Vous repayez seulement si vous voulez continuer.',
+            },
+          ].map((faq) => (
+            <p key={faq.q} className="mb-5 break-inside-avoid text-pms-ink">
+              <strong className="font-semibold">{faq.q}</strong> {faq.a}
             </p>
-            <p className="text-[11px] text-zinc-500 tabular-nums">{loadingSeconds} s</p>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══ Dernier mot : une phrase, une action ═══ */}
+      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pt-[16svh] pb-[14svh]">
+        <p className={`${lead} max-w-[34ch]`}>
+          Essayez avec le site de votre dernier client : c&apos;est gratuit, il suffit de son adresse.
+        </p>
+        <button
+          type="button"
+          onClick={scrollToTop}
+          className="mt-6 min-h-[44px] px-5 rounded-md bg-pms-accent hover:bg-pms-accent-hover text-white font-semibold text-[15px] transition-colors"
+        >
+          Coller un lien
+        </button>
+      </section>
+
+      {/* ═══ Pied de page : la photo à gauche, le menu en grand à droite ═══ */}
+      <div className="flex h-2" aria-hidden="true">
+        {Array.from({ length: 80 }).map((_, i) => (
+          <div key={i} className={`w-7 shrink-0 ${i % 2 === 0 ? 'bg-pms-ink' : 'bg-pms-paper'}`} />
+        ))}
+      </div>
+      <footer className="md:grid md:grid-cols-2 bg-pms-surface">
+        <div data-ui className="bg-pms-field flex items-center justify-center px-8 py-16 min-h-[50svh]">
+          <div className="w-full max-w-[560px]">
+            <FooterLaptop />
+          </div>
+        </div>
+        <div className="px-5 sm:px-10 lg:px-[68px] py-16 md:py-20 flex flex-col">
+          <p className="text-[17px] font-semibold">PitchMySite</p>
+          <nav className="mt-10 flex flex-col gap-5 text-[clamp(1.75rem,1.2rem+1.6vw,2.25rem)] leading-none" aria-label="Pied de page">
+            <a href="#usages" className="hover:text-pms-accent transition-colors">Les formats</a>
+            <a href="#pricing" className="hover:text-pms-accent transition-colors">Les tarifs</a>
+            <a href="#questions" className="hover:text-pms-accent transition-colors">Vos questions</a>
+            <Link href="/login" className="hover:text-pms-accent transition-colors">Connexion</Link>
+            <Link href="/signup" className="hover:text-pms-accent transition-colors">Créer un compte</Link>
+          </nav>
+          <div className="mt-14 text-[15px]">
+            <p className="text-pms-muted">Contact</p>
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="mt-1 inline-block hover:text-pms-accent">{SUPPORT_EMAIL}</a>
+          </div>
+          <div className="mt-auto pt-14 text-[13px] text-pms-muted space-y-2">
+            <p className="flex flex-wrap gap-x-5 gap-y-1">
+              <Link href="/terms" className="hover:text-pms-ink">Conditions (CGU/CGV)</Link>
+              <Link href="/privacy" className="hover:text-pms-ink">Confidentialité</Link>
+              <span>© {new Date().getFullYear()} PitchMySite</span>
+            </p>
+            <p>{BRANDS_NOTICE} Exemple de site client : Al Kareem Parfumerie.</p>
+          </div>
+        </div>
+      </footer>
+
+      {/* Fenêtre de chargement */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-pms-ink/60 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-pms-paper rounded-lg p-7 sm:p-9 max-w-sm w-full text-center space-y-4" role="status">
+            <Loader2 className="w-8 h-8 mx-auto text-pms-accent animate-spin" />
+            <h3 className="text-[22px] font-semibold">Capture du site en cours</h3>
+            <p className="text-[15px] text-pms-muted" aria-live="polite">
+              {loadingSeconds < 8
+                ? 'Ouverture de la page et prise de la photo.'
+                : loadingSeconds < 20
+                  ? 'Les pages longues ou chargées d’images prennent un peu plus de temps.'
+                  : 'Ce site est lent à répondre, encore quelques secondes.'}
+            </p>
+            <p className="text-[15px] text-pms-muted tabular-nums">{loadingSeconds} s</p>
             <button
               type="button"
               onClick={cancelCapture}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 text-sm font-semibold transition-colors"
+              className="w-full sm:w-auto min-h-[44px] px-5 rounded-md bg-pms-surface hover:bg-pms-line text-[15px] font-semibold transition-colors"
             >
               Annuler
             </button>
           </div>
         </div>
       )}
-
-      <Footer />
     </div>
   );
 }

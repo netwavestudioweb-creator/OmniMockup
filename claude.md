@@ -398,3 +398,15 @@ npm run dev
 - **Remarqué :** le bouton « Pitch IA » n'est visible qu'en grand écran (pas sur téléphone ni tablette) → à traiter avec l'ergonomie mobile.
 - **Ergonomie du studio sur téléphone mise en ligne** (`b9c34fb`) : hauteur réelle de l'écran (100dvh), panneau de réglages agrandi, confirmation avant de quitter, fond qui ne cache plus le site après une scène photo, bouton « ← Revenir à mon mockup », boutons de 44 px, Pitch IA visible sur téléphone. Reste : test sur un vrai iPhone par Dodo.
 - **Dépôt GitHub remis en public** : en privé, Vercel Hobby bloquait le déploiement (auteur Git ≠ propriétaire du compte Vercel).
+
+---
+
+## 🗓️ Session — 20-21 octobre 2026 : Refonte du design (accueil + studio) et studio sur téléphone
+
+- **Accueil refait avec les skills de design** (`references-design/` : Taste Skill, frontend-design ; UI UX Pro Max seulement pour sa liste de contrôle accessibilité). Palette tirée par Taste Skill : blanc, encre noire, un seul bleu `#1A4BE0` (violet abandonné, choix de Dodo). Police Archivo. Plus de dégradés, badges, étiquettes en capitales.
+- **Visuels = vrais mockups de sites connus** (choix de Dodo, site international) : Wave en haut, Netflix pour les 3 formats, carrousel Al Kareem / Apple / Notion / Spotify, Apple dans le pied de page. Mention « exemples sans lien avec ces marques ». Captures refaites à la largeur qui ne coupe aucune section (Netflix 2240 px, Apple 1280, Spotify et Al Kareem 1600, Wave et Notion 1440).
+- **Retirés à la demande de Dodo** : bouton « Tarifs » de la barre (les tarifs sont en bas de l'accueil, #pricing), bloc « Devise », bouton « Réglages » du champ de lien (réglages dans le studio), photos de Cotonou.
+- **Corrigé au passage** : `overflow-x-hidden` sur `<body>` empêchait tous les éléments « collants » (barre de navigation) → `overflow-x-clip`.
+- **Studio** : violet → bleu dans 27 fichiers ; fond par défaut gris clair uni ; fond à points, halo et titres en capitales retirés ; libellés traduits (« Remettre droit », « Incliné à gauche », « Perspective », « Sans appareil », noms des fonds en français).
+- **Studio sur téléphone** (simulation iPhone 13 et Pixel 7 avec Playwright, moteur Chrome ; moteur Safari pas encore installé) : onglets qui commencent par l'essentiel (appareil, fonds, titres), retour en haut au changement d'onglet, « Voir en grand » sur l'aperçu, barre des formats sous l'aperçu, menu Exporter avec 3 gros boutons (image, statut WhatsApp, lien de partage), « Plus de réglages » au lieu de « Mode Simple », zones de clic 44 px, champs à 16 px (pas de zoom Safari), filigrane qui ouvre les formules sans quitter le studio, visite guidée lisible.
+- **Reste** : test sur un vrai iPhone par Dodo ; mode « Captures pour les stores » ; refonte des pages tarifs / connexion / compte avec la nouvelle identité.

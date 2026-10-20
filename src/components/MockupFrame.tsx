@@ -94,8 +94,8 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
     if (imageError || !screenshotBase64) {
       return (
         <div className={`w-full h-full flex flex-col items-center justify-center p-6 bg-zinc-950 text-zinc-300 text-center select-none ${customClasses}`}>
-          <div className="w-12 h-12 rounded-2xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mb-3">
-            <Globe className="w-6 h-6 text-violet-400" />
+          <div className="w-12 h-12 rounded-2xl bg-pms-accent/20 border border-pms-accent/30 flex items-center justify-center mb-3">
+            <Globe className="w-6 h-6 text-pms-accent-soft" />
           </div>
           <span className="font-semibold text-sm text-white mb-1 truncate max-w-[240px]">{cleanDomain}</span>
           <span className="text-xs text-zinc-400 max-w-xs">
@@ -133,8 +133,8 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
               : 'bg-white/60 backdrop-blur-xl border-white/60 shadow-2xl text-stone-800'
             : isArc
             ? isDark
-              ? 'bg-[#121316] border-zinc-700/60 shadow-2xl text-zinc-200 ring-1 ring-violet-500/20'
-              : 'bg-[#f4f3ef] border-zinc-300 shadow-2xl text-zinc-800 ring-1 ring-violet-300/30'
+              ? 'bg-[#121316] border-zinc-700/60 shadow-2xl text-zinc-200 ring-1 ring-pms-accent/20'
+              : 'bg-[#f4f3ef] border-zinc-300 shadow-2xl text-zinc-800 ring-1 ring-pms-accent/30'
             : isDark
             ? 'bg-[#18181b] border-stone-800 shadow-2xl text-stone-200'
             : 'bg-white border-stone-200/90 shadow-xl text-stone-800'
@@ -168,12 +168,12 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
                     : 'bg-white border-zinc-300 text-zinc-700'
                 }`}
               >
-                <Lock className="w-3 h-3 text-violet-400 shrink-0" />
+                <Lock className="w-3 h-3 text-pms-accent-soft shrink-0" />
                 <span className="truncate font-semibold">{cleanDomain}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 text-[10px] font-mono font-bold text-violet-400">
+            <div className="flex items-center gap-1 text-[10px] font-mono font-bold text-pms-accent-soft">
               <span>ARC</span>
             </div>
           </div>

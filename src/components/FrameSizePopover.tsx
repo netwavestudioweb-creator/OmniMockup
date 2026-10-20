@@ -74,7 +74,7 @@ export const FrameSizePopover: React.FC<FrameSizePopoverProps> = ({
 
           {/* Saisie personnalisée W / H / Set */}
           <form onSubmit={handleApplyCustom} className="flex items-center gap-2">
-            <div className="flex-1 flex items-center bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 focus-within:border-violet-500">
+            <div className="flex-1 flex items-center bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 focus-within:border-pms-accent">
               <span className="text-xs font-bold font-mono text-zinc-500 mr-2">W</span>
               <input
                 type="number"
@@ -85,7 +85,7 @@ export const FrameSizePopover: React.FC<FrameSizePopoverProps> = ({
               />
             </div>
 
-            <div className="flex-1 flex items-center bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 focus-within:border-violet-500">
+            <div className="flex-1 flex items-center bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5 focus-within:border-pms-accent">
               <span className="text-xs font-bold font-mono text-zinc-500 mr-2">H</span>
               <input
                 type="number"
@@ -98,7 +98,7 @@ export const FrameSizePopover: React.FC<FrameSizePopoverProps> = ({
 
             <button
               type="submit"
-              className="px-4 py-1.5 bg-zinc-800 hover:bg-violet-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+              className="px-4 py-1.5 bg-zinc-800 hover:bg-pms-accent text-white rounded-xl text-xs font-bold transition-all shadow-sm"
             >
               Set
             </button>
@@ -122,7 +122,7 @@ export const FrameSizePopover: React.FC<FrameSizePopoverProps> = ({
                     }}
                     className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-2 group ${
                       isSelected
-                        ? 'bg-zinc-800/90 border-violet-500 ring-2 ring-violet-500/30'
+                        ? 'bg-zinc-800/90 border-pms-accent ring-2 ring-pms-accent/30'
                         : 'bg-zinc-900/60 border-zinc-800 hover:bg-zinc-850 hover:border-zinc-700'
                     }`}
                   >
@@ -130,7 +130,7 @@ export const FrameSizePopover: React.FC<FrameSizePopoverProps> = ({
                     <div
                       className={`w-10 h-7 rounded-md border transition-all ${
                         isSelected
-                          ? 'border-violet-400 bg-violet-500/20'
+                          ? 'border-pms-accent bg-pms-accent/20'
                           : 'border-zinc-600 bg-zinc-800/60 group-hover:border-zinc-500'
                       }`}
                       style={{

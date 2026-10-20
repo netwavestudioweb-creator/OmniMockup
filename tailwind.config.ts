@@ -34,6 +34,22 @@ const config: Config = {
           400: '#bfb19c',
           500: '#a3937b',
         },
+        // Nouvelle identité (accueil, octobre 2026), palette tirée par Taste Skill (« feuille et stylo bille ») :
+        // blanc, encre noire, un gris, un bleu réservé aux liens et au bouton principal. Aucun dégradé.
+        pms: {
+          paper: '#FFFFFF',
+          card: '#FFFFFF',
+          surface: '#F4F4F4',
+          ink: '#111111',
+          muted: '#5C5C5C',
+          line: '#E2E2E2',
+          accent: '#1A4BE0',
+          'accent-hover': '#1238B0',
+          'accent-soft': '#8FB0FF',
+          'accent-tint': '#E8EEFD',
+          field: '#111111',
+          gold: '#E2A93B',
+        },
         // Gris intermédiaires utilisés dans le studio
         zinc: {
           150: '#ececee',
@@ -53,6 +69,9 @@ const config: Config = {
           800: '#27272a',
           900: '#18181b',
         },
+      },
+      fontFamily: {
+        archivo: ['var(--font-archivo)', 'system-ui', 'sans-serif'],
       },
       spacing: {
         '0.2': '0.05rem',

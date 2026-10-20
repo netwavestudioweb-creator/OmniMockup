@@ -43,7 +43,7 @@ export const PresentationDialog: React.FC<PresentationDialogProps> = ({
   const [client, setClient] = useState('');
   const [intro, setIntro] = useState('');
   const [author, setAuthor] = useState('');
-  const [accent, setAccent] = useState('#7c3aed');
+  const [accent, setAccent] = useState('#1A4BE0');
   const [logo, setLogo] = useState<string | null>(null);
   const [output, setOutput] = useState<PresentationOutput>('pdf');
   const outputInfo = OUTPUTS.find((o) => o.id === output) || OUTPUTS[0];
@@ -70,7 +70,7 @@ export const PresentationDialog: React.FC<PresentationDialogProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [generating, onClose]);
 
-  const field = 'w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-xs focus:outline-none focus:border-violet-500';
+  const field = 'w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-xs focus:outline-none focus:border-pms-accent';
 
   return (
     <div
@@ -82,7 +82,7 @@ export const PresentationDialog: React.FC<PresentationDialogProps> = ({
       <div className="bg-[#0c0d14] border border-zinc-800 w-full sm:max-w-2xl max-h-[92vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
           <div className="flex items-center gap-2 text-sm font-bold text-white">
-            <FileText className="w-4 h-4 text-violet-400" />
+            <FileText className="w-4 h-4 text-pms-accent-soft" />
             Présentation client et carrousel
           </div>
           <button
@@ -188,7 +188,7 @@ export const PresentationDialog: React.FC<PresentationDialogProps> = ({
                 aria-checked={output === o.id}
                 onClick={() => setOutput(o.id)}
                 className={`py-1.5 px-1 rounded-lg text-[11px] font-bold leading-tight transition-all ${
-                  output === o.id ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:text-white'
+                  output === o.id ? 'bg-pms-accent text-white' : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 {o.label}
@@ -199,7 +199,7 @@ export const PresentationDialog: React.FC<PresentationDialogProps> = ({
             type="button"
             onClick={() => onGenerate({ title, client, intro, author, accent, logo }, output)}
             disabled={generating || slides.length === 0}
-            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-2.5 rounded-xl bg-pms-accent hover:bg-pms-accent-hover text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
             {output === 'instagram' ? 'Télécharger les images' : 'Télécharger le PDF'} ({slides.length + 1} page{slides.length ? 's' : ''} avec la couverture)

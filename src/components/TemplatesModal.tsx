@@ -106,7 +106,7 @@ const TemplatePreview: React.FC<{ tmpl: StudioTemplate; src?: string }> = ({ tmp
       )}
 
       {tmpl.badge && (
-        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-violet-600 text-white">
+        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-pms-accent text-white">
           {tmpl.badge}
         </span>
       )}
@@ -152,7 +152,7 @@ export const TemplatesModal: React.FC<TemplatesModalProps> = ({ onSelectTemplate
         <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between gap-3 shrink-0 bg-zinc-900/60">
           <div className="min-w-0">
             <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-violet-400 shrink-0" />
+              <Sparkles className="w-5 h-5 text-pms-accent-soft shrink-0" />
               <span>Modèles prêts à publier</span>
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
@@ -197,19 +197,19 @@ export const TemplatesModal: React.FC<TemplatesModalProps> = ({ onSelectTemplate
                           onSelectTemplate(tmpl);
                           onClose();
                         }}
-                        className="group text-left rounded-2xl border border-zinc-800 hover:border-violet-500 bg-zinc-900/60 p-3 flex flex-col gap-3 transition-colors"
+                        className="group text-left rounded-2xl border border-zinc-800 hover:border-pms-accent bg-zinc-900/60 p-3 flex flex-col gap-3 transition-colors"
                       >
                         <TemplatePreview tmpl={tmpl} src={screenshot} />
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <h4 className="text-sm font-bold text-white group-hover:text-violet-300 transition-colors">{tmpl.title}</h4>
+                            <h4 className="text-sm font-bold text-white group-hover:text-pms-accent-soft transition-colors">{tmpl.title}</h4>
                             <p className="text-[11px] text-zinc-400 flex items-center gap-1.5 mt-0.5">
                               <DeviceIcon className="w-3 h-3 text-zinc-500 shrink-0" />
                               <span className="truncate">{tmpl.deviceLabel}</span>
                             </p>
                             <p className="text-[11px] text-zinc-500 mt-1 leading-snug">{tmpl.description}</p>
                           </div>
-                          <span className="p-2 rounded-xl bg-zinc-800 text-zinc-400 group-hover:bg-violet-600 group-hover:text-white transition-colors shrink-0">
+                          <span className="p-2 rounded-xl bg-zinc-800 text-zinc-400 group-hover:bg-pms-accent group-hover:text-white transition-colors shrink-0">
                             <ArrowRight className="w-3.5 h-3.5" />
                           </span>
                         </div>

@@ -58,15 +58,15 @@ export const SavedStylesPanel: React.FC<SavedStylesPanelProps> = ({ getCurrent, 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
-          <Bookmark className="w-3.5 h-3.5 text-violet-300" />
+        <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+          <Bookmark className="w-3.5 h-3.5 text-pms-accent-soft" />
           Mes styles
         </label>
         {!naming && (
           <button
             type="button"
             onClick={() => setNaming(true)}
-            className="px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] font-semibold text-zinc-300 hover:text-white flex items-center gap-1"
+            className="min-h-[44px] lg:min-h-0 px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] font-semibold text-zinc-300 hover:text-white flex items-center gap-1"
           >
             <Plus className="w-3 h-3" />
             Enregistrer ce style
@@ -87,7 +87,7 @@ export const SavedStylesPanel: React.FC<SavedStylesPanelProps> = ({ getCurrent, 
             aria-label="Nom du style"
             className="flex-1 min-w-0 px-2.5 py-1.5 bg-zinc-950 border border-zinc-750 rounded-lg text-xs text-white"
           />
-          <button type="button" onClick={save} className="px-3 rounded-lg bg-violet-600 text-white text-xs font-bold">
+          <button type="button" onClick={save} className="px-3 rounded-lg bg-pms-accent text-white text-xs font-bold">
             OK
           </button>
         </div>
@@ -102,7 +102,7 @@ export const SavedStylesPanel: React.FC<SavedStylesPanelProps> = ({ getCurrent, 
               <button
                 type="button"
                 onClick={() => onApply(st.values)}
-                className="w-full h-14 rounded-xl border border-zinc-700 hover:border-violet-500 overflow-hidden relative"
+                className="w-full h-14 rounded-xl border border-zinc-700 hover:border-pms-accent overflow-hidden relative"
                 style={{ background: st.preview }}
                 title={`Appliquer « ${st.name} »`}
               >

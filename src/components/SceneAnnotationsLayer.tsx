@@ -122,7 +122,7 @@ export const SceneAnnotationsLayer: React.FC<SceneAnnotationsLayerProps> = ({
             onPointerMove={onMove}
             onPointerUp={endDrag}
             className={`absolute z-[36] cursor-move touch-none rounded-lg ${
-              selectedId === a.id ? 'ring-2 ring-violet-400' : 'ring-1 ring-white/30'
+              selectedId === a.id ? 'ring-2 ring-pms-accent' : 'ring-1 ring-white/30'
             }`}
             style={{
               left: `${a.x}%`,
@@ -139,7 +139,7 @@ export const SceneAnnotationsLayer: React.FC<SceneAnnotationsLayerProps> = ({
               <span
                 data-export-hide
                 onPointerDown={(e) => startDrag(e, a, 'resize')}
-                className="absolute -right-2 -bottom-2 w-4 h-4 rounded-full bg-violet-500 border-2 border-white cursor-nwse-resize"
+                className="absolute -right-2 -bottom-2 w-4 h-4 rounded-full bg-pms-accent border-2 border-white cursor-nwse-resize"
               />
             )}
           </div>
@@ -181,11 +181,11 @@ export const SceneAnnotationsLayer: React.FC<SceneAnnotationsLayerProps> = ({
               >
                 {selectedId === a.id && (
                   <>
-                    <span data-export-hide className="absolute -inset-2 rounded-full ring-2 ring-violet-400 pointer-events-none" />
+                    <span data-export-hide className="absolute -inset-2 rounded-full ring-2 ring-pms-accent pointer-events-none" />
                     <span
                       data-export-hide
                       onPointerDown={(e) => startDrag(e, a, 'resize')}
-                      className="absolute right-0 bottom-0 w-4 h-4 rounded-full bg-violet-500 border-2 border-white cursor-nwse-resize"
+                      className="absolute right-0 bottom-0 w-4 h-4 rounded-full bg-pms-accent border-2 border-white cursor-nwse-resize"
                     />
                   </>
                 )}
@@ -250,9 +250,9 @@ export const SceneAnnotationsLayer: React.FC<SceneAnnotationsLayerProps> = ({
                 />
                 {selected && (
                   <g data-export-hide>
-                    <circle cx={x1} cy={y1} r={stroke * 2.2} fill="#7c3aed" stroke="#fff" strokeWidth={2}
+                    <circle cx={x1} cy={y1} r={stroke * 2.2} fill="#1A4BE0" stroke="#fff" strokeWidth={2}
                       style={{ pointerEvents: 'all', cursor: 'grab' }} onPointerDown={(e) => startDrag(e, a, 'start')} />
-                    <circle cx={x2} cy={y2} r={stroke * 2.2} fill="#7c3aed" stroke="#fff" strokeWidth={2}
+                    <circle cx={x2} cy={y2} r={stroke * 2.2} fill="#1A4BE0" stroke="#fff" strokeWidth={2}
                       style={{ pointerEvents: 'all', cursor: 'grab' }} onPointerDown={(e) => startDrag(e, a, 'end')} />
                   </g>
                 )}
@@ -273,7 +273,7 @@ export const SceneAnnotationsLayer: React.FC<SceneAnnotationsLayerProps> = ({
                   {a.label || '1'}
                 </text>
                 {selected && (
-                  <circle data-export-hide cx={cx} cy={cy} r={r + stroke * 1.5} fill="none" stroke="#a78bfa" strokeWidth={2} strokeDasharray="6 4" />
+                  <circle data-export-hide cx={cx} cy={cy} r={r + stroke * 1.5} fill="none" stroke="#8FB0FF" strokeWidth={2} strokeDasharray="6 4" />
                 )}
               </g>
             );
@@ -299,7 +299,7 @@ export const SceneAnnotationsLayer: React.FC<SceneAnnotationsLayerProps> = ({
                 <rect x={x} y={y} width={w} height={h} rx={stroke * 2} {...shapeProps} />
               )}
               {selected && (
-                <circle data-export-hide cx={x + w} cy={y + h} r={stroke * 2.2} fill="#7c3aed" stroke="#fff" strokeWidth={2}
+                <circle data-export-hide cx={x + w} cy={y + h} r={stroke * 2.2} fill="#1A4BE0" stroke="#fff" strokeWidth={2}
                   style={{ pointerEvents: 'all', cursor: 'nwse-resize' }} onPointerDown={(e) => startDrag(e, a, 'resize')} />
               )}
             </g>

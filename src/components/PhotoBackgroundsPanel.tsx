@@ -76,7 +76,7 @@ export const PhotoBackgroundsPanel: React.FC<PhotoBackgroundsPanelProps> = ({ on
               type="button"
               onClick={() => setCategory(c)}
               aria-pressed={category === c}
-              className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${
+              className={`min-h-[44px] lg:min-h-0 px-2 py-0.5 rounded-md text-[10px] font-semibold ${
                 category === c ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-white'
               }`}
             >
@@ -94,7 +94,7 @@ export const PhotoBackgroundsPanel: React.FC<PhotoBackgroundsPanelProps> = ({ on
             disabled={loadingId !== null}
             aria-label={`Fond photo : ${p.label}`}
             title={p.label}
-            className="relative aspect-[4/3] rounded-lg overflow-hidden border border-zinc-800 hover:border-violet-500 disabled:opacity-70"
+            className="relative aspect-[4/3] rounded-lg overflow-hidden border border-zinc-800 hover:border-pms-accent disabled:opacity-70"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={url(p.id, 240)} alt="" loading="lazy" className="w-full h-full object-cover" />

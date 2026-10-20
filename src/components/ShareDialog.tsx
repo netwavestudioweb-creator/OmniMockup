@@ -147,7 +147,7 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({ loggedIn, demo, defaul
       <div className="bg-[#0c0d14] border border-zinc-800 w-full sm:max-w-lg max-h-[92vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
           <div className="flex items-center gap-2 text-sm font-bold text-white">
-            <Link2 className="w-4 h-4 text-violet-400" />
+            <Link2 className="w-4 h-4 text-pms-accent-soft" />
             Lien de partage
           </div>
           <button type="button" onClick={onClose} disabled={busy} aria-label="Fermer" className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900">
@@ -164,7 +164,7 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({ loggedIn, demo, defaul
           {!loggedIn ? (
             <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 space-y-3">
               <p className="text-zinc-300">Le partage par lien nécessite un compte (gratuit).</p>
-              <Link href="/login" className="inline-flex px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold">
+              <Link href="/login" className="inline-flex px-4 py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-bold">
                 Se connecter
               </Link>
             </div>
@@ -176,14 +176,14 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({ loggedIn, demo, defaul
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   maxLength={120}
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-xs focus:outline-none focus:border-violet-500"
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-xs focus:outline-none focus:border-pms-accent"
                 />
               </label>
               <button
                 type="button"
                 onClick={create}
                 disabled={busy}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                className="w-full py-2.5 rounded-xl bg-pms-accent hover:bg-pms-accent-hover text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
                 {busy ? 'Création du lien…' : 'Créer le lien'}
@@ -230,7 +230,7 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({ loggedIn, demo, defaul
                       onChange={(e) => setRecipient(e.target.value.slice(0, 60))}
                       placeholder="Prénom ou nom de l'entreprise (facultatif)"
                       aria-label="Nom du destinataire"
-                      className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:outline-none focus:border-violet-500"
+                      className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:outline-none focus:border-pms-accent"
                     />
                     <textarea
                       value={message}
@@ -240,10 +240,10 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({ loggedIn, demo, defaul
                       }}
                       rows={6}
                       aria-label="Message"
-                      className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs leading-relaxed focus:outline-none focus:border-violet-500"
+                      className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs leading-relaxed focus:outline-none focus:border-pms-accent"
                     />
                     {messageEdited && (
-                      <button type="button" onClick={() => setMessageEdited(false)} className="text-[11px] text-violet-300 underline">
+                      <button type="button" onClick={() => setMessageEdited(false)} className="text-[11px] text-pms-accent-soft underline">
                         Revenir au message proposé
                       </button>
                     )}

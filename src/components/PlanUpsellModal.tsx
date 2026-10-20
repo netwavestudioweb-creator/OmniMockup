@@ -42,8 +42,8 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
         {mode === 'free_quota_reached' && (
           <>
             <div className="space-y-1 text-center sm:text-left">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-100 text-violet-800 text-xs font-black uppercase mb-1">
-                <Sparkles className="w-3.5 h-3.5 text-violet-600" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pms-accent-tint text-pms-accent text-xs font-black uppercase mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-pms-accent" />
                 <span>Vos 3 exports gratuits du jour sont utilisés</span>
               </div>
               <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
@@ -89,32 +89,32 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
               </div>
 
               {/* Carte Pro ⭐ (Pack Cible dominant) */}
-              <div className="p-4 rounded-2xl border-2 border-violet-600 bg-violet-50/50 flex flex-col justify-between shadow-sm relative">
-                <span className="absolute -top-2.5 right-3 bg-violet-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full tracking-wide">
+              <div className="p-4 rounded-2xl border-2 border-pms-accent bg-pms-accent-tint flex flex-col justify-between shadow-sm relative">
+                <span className="absolute -top-2.5 right-3 bg-pms-accent text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full tracking-wide">
                   Recommandé
                 </span>
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-black text-violet-950 text-sm flex items-center gap-1">
-                      <Flame className="w-3.5 h-3.5 text-violet-600 fill-violet-600" />
+                    <span className="font-black text-pms-accent text-sm flex items-center gap-1">
+                      <Flame className="w-3.5 h-3.5 text-pms-accent fill-pms-accent" />
                       Pro
                     </span>
-                    <span className="text-[10px] bg-violet-600 text-white px-2 py-0.5 rounded-full font-bold">{price.pro}/mois</span>
+                    <span className="text-[10px] bg-pms-accent text-white px-2 py-0.5 rounded-full font-bold">{price.pro}/mois</span>
                   </div>
-                  <p className="text-[11px] text-violet-800 leading-tight mb-3 font-medium">
+                  <p className="text-[11px] text-pms-accent leading-tight mb-3 font-medium">
                     Exports HD et 4K illimités, sans filigrane, 10 vidéos ou GIF par mois.
                   </p>
                   <ul className="space-y-1.5 text-[11px] text-stone-800">
                     <li className="flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-violet-600 font-bold" />
+                      <Check className="w-3.5 h-3.5 text-pms-accent font-bold" />
                       <span className="font-bold">Exports HD & 4K ILLIMITÉS</span>
                     </li>
                     <li className="flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-violet-600 font-bold" />
+                      <Check className="w-3.5 h-3.5 text-pms-accent font-bold" />
                       <span className="font-bold text-emerald-700">ZÉRO filigrane</span>
                     </li>
                     <li className="flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-violet-600 font-bold" />
+                      <Check className="w-3.5 h-3.5 text-pms-accent font-bold" />
                       <span>10 vidéos ou GIF / mois</span>
                     </li>
                   </ul>
@@ -125,7 +125,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                     trackEvent('plan_click', { source: 'upsell_modal', plan_id: 'pro' });
                     onClose();
                   }}
-                  className="mt-4 w-full py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-black text-center transition-colors block shadow-sm shadow-violet-500/20"
+                  className="mt-4 w-full py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white text-xs font-black text-center transition-colors block shadow-sm"
                 >
                   Passer au Pro ({price.pro}) →
                 </Link>
@@ -139,8 +139,8 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
         {/* SCÉNARIO 2 : Utilisateur Solo proche de ses 20 exports */}
         {mode === 'solo_quota_approaching' && (
           <div className="space-y-4 text-center sm:text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-100 text-violet-800 text-xs font-black uppercase">
-              <Zap className="w-3.5 h-3.5 text-violet-600" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pms-accent-tint text-pms-accent text-xs font-black uppercase">
+              <Zap className="w-3.5 h-3.5 text-pms-accent" />
               <span>Plus que quelques exports disponibles</span>
             </div>
             <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
@@ -149,10 +149,10 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
             <p className="text-xs text-stone-600 leading-relaxed">
               Ne soyez plus jamais limité par un quota mensuel : débloquez les exports HD et 4K <strong>illimités</strong>, <strong>sans aucun filigrane</strong>, et 10 vidéos MP4 par mois.
             </p>
-            <div className="p-4 rounded-2xl bg-violet-50 border border-violet-200 text-xs text-violet-950 flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-pms-accent-tint border border-pms-accent-tint text-xs text-pms-accent flex items-center justify-between">
               <div>
                 <span className="font-bold block">Forfait Pro Développeur</span>
-                <span className="text-[11px] text-violet-700">{price.pro}/mois au lieu de {price.solo}/mois</span>
+                <span className="text-[11px] text-pms-accent">{price.pro}/mois au lieu de {price.solo}/mois</span>
               </div>
               <Link
                 href="/pricing"
@@ -160,7 +160,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                   trackEvent('plan_click', { source: 'upsell_solo_upgrade', plan_id: 'pro' });
                   onClose();
                 }}
-                className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs"
+                className="px-4 py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-bold text-xs"
               >
                 Upgrader (+{price.proMinusSolo}) →
               </Link>
@@ -171,8 +171,8 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
         {/* SCÉNARIO 4 : Option non incluse (4K, vidéo) et pas assez de crédits */}
         {mode === 'feature_locked' && (
           <div className="space-y-4 text-center sm:text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-100 text-violet-800 text-xs font-black uppercase">
-              <Zap className="w-3.5 h-3.5 text-violet-600" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pms-accent-tint text-pms-accent text-xs font-black uppercase">
+              <Zap className="w-3.5 h-3.5 text-pms-accent" />
               <span>Option non incluse dans votre forfait</span>
             </div>
             <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">Débloquez la 4K et la vidéo</h3>
@@ -187,7 +187,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                   trackEvent('plan_click', { source: 'upsell_feature_locked', plan_id: 'pro' });
                   onClose();
                 }}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs text-center"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-bold text-xs text-center"
               >
                 Voir le plan Pro ({price.pro}/mois)
               </Link>
@@ -208,8 +208,8 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
         {/* SCÉNARIO 5 : forfait Pro, les 10 vidéos du mois sont utilisées */}
         {mode === 'video_quota_reached' && (
           <div className="space-y-4 text-center sm:text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-100 text-violet-800 text-xs font-black uppercase">
-              <Zap className="w-3.5 h-3.5 text-violet-600" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pms-accent-tint text-pms-accent text-xs font-black uppercase">
+              <Zap className="w-3.5 h-3.5 text-pms-accent" />
               <span>Vidéos du mois utilisées</span>
             </div>
             <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">Vos 10 vidéos du mois sont utilisées</h3>
@@ -224,7 +224,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                   trackEvent('plan_click', { source: 'upsell_video_quota', pack_id: 'credits' });
                   onClose();
                 }}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs text-center"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-bold text-xs text-center"
               >
                 Acheter des crédits
               </Link>
@@ -266,7 +266,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
                   trackEvent('plan_click', { source: 'upsell_low_credits', pack_id: 'credit_grand' });
                   onClose();
                 }}
-                className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs"
+                className="px-4 py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-bold text-xs"
               >
                 Recharger (-50%) →
               </Link>

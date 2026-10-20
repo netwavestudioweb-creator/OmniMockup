@@ -78,7 +78,7 @@ export const ExportCrossSellBanner: React.FC<ExportCrossSellBannerProps> = ({
       {showUpgrade && (
         <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10px]">
           <span className="text-zinc-400">Sans filigrane et en HD dès le plan Solo</span>
-          <Link href="/pricing" className="text-violet-400 hover:text-violet-300 font-bold">
+          <Link href="/pricing" className="text-pms-accent-soft hover:text-pms-accent-soft font-bold">
             Voir les offres
           </Link>
         </div>

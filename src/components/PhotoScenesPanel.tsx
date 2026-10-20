@@ -16,7 +16,7 @@ interface PhotoScenesPanelProps {
 export const PhotoScenesPanel: React.FC<PhotoScenesPanelProps> = ({ activeId, loadingId, error, onPick, onExit }) => (
   <div className="space-y-2" role="group" aria-label="Scènes photo réalistes">
     <div className="flex items-center justify-between gap-2">
-      <label className="text-xs font-bold text-zinc-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+      <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
         <Camera className="w-3.5 h-3.5 text-emerald-400" />
         Scènes photo réalistes
       </label>
@@ -24,7 +24,7 @@ export const PhotoScenesPanel: React.FC<PhotoScenesPanelProps> = ({ activeId, lo
         <button
           type="button"
           onClick={onExit}
-          className="min-h-[44px] lg:min-h-0 px-2 text-[11px] font-semibold text-violet-300 hover:text-white flex items-center gap-1"
+          className="min-h-[44px] lg:min-h-0 px-2 text-[12px] lg:text-[11px] font-semibold text-pms-accent-soft hover:text-white flex items-center gap-1"
         >
           <Undo2 className="w-3 h-3" />
           Revenir à mon mockup
@@ -33,7 +33,7 @@ export const PhotoScenesPanel: React.FC<PhotoScenesPanelProps> = ({ activeId, lo
     </div>
     {(['laptop', 'phone'] as const).map((kind) => (
       <div key={kind} className="space-y-1.5">
-        <span className="text-[10px] text-zinc-500 font-semibold">{kind === 'laptop' ? 'Ordinateur' : 'Téléphone'}</span>
+        <span className="text-[12px] lg:text-[10px] text-zinc-500 font-semibold">{kind === 'laptop' ? 'Ordinateur' : 'Téléphone'}</span>
         <div className="grid grid-cols-3 gap-1.5">
           {PHOTO_SCENES.filter((s) => s.kind === kind).map((s) => (
             <button
@@ -45,7 +45,7 @@ export const PhotoScenesPanel: React.FC<PhotoScenesPanelProps> = ({ activeId, lo
               aria-label={`Scène photo : ${s.label}`}
               title={s.label}
               className={`relative aspect-[4/3] rounded-lg overflow-hidden border-2 transition-all disabled:opacity-70 ${
-                activeId === s.id ? 'border-violet-500' : 'border-zinc-800 hover:border-zinc-600'
+                activeId === s.id ? 'border-pms-accent' : 'border-zinc-800 hover:border-zinc-600'
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -61,11 +61,11 @@ export const PhotoScenesPanel: React.FC<PhotoScenesPanelProps> = ({ activeId, lo
       </div>
     ))}
     {error && (
-      <p className="text-[10px] text-rose-400" role="alert">
+      <p className="text-[12px] lg:text-[10px] text-rose-400" role="alert">
         {error}
       </p>
     )}
-    <p className="text-[10px] text-zinc-500 leading-relaxed">
+    <p className="text-[12px] lg:text-[10px] text-zinc-500 leading-relaxed">
       La page s&apos;affiche en perspective dans l&apos;écran de la photo. Textes, logos et annotations restent disponibles.
       Choisir un fond ou un appareil vous ramène à votre mockup.
       Photos Unsplash, libres de droits.

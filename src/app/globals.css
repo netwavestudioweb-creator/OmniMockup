@@ -453,3 +453,28 @@ body {
 /* Test de l'accroche de l'accueil (src/lib/heroTest.ts) : une seule version visible */
 html[data-hero="court"] .hero-long { display: none; }
 html:not([data-hero="court"]) .hero-court { display: none; }
+
+/* Accueil : entrée discrète des sections au défilement (seulement si le script est prêt) */
+[data-reveal] {
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal-ready [data-reveal]:not(.is-in) {
+  opacity: 0;
+  transform: translateY(16px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-ready [data-reveal]:not(.is-in) {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* iPhone : Safari zoome la page quand on touche un champ écrit en moins de 16 px. Sur téléphone et tablette,
+   tous les champs de saisie passent donc à 16 px (l'ordinateur garde ses tailles). */
+@media (max-width: 1023px) {
+  input:not([type='range']):not([type='checkbox']):not([type='radio']):not([type='color']),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

@@ -74,13 +74,13 @@ export const PaymentResultPanel: React.FC<PaymentResultPanelProps> = ({ result, 
           </div>
           <div className="flex flex-col sm:flex-row flex-wrap gap-2">
             {result === 'success' && (
-              <Link href="/" className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm">
+              <Link href="/" className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-bold text-sm">
                 Ouvrir le studio
               </Link>
             )}
             {retryable && (
               <>
-                <button type="button" onClick={onRetry} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm">
+                <button type="button" onClick={onRetry} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-bold text-sm">
                   <RefreshCw className="w-4 h-4" />
                   Réessayer
                 </button>

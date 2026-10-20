@@ -82,8 +82,8 @@ export const MockupSelector: React.FC<MockupSelectorProps> = ({
       {/* En-tête du sélecteur */}
       <div className="flex items-start justify-between pb-5 border-b border-sand-200">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-800 text-[11px] font-semibold border border-violet-200">
-            <Sparkles className="w-3 h-3 text-violet-600" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-pms-accent-tint text-pms-accent text-[11px] font-semibold border border-pms-accent-tint">
+            <Sparkles className="w-3 h-3 text-pms-accent" />
             <span>Habillage Haute Fidélité</span>
           </div>
           <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900">
@@ -120,12 +120,12 @@ export const MockupSelector: React.FC<MockupSelectorProps> = ({
               onClick={() => onSelect(opt.type)}
               className={`group relative flex flex-col justify-between p-3.5 sm:p-4 rounded-2xl cursor-pointer transition-all duration-200 border w-full ${
                 isSelected
-                  ? 'bg-violet-50/40 border-violet-500 shadow-md ring-2 ring-violet-200'
+                  ? 'bg-pms-accent-tint border-pms-accent shadow-md ring-2 ring-pms-accent-tint'
                   : 'bg-white hover:bg-sand-50/60 border-sand-200 hover:border-sand-300 hover:shadow-sm'
               }`}
             >
               {/* Miniature de cadre vide en pur CSS/SVG */}
-              <div className="h-28 rounded-xl bg-sand-100 border border-sand-200 p-2 flex items-center justify-center overflow-hidden mb-3 relative group-hover:border-violet-300 transition-colors">
+              <div className="h-28 rounded-xl bg-sand-100 border border-sand-200 p-2 flex items-center justify-center overflow-hidden mb-3 relative group-hover:border-pms-accent transition-colors">
                 {/* 1. Miniature Browser */}
                 {opt.type === 'browser' && (
                   <div className="w-full h-full rounded-lg bg-white border border-sand-200 shadow-xs flex flex-col p-1.5 space-y-1">
@@ -208,15 +208,15 @@ export const MockupSelector: React.FC<MockupSelectorProps> = ({
                 {/* 5. Miniature Flat */}
                 {opt.type === 'flat' && (
                   <div className="w-full h-20 rounded-lg bg-white border border-stone-300 shadow-xs flex items-center justify-center p-2">
-                    <div className="w-full h-full rounded bg-violet-100/60 border border-dashed border-violet-300 flex items-center justify-center">
-                      <Layers className="w-4 h-4 text-violet-600" />
+                    <div className="w-full h-full rounded bg-pms-accent-tint border border-dashed border-pms-accent flex items-center justify-center">
+                      <Layers className="w-4 h-4 text-pms-accent" />
                     </div>
                   </div>
                 )}
 
                 {/* Badge Actif / Check */}
                 {isSelected && (
-                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-violet-600 flex items-center justify-center text-white shadow-sm">
+                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-pms-accent flex items-center justify-center text-white shadow-sm">
                     <Check className="w-3 h-3 stroke-[3]" />
                   </div>
                 )}
@@ -228,7 +228,7 @@ export const MockupSelector: React.FC<MockupSelectorProps> = ({
                   <div className="flex items-center gap-1.5">
                     <Icon
                       className={`w-4 h-4 ${
-                        isSelected ? 'text-violet-600' : 'text-stone-500'
+                        isSelected ? 'text-pms-accent' : 'text-stone-500'
                       }`}
                     />
                     <span className="text-sm font-bold text-stone-900">
@@ -254,7 +254,7 @@ export const MockupSelector: React.FC<MockupSelectorProps> = ({
                   }}
                   className={`w-full py-2 px-3 rounded-xl text-xs font-semibold transition-all ${
                     isSelected
-                      ? 'bg-violet-600 text-white shadow-xs'
+                      ? 'bg-pms-accent text-white shadow-xs'
                       : 'bg-sand-100 hover:bg-sand-200 text-stone-700 hover:text-stone-900 border border-sand-200'
                   }`}
                 >

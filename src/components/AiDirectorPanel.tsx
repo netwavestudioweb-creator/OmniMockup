@@ -246,9 +246,9 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
     .slice(0, 8);
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-950/50 to-zinc-900 border border-indigo-500/25 space-y-3">
-      <div className="flex items-center gap-1.5 text-xs font-bold text-white uppercase font-mono">
-        <Bot className="w-3.5 h-3.5 text-indigo-300" />
+    <div className="p-4 rounded-2xl bg-zinc-900 border border-pms-accent/25 space-y-3">
+      <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+        <Bot className="w-3.5 h-3.5 text-pms-accent-soft" />
         Directeur artistique IA
       </div>
 
@@ -265,7 +265,7 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
           <button
             type="button"
             onClick={analyze}
-            className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5"
+            className="min-h-[44px] lg:min-h-0 w-full py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white text-xs font-bold flex items-center justify-center gap-1.5"
           >
             <Wand2 className="w-3.5 h-3.5" />
             Analyser la page avec l&apos;IA
@@ -274,7 +274,7 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
       )}
 
       {state === 'loading' && (
-        <p className="text-[11px] text-indigo-200 flex items-center gap-2" role="status">
+        <p className="text-[11px] text-pms-accent-soft flex items-center gap-2" role="status">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
           Analyse en cours… ({elapsed} s, environ 30 à 60 s)
         </p>
@@ -283,7 +283,7 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
       {state === 'error' && (
         <div className="space-y-2">
           <p className="text-[11px] text-rose-400" role="alert">{error}</p>
-          <button type="button" onClick={analyze} className="text-[11px] font-semibold text-indigo-300">
+          <button type="button" onClick={analyze} className="text-[11px] font-semibold text-pms-accent-soft">
             Réessayer
           </button>
         </div>
@@ -293,7 +293,7 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
         <div className="space-y-2.5">
           {error && <p className="text-[11px] text-rose-400" role="alert">{error}</p>}
           {result.isFallback && (
-            <div className="p-3 rounded-xl bg-zinc-950/70 border border-indigo-500/30 space-y-2">
+            <div className="p-3 rounded-xl bg-zinc-950/70 border border-pms-accent/30 space-y-2">
               <p className="text-[11px] text-amber-300 leading-relaxed">
                 Sections repérées automatiquement, sans notes. Connectez votre IA (Gemini ou Claude) pour obtenir le verdict de chaque section.
                 Votre clé reste dans votre navigateur.
@@ -309,7 +309,7 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
                       setSetupProvider(prov);
                       setSetupError('');
                     }}
-                    className={`py-1.5 rounded-md text-[11px] font-bold ${setupProvider === prov ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+                    className={`min-h-[44px] lg:min-h-0 py-1.5 rounded-md text-[11px] font-bold ${setupProvider === prov ? 'bg-pms-accent text-white' : 'text-zinc-400 hover:text-white'}`}
                   >
                     {PROVIDER_INFO[prov].label}
                   </button>
@@ -319,7 +319,7 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
                 href={PROVIDER_INFO[setupProvider].getKeyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-300 underline"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-pms-accent-soft underline"
               >
                 Obtenir ma clé {setupProvider === 'claude' ? 'Claude' : 'Gemini'} <ExternalLink className="w-3 h-3" />
               </a>
@@ -330,14 +330,14 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
                 onChange={(e) => setSetupKey(e.target.value)}
                 placeholder={setupProvider === 'claude' ? 'sk-ant-…' : 'Collez votre clé Gemini'}
                 aria-label={`Clé ${PROVIDER_INFO[setupProvider].label}`}
-                className="w-full px-2.5 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-2.5 py-2 rounded-lg bg-zinc-900 border border-zinc-700 text-xs text-white focus:outline-none focus:border-pms-accent"
               />
               {setupError && <p className="text-[11px] text-rose-400" role="alert">{setupError}</p>}
               <button
                 type="button"
                 onClick={saveKeyAndScore}
                 disabled={!setupKey.trim()}
-                className="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold disabled:opacity-50"
+                className="min-h-[44px] lg:min-h-0 w-full py-2 rounded-lg bg-pms-accent hover:bg-pms-accent text-white text-xs font-bold disabled:opacity-50"
               >
                 Noter les sections avec mon IA
               </button>
@@ -385,14 +385,14 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
                   type="button"
                   onClick={() => use(s)}
                   disabled={usingId === s.id}
-                  className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold disabled:opacity-60"
+                  className="min-h-[44px] lg:min-h-0 px-2.5 py-1 rounded-lg bg-pms-accent hover:bg-pms-accent text-white text-[11px] font-bold disabled:opacity-60"
                 >
                   {usingId === s.id ? '…' : 'Mettre en scène'}
                 </button>
               </div>
             </div>
           ))}
-          <button type="button" onClick={analyze} className="text-[11px] font-semibold text-indigo-300">
+          <button type="button" onClick={analyze} className="text-[11px] font-semibold text-pms-accent-soft">
             Relancer l&apos;analyse
           </button>
         </div>

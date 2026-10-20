@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Archivo } from "next/font/google";
 import "./globals.css";
+
+// Police de la nouvelle identité (accueil) : un seul caractère, poids normal pour les titres
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["400", "600"],
+  variable: "--font-archivo",
+  display: "swap",
+});
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -44,7 +53,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: HERO_SCRIPT }} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans bg-sand-50 text-stone-900 antialiased selection:bg-violet-100 selection:text-violet-900 min-h-screen flex flex-col overflow-x-hidden w-full max-w-full`}
+        className={`${geistSans.variable} ${geistMono.variable} ${archivo.variable} font-sans bg-pms-paper text-stone-900 antialiased selection:bg-violet-100 selection:text-violet-900 min-h-screen flex flex-col overflow-x-clip w-full max-w-full`}
       >
         <UserProvider>
           <CurrencyProvider>

@@ -134,13 +134,13 @@ export const SitePagesPanel: React.FC<SitePagesPanelProps> = ({
 
   const chip = (active: boolean) =>
     `px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold max-w-full truncate transition-all ${
-      active ? 'bg-violet-600 border-violet-500 text-white' : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-600'
+      active ? 'bg-pms-accent border-pms-accent text-white' : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-600'
     }`;
 
   return (
     <div role="group" aria-label="Pages du site" className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-3">
-      <div className="flex items-center gap-1.5 text-xs font-bold text-white uppercase font-mono">
-        <Files className="w-3.5 h-3.5 text-violet-400" />
+      <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+        <Files className="w-3.5 h-3.5 text-pms-accent-soft" />
         Pages du site
       </div>
 
@@ -171,7 +171,7 @@ export const SitePagesPanel: React.FC<SitePagesPanelProps> = ({
           type="button"
           onClick={onAddAllToPresentation}
           disabled={addingAll}
-          className="w-full py-1.5 rounded-xl border border-violet-500/40 text-violet-200 hover:bg-violet-600/15 text-[11px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-60"
+          className="min-h-[44px] lg:min-h-0 w-full py-1.5 rounded-xl border border-pms-accent/40 text-pms-accent-soft hover:bg-pms-accent/15 text-[11px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-60"
         >
           {addingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FilePlus className="w-3.5 h-3.5" />}
           Ajouter les {pages.length + 1} pages à la présentation PDF
@@ -183,7 +183,7 @@ export const SitePagesPanel: React.FC<SitePagesPanelProps> = ({
           type="button"
           onClick={detect}
           disabled={busy !== ''}
-          className="w-full py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-60"
+          className="min-h-[44px] lg:min-h-0 w-full py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-60"
         >
           {busy === 'detect' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
           Trouver les autres pages
@@ -222,7 +222,7 @@ export const SitePagesPanel: React.FC<SitePagesPanelProps> = ({
               onKeyDown={(e) => e.key === 'Enter' && addManual()}
               placeholder="/tarifs ou /contact"
               aria-label="Ajouter une page du site"
-              className="flex-1 min-w-0 px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs focus:outline-none focus:border-violet-500"
+              className="flex-1 min-w-0 px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs focus:outline-none focus:border-pms-accent"
             />
             <button type="button" onClick={addManual} aria-label="Ajouter cette page" className="px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white">
               <Plus className="w-3.5 h-3.5" />
@@ -232,7 +232,7 @@ export const SitePagesPanel: React.FC<SitePagesPanelProps> = ({
             type="button"
             onClick={capture}
             disabled={busy !== '' || selected.length === 0}
-            className="w-full py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-50"
+            className="min-h-[44px] lg:min-h-0 w-full py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-50"
           >
             {busy === 'capture' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Files className="w-3.5 h-3.5" />}
             {busy === 'capture' ? `Capture ${progress}` : selected.length ? `Capturer ${selected.length} page${selected.length > 1 ? 's' : ''}` : 'Cochez les pages à capturer'}

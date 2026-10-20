@@ -63,7 +63,7 @@ export const ProjectsModal: React.FC<ProjectsModalProps> = ({ onClose, onOpen, o
 
   const chip = (active: boolean) =>
     `px-2.5 py-1 rounded-lg border text-[11px] font-semibold whitespace-nowrap transition-all ${
-      active ? 'bg-violet-600 border-violet-500 text-white' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+      active ? 'bg-pms-accent border-pms-accent text-white' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
     }`;
 
   const submitRename = async (id: string) => {
@@ -84,7 +84,7 @@ export const ProjectsModal: React.FC<ProjectsModalProps> = ({ onClose, onOpen, o
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
           <div>
             <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <FolderOpen className="w-4 h-4 text-violet-400" />
+              <FolderOpen className="w-4 h-4 text-pms-accent-soft" />
               Mes projets
             </h2>
             <p className="text-[11px] text-zinc-500 mt-0.5">
@@ -152,9 +152,9 @@ export const ProjectsModal: React.FC<ProjectsModalProps> = ({ onClose, onOpen, o
                         onChange={(e) => setRenameValue(e.target.value)}
                         maxLength={80}
                         aria-label="Nouveau nom du projet"
-                        className="flex-1 min-w-0 px-2 py-1 rounded-lg bg-zinc-950 border border-zinc-700 text-white text-xs focus:outline-none focus:border-violet-500"
+                        className="flex-1 min-w-0 px-2 py-1 rounded-lg bg-zinc-950 border border-zinc-700 text-white text-xs focus:outline-none focus:border-pms-accent"
                       />
-                      <button type="submit" className="px-2 rounded-lg bg-violet-600 text-white text-[11px] font-bold">
+                      <button type="submit" className="px-2 rounded-lg bg-pms-accent text-white text-[11px] font-bold">
                         OK
                       </button>
                     </form>
@@ -179,15 +179,15 @@ export const ProjectsModal: React.FC<ProjectsModalProps> = ({ onClose, onOpen, o
                         maxLength={60}
                         placeholder="Nom du client"
                         aria-label="Dossier du client"
-                        className="flex-1 min-w-0 px-2 py-1 rounded-lg bg-zinc-950 border border-zinc-700 text-white text-xs focus:outline-none focus:border-violet-500"
+                        className="flex-1 min-w-0 px-2 py-1 rounded-lg bg-zinc-950 border border-zinc-700 text-white text-xs focus:outline-none focus:border-pms-accent"
                       />
-                      <button type="submit" className="px-2 rounded-lg bg-violet-600 text-white text-[11px] font-bold">
+                      <button type="submit" className="px-2 rounded-lg bg-pms-accent text-white text-[11px] font-bold">
                         OK
                       </button>
                     </form>
                   ) : (
                     p.folder && (
-                      <p className="text-[10px] text-violet-300 flex items-center gap-1 truncate">
+                      <p className="text-[10px] text-pms-accent-soft flex items-center gap-1 truncate">
                         <FolderOpen className="w-3 h-3 shrink-0" />
                         {p.folder}
                       </p>
@@ -200,7 +200,7 @@ export const ProjectsModal: React.FC<ProjectsModalProps> = ({ onClose, onOpen, o
                     <button
                       type="button"
                       onClick={() => onOpen(p)}
-                      className="flex-1 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold"
+                      className="flex-1 py-1.5 rounded-lg bg-pms-accent hover:bg-pms-accent text-white text-[11px] font-bold"
                     >
                       Ouvrir
                     </button>

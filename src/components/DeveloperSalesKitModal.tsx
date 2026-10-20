@@ -22,7 +22,6 @@ import {
   Mail,
   BadgeDollarSign,
   Lightbulb,
-  Send,
 } from 'lucide-react';
 import Link from 'next/link';
 import { AVAILABLE_TECHS } from './TechStackPicker';
@@ -217,19 +216,19 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-sand-100 transition-colors"
+          className="absolute top-4 right-4 min-w-[44px] min-h-[44px] flex items-center justify-center text-stone-500 hover:text-stone-800 rounded-full hover:bg-sand-100 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* En-tête */}
         <div className="flex items-center gap-3 mb-5 shrink-0">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-violet-500/30">
+          <div className="w-12 h-12 rounded-2xl bg-pms-accent text-white flex items-center justify-center shadow-lg">
             <TrendingUp className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 border border-violet-200">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-pms-accent-tint text-pms-accent border border-pms-accent-tint">
                 Assistant Vente & Freelance IA
               </span>
             </div>
@@ -255,7 +254,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                     type="text"
                     value={projectTitle}
                     onChange={(e) => setProjectTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-sand-300 focus:outline-none focus:border-violet-500"
+                    className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-sand-300 text-sm focus:outline-none focus:border-pms-accent"
                     placeholder="Ex: PitchMySite SaaS"
                   />
                 </div>
@@ -268,7 +267,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                     type="text"
                     value={targetAudience}
                     onChange={(e) => setTargetAudience(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-sand-300 focus:outline-none focus:border-violet-500"
+                    className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-sand-300 text-sm focus:outline-none focus:border-pms-accent"
                     placeholder="Facultatif : ex. boutiques, restaurants, PME"
                   />
                 </div>
@@ -282,7 +281,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                   rows={3}
                   value={projectDescription}
                   onChange={(e) => setProjectDescription(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-sand-300 text-xs focus:outline-none focus:border-violet-500"
+                  className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-sand-300 text-[16px] sm:text-xs focus:outline-none focus:border-pms-accent"
                   placeholder="Facultatif : ce que le site apporte au client, le problème résolu…"
                 />
               </div>
@@ -299,9 +298,9 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                   </button>
                 </div>
               ) : (
-                <div className="p-4 rounded-2xl bg-violet-50/70 border border-violet-200 space-y-3 text-xs">
+                <div className="p-4 rounded-2xl bg-pms-accent-tint border border-pms-accent-tint space-y-3 text-xs">
                   <p className="font-bold text-stone-900 flex items-center gap-1.5">
-                    <KeyRound className="w-4 h-4 text-violet-600" /> Connectez votre IA
+                    <KeyRound className="w-4 h-4 text-pms-accent" /> Connectez votre IA
                   </p>
                   <p className="text-stone-600 leading-relaxed">
                     Le Pitch IA utilise <strong>votre propre clé</strong> (Groq, Gemini, OpenAI ou Claude). Elle reste dans votre navigateur :
@@ -317,7 +316,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                           setSetupError('');
                         }}
                         aria-pressed={setupProvider === p}
-                        className={`py-2 px-1 text-[11px] rounded-lg font-bold transition-colors ${setupProvider === p ? 'bg-violet-600 text-white shadow-2xs' : 'text-stone-600 hover:text-stone-900'}`}
+                        className={`min-h-[44px] py-2 px-1 text-[13px] rounded-lg font-bold transition-colors ${setupProvider === p ? 'bg-pms-accent text-white shadow-2xs' : 'text-stone-600 hover:text-stone-900'}`}
                       >
                         {p === 'groq' ? '⚡ Groq (Gratuit)' : p === 'gemini' ? 'Gemini (Gratuit)' : p === 'openai' ? 'OpenAI' : 'Claude'}
                       </button>
@@ -328,7 +327,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                     href={PROVIDER_INFO[setupProvider].getKeyUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 font-bold text-violet-700 underline"
+                    className="inline-flex items-center gap-1 min-h-[44px] font-bold text-pms-accent underline"
                   >
                     Obtenir ma clé {PROVIDER_INFO[setupProvider].label.split(' ')[0]} <ExternalLink className="w-3 h-3" />
                   </a>
@@ -347,11 +346,11 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                         : 'Collez votre clé Gemini'
                     }
                     aria-label={`Clé ${PROVIDER_INFO[setupProvider].label}`}
-                    className="w-full px-3 py-2 rounded-xl border border-sand-300 bg-white focus:outline-none focus:border-violet-500"
+                    className="w-full px-3 py-2 rounded-xl border border-sand-300 bg-white focus:outline-none focus:border-pms-accent"
                   />
                   {setupError && <p role="alert" className="text-rose-700">{setupError}</p>}
                   <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={saveOwnKey} disabled={!setupKey.trim()} className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold disabled:opacity-50">
+                    <button type="button" onClick={saveOwnKey} disabled={!setupKey.trim()} className="px-4 py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-bold disabled:opacity-50">
                       Enregistrer sur cet appareil
                     </button>
                     {ai && (
@@ -376,7 +375,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
               )}
 
               <div className="p-3.5 rounded-2xl bg-sand-50 border border-sand-200 text-xs text-stone-600 flex items-start gap-2.5">
-                <Sparkles className="w-4 h-4 text-violet-600 shrink-0 mt-0.5" />
+                <Sparkles className="w-4 h-4 text-pms-accent shrink-0 mt-0.5" />
                 <span>
                   {screenshot
                     ? 'L’IA lit votre site section par section, puis rédige un post LinkedIn, une proposition commerciale et une étude de cas fidèles à ce qu’elle a vu. Les champs ci-dessus sont facultatifs.'
@@ -388,7 +387,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                 type="button"
                 onClick={() => handleGenerate(false)}
                 disabled={isLoading}
-                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-bold text-sm shadow-xl shadow-violet-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.99] disabled:opacity-60"
+                className="w-full py-3.5 px-4 rounded-2xl bg-pms-accent hover:bg-pms-accent-hover text-white font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all active:scale-[0.99] disabled:opacity-60"
               >
                 {isLoading ? (
                   <>
@@ -407,7 +406,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                 <div
                   role="alert"
                   className={`p-3.5 rounded-2xl border text-xs leading-relaxed space-y-2.5 ${
-                    notice.kind === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-violet-50 border-violet-200 text-violet-900'
+                    notice.kind === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-pms-accent-tint border-pms-accent-tint text-pms-accent'
                   }`}
                 >
                   <p>{notice.text}</p>
@@ -416,18 +415,18 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                       type="button"
                       onClick={() => handleGenerate(true)}
                       disabled={isLoading}
-                      className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold disabled:opacity-60"
+                      className="px-4 py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-bold disabled:opacity-60"
                     >
                       Utiliser {notice.cost} crédits (solde : {notice.balance})
                     </button>
                   )}
                   {notice.kind === 'login' && (
-                    <Link href="/login" className="inline-flex px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold">
+                    <Link href="/login" className="inline-flex px-4 py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-bold">
                       Se connecter
                     </Link>
                   )}
                   {notice.kind === 'upsell' && (
-                    <Link href="/pricing" className="inline-flex px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold">
+                    <Link href="/pricing" className="inline-flex px-4 py-2 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-bold">
                       Voir les forfaits et les crédits
                     </Link>
                   )}
@@ -474,7 +473,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                     onClick={() => setActiveTab('coldemail')}
                     className={`flex-1 py-2 px-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
                       activeTab === 'coldemail'
-                        ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-xs'
+                        ? ' bg-pms-accent text-white shadow-xs'
                         : 'text-stone-700 hover:text-stone-900'
                     }`}
                   >
@@ -518,7 +517,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  <Award className="w-3.5 h-3.5 text-violet-600" />
+                  <Award className="w-3.5 h-3.5 text-pms-accent" />
                   <span>Étude de Cas</span>
                 </button>
 
@@ -554,7 +553,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
               {/* Contenu onglet Offre Irrésistible  */}
               {activeTab === 'hormozi' && salesData.hormoziOffer && (
                 <div className="space-y-3.5">
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-violet-500/10 border border-amber-200/80">
+                  <div className="p-4 rounded-2xl bg-pms-accent border border-amber-200/80">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs">
@@ -622,9 +621,9 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
 
                   {/* Résultat Rêvé (Dream Outcome) */}
                   {salesData.hormoziOffer.dreamOutcome && (
-                    <div className="p-3 rounded-xl bg-violet-50/70 border border-violet-200 text-xs">
-                      <span className="font-bold text-violet-900 flex items-center gap-1.5 mb-1">
-                        <TrendingUp className="w-3.5 h-3.5 text-violet-600" /> Résultat Rêvé du Prospect (Dream Outcome) :
+                    <div className="p-3 rounded-xl bg-pms-accent-tint border border-pms-accent-tint text-xs">
+                      <span className="font-bold text-pms-accent flex items-center gap-1.5 mb-1">
+                        <TrendingUp className="w-3.5 h-3.5 text-pms-accent" /> Résultat Rêvé du Prospect (Dream Outcome) :
                       </span>
                       <p className="text-stone-700 leading-relaxed">{salesData.hormoziOffer.dreamOutcome}</p>
                     </div>
@@ -774,7 +773,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                             <div className="flex flex-wrap items-center justify-between gap-1.5">
                               <span className="font-bold text-stone-900 text-[13px]">{opp.opportunity}</span>
                               <div className="flex items-center gap-1">
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 font-semibold">
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-pms-accent-tint text-pms-accent font-semibold">
                                   {opp.type}
                                 </span>
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold">
@@ -817,10 +816,10 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
               {/* Contenu onglet Email de Prospection Froide */}
               {activeTab === 'coldemail' && salesData.coldOutreachEmail && (
                 <div className="space-y-3.5">
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-500/10 via-indigo-500/10 to-blue-500/10 border border-violet-200/80">
+                  <div className="p-4 rounded-2xl bg-pms-accent border border-pms-accent/80">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-2xs">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-pms-accent text-white shadow-2xs">
                           Cold Outreach B2B
                         </span>
                         <span className="text-[10px] font-semibold text-stone-500">

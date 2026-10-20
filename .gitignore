@@ -47,3 +47,7 @@ Shots/
 
 # Logo des e-mails (doit être en ligne)
 !public/email/logo.png
+
+# Skills de design de tiers (références locales, non publiées)
+references-design/
+.taste-skill/

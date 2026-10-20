@@ -56,8 +56,72 @@ const MOBILE_VIEWPORT = { width: 390, height: 844 };
 // Hauteur maximale d'une capture mobile pleine page (6 écrans) : évite des images de 40 000 px
 const MOBILE_MAX_HEIGHT = MOBILE_VIEWPORT.height * 6;
 
+export function extractYouTubeVideoId(url: string): string | null {
+  try {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/))([a-zA-Z0-9_-]{11})/i);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function captureYouTubeVideo(videoId: string, originalUrl: string): Promise<WebPageCaptureResult> {
+  let title = `Vidéo YouTube (${videoId})`;
+
+  // 1. Récupération des métadonnées officielles via YouTube oEmbed
+  try {
+    const oembedRes = await fetch(
+      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (oembedRes.ok) {
+      const data = await oembedRes.json();
+      if (data?.title) {
+        title = data.author_name ? `${data.title} — ${data.author_name}` : data.title;
+      }
+    }
+  } catch (err) {
+    console.warn('[YouTube Ingestion] oEmbed indisponible, titre par défaut:', err);
+  }
+
+  // 2. Téléchargement de la miniature HD (maxresdefault, sinon hqdefault)
+  let imgBuffer: Buffer | null = null;
+  for (const quality of ['maxresdefault', 'hqdefault']) {
+    try {
+      const imgRes = await fetch(`https://img.youtube.com/vi/${videoId}/${quality}.jpg`, {
+        signal: AbortSignal.timeout(6000),
+      });
+      if (imgRes.ok && imgRes.status === 200) {
+        const buf = Buffer.from(await imgRes.arrayBuffer());
+        // maxresdefault renvoie parfois une image 120x90 ou ~1000 octets si indisponible
+        if (buf.length > 2500) {
+          imgBuffer = buf;
+          break;
+        }
+      }
+    } catch {
+      // essai qualité suivante
+    }
+  }
+
+  if (!imgBuffer) {
+    throw new Error('Impossible de charger la miniature de la vidéo YouTube.');
+  }
+
+  return {
+    screenshotBase64: `data:image/jpeg;base64,${imgBuffer.toString('base64')}`,
+    pageSize: { width: 1920, height: 1080 },
+    candidates: [],
+    pageTitle: title,
+    domainName: 'youtube.com',
+    faviconUrl: 'https://www.youtube.com/s/desktop/12d6b30f/img/favicon.ico',
+    source: 'cloud-fallback',
+  };
+}
+
 /**
  * Moteur universel de capture web 3-Tiers Haute Performance :
+ * Tier 0 : Détection instantanée YouTube (oEmbed + Miniature HD en 200ms)
  * Tier 1 : Playwright (Local / Docker)
  * Tier 2 : Puppeteer + @sparticuz/chromium (Linux Serverless)
  * Tier 3 : Microlink Cloud API + HTML Parser (Fallback rapide Vercel Serverless)
@@ -66,6 +130,12 @@ export async function captureWebPage(
   targetUrl: string,
   options: CaptureOptions = {}
 ): Promise<WebPageCaptureResult> {
+  // Tier 0 : Détection YouTube
+  const ytVideoId = extractYouTubeVideoId(targetUrl);
+  if (ytVideoId) {
+    return await captureYouTubeVideo(ytVideoId, targetUrl);
+  }
+
   const domainName = extractDomainName(targetUrl);
   const faviconUrl = getFaviconUrl(targetUrl);
 

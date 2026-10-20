@@ -8,16 +8,31 @@ import { buildArtDirectorPrompt, type ArtDirectorCandidate, type ArtDirectorRepl
  * La clé reste dans le navigateur du client (stockage local) : elle n'est jamais envoyée aux serveurs
  * de PitchMySite. L'appel part directement du navigateur vers Google ou Anthropic, qui facturent le client.
  */
-export type AiProvider = 'gemini' | 'claude';
+export type AiProvider = 'groq' | 'gemini' | 'openai' | 'claude';
 
-const KEY_STORAGE: Record<AiProvider, string> = { gemini: 'pms_ai_key_gemini', claude: 'pms_ai_key_claude' };
+const KEY_STORAGE: Record<AiProvider, string> = {
+  groq: 'pms_ai_key_groq',
+  gemini: 'pms_ai_key_gemini',
+  openai: 'pms_ai_key_openai',
+  claude: 'pms_ai_key_claude',
+};
 const PROVIDER_STORAGE = 'pms_ai_provider';
 
 export const PROVIDER_INFO: Record<AiProvider, { label: string; getKeyUrl: string; hint: string }> = {
+  groq: {
+    label: 'Groq (Gratuit & Ultra-rapide ⚡)',
+    getKeyUrl: 'https://console.groq.com/keys',
+    hint: 'Réponse en 1 seconde. Clé 100% gratuite créée en 30 secondes sans carte bancaire.',
+  },
   gemini: {
-    label: 'Google Gemini',
+    label: 'Google Gemini (Gratuit)',
     getKeyUrl: 'https://aistudio.google.com/apikey',
     hint: 'Clé gratuite pour commencer, créée en 1 minute avec un compte Google.',
+  },
+  openai: {
+    label: 'OpenAI (GPT-4o / GPT-4o-mini)',
+    getKeyUrl: 'https://platform.openai.com/api-keys',
+    hint: 'Clé de votre compte OpenAI Developer (payante à l’usage).',
   },
   claude: {
     label: 'Claude (Anthropic)',
@@ -28,9 +43,13 @@ export const PROVIDER_INFO: Record<AiProvider, { label: string; getKeyUrl: strin
 
 export function getSavedAi(): { provider: AiProvider; key: string } | null {
   try {
-    const provider = (localStorage.getItem(PROVIDER_STORAGE) as AiProvider) || 'gemini';
-    const key = localStorage.getItem(KEY_STORAGE[provider]) || '';
-    return key ? { provider, key } : null;
+    const provider = (localStorage.getItem(PROVIDER_STORAGE) as AiProvider) || 'groq';
+    const key = localStorage.getItem(KEY_STORAGE[provider]) || localStorage.getItem(KEY_STORAGE.gemini) || '';
+    if (key) {
+      const activeProvider = localStorage.getItem(KEY_STORAGE[provider]) ? provider : 'gemini';
+      return { provider: activeProvider, key };
+    }
+    return null;
   } catch {
     return null;
   }
@@ -47,7 +66,9 @@ export function saveAi(provider: AiProvider, key: string) {
 
 export function forgetAi() {
   try {
+    localStorage.removeItem(KEY_STORAGE.groq);
     localStorage.removeItem(KEY_STORAGE.gemini);
+    localStorage.removeItem(KEY_STORAGE.openai);
     localStorage.removeItem(KEY_STORAGE.claude);
     localStorage.removeItem(PROVIDER_STORAGE);
   } catch {
@@ -58,7 +79,17 @@ export function forgetAi() {
 /** Vérification simple du format, avant tout appel */
 export function looksLikeKey(provider: AiProvider, key: string): boolean {
   const k = key.trim();
-  return provider === 'claude' ? /^sk-ant-[A-Za-z0-9_-]{20,}$/.test(k) : /^[A-Za-z0-9_-]{30,}$/.test(k);
+  switch (provider) {
+    case 'claude':
+      return /^sk-ant-[A-Za-z0-9_-]{20,}$/.test(k);
+    case 'groq':
+      return /^gsk_[A-Za-z0-9_-]{25,}$/.test(k);
+    case 'openai':
+      return /^sk-[A-Za-z0-9_-]{20,}$/.test(k);
+    case 'gemini':
+    default:
+      return /^[A-Za-z0-9_-]{30,}$/.test(k);
+  }
 }
 
 /** Erreur lisible par le client */
@@ -70,6 +101,73 @@ export class ByokError extends Error {
 
 const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
 const CLAUDE_MODEL = 'claude-opus-5-5';
+const GROQ_VISION_MODEL = 'qwen/qwen3.8-27b';
+const GROQ_MAX_IMAGES = 3;
+
+/**
+ * Appel aux fournisseurs compatibles OpenAI (Groq, OpenAI, etc.)
+ */
+async function askOpenAiCompatible(
+  apiUrl: string,
+  model: string,
+  key: string,
+  prompt: string,
+  images: string[],
+  temperature: number,
+  providerLabel: string
+): Promise<string> {
+  const messages: unknown[] = [
+    {
+      role: 'user',
+      content:
+        images.length > 0
+          ? [
+              ...images.map((data) => ({
+                type: 'image_url',
+                image_url: { url: `data:image/jpeg;base64,${data}` },
+              })),
+              { type: 'text', text: prompt },
+            ]
+          : prompt,
+    },
+  ];
+
+  try {
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key.trim()}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        throw new ByokError(`Votre clé ${providerLabel} est refusée. Vérifiez-la sur votre console ${providerLabel}.`, 'invalid_key');
+      }
+      if (res.status === 429) {
+        throw new ByokError(`Votre compte ${providerLabel} a atteint sa limite de requêtes ou son quota.`, 'quota');
+      }
+      if (res.status >= 500) {
+        throw new ByokError(`${providerLabel} est temporairement surchargé. Réessayez dans un instant.`, 'overloaded');
+      }
+      const errJson = await res.json().catch(() => ({}));
+      throw new ByokError(errJson?.error?.message || `Erreur lors de la réponse de ${providerLabel}.`, 'other');
+    }
+
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
+  } catch (err) {
+    if (err instanceof ByokError) throw err;
+    throw new ByokError(`Connexion à ${providerLabel} impossible. Vérifiez votre clé et votre réseau.`, 'other');
+  }
+}
 
 /**
  * Appel à l'IA du client avec des images (captures en JPEG, base64 sans préfixe) et une consigne.
@@ -82,6 +180,32 @@ async function askOwnAi(
   images: string[],
   temperature: number
 ): Promise<string> {
+  if (provider === 'groq') {
+    // Groq avec vision (Qwen 3.8 27B, 3 images au plus) ou texte seul ultra-rapide (Llama 3.3 70B)
+    const model = images.length > 0 ? GROQ_VISION_MODEL : 'llama-3.3-70b-versatile';
+    return askOpenAiCompatible(
+      'https://api.groq.com/openai/v1/chat/completions',
+      model,
+      key,
+      prompt,
+      images.slice(0, GROQ_MAX_IMAGES),
+      temperature,
+      'Groq'
+    );
+  }
+
+  if (provider === 'openai') {
+    return askOpenAiCompatible(
+      'https://api.openai.com/v1/chat/completions',
+      'gpt-4o-mini',
+      key,
+      prompt,
+      images,
+      temperature,
+      'OpenAI'
+    );
+  }
+
   if (provider === 'claude') {
     const { default: Anthropic } = await import('@anthropic-ai/sdk');
     const client = new Anthropic({ apiKey: key.trim(), dangerouslyAllowBrowser: true, maxRetries: 1 });
@@ -91,7 +215,6 @@ async function askOwnAi(
           model: CLAUDE_MODEL,
           max_tokens: 8000,
           output_config: { effort: 'medium' },
-          // Si une protection de Claude refuse la demande, Anthropic la relance sur le modèle conseillé
           betas: ['server-side-fallback-2026-07-01'],
           fallbacks: 'default',
           messages: [
@@ -147,7 +270,6 @@ async function askOwnAi(
       if (/\b429\b|RESOURCE_EXHAUSTED|quota/i.test(last)) {
         throw new ByokError('Votre clé Gemini a atteint sa limite gratuite pour le moment. Réessayez plus tard.', 'quota');
       }
-      // 503 (surcharge) ou modèle indisponible : on essaie le modèle suivant
     }
   }
   throw new ByokError(
@@ -164,8 +286,10 @@ export async function generatePitchWithOwnKey(
   input: Omit<PitchInput, 'sectionCount'>,
   sections: string[]
 ): Promise<PitchResult> {
-  const prompt = buildPitchPrompt({ ...input, sectionCount: sections.length });
-  return parseJsonReply(await askOwnAi(provider, key, prompt, sections, 0.7));
+  // Groq n'accepte que 3 images par demande : on garde les 3 premières sections (le haut de la page)
+  const sent = provider === 'groq' ? sections.slice(0, GROQ_MAX_IMAGES) : sections;
+  const prompt = buildPitchPrompt({ ...input, sectionCount: sent.length });
+  return parseJsonReply(await askOwnAi(provider, key, prompt, sent, 0.7));
 }
 
 /** Directeur artistique IA avec la clé du client : note chaque section repérée sur la capture de la page */

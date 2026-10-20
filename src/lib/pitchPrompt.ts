@@ -11,21 +11,60 @@ export interface PitchInput {
   sectionCount: number;
 }
 
+export interface HormoziOffer {
+  offerName: string;
+  dreamOutcome: string;
+  guarantee: string;
+  bonuses: string[];
+  pitchLine: string;
+}
+
+export interface MonetizationOpportunity {
+  opportunity: string;
+  type: string;
+  revenuePotential: string;
+  effort: string;
+  whyItWorks: string;
+}
+
+export interface MonetizationAudit {
+  audienceIntent: string;
+  opportunities: MonetizationOpportunity[];
+  quickWin30Days: string;
+  monetizationGaps: string[];
+}
+
+export interface ColdOutreachEmail {
+  subject: string;
+  body: string;
+  callToAction: string;
+}
+
 export interface PitchResult {
   linkedInPost?: string;
   clientProposalPitch?: string;
   caseStudy?: { challenge: string; solution: string; impact: string };
   socialHooks?: string[];
   sections?: { titre: string; contenu: string }[];
+  hormoziOffer?: HormoziOffer;
+  primaryProblem?: string;
+  primarySolution?: string;
+  monetizationAudit?: MonetizationAudit;
+  coldOutreachEmail?: ColdOutreachEmail;
 }
 
 export function buildPitchPrompt(p: PitchInput): string {
   const stackList = p.techStack.length > 0 ? p.techStack.join(', ') : 'Next.js, React, Tailwind CSS, TypeScript';
   const n = p.sectionCount;
-  return `
-Tu es un Directeur Artistique et un Copywriter d'élite spécialisé dans l'aide aux développeurs web et créateurs tech pour VENDRE leurs services et projets à forte valeur ajoutée.
 
-Voici les détails du projet réalisé :
+  return `
+# IDENTITY and PURPOSE
+
+Tu es un Directeur Artistique, un Stratège d'Offres Commerciales d'élite et un Expert en Prospection B2B, inspiré par les patterns de Daniel Miessler (Fabric) et la méthodologie "$100M Offers" d'Alex Hormozi.
+Ton objectif est de transformer les réalisations web d'un créateur, freelance ou d'une agence en offres irrésistibles ("Grand Slam Offers"), en audits de rentabilité percutants et en livrables d'acquisition commerciale ultra-performants qui permettent de signer des clients à prix premium.
+
+# INPUT DETAILS
+
 - Nom du projet : "${p.projectTitle}"
 - URL / Démo : "${p.projectUrl || 'Projet interne / confidentiel'}"
 - Description du créateur : "${p.projectDescription || 'Application web moderne avec expérience utilisateur fluide et design haute précision'}"
@@ -34,29 +73,86 @@ Voici les détails du projet réalisé :
 
 ${
   n > 0
-    ? `Tu reçois aussi ${n} capture(s) du site, découpée(s) section par section, de haut en bas.
-Lis-les attentivement : nom de l'entreprise, activité, produits ou services, offres, prix affichés, ton, couleurs, public visé.
-Appuie-toi d'abord sur ce que montrent réellement ces captures ; la description du créateur ne fait que compléter.
-`
+    ? `# VISUAL EVIDENCE (CAPTURES D'ÉCRAN FOURNIES)
+Tu reçois ${n} capture(s) d'écran du site découpées section par section (de haut en bas).
+Analyse-les avec acuité : nom de marque, messages clés, promesse, tarifs affichés, qualité UX/UI, ton, public cible.
+Appuie-toi en priorité sur ce que révèlent ces captures réelles.`
     : ''
 }
-Génère les livrables de vente au format JSON strict :
-1. "linkedInPost" : Un post LinkedIn viral ultra captivant (accroche percutante qui attire l'attention des décideurs, narration du problème résolu, démonstration de la valeur et de l'architecture tech sans jargon excessif, appel à l'action clair pour attirer des clients en messages privés).
-2. "clientProposalPitch" : Un texte de proposition commerciale (pour Upwork, Malt, ou email de prospection directe) montrant comment ce projet prouve que le développeur est capable de résoudre le problème business d'un prospect et justifier un devis premium.
-3. "caseStudy" : Une fiche étude de cas concise (Défi initial, Solution technique mise en place, Bénéfice / ROI pour l'utilisateur final).
-4. "socialHooks" : 3 accroches courtes (Twitter / X / Threads) pour susciter l'envie et faire cliquer sur le lien du mockup.
+
+# GOALS and METHODOLOGY
+
+1. Extraire avec précision chirurgicale :
+   - "primaryProblem" : Le problème majeur et douloureux que ce produit/service résout pour son marché cible (max 20 mots, direct, sans détour).
+   - "primarySolution" : Comment cette réalisation technique résout ce problème de façon concrète (max 25 mots).
+
+2. Créer une "Grand Slam Offer" (selon Alex Hormozi) dans "hormoziOffer" :
+   - "offerName" : Un nom d'offre magnétique utilisant la formule MAGIC (Avatar + Objectif + Intervalle de temps ou Clé en main). Ex: "Pack Landing Page Haute Conversion 10 Jours Clé en Main".
+   - "dreamOutcome" : Le résultat rêvé pour le prospect final (accroissement de crédibilité, conversion, gain de temps, clarté).
+   - "guarantee" : Une inversion du risque claire et rassurante (ex: "Ajustements illimités jusqu'à validation complète", "Livraison sous 14 jours garantie ou audit technique offert").
+   - "bonuses" : 3 à 4 bonus concrets à forte valeur perçue et coût marginal faible pour le développeur (ex: "Audit performance & SEO express inclus", "Guide vidéo Loom de prise en main", "30 jours de support technique post-lancement").
+   - "pitchLine" : Une phrase d'attaque percutante prête à envoyer par message direct (WhatsApp, LinkedIn DM ou email) pour décrocher un appel commercial.
+
+3. Réaliser un "Audit de Monétisation & Opportunités Inexploitées" ("monetizationAudit", inspiré du pattern analyze_monetization_opportunities de Fabric) :
+   - "audienceIntent" : 1 phrase résumant la maturité et l'intention d'achat des visiteurs du site.
+   - "opportunities" : 3 opportunités concrètes et réalistes de monétisation ou d'optimisation de revenus (chacune avec "opportunity", "type" [ex: Upsell, Abonnement, Lead Magnet, Refonte UX, Preuve sociale], "revenuePotential" [Élevé / Récurrent / Immédiat], "effort" [Faible / Moyen], "whyItWorks").
+   - "quickWin30Days" : L'action unique la plus rapide et rentable que le propriétaire du site devrait appliquer d'ici 30 jours pour générer plus de ventes ou de leads.
+   - "monetizationGaps" : 2 à 3 points faibles actuels du site qui font fuir des prospects ou laissent de l'argent sur la table (manque de clarté de l'offre, friction au panier, absence d'appel à l'action au-dessus de la ligne de flottaison, etc.).
+
+4. Rédiger un "Email de Prospection Froide" ultra-personnalisé ("coldOutreachEmail", inspiré des patterns create_formal_email et improve_writing de Fabric) :
+   - "subject" : Un objet d'email court, intrigueur et sans spam (max 7 mots), incitant à l'ouverture immédiate.
+   - "body" : Corps de l'email direct, professionnel et respectueux (120-180 mots). Le freelance explique qu'il a analysé le site du prospect, a créé une maquette 3D interactive (mentionnée en pièce jointe) et identifié un axe majeur d'amélioration.
+   - "callToAction" : Une question de clôture sans pression demandant si un échange de 10 minutes la semaine prochaine serait opportun.
+
+5. Rédiger les livrables d'acquisition sociale :
+   - "linkedInPost" : Un post viral structuré (accroche coup de poing anti-scroll, narration du problème résolu, démonstration de la valeur et de l'architecture sans jargon inaccessible, appel à l'action clair).
+   - "clientProposalPitch" : Une proposition commerciale d'élite (pour Upwork, Malt ou devis direct) démontrant l'expertise et justifiant un devis premium.
+   - "caseStudy" : Une fiche étude de cas ultra claire avec "challenge", "solution" et "impact".
+   - "socialHooks" : 3 accroches courtes et piquantes (Twitter / X / Threads) incitant à cliquer pour voir le mockup.
 ${
   n > 0
-    ? `0. "sections" : pour chaque capture, dans l'ordre, un objet { "titre": nom court de la section (ex. « En-tête », « Produits phares », « Contact »), "contenu": une phrase sur ce qu'elle montre réellement }.
-`
+    ? `   - "sections" : pour chaque capture dans l'ordre, un objet { "titre": "nom de section", "contenu": "ce qu'elle montre réellement" }.`
     : ''
 }
-Règles absolues :
-- N'invente AUCUN chiffre, pourcentage, statistique, nom de client, témoignage ou résultat mesuré qui ne figure pas dans les informations ci-dessus ou sur les captures. Décris la valeur avec des mots, sans données inventées.
-- Écris en français, avec un ton professionnel et chaleureux.
 
-Réponds EXCLUSIVEMENT avec cet objet JSON :
+# CONSTRAINTS & RULES
+
+- RÈGLE ABSOLUE : N'invente AUCUN chiffre inventé, fausse statistique ou faux témoignage qui ne soit pas prouvé par les captures ou la description. Décris la valeur par les bénéfices réels.
+- Ne cite jamais Alex Hormozi, Daniel Miessler, Fabric, "Grand Slam Offer" ni "$100M Offers" dans les textes produits : ce sont des méthodes internes, pas des arguments pour le client.
+- Langue : Français soigné, dynamique, professionnel et orienté conversion.
+- Réponds EXCLUSIVEMENT avec un objet JSON valide conforme à la structure ci-dessous, sans texte avant ou après.
+
+# OUTPUT JSON FORMAT
+
 {
+  "primaryProblem": "string",
+  "primarySolution": "string",
+  "hormoziOffer": {
+    "offerName": "string",
+    "dreamOutcome": "string",
+    "guarantee": "string",
+    "bonuses": ["string", "string", "string"],
+    "pitchLine": "string"
+  },
+  "monetizationAudit": {
+    "audienceIntent": "string",
+    "opportunities": [
+      {
+        "opportunity": "string",
+        "type": "string",
+        "revenuePotential": "string",
+        "effort": "string",
+        "whyItWorks": "string"
+      }
+    ],
+    "quickWin30Days": "string",
+    "monetizationGaps": ["string", "string"]
+  },
+  "coldOutreachEmail": {
+    "subject": "string",
+    "body": "string",
+    "callToAction": "string"
+  },
   "linkedInPost": "string",
   "clientProposalPitch": "string",
   "caseStudy": {
@@ -74,9 +170,17 @@ export function parseJsonReply(text: string): PitchResult {
   try {
     return JSON.parse(text);
   } catch {
-    const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
-    return JSON.parse(start >= 0 && end > start ? cleaned.slice(start, end + 1) : cleaned);
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(cleaned.slice(start, end + 1));
+      } catch (innerErr) {
+        console.warn('[parseJsonReply] Erreur de parsing JSON extrait:', innerErr);
+      }
+    }
+    return JSON.parse(cleaned);
   }
 }
+

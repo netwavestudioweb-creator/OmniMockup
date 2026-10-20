@@ -1,5 +1,7 @@
 # PitchMySite — Journal de travail avec Claude
 
+> **Nouvelle session : lire d'abord `PROCHAINE_SESSION.md`** (règles, état du code, tâches suivantes).
+
 > Ce fichier est la mémoire de travail partagée entre toi et Claude.
 > Chaque session de travail est ajoutée ici. Ne pas supprimer les sections précédentes.
 
@@ -160,7 +162,7 @@ Le forfait gratuit Supabase ne fait pas de sauvegarde. À régler avant les prem
 
 ### 🎉 Premier paiement réel SasPay validé avec succès (18 octobre 2026)
 - **Transaction SasPay :** `36582e54-cadb-4f50-9526-ffdc055551e6` (Réf : `5b17c582d2c84c85a424fbf6dae5a678`)
-- **Opérateur :** MTN Bénin (`mtn_bj` - `2290150884670`)
+- **Opérateur :** MTN Bénin (`mtn_bj` - `229 01 XX XX XX XX` (masqué))
 - **Montant :** 200 FCFA net (débit client : 207 FCFA avec frais)
 - **Statut SasPay :** `SUCCESS`
 - **Application automatique :**
@@ -173,13 +175,13 @@ Les logs de la base de données Supabase et de l'API SasPay ont été interrogé
 1. **Tentative du 15/10 (Plan Pro annuel à 59 000 FCFA) :**
    - Session créée (`83d9dde9-84b1-4aeb-89c8-5ded572e0766`), mais aucune transaction initiée sur la page SasPay (`transaction: null`). La page a expiré après 1h.
 2. **3 Tentatives du 17/10 (Paiement test de 200 FCFA) :**
-   - Numéros testés : `2290153291052` et `2290150884670` sur **MTN Bénin** (`network_code: mtn_bj`).
+   - Numéros testés : `229 01 XX XX XX XX` (masqué) et `229 01 XX XX XX XX` (masqué) sur **MTN Bénin** (`network_code: mtn_bj`).
    - Montant débité demandé : **208 FCFA** (200 FCFA + 8 FCFA de frais SasPay).
    - Statut dans l'API SasPay : Les transactions sont bien créées (`a4cc8b28...`, `2ff4f875...`, `29b67cda...`) mais sont restées bloquées en **`PENDING`** (en attente).
    - **Pourquoi c'est resté en PENDING / EXPIRED :**
      1. **Validation PIN MTN non reçue ou non effectuée :** MTN n'a pas validé le prélèvement. Soit la notification USSD (push) n'est pas apparue sur le téléphone (il fallait composer `*880#` pour approuver manuellement), soit le code secret n'a pas été saisi dans le délai imparti.
      2. **Solde insuffisant :** Le compte MTN MoMo devait contenir au moins 208 FCFA.
-     3. **Nouveau format 10 chiffres (01...) :** Le numéro envoyé était `2290150884670`. Si l'agrégateur MTN chez SasPay attendait 8 chiffres ou n'a pas routé le push vers le nouveau plan de numérotation.
+     3. **Nouveau format 10 chiffres (01...) :** Le numéro envoyé était `229 01 XX XX XX XX` (masqué). Si l'agrégateur MTN chez SasPay attendait 8 chiffres ou n'a pas routé le push vers le nouveau plan de numérotation.
 3. **Paiement par Carte bancaire (Stripe) :**
    - Désactivé en ligne (`NEXT_PUBLIC_CARD_PROVIDER` non configuré, Stripe refusé aux entreprises au Bénin).
 
@@ -242,4 +244,155 @@ src/
 
 ---
 
-*Dernière mise à jour : 18 octobre 2026 — Session d'audit initial*
+## ⚡ Session — 18 octobre 2026 : Intégration de Fabric (Daniel Miessler) & Offres $100M (Alex Hormozi)
+
+### 1. Analyse du dossier Fabric (`Fabric-main`)
+Fabric est le framework open-source d'IA de Daniel Miessler contenant plus de 265 patterns de prompts spécialisés.
+
+**Patterns clés analysés et retenus pour PitchMySite :**
+1. **`create_hormozi_offer` :** Basé sur le livre *$100M Offers* d'Alex Hormozi.
+   - **L'Équation de la Valeur :** $\text{Valeur} = \frac{\text{Dream Outcome} \times \text{Perceived Likelihood}}{\text{Time Delay} \times \text{Effort \& Sacrifice}}$.
+   - **Grand Slam Offer :** Formule de nommage MAGIC, inversion du risque (garanties inconditionnelles ou de service), empilement de bonus (Bonus Stack) à fort effet de levier et coût marginal nul pour le prestataire.
+2. **`extract_primary_problem` & `extract_primary_solution` :** Extraction chirurgicale sans superflu du problème douloureux du prospect et de la solution concrète.
+3. **Architecture des prompts Fabric :**
+   - Structure stricte `# IDENTITY and PURPOSE`, `# GOALS`, `# STEPS`, `# CONSTRAINTS & RULES`, `# OUTPUT JSON FORMAT`. Cette structure élimine les hallucinations et force les modèles (Claude 3.5/Opus ou Gemini 1.5/2.0/3.x) à générer des livrables de niveau exécutif.
+
+---
+
+### 2. Ce qui a été développé et intégré en local
+
+#### A. Moteur de Prompting (`src/lib/pitchPrompt.ts`)
+- **Restructuration complète** selon l'architecture Fabric (`# IDENTITY`, `# GOALS`, `# STEPS`, `# CONSTRAINTS`).
+- **Enrichissement du schéma JSON `PitchResult` :**
+  - `primaryProblem` : Le problème douloureux identifié chez le client cible.
+  - `primarySolution` : La réponse technique et business apportée par la réalisation.
+  - `hormoziOffer` :
+    - `offerName` : Nom d'offre irrésistible au format MAGIC (Avatar + Objectif + Délai/Clé en main).
+    - `dreamOutcome` : Le bénéfice ultime pour le prospect.
+    - `guarantee` : Inversion du risque (ex: ajustements illimités jusqu'à validation ou délai garanti).
+    - `bonuses` : 3 bonus offerts (ex: audit SEO express, tutoriel Loom, support 30 jours).
+    - `pitchLine` : Phrase d'attaque percutante prête à l'envoi pour décrocher un appel commercial en DM ou WhatsApp.
+
+#### B. Interface Utilisateur (`src/components/DeveloperSalesKitModal.tsx`)
+- **Nouvel onglet vedette « Offre $100M »** (activé par défaut dès la réception des résultats) :
+  - Badge exclusif *Grand Slam Offer — Méthode Alex Hormozi*.
+  - Bouton **« Copier tout le pack »** en 1 clic.
+  - Cartes visuelles de l'Équation de la Valeur (Problème Douloureux en rouge, Solution en bleu, Dream Outcome en violet).
+  - Bloc **Garantie & Inversion du Risque** (avec icône `ShieldCheck` et mention rassurante).
+  - Bloc **Stack de Bonus Inclus** (liste des 3 bonus à forte valeur perçue).
+  - Bloc sombre contrasté **Phrase d'attaque directe** avec bouton dédié « Copier » pour DM LinkedIn / WhatsApp.
+- **Nouvel onglet « 3 Hooks X »** : Mise à disposition des 3 accroches courtes virales pour Twitter/Threads avec boutons de copie individuels.
+
+#### C. Configuration TypeScript (`tsconfig.json`)
+- Exclusion de `Fabric-main` dans `tsconfig.json` pour éviter que le compilateur Next.js n'essaie de compiler l'application web Svelte interne de Fabric.
+
+---
+
+### 3. Validation locale
+- **Build de production (`npm run build`) :** ✅ **Succès total (Code 0)**.
+- 17/17 routes statiques et dynamiques compilées sans aucune erreur TypeScript ni linting.
+
+---
+
+### 4. Comment tester en local
+1. Lancer le serveur local :
+   ```bash
+   npm run dev
+   ```
+2. Ouvrir `http://localhost:3000` dans votre navigateur.
+3. Se rendre dans le Studio (ou capturer une URL).
+4. Cliquer sur le bouton **« Pitch IA / Assistant Vente »** (icône éclair ou TrendingUp).
+5. Saisir ou valider les informations du projet, puis cliquer sur **« Générer mes Textes de Vente en 1 Clic »** (avec votre clé Gemini ou Claude connectée).
+6. Admirer l'onglet **« Offre $100M »** affichant le pack de vente complet prêt à closer des clients.
+
+---
+
+*Dernière mise à jour : 19 octobre 2026 — Intégration complète des piliers Fabric :*
+- **Audit de Monétisation & Opportunités Inexploitées** (`analyze_monetization_opportunities`) : Onglet « Audit Revenus » avec intention d'achat, quick win 30 jours, opportunités concrètes et failles de conversion du site.
+- **Email de Prospection Froide B2B** (`create_formal_email` / `improve_writing`) : Onglet « Email Prospect » avec objet testé, corps ultra-personnalisé mentionnant le mockup 3D en pièce jointe et CTA direct.
+- **BYOK Élargi à Groq & OpenAI** (`src/lib/byokPitch.ts`) : Support de Groq (Llama 3.3 / Llama 3.2 Vision 100% gratuit et réponse en 1s), Google Gemini (gratuit), OpenAI (GPT-4o-mini) et Claude (Anthropic).
+- **Ingestion Instantanée YouTube vers Mockup & Pitch** (`src/lib/browser.ts` & `src/components/UrlInputForm.tsx`) : Détection automatique des liens YouTube (`youtube.com` ou `youtu.be`), extraction des métadonnées (titre, chaîne via oEmbed) et de la miniature HD en 200 ms directement dans les mockups 3D et la Pitch IA.
+- **Validation TypeScript (`npx tsc --noEmit`) :** ✅ **Code 0 (Zéro erreur)**.
+
+---
+
+## 🗓️ Session — 19 octobre 2026 (matin) : Reprise & Vérification état du projet
+
+### Contexte
+Reprise du projet après la longue session de la veille. Vérification que tout ce qui avait été développé et intégré est bien en place et fonctionnel.
+
+### Ce qui a été vérifié
+
+#### ✅ Fonctionnalités confirmées en place
+
+| Fonctionnalité | Fichier | Statut |
+|---|---|---|
+| Offre Grand Slam Hormozi | `src/lib/pitchPrompt.ts` | ✅ Intégré |
+| Audit de Monétisation | `src/lib/pitchPrompt.ts` | ✅ Intégré |
+| Email de Prospection Froide | `src/lib/pitchPrompt.ts` | ✅ Intégré |
+| BYOK Groq / Gemini / OpenAI / Claude | `src/lib/byokPitch.ts` | ✅ Intégré |
+| Ingestion YouTube (oEmbed + Miniature HD) | `src/lib/browser.ts` | ✅ Intégré |
+| URL Input accepte les liens YouTube | `src/components/UrlInputForm.tsx` | ✅ Intégré |
+| Modal 8 onglets (Hormozi, Audit, Email, LinkedIn, Pitch Devis, Étude de Cas, Hooks X, Captures) | `src/components/DeveloperSalesKitModal.tsx` | ✅ Intégré |
+
+#### ⚙️ Architecture BYOK confirmée (Bring Your Own Key)
+
+- L'utilisateur connecte **sa propre clé IA** (stockée uniquement dans son navigateur via `localStorage`).
+- PitchMySite **ne paye rien** pour les tokens IA de ses utilisateurs.
+- 4 fournisseurs supportés :
+  - ⚡ **Groq** (`gsk_...`) — 100% gratuit, Llama 3.3/3.2 Vision, réponse en ~1 seconde
+  - 🤖 **Gemini** — Gratuit (quota journalier), clé depuis Google AI Studio
+  - 🧠 **OpenAI** (`sk-...`) — GPT-4o-mini, payant à l'usage
+  - 🔵 **Claude** (`sk-ant-...`) — Anthropic, payant à l'usage
+- Validation automatique du format de la clé avant envoi.
+- Fallback : si pas de clé client, l'API serveur `/api/generate-pitch` est appelée (quota mensuel du plan).
+
+#### 🎬 Ingestion YouTube — Architecture Tier 0
+
+Quand l'utilisateur colle un lien YouTube dans le champ URL :
+1. `extractYouTubeVideoId()` extrait l'ID vidéo en regex (supporte `watch?v=`, `youtu.be/`, `shorts/`, `embed/`).
+2. `captureYouTubeVideo()` appelle l'API oEmbed YouTube pour récupérer titre + nom de chaîne.
+3. Télécharge la miniature HD (`maxresdefault.jpg`, fallback `hqdefault.jpg`) en JPEG.
+4. Renvoie le résultat comme un site normal → s'insère dans le MacBook/iPhone 3D.
+5. Le Pitch IA analyse la miniature et le titre pour générer l'offre commerciale.
+- **Temps d'exécution : ~200ms** (zéro navigateur Playwright nécessaire).
+
+### Serveur de développement
+
+```bash
+npm run dev
+# Serveur démarré sur http://localhost:3001
+# (port 3000 occupé par une session précédente)
+```
+
+> **Note :** Si le port change à chaque démarrage, vérifier qu'aucune autre instance Next.js n'est en cours (`netstat -ano | findstr :3000` sous Windows).
+
+### Décisions et rappels importants
+
+- **Le modèle BYOK est définitif et confirmé** : chaque utilisateur apporte sa propre clé. Aucun frais IA pour PitchMySite.
+- **Pas de modification des plans tarifaires** : ce modèle s'intègre parfaitement dans tous les plans existants (gratuit, Solo, Pro, Agence).
+- **`claude.md` est la mémoire officielle du projet** — toujours mettre à jour après chaque session.
+
+---
+
+
+
+---
+
+## 🗓️ Session — 20 octobre 2026 : Avis d'un expert SaaS (vidéo TikTok « Je teste votre SaaS en 5 min »)
+
+- Vidéo transcrite sur l'ordinateur (faster-whisper) : `TRANSCRIPTION_AVIS_EXPERT.txt`. Analyse complète et plan d'action : `AVIS_EXPERT_TIKTOK.md`.
+- **Aimé :** le nom, la rapidité de capture, la visite guidée, les formats et poses 3D.
+- **Critiques :** (1) ergonomie du studio sur téléphone (défilement bloqué, sortie accidentelle du studio, le fond photo fait disparaître le site, pas de retour facile, réglages inactifs) ; (2) design « AI slop » (dégradés violets) → refaire un design system à partir de références Dribbble ; (3) « Agences fondatrices » mal compris → parler de programme bêta ; (4) proposition de valeur et offre à clarifier (gain de temps, prix face au marché).
+- **Idée de fonction :** captures pour Google Play et App Store (la base existe dans le menu Exporter, mais elle est introuvable) → mode dédié.
+- **Plan :** 1. ergonomie mobile (1 à 1,5 j) · 2. renommer le programme bêta (30 min) · 3. proposition de valeur (3 h) · 4. refonte du design (2 à 3 j, références à choisir par Dodo) · 5. mode stores (1 à 2 j).
+
+---
+
+## 🗓️ Session — 20 octobre 2026 (après-midi) : Dépôt privé, vérification et mise en ligne du travail du 18-19/10
+
+- **Dépôt GitHub passé en privé** (compte personnel : Vercel Hobby continue de déployer). Numéros MTN masqués dans ce fichier.
+- **Groq corrigé :** l'ancien modèle vision (`llama-3.2-90b-vision-preview`) a été retiré par Groq en avril 2025 → `qwen/qwen3.8-27b`, limité à 3 captures par demande (les 3 premières sections sont envoyées).
+- **Libellés renommés** dans la fenêtre Pitch IA : « Offre $100M » / « Méthode Alex Hormozi » / « Méthode Fabric » → « Offre irrésistible » / « Valeur, garantie et bonus » / « Opportunités de revenus ». La consigne interdit à l'IA de citer ces noms.
+- **Testé en local :** import d'un lien YouTube (miniature dans le studio à 375 px), ouverture de la fenêtre Pitch IA. **Non testé :** génération réelle (il faut une clé IA de Dodo).
+- **Remarqué :** le bouton « Pitch IA » n'est visible qu'en grand écran (pas sur téléphone ni tablette) → à traiter avec l'ergonomie mobile.

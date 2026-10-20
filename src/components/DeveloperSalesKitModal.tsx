@@ -13,10 +13,22 @@ import {
   Award,
   KeyRound,
   ExternalLink,
+  Flame,
+  ShieldCheck,
+  CheckCircle2,
+  Zap,
+  Target,
+  MessageSquare,
+  Mail,
+  BadgeDollarSign,
+  Lightbulb,
+  Send,
 } from 'lucide-react';
 import Link from 'next/link';
 import { AVAILABLE_TECHS } from './TechStackPicker';
 import { sliceIntoSections } from '@/lib/pageSections';
+import type { PitchResult } from '@/lib/pitchPrompt';
+
 import {
   ByokError,
   PROVIDER_INFO,
@@ -64,15 +76,9 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
   const [loadingStep, setLoadingStep] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
-  const [salesData, setSalesData] = useState<{
-    linkedInPost?: string;
-    clientProposalPitch?: string;
-    caseStudy?: { challenge: string; solution: string; impact: string };
-    socialHooks?: string[];
-    sections?: { titre: string; contenu: string }[];
-  } | null>(null);
+  const [salesData, setSalesData] = useState<PitchResult | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'linkedin' | 'proposal' | 'casestudy' | 'twitter' | 'sections'>('linkedin');
+  const [activeTab, setActiveTab] = useState<'hormozi' | 'audit' | 'coldemail' | 'proposal' | 'linkedin' | 'casestudy' | 'twitter' | 'sections'>('hormozi');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   // IA du client : sa propre clé Gemini ou Claude, gardée dans son navigateur seulement
@@ -92,11 +98,12 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
 
   const saveOwnKey = () => {
     if (!looksLikeKey(setupProvider, setupKey)) {
-      setSetupError(
-        setupProvider === 'claude'
-          ? 'Cette clé ne ressemble pas à une clé Claude (elle commence par « sk-ant- »).'
-          : 'Cette clé ne ressemble pas à une clé Gemini. Copiez-la en entier depuis Google AI Studio.'
-      );
+      let msg = 'Cette clé ne semble pas valide pour ce fournisseur.';
+      if (setupProvider === 'claude') msg = 'Cette clé ne ressemble pas à une clé Claude (elle commence par « sk-ant- »).';
+      else if (setupProvider === 'groq') msg = 'Cette clé ne ressemble pas à une clé Groq (elle commence par « gsk_ »).';
+      else if (setupProvider === 'openai') msg = 'Cette clé ne ressemble pas à une clé OpenAI (elle commence par « sk- »).';
+      else if (setupProvider === 'gemini') msg = 'Cette clé ne ressemble pas à une clé Gemini. Copiez-la depuis Google AI Studio.';
+      setSetupError(msg);
       return;
     }
     saveAi(setupProvider, setupKey);
@@ -136,6 +143,10 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
             sections
           );
           setSalesData(data);
+          if (data.hormoziOffer) setActiveTab('hormozi');
+          else if (data.monetizationAudit) setActiveTab('audit');
+          else if (data.coldOutreachEmail) setActiveTab('coldemail');
+          else setActiveTab('linkedin');
           trackEvent('pitch_byok', { provider: ai.provider, ok: true, sections: sections.length });
         } catch (err) {
           const e = err instanceof ByokError ? err : new ByokError('L’IA n’a pas pu répondre. Réessayez dans un instant.', 'other');
@@ -172,6 +183,10 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
         setNotice({ kind: 'error', text: 'Connectez votre IA (Gemini ou Claude) pour générer vos textes.' });
       } else if (json.success && json.data) {
         setSalesData(json.data);
+        if (json.data.hormoziOffer) setActiveTab('hormozi');
+        else if (json.data.monetizationAudit) setActiveTab('audit');
+        else if (json.data.coldOutreachEmail) setActiveTab('coldemail');
+        else setActiveTab('linkedin');
       } else if (json.reason === 'login_required') {
         setNotice({ kind: 'login', text: 'Connectez-vous pour utiliser le Pitch IA.' });
       } else if (json.reason === 'not_included' || json.reason === 'quota_reached') {
@@ -289,11 +304,11 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                     <KeyRound className="w-4 h-4 text-violet-600" /> Connectez votre IA
                   </p>
                   <p className="text-stone-600 leading-relaxed">
-                    Le Pitch IA utilise <strong>votre propre clé</strong> Gemini ou Claude. Elle reste dans votre navigateur :
-                    elle n&apos;est jamais envoyée à PitchMySite, et c&apos;est Google ou Anthropic qui vous facture directement.
+                    Le Pitch IA utilise <strong>votre propre clé</strong> (Groq, Gemini, OpenAI ou Claude). Elle reste dans votre navigateur :
+                    elle n&apos;est jamais envoyée à PitchMySite et vos requêtes sont traitées directement par le fournisseur.
                   </p>
-                  <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-white border border-sand-200">
-                    {(['gemini', 'claude'] as AiProvider[]).map((p) => (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 rounded-xl bg-white border border-sand-200">
+                    {(['groq', 'gemini', 'openai', 'claude'] as AiProvider[]).map((p) => (
                       <button
                         key={p}
                         type="button"
@@ -302,9 +317,9 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                           setSetupError('');
                         }}
                         aria-pressed={setupProvider === p}
-                        className={`py-2 rounded-lg font-bold transition-colors ${setupProvider === p ? 'bg-violet-600 text-white' : 'text-stone-600 hover:text-stone-900'}`}
+                        className={`py-2 px-1 text-[11px] rounded-lg font-bold transition-colors ${setupProvider === p ? 'bg-violet-600 text-white shadow-2xs' : 'text-stone-600 hover:text-stone-900'}`}
                       >
-                        {PROVIDER_INFO[p].label}
+                        {p === 'groq' ? '⚡ Groq (Gratuit)' : p === 'gemini' ? 'Gemini (Gratuit)' : p === 'openai' ? 'OpenAI' : 'Claude'}
                       </button>
                     ))}
                   </div>
@@ -315,14 +330,22 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 font-bold text-violet-700 underline"
                   >
-                    Obtenir ma clé {setupProvider === 'claude' ? 'Claude' : 'Gemini'} <ExternalLink className="w-3 h-3" />
+                    Obtenir ma clé {PROVIDER_INFO[setupProvider].label.split(' ')[0]} <ExternalLink className="w-3 h-3" />
                   </a>
                   <input
                     type="password"
                     autoComplete="off"
                     value={setupKey}
                     onChange={(e) => setSetupKey(e.target.value)}
-                    placeholder={setupProvider === 'claude' ? 'sk-ant-…' : 'Collez votre clé Gemini'}
+                    placeholder={
+                      setupProvider === 'claude'
+                        ? 'sk-ant-…'
+                        : setupProvider === 'groq'
+                        ? 'gsk_…'
+                        : setupProvider === 'openai'
+                        ? 'sk-…'
+                        : 'Collez votre clé Gemini'
+                    }
                     aria-label={`Clé ${PROVIDER_INFO[setupProvider].label}`}
                     className="w-full px-3 py-2 rounded-xl border border-sand-300 bg-white focus:outline-none focus:border-violet-500"
                   />
@@ -415,10 +438,68 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
             <div className="space-y-4">
               {/* Onglets des livrables */}
               <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-sand-100 border border-sand-200 text-xs">
+                {salesData.hormoziOffer && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('hormozi')}
+                    className={`flex-1 py-2 px-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      activeTab === 'hormozi'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs'
+                        : 'text-stone-700 hover:text-stone-900'
+                    }`}
+                  >
+                    <Flame className="w-3.5 h-3.5 text-white" />
+                    <span>Offre irrésistible</span>
+                  </button>
+                )}
+
+                {salesData.monetizationAudit && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('audit')}
+                    className={`flex-1 py-2 px-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      activeTab === 'audit'
+                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs'
+                        : 'text-stone-700 hover:text-stone-900'
+                    }`}
+                  >
+                    <BadgeDollarSign className="w-3.5 h-3.5" />
+                    <span>Audit Revenus</span>
+                  </button>
+                )}
+
+                {salesData.coldOutreachEmail && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('coldemail')}
+                    className={`flex-1 py-2 px-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      activeTab === 'coldemail'
+                        ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-xs'
+                        : 'text-stone-700 hover:text-stone-900'
+                    }`}
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Email Prospect</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('proposal')}
+                  className={`flex-1 py-2 px-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    activeTab === 'proposal'
+                      ? 'bg-white text-stone-900 shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Pitch Devis</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setActiveTab('linkedin')}
-                  className={`flex-1 py-2 px-3 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2 px-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
                     activeTab === 'linkedin'
                       ? 'bg-white text-stone-900 shadow-xs'
                       : 'text-stone-600 hover:text-stone-900'
@@ -430,21 +511,8 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('proposal')}
-                  className={`flex-1 py-2 px-3 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
-                    activeTab === 'proposal'
-                      ? 'bg-white text-stone-900 shadow-xs'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Pitch Devis / Email</span>
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => setActiveTab('casestudy')}
-                  className={`flex-1 py-2 px-3 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2 px-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
                     activeTab === 'casestudy'
                       ? 'bg-white text-stone-900 shadow-xs'
                       : 'text-stone-600 hover:text-stone-900'
@@ -454,19 +522,400 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                   <span>Étude de Cas</span>
                 </button>
 
+                {salesData.socialHooks && salesData.socialHooks.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('twitter')}
+                    className={`flex-1 py-2 px-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      activeTab === 'twitter'
+                        ? 'bg-white text-stone-900 shadow-xs'
+                        : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                    <span>3 Hooks X</span>
+                  </button>
+                )}
+
                 {salesData.sections && salesData.sections.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setActiveTab('sections')}
-                    className={`flex-1 py-2 px-3 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-2 px-2.5 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
                       activeTab === 'sections' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
                     }`}
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Ce que l&apos;IA a vu</span>
+                    <span>Captures</span>
                   </button>
                 )}
               </div>
+
+              {/* Contenu onglet Offre Irrésistible  */}
+              {activeTab === 'hormozi' && salesData.hormoziOffer && (
+                <div className="space-y-3.5">
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-violet-500/10 border border-amber-200/80">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs">
+                          Offre irrésistible
+                        </span>
+                        <span className="text-[10px] font-semibold text-stone-500">
+                          Valeur, garantie et bonus
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const h = salesData.hormoziOffer;
+                          const full = `OFFRE GRAND SLAM : ${h?.offerName || ''}\n\n` +
+                            `PROBLÈME CLÉ : ${salesData.primaryProblem || ''}\n` +
+                            `SOLUTION TECHNIQUE : ${salesData.primarySolution || ''}\n\n` +
+                            `RÉSULTAT RÊVÉ (DREAM OUTCOME) :\n${h?.dreamOutcome || ''}\n\n` +
+                            `GARANTIE & INVERSION DU RISQUE :\n${h?.guarantee || ''}\n\n` +
+                            `BONUS OFFERTS :\n${(h?.bonuses || []).map((b) => `- ${b}`).join('\n')}\n\n` +
+                            `PHRASE D'ATTAQUE DIRECTE :\n${h?.pitchLine || ''}`;
+                          handleCopy(full, 'hormozi_full');
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white font-semibold text-xs shadow-2xs transition-all"
+                      >
+                        {copiedKey === 'hormozi_full' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Pack complet copié !</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copier tout le pack</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <h4 className="text-base font-extrabold text-stone-900 leading-snug">
+                      {salesData.hormoziOffer.offerName}
+                    </h4>
+                  </div>
+
+                  {/* Problème primaire & Solution */}
+                  {(salesData.primaryProblem || salesData.primarySolution) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                      {salesData.primaryProblem && (
+                        <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-200">
+                          <span className="font-bold text-rose-900 flex items-center gap-1 mb-1">
+                            <Target className="w-3.5 h-3.5 text-rose-600" /> Problème Douloureux :
+                          </span>
+                          <p className="text-stone-700 leading-relaxed">{salesData.primaryProblem}</p>
+                        </div>
+                      )}
+                      {salesData.primarySolution && (
+                        <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200">
+                          <span className="font-bold text-blue-900 flex items-center gap-1 mb-1">
+                            <Zap className="w-3.5 h-3.5 text-blue-600" /> Solution Apportée :
+                          </span>
+                          <p className="text-stone-700 leading-relaxed">{salesData.primarySolution}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Résultat Rêvé (Dream Outcome) */}
+                  {salesData.hormoziOffer.dreamOutcome && (
+                    <div className="p-3 rounded-xl bg-violet-50/70 border border-violet-200 text-xs">
+                      <span className="font-bold text-violet-900 flex items-center gap-1.5 mb-1">
+                        <TrendingUp className="w-3.5 h-3.5 text-violet-600" /> Résultat Rêvé du Prospect (Dream Outcome) :
+                      </span>
+                      <p className="text-stone-700 leading-relaxed">{salesData.hormoziOffer.dreamOutcome}</p>
+                    </div>
+                  )}
+
+                  {/* Inversion du risque & Garantie */}
+                  {salesData.hormoziOffer.guarantee && (
+                    <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Garantie & Inversion du Risque :
+                        </span>
+                        <span className="text-[10px] font-semibold text-emerald-700">Supprime le frein à l&apos;achat</span>
+                      </div>
+                      <p className="text-stone-700 leading-relaxed">{salesData.hormoziOffer.guarantee}</p>
+                    </div>
+                  )}
+
+                  {/* Stack de Bonus */}
+                  {salesData.hormoziOffer.bonuses && salesData.hormoziOffer.bonuses.length > 0 && (
+                    <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs space-y-1.5">
+                      <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" /> Stack de Bonus Inclus (Élève la valeur perçue) :
+                      </span>
+                      <ul className="space-y-1 text-stone-700 pl-1">
+                        {salesData.hormoziOffer.bonuses.map((bonus, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-amber-600 font-bold shrink-0">+{idx + 1}.</span>
+                            <span>{bonus}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Phrase d'attaque directe pour WhatsApp / DM */}
+                  {salesData.hormoziOffer.pitchLine && (
+                    <div className="p-3 rounded-xl bg-stone-900 text-white text-xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-amber-300 flex items-center gap-1.5">
+                          <MessageSquare className="w-3.5 h-3.5" /> Phrase d&apos;attaque directe (DM / WhatsApp) :
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(salesData.hormoziOffer!.pitchLine, 'pitch_line')}
+                          className="px-2.5 py-1 rounded-md bg-stone-800 hover:bg-stone-700 text-stone-200 font-medium text-[11px] flex items-center gap-1 transition-colors"
+                        >
+                          {copiedKey === 'pitch_line' ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-400" />
+                              <span>Copié !</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copier</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-stone-200 italic font-medium leading-relaxed bg-stone-950/60 p-2.5 rounded-lg border border-stone-800">
+                        « {salesData.hormoziOffer.pitchLine} »
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Contenu onglet Audit de Monétisation */}
+              {activeTab === 'audit' && salesData.monetizationAudit && (
+                <div className="space-y-3.5">
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-200/80">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-2xs">
+                          Audit de Monétisation
+                        </span>
+                        <span className="text-[10px] font-semibold text-stone-500">
+                          Opportunités de revenus
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const a = salesData.monetizationAudit;
+                          const full = `AUDIT DE MONÉTISATION & LEVIERS DE CROISSANCE\n\n` +
+                            `INTENTION DU VISITEUR :\n${a?.audienceIntent || ''}\n\n` +
+                            `ACTION RAPIDE 30 JOURS (QUICK WIN) :\n${a?.quickWin30Days || ''}\n\n` +
+                            `OPPORTUNITÉS DE REVENUS IDENTIFIÉES :\n` +
+                            (a?.opportunities || [])
+                              .map(
+                                (o, i) =>
+                                  `${i + 1}. ${o.opportunity} [Type: ${o.type} | Potentiel: ${o.revenuePotential} | Effort: ${o.effort}]\n   Pourquoi ça marche: ${o.whyItWorks}`
+                              )
+                              .join('\n\n') +
+                            `\n\nFUITES DE REVENUS ACTUELLES :\n` +
+                            (a?.monetizationGaps || []).map((g) => `- ${g}`).join('\n');
+                          handleCopy(full, 'audit_full');
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white font-semibold text-xs shadow-2xs transition-all"
+                      >
+                        {copiedKey === 'audit_full' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Audit copié !</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copier tout l&apos;audit</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="flex items-start gap-2 text-xs text-stone-800">
+                      <Lightbulb className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-stone-900">Intention & Maturité du Visiteur : </span>
+                        <span>{salesData.monetizationAudit.audienceIntent}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Win 30 Jours */}
+                  {salesData.monetizationAudit.quickWin30Days && (
+                    <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-emerald-500/5 border border-emerald-300/80 text-xs">
+                      <div className="flex items-center gap-1.5 font-extrabold text-emerald-950 mb-1">
+                        <Zap className="w-4 h-4 text-emerald-600 fill-emerald-500" />
+                        <span>Action Prioritaire 30 Jours (Quick Win) :</span>
+                      </div>
+                      <p className="text-stone-800 font-medium leading-relaxed">
+                        {salesData.monetizationAudit.quickWin30Days}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Opportunités */}
+                  {salesData.monetizationAudit.opportunities && salesData.monetizationAudit.opportunities.length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-xs font-bold text-stone-700 block">
+                        Opportunités de monétisation à exploiter :
+                      </span>
+                      <div className="grid grid-cols-1 gap-2.5">
+                        {salesData.monetizationAudit.opportunities.map((opp, idx) => (
+                          <div key={idx} className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-xs space-y-1.5">
+                            <div className="flex flex-wrap items-center justify-between gap-1.5">
+                              <span className="font-bold text-stone-900 text-[13px]">{opp.opportunity}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 font-semibold">
+                                  {opp.type}
+                                </span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold">
+                                  {opp.revenuePotential}
+                                </span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 font-semibold">
+                                  Effort : {opp.effort}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-stone-600 leading-relaxed">
+                              <strong className="text-stone-800 font-medium">Pourquoi le prospect va signer :</strong> {opp.whyItWorks}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fuites de revenus / Gaps */}
+                  {salesData.monetizationAudit.monetizationGaps && salesData.monetizationAudit.monetizationGaps.length > 0 && (
+                    <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs space-y-1.5">
+                      <span className="font-bold text-amber-950 flex items-center gap-1.5">
+                        <Target className="w-3.5 h-3.5 text-amber-700" />
+                        <span>Ce que le site actuel laisse sur la table (Failles de conversion) :</span>
+                      </span>
+                      <ul className="space-y-1 text-stone-700 pl-1">
+                        {salesData.monetizationAudit.monetizationGaps.map((gap, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-amber-700 font-bold shrink-0">•</span>
+                            <span>{gap}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Contenu onglet Email de Prospection Froide */}
+              {activeTab === 'coldemail' && salesData.coldOutreachEmail && (
+                <div className="space-y-3.5">
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-500/10 via-indigo-500/10 to-blue-500/10 border border-violet-200/80">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-2xs">
+                          Cold Outreach B2B
+                        </span>
+                        <span className="text-[10px] font-semibold text-stone-500">
+                          Email de prospection avec maquette 3D
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const mail = salesData.coldOutreachEmail;
+                          const full = `Objet : ${mail?.subject || ''}\n\n${mail?.body || ''}\n\n${mail?.callToAction || ''}`;
+                          handleCopy(full, 'coldemail_full');
+                        }}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white font-semibold text-xs shadow-2xs transition-all"
+                      >
+                        {copiedKey === 'coldemail_full' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Email complet copié !</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copier Objet + Corps</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-stone-600">
+                      Prêt à envoyer au décideur. Joignez l&apos;image du mockup 3D en pièce jointe pour maximiser le taux de réponse.
+                    </p>
+                  </div>
+
+                  {/* Objet de l'email */}
+                  <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-stone-700">Objet de l&apos;email :</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(salesData.coldOutreachEmail!.subject, 'email_subject')}
+                        className="px-2 py-0.5 rounded-md bg-white border border-sand-300 hover:bg-sand-100 text-stone-700 text-[11px] font-medium flex items-center gap-1 transition-colors"
+                      >
+                        {copiedKey === 'email_subject' ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span>Objet copié</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>Copier l&apos;objet</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="font-semibold text-stone-900 bg-white p-2.5 rounded-lg border border-sand-200">
+                      {salesData.coldOutreachEmail.subject}
+                    </p>
+                  </div>
+
+                  {/* Corps de l'email */}
+                  <div className="space-y-1.5 text-xs">
+                    <span className="font-bold text-stone-700">Corps du message :</span>
+                    <div className="p-4 rounded-2xl bg-sand-50 border border-sand-200 text-stone-800 font-sans leading-relaxed whitespace-pre-line max-h-64 overflow-y-auto">
+                      {salesData.coldOutreachEmail.body}
+                      {salesData.coldOutreachEmail.callToAction && `\n\n${salesData.coldOutreachEmail.callToAction}`}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Contenu onglet Twitter / 3 Hooks X */}
+              {activeTab === 'twitter' && salesData.socialHooks && (
+                <div className="space-y-3">
+                  <div className="text-xs font-bold text-stone-700">
+                    3 Accroches virales courtes (Twitter / X / Threads) :
+                  </div>
+                  <div className="space-y-2.5">
+                    {salesData.socialHooks.map((hook, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-xs flex items-start justify-between gap-3">
+                        <p className="text-stone-800 font-medium leading-relaxed">{hook}</p>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(hook, `hook_${i}`)}
+                          className="shrink-0 p-1.5 rounded-lg bg-white border border-sand-300 hover:bg-sand-100 text-stone-700 text-xs transition-colors"
+                          title="Copier ce hook"
+                        >
+                          {copiedKey === `hook_${i}` ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {activeTab === 'sections' && salesData.sections && (
                 <ol className="space-y-2 text-xs">
@@ -588,6 +1037,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                   </div>
                 </div>
               )}
+
 
               <div className="pt-2 flex items-center justify-between border-t border-sand-200">
                 <button

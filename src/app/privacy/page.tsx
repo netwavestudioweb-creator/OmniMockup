@@ -11,37 +11,37 @@ export const metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-sand-50 text-stone-900 flex flex-col selection:bg-violet-100 selection:text-violet-900">
+    <div className="min-h-screen bg-pms-surface text-stone-900 flex flex-col selection:bg-pms-accent-tint selection:text-pms-accent">
       <Navbar showPricingLink={true} />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-8">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-sand-100 text-stone-600 hover:text-stone-900 border border-sand-200 text-xs font-medium transition-all shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-pms-surface text-stone-600 hover:text-stone-900 border border-pms-line text-xs font-medium transition-all shadow-2xs"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Retour à l&apos;accueil</span>
           </Link>
         </div>
 
-        <div className="bg-white rounded-3xl border border-sand-200 p-8 sm:p-12 shadow-sm space-y-8">
-          <div className="border-b border-sand-100 pb-6 space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-50 text-violet-800 border border-violet-200 text-xs font-semibold">
-              <ShieldCheck className="w-3.5 h-3.5 text-violet-600" />
+        <div className="bg-white rounded-3xl border border-pms-line p-8 sm:p-12 shadow-sm space-y-8">
+          <div className="border-b border-pms-line pb-6 space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pms-accent-tint text-pms-accent border border-pms-accent-tint text-xs font-semibold">
+              <ShieldCheck className="w-3.5 h-3.5 text-pms-accent" />
               <span>Protection des Données</span>
             </div>
-            <h1 className="text-3xl font-extrabold text-stone-900 tracking-tight">
+            <h1 className="text-3xl font-semibold text-stone-900 tracking-tight">
               Politique de Confidentialité (RGPD)
             </h1>
-            <p className="text-xs text-stone-500 font-mono">
+            <p className="text-xs text-stone-500">
               Dernière mise à jour : 25 Septembre 2026
             </p>
           </div>
 
           <section className="space-y-4 text-sm text-stone-700 leading-relaxed">
-            <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              <Database className="w-4 h-4 text-violet-600" />
+            <h2 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
+              <Database className="w-4 h-4 text-pms-accent" />
               1. Données Collectées
             </h2>
             <p>
@@ -53,8 +53,8 @@ export default function PrivacyPage() {
               <li>Références de paiement SasPay (identifiant de transaction, montant, date), sans numéro de téléphone ni donnée bancaire.</li>
             </ul>
 
-            <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              <Lock className="w-4 h-4 text-violet-600" />
+            <h2 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
+              <Lock className="w-4 h-4 text-pms-accent" />
               2. Utilisation et Traitement des URLs
             </h2>
             <p>
@@ -64,16 +64,16 @@ export default function PrivacyPage() {
               Vos mockups et projets du studio sont enregistrés dans votre navigateur, sur votre appareil. Lorsque vous créez un lien de partage, l&apos;image partagée est stockée sur nos serveurs jusqu&apos;à ce que vous supprimiez le lien depuis le studio.
             </p>
 
-            <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-violet-600" />
+            <h2 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-pms-accent" />
               3. Sous-traitants & Sécurité
             </h2>
             <p>
               Vos données sont hébergées et traitées par les prestataires suivants : Vercel (hébergement du site), Supabase (base de données, comptes et images des liens de partage), Stripe (paiements par carte, certifié PCI-DSS), SasPay (paiements Mobile Money et carte en FCFA), Google (analyse IA des pages et textes de vente) et Microlink (capture de secours de certaines pages). Les photos des scènes et des fonds du studio proviennent d&apos;Unsplash : votre navigateur les charge directement depuis leurs serveurs.
             </p>
 
-            <h2 className="text-lg font-bold text-stone-900 flex items-center gap-2">
-              <Lock className="w-4 h-4 text-violet-600" />
+            <h2 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
+              <Lock className="w-4 h-4 text-pms-accent" />
               4. Vos Droits
             </h2>
             <p>

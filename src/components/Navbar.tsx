@@ -57,7 +57,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
           </div>
           <div className="min-w-0">
             <div className="flex items-center space-x-1.5 sm:space-x-2">
-              <span className="font-bold tracking-tight text-stone-900 text-sm sm:text-base md:text-lg truncate">
+              <span className="font-semibold tracking-tight text-stone-900 text-sm sm:text-base md:text-lg truncate">
                 Pitch<span className="text-pms-accent">MySite</span>
               </span>
             </div>
@@ -88,12 +88,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
                 onClick={() => setUserDropdownOpen((p) => !p)}
                 className="flex items-center gap-2 pl-2.5 pr-2 py-1.5 rounded-xl border border-pms-line bg-white hover:bg-pms-surface transition-all shadow-2xs text-xs font-medium text-stone-800"
               >
-                <div className="w-6 h-6 rounded-lg bg-pms-surface text-pms-accent flex items-center justify-center font-bold text-[11px] uppercase">
+                <div className="w-6 h-6 rounded-lg bg-pms-surface text-pms-accent flex items-center justify-center font-semibold text-[11px]">
                   {user.email?.slice(0, 2) || 'US'}
                 </div>
                 <span className="max-w-[120px] truncate">{user.email}</span>
                 <span
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border uppercase ${
+                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
                     isPremium
                       ? 'bg-pms-accent text-white border-pms-accent'
                       : 'bg-pms-surface text-stone-600 border-pms-line'
@@ -111,7 +111,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
                     <p className="font-semibold text-stone-900 truncate">{user.email}</p>
                     <div className="mt-1 flex items-center gap-1.5">
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold ${
                           isPremium
                             ? 'bg-pms-surface text-pms-accent'
                             : 'bg-pms-surface text-stone-700'
@@ -203,10 +203,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
           {user ? (
             <div className="p-3 rounded-2xl bg-pms-surface border border-pms-line text-xs space-y-1.5">
               <p className="text-[11px] text-stone-400">Connecté avec</p>
-              <p className="font-bold text-stone-900 truncate">{user.email}</p>
+              <p className="font-semibold text-stone-900 truncate">{user.email}</p>
               <div className="flex items-center gap-1.5 pt-1">
                 <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold ${
                     isPremium
                       ? 'bg-pms-surface text-pms-accent'
                       : 'bg-sand-200 text-stone-700'

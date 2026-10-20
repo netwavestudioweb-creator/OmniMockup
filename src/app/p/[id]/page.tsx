@@ -87,7 +87,7 @@ export default async function SharedMockupPage({ params }: { params: { id: strin
           <a
             href={imageUrl(share.image_path, fileName)}
             style={brand?.color ? { backgroundColor: brand.color } : undefined}
-            className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 hover:opacity-90 text-white text-sm font-bold"
+            className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-pms-accent hover:bg-pms-accent hover:opacity-90 text-white text-sm font-bold"
           >
             <Download className="w-4 h-4" />
             Télécharger l&apos;image
@@ -107,7 +107,7 @@ export default async function SharedMockupPage({ params }: { params: { id: strin
       {!brand && (
         <footer className="border-t border-zinc-900 py-5 px-4 text-center">
           <Link href="/" className="inline-flex items-center gap-2 text-xs text-zinc-500 hover:text-white">
-            <Layers className="w-3.5 h-3.5 text-violet-400" />
+            <Layers className="w-3.5 h-3.5 text-pms-accent" />
             Mockup réalisé avec PitchMySite
           </Link>
         </footer>

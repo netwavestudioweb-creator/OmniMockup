@@ -6,20 +6,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { CurrencySwitcher } from '@/components/CurrencySwitcher';
 import { useUser } from '@/context/UserContext';
 import { useCurrency } from '@/context/CurrencyContext';
 import {
   PLANS,
   CREDIT_PACKS,
-  ORDER_BUMP,
   getPlanMonthlyPrice,
   getPlanAnnualPrice,
   getPlanMonthlyEquivalent,
   getPlanAnnualSavings,
   formatPrice,
   getCreditPackPrice,
-  getOrderBumpPrice,
   Plan,
   CreditPack,
 } from '@/lib/pricing';
@@ -28,13 +25,11 @@ import { CARD_PROVIDER, cardPaymentsEnabled } from '@/lib/paymentConfig';
 import {
   Check,
   X as XIcon,
-  Sparkles,
   ArrowRight,
   ShieldCheck,
   Loader2,
   AlertCircle,
   Flame,
-  Crown,
   Clock,
   Smartphone,
   CreditCard,
@@ -193,22 +188,14 @@ export default function PricingPage() {
   const paidPlans = PLANS.filter((p) => p.id !== 'free');
 
   return (
-    <div className="min-h-screen bg-sand-50 text-stone-900 flex flex-col selection:bg-violet-100 selection:text-violet-900">
+    <div className="min-h-screen bg-pms-surface text-stone-900 flex flex-col selection:bg-pms-accent-tint selection:text-pms-accent">
       <Navbar showPricingLink={false} />
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         {/* EN-TÊTE DE PAGE */}
         <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-100 text-violet-800 border border-violet-200 text-xs font-black tracking-wide uppercase mb-4 shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-violet-600" />
-            <span>Tarification Transparente & Sans Surprise</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl font-black text-stone-900 tracking-tight leading-tight">
-            Des mockups 3D qui convertissent.{' '}
-            <span className="bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Le juste prix.
-            </span>
+          <h1 className="text-3xl sm:text-5xl font-normal text-pms-ink tracking-[-0.02em] leading-tight">
+            Des visuels qui font signer, au juste prix
           </h1>
 
           <p className="mt-4 text-sm sm:text-base text-stone-600 leading-relaxed max-w-2xl mx-auto">
@@ -246,16 +233,16 @@ export default function PricingPage() {
         )}
 
         {/* SÉLECTEUR DE MOYEN DE PAIEMENT, DEVISE & TOGGLE ANNUEL/MENSUEL */}
-        <div className="max-w-5xl mx-auto mb-10 flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-3xl bg-white border border-sand-200 shadow-sm">
+        <div className="max-w-5xl mx-auto mb-10 flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-3xl bg-white border border-pms-line shadow-sm">
           {/* Moyen de paiement : Mobile Money, carte bancaire (grisée tant qu'elle n'est pas activée) */}
           <div className="flex flex-col items-center md:items-start gap-1.5 w-full md:w-auto md:max-w-md">
-            <div className="flex items-center gap-1 p-1 bg-sand-100 rounded-2xl border border-sand-200 w-full md:w-auto" role="radiogroup" aria-label="Moyen de paiement">
+            <div className="flex items-center gap-1 p-1 bg-pms-surface rounded-2xl border border-pms-line w-full md:w-auto" role="radiogroup" aria-label="Moyen de paiement">
               <button
                 type="button"
                 role="radio"
                 aria-checked={method === 'mobile'}
                 onClick={() => setMethod('mobile')}
-                className={`flex-1 md:flex-initial flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3.5 rounded-xl text-xs font-bold transition-all ${
+                className={`flex-1 md:flex-initial flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3.5 rounded-xl text-xs font-semibold transition-all ${
                   method === 'mobile' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
@@ -270,7 +257,7 @@ export default function PricingPage() {
                 disabled={!cardPaymentsEnabled}
                 onClick={() => setMethod('card')}
                 title={cardPaymentsEnabled ? undefined : 'Paiement par carte bientôt disponible'}
-                className={`flex-1 md:flex-initial flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3.5 rounded-xl text-xs font-bold transition-all ${
+                className={`flex-1 md:flex-initial flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3.5 rounded-xl text-xs font-semibold transition-all ${
                   !cardPaymentsEnabled
                     ? 'text-stone-400 cursor-not-allowed'
                     : method === 'card'
@@ -278,10 +265,10 @@ export default function PricingPage() {
                       : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
-                <CreditCard className={`w-4 h-4 ${cardPaymentsEnabled ? 'text-violet-600' : 'text-stone-400'}`} />
+                <CreditCard className={`w-4 h-4 ${cardPaymentsEnabled ? 'text-pms-accent' : 'text-stone-400'}`} />
                 <span className="whitespace-nowrap">Carte bancaire</span>
                 {!cardPaymentsEnabled && (
-                  <span className="px-1.5 py-0.5 rounded-md bg-stone-200 text-stone-500 text-[9px] font-black uppercase tracking-wide">
+                  <span className="px-1.5 py-0.5 rounded-md bg-stone-200 text-stone-500 text-[9px] font-semibold">
                     Bientôt
                   </span>
                 )}
@@ -297,15 +284,13 @@ export default function PricingPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 w-full md:w-auto">
-            {/* Sélecteur de devise */}
-            <CurrencySwitcher />
-
+            {/* Devise détectée automatiquement selon le pays (pas de sélecteur, choix de Dodo) */}
             {/* Toggle Facturation Annuel / Mensuel (Annuel par défaut avec 2 mois offerts) */}
             <div className="flex items-center gap-3">
               <span
                 onClick={() => setIsAnnual(false)}
-                className={`text-xs font-bold cursor-pointer transition-colors ${
-                  !isAnnual ? 'text-stone-900 font-extrabold' : 'text-stone-500 hover:text-stone-600'
+                className={`text-xs font-semibold cursor-pointer transition-colors ${
+                  !isAnnual ? 'text-stone-900 font-semibold' : 'text-stone-500 hover:text-stone-600'
                 }`}
               >
                 Mensuel
@@ -317,8 +302,8 @@ export default function PricingPage() {
                 aria-checked={isAnnual}
                 aria-label="Paiement annuel"
                 onClick={() => setIsAnnual(!isAnnual)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-violet-600 focus:ring-offset-2 ${
-                  isAnnual ? 'bg-violet-600' : 'bg-stone-300'
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-pms-accent focus:ring-offset-2 ${
+                  isAnnual ? 'bg-pms-accent' : 'bg-stone-300'
                 }`}
               >
                 <span
@@ -330,12 +315,12 @@ export default function PricingPage() {
 
               <span
                 onClick={() => setIsAnnual(true)}
-                className={`text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-colors ${
-                  isAnnual ? 'text-violet-900 font-extrabold' : 'text-stone-500 hover:text-stone-600'
+                className={`text-xs font-semibold cursor-pointer flex items-center gap-1.5 transition-colors ${
+                  isAnnual ? 'text-pms-accent font-semibold' : 'text-stone-500 hover:text-stone-600'
                 }`}
               >
                 <span>Annuel</span>
-                <span className="px-2 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-black tracking-wide shadow-2xs">
+                <span className="px-2 py-0.5 rounded-full bg-pms-accent text-white text-[10px] font-semibold shadow-2xs">
                   2 mois offerts (-17 %)
                 </span>
               </span>
@@ -349,7 +334,6 @@ export default function PricingPage() {
         <div id="formules" className="scroll-mt-24 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto mb-16 items-stretch">
           {paidPlans.map((plan) => {
             const isTarget = plan.isPopular; // Pro
-            const isAnchor = plan.isAnchor;  // Agence
 
             const monthlyPrice = getPlanMonthlyPrice(plan, currency);
             const annualPrice = getPlanAnnualPrice(plan, currency);
@@ -363,34 +347,18 @@ export default function PricingPage() {
                 key={plan.id}
                 className={`relative rounded-3xl p-6 sm:p-8 flex flex-col justify-between transition-all duration-300 ${
                   isTarget
-                    ? 'bg-white border-2 border-violet-600 shadow-xl shadow-violet-500/10 lg:-translate-y-2 lg:scale-[1.02] z-10'
-                    : 'bg-white/80 border border-sand-200 shadow-md hover:border-violet-300 hover:shadow-lg'
+                    ? 'bg-white border-2 border-pms-accent shadow-xl lg:-translate-y-2 lg:scale-[1.02] z-10'
+                    : 'bg-white/80 border border-pms-line shadow-md hover:border-pms-accent hover:shadow-lg'
                 }`}
               >
-                {/* Badge supérieur */}
-                {plan.badge && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                    <span
-                      className={`px-3.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5 ${
-                        isTarget
-                          ? 'bg-violet-600 text-white shadow-violet-500/30 ring-2 ring-violet-400/40'
-                          : 'bg-stone-900 text-white'
-                      }`}
-                    >
-                      {isTarget && <Flame className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />}
-                      {isAnchor && <Crown className="w-3.5 h-3.5 text-amber-300" />}
-                      <span>{plan.badge}</span>
-                    </span>
-                  </div>
-                )}
-
                 <div>
                   {/* Titre et description */}
                   <div className="mb-6 pt-2">
                     <div className="flex items-center justify-between">
-                      <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
+                      <h2 className="text-xl sm:text-2xl font-semibold text-pms-ink tracking-tight">
                         {plan.name}
                       </h2>
+                      {isTarget && <span className="text-[15px] text-pms-accent">recommandé</span>}
                     </div>
                     <p className="text-xs text-stone-500 mt-2 leading-relaxed min-h-[36px]">
                       {plan.description}
@@ -398,9 +366,9 @@ export default function PricingPage() {
                   </div>
 
                   {/* Prix — Une seule devise affichée */}
-                  <div className="p-4 rounded-2xl bg-sand-50/80 border border-sand-200/80 mb-6">
+                  <div className="p-4 rounded-2xl bg-pms-surface border border-pms-line/80 mb-6">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-4xl sm:text-5xl font-black text-stone-950 font-mono tracking-tight">
+                      <span className="text-4xl sm:text-5xl font-semibold text-stone-950 tracking-tight">
                         {formatPrice(displayPrice, currency, false)}
                       </span>
                       <span className="text-xs text-stone-500 font-semibold">
@@ -410,7 +378,7 @@ export default function PricingPage() {
 
                     {/* Montant réellement payé via SasPay (Mobile Money ou carte), en FCFA */}
                     {!useStripe && (
-                      <p className="mt-1 text-[11px] font-bold text-amber-700">
+                      <p className="mt-1 text-[11px] font-semibold text-amber-700">
                         {method === 'card' ? 'Payé par carte via SasPay' : 'Payé en Mobile Money'} :{' '}
                         {new Intl.NumberFormat('fr-FR').format(isAnnual ? plan.annualFcfa : plan.monthlyFcfa)} FCFA
                         {isAnnual ? ' pour 1 an' : ' pour 1 mois'}
@@ -421,7 +389,7 @@ export default function PricingPage() {
                     <div className="mt-2 text-[11px] font-semibold text-stone-600 flex flex-col gap-0.5">
                       {isAnnual ? (
                         <>
-                          <span className="text-emerald-700 font-bold">
+                          <span className="text-emerald-700 font-semibold">
                             Facturé {formatPrice(annualPrice, currency)} / an (2 mois offerts)
                           </span>
                           <span className="text-stone-500">
@@ -448,13 +416,13 @@ export default function PricingPage() {
                         {feat.included ? (
                           <Check
                             className={`w-4 h-4 shrink-0 mt-0.5 ${
-                              feat.highlight ? 'text-violet-600 stroke-[2.5]' : 'text-stone-600'
+                              feat.highlight ? 'text-pms-accent stroke-[2.5]' : 'text-stone-600'
                             }`}
                           />
                         ) : (
                           <XIcon className="w-4 h-4 shrink-0 mt-0.5 text-stone-500 stroke-[2]" />
                         )}
-                        <span className={feat.highlight ? 'font-bold text-stone-900' : ''}>
+                        <span className={feat.highlight ? 'font-semibold text-stone-900' : ''}>
                           {feat.name}
                         </span>
                       </li>
@@ -463,14 +431,14 @@ export default function PricingPage() {
                 </div>
 
                 {/* Bouton CTA */}
-                <div className="mt-8 pt-4 border-t border-sand-200">
+                <div className="mt-8 pt-4 border-t border-pms-line">
                   <button
                     type="button"
                     onClick={() => handlePlanClick(plan)}
                     disabled={loadingPlan !== null}
-                    className={`w-full py-3.5 px-4 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.99] disabled:opacity-60 ${
+                    className={`w-full py-3.5 px-4 rounded-xl font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.99] disabled:opacity-60 ${
                       isTarget
-                        ? 'bg-violet-600 hover:bg-violet-700 text-white shadow-violet-500/30'
+                        ? 'bg-pms-accent hover:bg-pms-accent text-white'
                         : 'bg-stone-900 hover:bg-stone-800 text-white'
                     }`}
                   >
@@ -495,11 +463,11 @@ export default function PricingPage() {
         {/* ══════════════════════════════════════════════════════════════════════ */}
         {/* BANDEAU PLAN DÉCOUVERTE (FREE) */}
         {/* ══════════════════════════════════════════════════════════════════════ */}
-        <div className="max-w-4xl mx-auto mb-16 p-6 rounded-3xl bg-white border border-sand-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+        <div className="max-w-4xl mx-auto mb-16 p-6 rounded-3xl bg-white border border-pms-line flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
           <div className="space-y-1 text-center sm:text-left">
             <div className="flex items-center gap-2 justify-center sm:justify-start">
-              <span className="font-extrabold text-sm text-stone-900">Vous débutez ? Essayez le plan Découverte</span>
-              <span className="text-[10px] bg-sand-100 text-stone-700 px-2 py-0.5 rounded-full font-bold">100% Gratuit</span>
+              <span className="font-semibold text-sm text-stone-900">Vous débutez ? Essayez le plan Découverte</span>
+              <span className="text-[10px] bg-pms-surface text-stone-700 px-2 py-0.5 rounded-full font-semibold">100% Gratuit</span>
             </div>
             <p className="text-xs text-stone-500">
               3 exports par jour en qualité Standard, filigrane discret, studio complet, sans carte bancaire.
@@ -507,7 +475,7 @@ export default function PricingPage() {
           </div>
           <Link
             href="/"
-            className="px-5 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-900 text-xs font-bold border border-sand-300 transition-colors shrink-0"
+            className="px-5 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-900 text-xs font-semibold border border-pms-line transition-colors shrink-0"
           >
             Ouvrir le studio gratuitement
           </Link>
@@ -516,14 +484,14 @@ export default function PricingPage() {
         {/* ══════════════════════════════════════════════════════════════════════ */}
         {/* SECTION CRÉDITS À LA CARTE (PAY-PER-USE / STRATÉGIE POPCORN) */}
         {/* ══════════════════════════════════════════════════════════════════════ */}
-        <div id="credits" className="max-w-6xl mx-auto mb-16 p-6 sm:p-10 rounded-3xl bg-white border border-sand-200 shadow-md">
+        <div id="credits" className="max-w-6xl mx-auto mb-16 p-6 sm:p-10 rounded-3xl bg-white border border-pms-line shadow-md">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-100 text-amber-950 text-xs font-black mb-2 border border-amber-200">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-100 text-amber-950 text-xs font-semibold mb-2 border border-amber-200">
                 <Coins className="w-3.5 h-3.5 text-amber-600" />
                 <span>Sans abonnement : payez à l&apos;usage</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-stone-900">
+              <h2 className="text-xl sm:text-2xl font-semibold text-stone-900">
                 Packs de crédits à la carte
               </h2>
               <p className="text-xs sm:text-sm text-stone-500 mt-1 max-w-2xl leading-relaxed">
@@ -531,7 +499,7 @@ export default function PricingPage() {
               </p>
             </div>
 
-            <div className="text-xs text-stone-600 bg-sand-50 px-3.5 py-2 rounded-xl border border-sand-200 shrink-0">
+            <div className="text-xs text-stone-600 bg-pms-surface px-3.5 py-2 rounded-xl border border-pms-line shrink-0">
               💡 <strong>Crédits à vie :</strong> vos crédits n&apos;expirent jamais.
             </div>
           </div>
@@ -549,16 +517,16 @@ export default function PricingPage() {
                   key={pack.id}
                   className={`p-6 rounded-2xl border flex flex-col justify-between transition-all ${
                     isTargetPack
-                      ? 'bg-violet-50/50 border-2 border-violet-600 shadow-md relative'
-                      : 'bg-sand-50/50 border-sand-200 hover:bg-white hover:border-violet-300'
+                      ? 'bg-pms-accent-tint border-2 border-pms-accent shadow-md relative'
+                      : 'bg-pms-surface border-pms-line hover:bg-white hover:border-pms-accent'
                   }`}
                 >
                   {pack.badge && (
                     <div className="mb-2">
                       <span
-                        className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
+                        className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
                           isTargetPack
-                            ? 'bg-violet-600 text-white'
+                            ? 'bg-pms-accent text-white'
                             : 'bg-stone-200 text-stone-800'
                         }`}
                       >
@@ -568,12 +536,12 @@ export default function PricingPage() {
                   )}
 
                   <div>
-                    <h3 className="text-lg font-black text-stone-900">{pack.name}</h3>
+                    <h3 className="text-lg font-semibold text-stone-900">{pack.name}</h3>
                     <div className="mt-3 flex items-baseline gap-2">
-                      <span className="text-3xl font-black text-stone-950 font-mono">
+                      <span className="text-3xl font-semibold text-stone-950">
                         {priceDisplay}
                       </span>
-                      <span className="text-xs font-bold text-violet-700 bg-violet-100 px-2 py-0.5 rounded-md">
+                      <span className="text-xs font-semibold text-pms-accent bg-pms-accent-tint px-2 py-0.5 rounded-md">
                         {pack.credits} crédits
                       </span>
                     </div>
@@ -582,15 +550,15 @@ export default function PricingPage() {
                     </p>
                   </div>
 
-                  <div className="mt-6 pt-4 border-t border-sand-200 flex items-center justify-between">
+                  <div className="mt-6 pt-4 border-t border-pms-line flex items-center justify-between">
                     <span className="text-[11px] text-stone-500">Paiement unique</span>
                     <button
                       type="button"
                       onClick={() => handleCreditBuy(pack)}
                       disabled={loadingPlan !== null}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs ${
+                      className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-xs ${
                         isTargetPack
-                          ? 'bg-violet-600 hover:bg-violet-700 text-white'
+                          ? 'bg-pms-accent hover:bg-pms-accent text-white'
                           : 'bg-stone-900 hover:bg-stone-800 text-white'
                       }`}
                     >
@@ -604,29 +572,29 @@ export default function PricingPage() {
           </div>
 
           {/* Grille du coût des crédits */}
-          <div className="mt-8 pt-6 border-t border-sand-200">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-3">
+          <div className="mt-8 pt-6 border-t border-pms-line">
+            <h4 className="text-xs font-semibold text-stone-500 mb-3">
               Coût en crédits par action dans le studio :
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
-                <div className="font-bold text-stone-900">1 Crédit</div>
+              <div className="p-3 rounded-xl bg-pms-surface border border-pms-line text-center">
+                <div className="font-semibold text-stone-900">1 Crédit</div>
                 <div className="text-[11px] text-stone-500 mt-0.5">Image HD sans filigrane</div>
               </div>
-              <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
-                <div className="font-bold text-stone-900">2 Crédits</div>
+              <div className="p-3 rounded-xl bg-pms-surface border border-pms-line text-center">
+                <div className="font-semibold text-stone-900">2 Crédits</div>
                 <div className="text-[11px] text-stone-500 mt-0.5">Image 4K</div>
               </div>
-              <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
-                <div className="font-bold text-stone-900">3 Crédits</div>
+              <div className="p-3 rounded-xl bg-pms-surface border border-pms-line text-center">
+                <div className="font-semibold text-stone-900">3 Crédits</div>
                 <div className="text-[11px] text-stone-500 mt-0.5">Vidéo ou GIF animé</div>
               </div>
-              <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
-                <div className="font-bold text-stone-900">4 Crédits</div>
+              <div className="p-3 rounded-xl bg-pms-surface border border-pms-line text-center">
+                <div className="font-semibold text-stone-900">4 Crédits</div>
                 <div className="text-[11px] text-stone-500 mt-0.5">Pack de formats (réseaux, App Store, Google Play)</div>
               </div>
-              <div className="p-3 rounded-xl bg-sand-50 border border-sand-200 text-center">
-                <div className="font-bold text-stone-900">0 crédit</div>
+              <div className="p-3 rounded-xl bg-pms-surface border border-pms-line text-center">
+                <div className="font-semibold text-stone-900">0 crédit</div>
                 <div className="text-[11px] text-stone-500 mt-0.5">Pitch IA (avec votre clé Gemini ou Claude)</div>
               </div>
             </div>
@@ -636,93 +604,93 @@ export default function PricingPage() {
         {/* ══════════════════════════════════════════════════════════════════════ */}
         {/* TABLEAU COMPARATIF COMPLET DES PLANS */}
         {/* ══════════════════════════════════════════════════════════════════════ */}
-        <div className="max-w-6xl mx-auto mb-16 rounded-3xl bg-white border border-sand-200 p-6 sm:p-10 shadow-xs">
-          <h2 className="text-xl sm:text-2xl font-black text-stone-900 mb-6 text-center">
+        <div className="max-w-6xl mx-auto mb-16 rounded-3xl bg-white border border-pms-line p-6 sm:p-10 shadow-xs">
+          <h2 className="text-xl sm:text-2xl font-semibold text-stone-900 mb-6 text-center">
             Tableau Comparatif Détaillé des Fonctionnalités
           </h2>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-sand-200">
-                  <th className="py-3 px-4 font-bold text-stone-500 uppercase tracking-wider">Fonctionnalité</th>
-                  <th className="py-3 px-4 font-bold text-stone-600 text-center">
+                <tr className="border-b border-pms-line">
+                  <th className="py-3 px-4 font-semibold text-stone-500">Fonctionnalité</th>
+                  <th className="py-3 px-4 font-semibold text-stone-600 text-center">
                     Découverte ({formatPrice(0, currency)})
                   </th>
-                  <th className="py-3 px-4 font-bold text-stone-900 text-center">
+                  <th className="py-3 px-4 font-semibold text-stone-900 text-center">
                     Solo ({formatPrice(getPlanMonthlyPrice(PLANS[1], currency), currency)})
                   </th>
-                  <th className="py-3 px-4 font-bold text-violet-700 text-center bg-violet-50/80 rounded-t-xl">
+                  <th className="py-3 px-4 font-semibold text-pms-accent text-center bg-pms-accent-tint rounded-t-xl">
                     Pro ({formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency)}) ⭐
                   </th>
-                  <th className="py-3 px-4 font-bold text-stone-900 text-center">
+                  <th className="py-3 px-4 font-semibold text-stone-900 text-center">
                     Agence ({formatPrice(getPlanMonthlyPrice(PLANS[3], currency), currency)})
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-sand-100">
+              <tbody className="divide-y divide-pms-line">
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-stone-800">Exports d&apos;images</td>
                   <td className="py-3.5 px-4 text-center text-stone-500">3 / jour (Standard)</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">20 / mois (HD)</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Illimité</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-stone-900">20 / mois (HD)</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-pms-accent bg-pms-accent-tint">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-stone-900">Illimité</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-stone-800">Filigrane</td>
                   <td className="py-3.5 px-4 text-center text-stone-500">Oui</td>
                   <td className="py-3.5 px-4 text-center text-stone-600">Discret</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-emerald-600 bg-violet-50/50">ZÉRO filigrane</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-emerald-600">ZÉRO filigrane</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-emerald-600 bg-pms-accent-tint">ZÉRO filigrane</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-emerald-600">ZÉRO filigrane</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-stone-800">Qualité 4K</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Illimité</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-pms-accent bg-pms-accent-tint">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-stone-900">Illimité</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-stone-800">Vidéos et GIF animés</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">10 / mois</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-pms-accent bg-pms-accent-tint">10 / mois</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-stone-900">Illimité</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-stone-800">Analyses IA Directeur Artistique</td>
                   <td className="py-3.5 px-4 text-center text-stone-500">3 / mois</td>
                   <td className="py-3.5 px-4 text-center text-stone-500">3 / mois</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Illimité</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-pms-accent bg-pms-accent-tint">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-stone-900">Illimité</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-stone-800">Pitch IA (avec votre clé Gemini ou Claude)</td>
                   <td className="py-3.5 px-4 text-center text-stone-700">Inclus</td>
                   <td className="py-3.5 px-4 text-center text-stone-700">Inclus</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Inclus</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Inclus</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-pms-accent bg-pms-accent-tint">Inclus</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-stone-900">Inclus</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-stone-800">Marque blanche (pages de partage à votre marque)</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
-                  <td className="py-3.5 px-4 text-center text-stone-300 bg-violet-50/50">—</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-emerald-600">Inclus</td>
+                  <td className="py-3.5 px-4 text-center text-stone-300 bg-pms-accent-tint">—</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-emerald-600">Inclus</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-stone-800">Liens de partage pour vos clients</td>
                   <td className="py-3.5 px-4 text-center text-stone-500">5 actifs</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">Illimité</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-stone-900">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-stone-900">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-pms-accent bg-pms-accent-tint">Illimité</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-stone-900">Illimité</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-stone-800">Support</td>
                   <td className="py-3.5 px-4 text-center text-stone-500">E-mail</td>
                   <td className="py-3.5 px-4 text-center text-stone-500">E-mail</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-violet-700 bg-violet-50/50">E-mail</td>
-                  <td className="py-3.5 px-4 text-center font-bold text-emerald-600">WhatsApp prioritaire</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-pms-accent bg-pms-accent-tint">E-mail</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-emerald-600">WhatsApp prioritaire</td>
                 </tr>
               </tbody>
             </table>
@@ -732,13 +700,13 @@ export default function PricingPage() {
         {/* ══════════════════════════════════════════════════════════════════════ */}
         {/* SECTION GARANTIE & FAQ MISE À JOUR */}
         {/* ══════════════════════════════════════════════════════════════════════ */}
-        <div className="max-w-4xl mx-auto rounded-3xl bg-white border border-sand-200 p-8 sm:p-10 shadow-xs space-y-8">
+        <div className="max-w-4xl mx-auto rounded-3xl bg-white border border-pms-line p-8 sm:p-10 shadow-xs space-y-8">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-violet-100 text-violet-700">
-              <ShieldCheck className="w-7 h-7 text-violet-600" />
+            <div className="p-3 rounded-2xl bg-pms-accent-tint text-pms-accent">
+              <ShieldCheck className="w-7 h-7 text-pms-accent" />
             </div>
             <div>
-              <h3 className="text-lg sm:text-xl font-black text-stone-900">
+              <h3 className="text-lg sm:text-xl font-semibold text-stone-900">
                 Garantie Qualité & Questions Fréquentes
               </h3>
               <p className="text-xs text-stone-500">
@@ -747,10 +715,10 @@ export default function PricingPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-sand-100 text-xs text-stone-600">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-pms-line text-xs text-stone-600">
             <div className="space-y-1.5">
-              <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
-                <CreditCard className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+              <h4 className="font-semibold text-stone-900 flex items-center gap-1.5">
+                <CreditCard className="w-3.5 h-3.5 text-pms-accent shrink-0" />
                 Quels sont les moyens de paiement acceptés selon ma région ?
               </h4>
               <p className="leading-relaxed text-stone-500">
@@ -763,8 +731,8 @@ export default function PricingPage() {
             </div>
 
             <div className="space-y-1.5">
-              <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <h4 className="font-semibold text-stone-900 flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-pms-accent shrink-0" />
                 Comment changer la devise d&apos;affichage (€ ou $) ?
               </h4>
               <p className="leading-relaxed text-stone-500">
@@ -773,8 +741,8 @@ export default function PricingPage() {
             </div>
 
             <div className="space-y-1.5">
-              <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
-                <Coins className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+              <h4 className="font-semibold text-stone-900 flex items-center gap-1.5">
+                <Coins className="w-3.5 h-3.5 text-pms-accent shrink-0" />
                 Les crédits à la carte expirent-ils ?
               </h4>
               <p className="leading-relaxed text-stone-500">
@@ -783,8 +751,8 @@ export default function PricingPage() {
             </div>
 
             <div className="space-y-1.5">
-              <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <h4 className="font-semibold text-stone-900 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-pms-accent shrink-0" />
                 Puis-je résilier mon abonnement à tout moment ?
               </h4>
               <p className="leading-relaxed text-stone-500">
@@ -799,21 +767,21 @@ export default function PricingPage() {
         {/* ══════════════════════════════════════════════════════════════════════ */}
         {showExitDownsell && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-sand-300 relative space-y-5 animate-scale-up text-center">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-pms-line relative space-y-5 animate-scale-up text-center">
               <button
                 type="button"
                 onClick={() => setShowExitDownsell(false)}
-                className="absolute top-4 right-4 p-2 text-stone-500 hover:text-stone-700 rounded-full hover:bg-sand-100 transition-colors"
+                className="absolute top-4 right-4 p-2 text-stone-500 hover:text-stone-700 rounded-full hover:bg-pms-surface transition-colors"
               >
                 <XIcon className="w-5 h-5" />
               </button>
 
-              <div className="w-12 h-12 rounded-2xl bg-violet-100 text-violet-700 mx-auto flex items-center justify-center font-bold">
-                <Flame className="w-6 h-6 text-violet-600 fill-violet-600" />
+              <div className="w-12 h-12 rounded-2xl bg-pms-accent-tint text-pms-accent mx-auto flex items-center justify-center font-semibold">
+                <Flame className="w-6 h-6 text-pms-accent fill-pms-accent" />
               </div>
 
               <div className="space-y-2">
-                <h3 className="text-xl font-black text-stone-900">
+                <h3 className="text-xl font-semibold text-stone-900">
                   Vous hésitez sur le plan Agence ?
                 </h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
@@ -830,7 +798,7 @@ export default function PricingPage() {
                     const proPlan = PLANS.find((p) => p.id === 'pro');
                     if (proPlan) handlePlanClick(proPlan);
                   }}
-                  className="w-full py-3.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 px-4 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-semibold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
                 >
                   <span>Passer au Pro ({formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency)}/mois)</span>
                   <ArrowRight className="w-4 h-4" />

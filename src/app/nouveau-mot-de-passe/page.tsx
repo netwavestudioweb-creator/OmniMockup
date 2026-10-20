@@ -53,13 +53,13 @@ export default function NewPasswordPage() {
   };
 
   const input =
-    'block w-full pl-10 pr-10 py-2.5 text-sm bg-sand-50/50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-600';
+    'block w-full pl-10 pr-10 py-2.5 text-sm bg-pms-surface border border-pms-line rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-pms-accent/20 focus:border-pms-accent';
 
   return (
-    <div className="min-h-screen bg-sand-50 text-stone-900 flex flex-col">
+    <div className="min-h-screen bg-pms-surface text-stone-900 flex flex-col">
       <Navbar showPricingLink={true} />
       <main className="flex-1 w-full max-w-md mx-auto px-4 py-12 flex items-center">
-        <div className="w-full bg-white rounded-3xl border border-sand-200 shadow-xl p-6 sm:p-8 space-y-5">
+        <div className="w-full bg-white rounded-3xl border border-pms-line shadow-xl p-6 sm:p-8 space-y-5">
           {ready === 'checking' && (
             <p className="text-sm text-stone-500 flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" /> Vérification du lien…
@@ -67,11 +67,11 @@ export default function NewPasswordPage() {
           )}
           {ready === 'expired' && (
             <div className="space-y-3">
-              <h1 className="text-xl font-extrabold">Lien expiré ou déjà utilisé</h1>
+              <h1 className="text-xl font-semibold">Lien expiré ou déjà utilisé</h1>
               <p className="text-sm text-stone-600 leading-relaxed">
                 Ce lien ne fonctionne plus, ou il a été ouvert sur un autre appareil que celui de la demande. Redemandez-en un nouveau.
               </p>
-              <Link href="/mot-de-passe-oublie" className="inline-flex px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold">
+              <Link href="/mot-de-passe-oublie" className="inline-flex px-4 py-2.5 rounded-xl bg-pms-accent hover:bg-pms-accent text-white text-sm font-semibold">
                 Redemander un lien
               </Link>
             </div>
@@ -79,7 +79,7 @@ export default function NewPasswordPage() {
           {ready === 'ok' && (
             <>
               <div className="space-y-1.5">
-                <h1 className="text-xl sm:text-2xl font-extrabold">Nouveau mot de passe</h1>
+                <h1 className="text-xl sm:text-2xl font-semibold">Nouveau mot de passe</h1>
                 <p className="text-sm text-stone-500">8 caractères au moins.</p>
               </div>
               {error && (
@@ -113,7 +113,7 @@ export default function NewPasswordPage() {
                 <button
                   type="submit"
                   disabled={busy}
-                  className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+                  className="w-full py-3 rounded-xl bg-pms-accent hover:bg-pms-accent text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enregistrer le nouveau mot de passe'}
                 </button>

@@ -82,6 +82,34 @@ export default function HomePage() {
   const captureAbortRef = useRef<AbortController | null>(null);
   const [activePricingPlan, setActivePricingPlan] = useState<number>(2); // 0=Découverte, 1=Solo, 2=Pro (recommandé), 3=Agence
   const [isAnnualPricing, setIsAnnualPricing] = useState<boolean>(true);
+  // Mode « Captures pour les stores » : écrans d'une appli déposés depuis l'accueil
+  const [storeShots, setStoreShots] = useState<string[] | null>(null);
+  const storeInputRef = useRef<HTMLInputElement>(null);
+  const handleStoreFiles = async (files: FileList | null) => {
+    const list = Array.from(files || []).filter((f) => f.type.startsWith('image/')).slice(0, 8);
+    if (!list.length) return;
+    const shots = await Promise.all(
+      list.map(
+        (f) =>
+          new Promise<string>((resolve) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result as string);
+            r.readAsDataURL(f);
+          })
+      )
+    );
+    setStoreShots(shots);
+    setResumedDraft(null);
+    setActiveProjectId(newProjectId());
+    setActiveCaptureItem({
+      url: 'Image locale',
+      title: 'Captures pour les stores',
+      success: true,
+      screenshotBase64: shots[0],
+      capturedAt: new Date().toISOString(),
+      durationMs: 0,
+    });
+  };
 
   // « Un lien, trois formats » : le format choisi par le visiteur
   const [format, setFormat] = useState<FormatId>('devis');
@@ -161,13 +189,14 @@ export default function HomePage() {
   };
 
   const handleReset = () => {
+    setStoreShots(null);
     setActiveCaptureItem(null);
     setErrorMessage(null);
   };
 
   if (activeCaptureItem) {
     return (
-      <div className="fixed inset-0 z-50 w-screen h-[100dvh] bg-zinc-950 overflow-hidden flex flex-col select-none">
+      <div id="studio-scroll" className="fixed inset-0 z-50 w-screen h-[100dvh] bg-zinc-950 overflow-y-auto overscroll-contain lg:overflow-hidden flex flex-col select-none">
         <SceneEditor
           captureItem={activeCaptureItem}
           initialMockup="browser"
@@ -177,6 +206,7 @@ export default function HomePage() {
           initialBeforeScreenshot={resumedDraft?.beforeScreenshot}
           initialBeforeUrl={resumedDraft?.beforeUrl}
           projectId={activeProjectId}
+          initialStoreScreens={storeShots || undefined}
         />
       </div>
     );
@@ -200,12 +230,6 @@ export default function HomePage() {
         </div>
 
         <div className="relative -mt-6 lg:mt-0 lg:order-1 rounded-lg bg-pms-surface overflow-hidden flex flex-col">
-          {/* La rayure : la seule décoration de la page, reprise au-dessus du pied de page */}
-          <div className="flex h-10 lg:h-14 shrink-0" aria-hidden="true">
-            {Array.from({ length: 40 }).map((_, i) => (
-              <div key={i} className={`w-7 shrink-0 ${i % 2 === 0 ? 'bg-pms-ink' : 'bg-pms-surface'}`} />
-            ))}
-          </div>
 
           <div className="flex-1 flex flex-col justify-center px-5 sm:px-10 lg:px-14 py-10 lg:py-14">
             <h1 className={`${display} max-w-[20ch]`}>
@@ -306,6 +330,40 @@ export default function HomePage() {
             ))}
           </div>
           <p className={`absolute bottom-8 right-5 sm:right-10 lg:right-[68px] ${head} text-right`}>trois formats.</p>
+        </div>
+      </section>
+
+      {/* ═══ Applis mobiles : captures pour l'App Store et Google Play ═══ */}
+      <section data-reveal id="stores" className="scroll-mt-16 mt-3 px-5 sm:px-10 lg:px-[68px] py-16 sm:py-20 bg-pms-surface lg:mx-3 lg:rounded-lg">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+          <div>
+            <h2 className={`${head} max-w-[18ch]`}>Vous faites des applis ?</h2>
+            <p className="mt-5 text-[17px] leading-relaxed text-pms-ink max-w-[52ch]">
+              Déposez les écrans de votre appli : chacun est mis dans un iPhone, avec votre accroche au-dessus, puis exporté aux
+              tailles exactes de l&apos;App Store et de Google Play.
+            </p>
+          </div>
+          <div className="shrink-0">
+            <button
+              type="button"
+              onClick={() => storeInputRef.current?.click()}
+              className="w-full sm:w-auto min-h-[48px] px-6 rounded-md bg-pms-accent hover:bg-pms-accent-hover text-white font-semibold text-[15px] transition-colors"
+            >
+              Déposer les écrans de mon appli
+            </button>
+            <p className="mt-2 text-[13px] text-pms-muted">Jusqu&apos;à 8 images, PNG ou JPG.</p>
+            <input
+              ref={storeInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                handleStoreFiles(e.target.files);
+                e.target.value = '';
+              }}
+            />
+          </div>
         </div>
       </section>
 
@@ -669,11 +727,6 @@ export default function HomePage() {
       </section>
 
       {/* ═══ Pied de page : la photo à gauche, le menu en grand à droite ═══ */}
-      <div className="flex h-2" aria-hidden="true">
-        {Array.from({ length: 80 }).map((_, i) => (
-          <div key={i} className={`w-7 shrink-0 ${i % 2 === 0 ? 'bg-pms-ink' : 'bg-pms-paper'}`} />
-        ))}
-      </div>
       <footer className="md:grid md:grid-cols-2 bg-pms-surface">
         <div data-ui className="bg-pms-field flex items-center justify-center px-8 py-16 min-h-[50svh]">
           <div className="w-full max-w-[560px]">

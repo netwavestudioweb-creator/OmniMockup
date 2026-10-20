@@ -16,15 +16,15 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-sand-50 text-stone-900 flex flex-col">
+    <div className="min-h-screen bg-pms-surface text-stone-900 flex flex-col">
       <Navbar showPricingLink={true} />
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 text-center">
-        <div className="max-w-md w-full bg-white rounded-3xl border border-sand-200 p-6 sm:p-10 shadow-sm space-y-6">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-pms-line p-6 sm:p-10 shadow-sm space-y-6">
           <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 mx-auto flex items-center justify-center">
             <WifiOff className="w-8 h-8" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-extrabold tracking-tight">Cette page n&apos;a pas pu s&apos;afficher</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Cette page n&apos;a pas pu s&apos;afficher</h1>
             <p className="text-sm text-stone-600 leading-relaxed">
               Souvent, c&apos;est la connexion qui a coupé un instant. Réessayez : votre travail dans le studio est enregistré sur
               votre appareil.
@@ -34,14 +34,14 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
             <button
               type="button"
               onClick={reset}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-semibold text-sm"
             >
               <RefreshCw className="w-4 h-4" />
               Réessayer
             </button>
             <Link
               href="/"
-              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-sand-300 hover:bg-sand-50 text-stone-800 font-bold text-sm"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-pms-line hover:bg-pms-surface text-stone-800 font-semibold text-sm"
             >
               <Home className="w-4 h-4" />
               Accueil
@@ -49,7 +49,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
           </div>
           <p className="text-xs text-stone-500">
             Le problème continue ?{' '}
-            <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-violet-700 underline">
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-pms-accent underline">
               Écrivez-nous
             </a>
             {error.digest ? ` (référence : ${error.digest})` : ''}.

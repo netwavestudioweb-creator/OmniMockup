@@ -72,12 +72,12 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-sand-50 text-stone-900 flex flex-col selection:bg-violet-100 selection:text-violet-900">
+    <div className="min-h-screen bg-pms-surface text-stone-900 flex flex-col selection:bg-pms-accent-tint selection:text-pms-accent">
       <Navbar showPricingLink={true} />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex items-center justify-center">
         {/* CARTE SPLIT-SCREEN DRIBBBLE STYLE */}
-        <div className="w-full bg-white rounded-3xl border border-sand-200 shadow-2xl shadow-stone-900/10 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[620px]">
+        <div className="w-full bg-white rounded-3xl border border-pms-line shadow-2xl shadow-stone-900/10 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[620px]">
           
           {/* COLONNE GAUCHE : FORMULAIRE DE CONNEXION */}
           <div className="lg:col-span-6 p-6 sm:p-10 flex flex-col justify-between">
@@ -85,15 +85,15 @@ function LoginForm() {
               {/* Logo & Titre */}
               <div className="mb-8">
                 <Link href="/" className="inline-flex items-center space-x-2.5 group">
-                  <div className="h-9 w-9 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-sm group-hover:bg-violet-700 transition-colors">
+                  <div className="h-9 w-9 rounded-xl bg-pms-accent text-white flex items-center justify-center shadow-sm group-hover:bg-pms-accent transition-colors">
                     <Layers className="w-4 h-4 text-white" />
                   </div>
-                  <span className="font-extrabold tracking-tight text-stone-900 text-xl">
-                    Pitch<span className="text-violet-600">MySite</span>
+                  <span className="font-semibold tracking-tight text-stone-900 text-xl">
+                    Pitch<span className="text-pms-accent">MySite</span>
                   </span>
                 </Link>
 
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight mt-6">
+                <h1 className="text-2xl sm:text-3xl font-semibold text-stone-900 tracking-tight mt-6">
                   Bon retour parmi nous !
                 </h1>
                 <p className="text-xs sm:text-sm text-stone-500 mt-1.5 leading-relaxed">
@@ -126,7 +126,7 @@ function LoginForm() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="exemple@gmail.com"
-                      className="block w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm bg-sand-50/50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-600 transition-colors placeholder:text-stone-400"
+                      className="block w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm bg-pms-surface border border-pms-line rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-pms-accent/20 focus:border-pms-accent transition-colors placeholder:text-stone-400"
                     />
                   </div>
                 </div>
@@ -136,7 +136,7 @@ function LoginForm() {
                     <label className="block text-xs font-semibold text-stone-700">
                       Mot de passe
                     </label>
-                    <Link href="/mot-de-passe-oublie" className="text-xs font-semibold text-violet-600 hover:text-violet-700">
+                    <Link href="/mot-de-passe-oublie" className="text-xs font-semibold text-pms-accent hover:text-pms-accent">
                       Mot de passe oublié ?
                     </Link>
                   </div>
@@ -150,7 +150,7 @@ function LoginForm() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="block w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-sand-50/50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-600 transition-colors placeholder:text-stone-400"
+                      className="block w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-pms-surface border border-pms-line rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-pms-accent/20 focus:border-pms-accent transition-colors placeholder:text-stone-400"
                     />
                     <button
                       type="button"
@@ -166,7 +166,7 @@ function LoginForm() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full mt-2 py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md shadow-violet-600/20 active:scale-[0.99] disabled:opacity-60"
+                  className="w-full mt-2 py-3 px-4 rounded-xl bg-pms-accent hover:bg-pms-accent text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.99] disabled:opacity-60"
                 >
                   {isLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -180,12 +180,12 @@ function LoginForm() {
               </form>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-sand-100 text-center">
+            <div className="mt-8 pt-4 border-t border-pms-line text-center">
               <p className="text-xs text-stone-500">
                 Vous n&apos;avez pas encore de compte ?{' '}
                 <Link
                   href={`/signup${redirectPath !== '/' ? `?redirect=${encodeURIComponent(redirectPath)}` : ''}`}
-                  className="font-bold text-violet-600 hover:text-violet-700 transition-colors"
+                  className="font-semibold text-pms-accent hover:text-pms-accent transition-colors"
                 >
                   Créer un compte gratuit
                 </Link>
@@ -194,18 +194,18 @@ function LoginForm() {
           </div>
 
           {/* COLONNE DROITE : PANNEAU SHOWCASE DRIBBBLE */}
-          <div className="lg:col-span-6 bg-gradient-to-br from-stone-900 via-indigo-950 to-violet-950 p-8 sm:p-12 text-white flex flex-col justify-between relative overflow-hidden">
+          <div className="lg:col-span-6 bg-pms-field p-8 sm:p-12 text-white flex flex-col justify-between relative overflow-hidden">
             {/* Effet de lueur d'arrière-plan */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-violet-600/25 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-60 h-60 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute top-0 right-0 w-80 h-80 bg-pms-accent/25 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-60 h-60 bg-pms-accent/20 rounded-full blur-2xl pointer-events-none" />
 
             <div className="relative z-10 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-violet-200 text-xs font-medium">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-pms-accent-soft text-xs font-medium">
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 <span>Studio de Mockups &amp; Vision IA</span>
               </div>
 
-              <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight text-white">
+              <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight leading-tight text-white">
                 Sublimez vos captures web avec un studio d&apos;exception.
               </h2>
 
@@ -220,10 +220,10 @@ function LoginForm() {
             </div>
 
             <div className="relative z-10 mt-8 pt-6 border-t border-white/10 space-y-2">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 font-mono">
+              <p className="text-[10px] font-semibold text-stone-400">
                 Lancé en octobre 2026
               </p>
-              <Link href="/#usages" className="text-xs font-semibold text-violet-200 hover:text-white transition-colors">
+              <Link href="/#usages" className="text-xs font-semibold text-pms-accent-soft hover:text-white transition-colors">
                 Proposition commerciale, réseaux sociaux, stores d&apos;applis : voir les 3 usages →
               </Link>
             </div>
@@ -241,8 +241,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-sand-50 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+        <div className="min-h-screen bg-pms-surface flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-pms-accent" />
         </div>
       }
     >

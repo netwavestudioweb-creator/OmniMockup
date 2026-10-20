@@ -2,7 +2,6 @@ import React from 'react';
 import { SUPPORT_EMAIL } from '@/lib/contact';
 import Link from 'next/link';
 import { Layers } from 'lucide-react';
-import { CurrencySwitcher } from './CurrencySwitcher';
 
 export const Footer: React.FC = () => {
   return (
@@ -14,7 +13,7 @@ export const Footer: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold tracking-tight text-stone-900 text-sm">
+              <span className="font-semibold tracking-tight text-stone-900 text-sm">
                 Pitch<span className="text-pms-accent">MySite</span> Studio
               </span>
             </div>
@@ -40,7 +39,6 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <CurrencySwitcher variant="footer" />
           <div className="text-[13px] text-stone-500 text-center md:text-right">
             © {new Date().getFullYear()} PitchMySite. Tous droits réservés.
           </div>

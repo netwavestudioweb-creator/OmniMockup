@@ -29,7 +29,6 @@ import {
   Palette,
   Image as ImageIcon,
   Move,
-  Sliders,
   Trash2,
   Plus,
   RefreshCw,
@@ -145,6 +144,8 @@ interface SceneEditorProps {
   initialBeforeUrl?: string;
   /** Projet enregistré sur cet appareil (Mes projets) */
   projectId?: string;
+  /** Mode « Captures pour les stores » : les écrans d'une appli mobile (images), un visuel par écran */
+  initialStoreScreens?: string[];
 }
 
 // Fonction d'extraction automatique des couleurs dominantes de la capture (Fonds Magiques - ultra rapide <1ms)
@@ -321,6 +322,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   initialBeforeScreenshot,
   initialBeforeUrl,
   projectId,
+  initialStoreScreens,
 }) => {
   const { user, profile, signOut, isPremiumUser, refreshProfile } = useUser();
   const userPlan = profile?.plan || 'free';
@@ -408,7 +410,6 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   const [packProgress, setPackProgress] = useState<string>('');
   const [isCopying, setIsCopying] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  const [mobileSheetOpen, setMobileSheetOpen] = useState(true);
   // Confirmation avant de quitter : évite les sorties accidentelles (surtout sur téléphone)
   const [confirmQuit, setConfirmQuit] = useState(false);
 
@@ -454,10 +455,33 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   // Changer d'onglet ramène les réglages en haut : sinon on arrive au milieu de la liste sans savoir où l'on est
   const inspectorScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    inspectorScrollRef.current?.scrollTo({ top: 0 });
+    const content = inspectorScrollRef.current;
+    if (!content) return;
+    content.scrollTo({ top: 0 });
+    // Téléphone : c'est la page qui défile. On la remonte juste au début des réglages (sous l'aperçu et les onglets).
+    const page = document.getElementById('studio-scroll');
+    const tabs = document.querySelector<HTMLElement>('[data-tour="panel"]');
+    if (!page || !tabs || window.innerWidth >= 1024) return;
+    // Après l'affichage du nouvel onglet : on aligne le début des réglages juste sous les onglets
+    const raf = requestAnimationFrame(() => {
+      const gap = content.getBoundingClientRect().top - tabs.getBoundingClientRect().bottom;
+      if (gap < 0) page.scrollBy({ top: gap });
+    });
+    return () => cancelAnimationFrame(raf);
   }, [activeTab, activeMainTab]);
   const [showFrameSizePopover, setShowFrameSizePopover] = useState<boolean>(false);
   const [currentFramePreset, setCurrentFramePreset] = useState<FramePresetOption>(FRAME_PRESETS[0]); // 16:9 1920 × 1080
+
+  // ══ MODE « CAPTURES POUR LES STORES » ══
+  // Un visuel par écran de l'appli : l'écran dans un iPhone, une accroche au-dessus, un fond uni,
+  // exporté aux tailles exactes de l'App Store et de Google Play.
+  const [storeScreens, setStoreScreens] = useState<{ id: string; src: string; caption: string }[]>(() =>
+    (initialStoreScreens || []).map((src, i) => ({ id: `ecran_${i}_${src.length}`, src, caption: '' }))
+  );
+  const [activeStoreId, setActiveStoreId] = useState<string>(() => (initialStoreScreens?.length ? `ecran_0_${initialStoreScreens[0].length}` : ''));
+  const storeMode = storeScreens.length > 0;
+  const activeStore = storeScreens.find((sc) => sc.id === activeStoreId) || storeScreens[0];
+  const storeFileInputRef = useRef<HTMLInputElement>(null);
   const [showAllSolidColors, setShowAllSolidColors] = useState<boolean>(false);
   const [sceneOverlay, setSceneOverlay] = useState<SceneOverlayPreset>('none');
   const [portraitBlur, setPortraitBlur] = useState<boolean>(false);
@@ -471,6 +495,30 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     setCurrentFramePreset(preset);
     setConfig((p) => ({ ...p, aspectRatio: preset.ratioId }));
   }, []);
+
+  // Mode stores : iPhone seul, format App Store, fond uni sombre, appareil un peu plus bas pour laisser la place à l'accroche
+  const storeSetupDone = useRef(false);
+  useEffect(() => {
+    if (!storeMode || storeSetupDone.current) return;
+    storeSetupDone.current = true;
+    const appStore = FRAME_PRESETS.find((fp) => fp.id === 'app-iphone-69');
+    if (appStore) selectFramePreset(appStore);
+    setConfig((p) => ({
+      ...p,
+      mockupType: 'iphone',
+      phoneModel: 'iphone',
+      layoutMode: 'single',
+      phoneScreen: 'desktop',
+      bgType: 'solid',
+      bgValue: '#111111',
+      bgTransparent: false,
+      mockupScale: 125,
+      mockupX: 0,
+      mockupY: 11,
+    }));
+    if (storeScreens[0]) setCurrentScreenshot(storeScreens[0].src);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeMode]);
 
   // ══ EXPORT ══
   const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
@@ -861,6 +909,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       | { type: 'callout'; id: string }
       | { type: 'socialBadge'; id: string }
   ) => {
+    // Téléphone et tablette : le doigt sur l'appareil fait défiler la page (il ne déplace plus le mockup
+    // et n'ouvre plus l'onglet Angle). On le place avec la grille de placement des réglages.
+    if (target === 'mockup' && e.pointerType === 'touch' && window.innerWidth < 1024) return;
     e.stopPropagation();
     setDraggingTarget(target);
 
@@ -2179,6 +2230,92 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     }
   };
 
+  // Mode stores : chaque écran aux tailles App Store (iPhone 6,9") et Google Play (téléphone)
+  const handleExportStoreScreens = async () => {
+    if (!sceneRef.current || isExportingPack || !storeMode) return;
+    setIsExportingPack(true);
+    setShowExportMenu(false);
+    const originalPreset = currentFramePreset;
+    const originalActive = activeStore?.id;
+    const presets = ['app-iphone-69', 'play-phone']
+      .map((id) => FRAME_PRESETS.find((fp) => fp.id === id))
+      .filter((fp): fp is FramePresetOption => !!fp);
+    try {
+      const auth = await authorizeExport('pack', 'hd');
+      if (!auth) return;
+      // Les stores refusent une image plus petite que la taille officielle
+      if (auth.quality !== 'hd') return;
+      const total = storeScreens.length * presets.length;
+      let n = 0;
+      for (let i = 0; i < storeScreens.length; i++) {
+        const screen = storeScreens[i];
+        setActiveStoreId(screen.id);
+        setCurrentScreenshot(screen.src);
+        for (const preset of presets) {
+          n++;
+          setPackProgress(`${n}/${total}`);
+          selectFramePreset(preset);
+          await new Promise((r) => setTimeout(r, 600));
+          const blob = await renderScene('jpg', preset, auth.quality, !auth.watermark);
+          const { width, height } = getExportSize(preset, auth.quality);
+          const store = preset.id === 'play-phone' ? 'google-play' : 'app-store';
+          downloadBlob(blob, `${fileBaseName}-ecran-${i + 1}-${store}-${width}x${height}.jpg`);
+          await new Promise((r) => setTimeout(r, 250));
+        }
+      }
+      setPackProgress('Fait !');
+      setTimeout(() => setPackProgress(''), 3000);
+      showExportDone(`${total} fichiers téléchargés`);
+    } catch (err) {
+      console.error('Erreur export des écrans :', err);
+      showExportError('Les captures n’ont pas pu être toutes téléchargées. Réessayez.');
+    } finally {
+      selectFramePreset(originalPreset);
+      const back = storeScreens.find((sc) => sc.id === originalActive);
+      if (back) {
+        setActiveStoreId(back.id);
+        setCurrentScreenshot(back.src);
+      }
+      setIsExportingPack(false);
+    }
+  };
+
+  const handleAddStoreScreens = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).filter((f) => f.type.startsWith('image/')).slice(0, 8);
+    e.target.value = '';
+    files.forEach((file, k) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const src = reader.result as string;
+        const id = `ecran_${Date.now()}_${k}`;
+        setStoreScreens((list) => (list.length >= 10 ? list : [...list, { id, src, caption: '' }]));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const selectStoreScreen = (id: string) => {
+    const sc = storeScreens.find((x) => x.id === id);
+    if (!sc) return;
+    setActiveStoreId(id);
+    setCurrentScreenshot(sc.src);
+  };
+
+  const removeStoreScreen = (id: string) => {
+    const rest = storeScreens.filter((x) => x.id !== id);
+    if (!rest.length) return;
+    setStoreScreens(rest);
+    if (activeStore?.id === id) selectStoreScreen(rest[0].id);
+  };
+
+  // Couleur de l'accroche selon le fond (clair ou sombre)
+  const storeCaptionColor = (() => {
+    const v = (config.bgValue || '').trim();
+    if (!/^#[0-9a-f]{6}$/i.test(v)) return '#ffffff';
+    const r = parseInt(v.slice(1, 3), 16), g = parseInt(v.slice(3, 5), 16), b = parseInt(v.slice(5, 7), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 150 ? '#111111' : '#ffffff';
+  })();
+
   // Ajout & gestion de logo
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2423,7 +2560,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         `${shadowOffsetX}px ${shadowOffsetY}px 24px rgba(0, 0, 0, ${effectiveAlpha}), 0 2px 8px rgba(0, 0, 0, ${(Number(effectiveAlpha) * 0.35).toFixed(2)})`;
 
   return (
-    <div className={`w-screen h-[100dvh] flex flex-col bg-[#0b0b0e] text-zinc-150 select-none overflow-hidden font-sans fixed inset-0 z-50 ${STUDIO_FONT_VARIABLES}`}>
+    <div className={`w-screen min-h-[100dvh] lg:h-[100dvh] flex flex-col bg-[#0b0b0e] text-zinc-150 select-none overflow-x-clip lg:overflow-hidden font-sans relative lg:fixed lg:inset-0 z-50 ${STUDIO_FONT_VARIABLES}`}>
       {confirmQuit && onClose && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
@@ -2467,7 +2604,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       {/* 1. TOP BAR PRO (Shots.so / Rotato App Header)                         */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {!presentationMode && (
-        <header className="h-14 sm:h-16 px-2 sm:px-5 lg:px-6 border-b border-zinc-800/90 bg-[#08090e]/95 backdrop-blur-2xl flex items-center justify-between gap-2.5 z-[45] shrink-0 relative select-none">
+        <header className="h-14 sm:h-16 px-2 sm:px-5 lg:px-6 border-b border-zinc-800/90 bg-[#08090e]/95 backdrop-blur-2xl flex items-center justify-between gap-2.5 z-[45] shrink-0 sticky top-0 lg:relative select-none">
           {/* Ligne d'accentuation subtile en haut */}
           <div className="absolute top-0 inset-x-0 h-px bg-pms-accent pointer-events-none" />
 
@@ -3163,9 +3300,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {/* 2. ESPACE DE TRAVAIL PRINCIPAL (Toolbar Gauche + Canvas + Inspecteur)   */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
-      <div className="flex-1 min-h-0 w-full flex flex-col lg:flex-row overflow-hidden relative">
+      <div className="flex-1 lg:min-h-0 w-full flex flex-col lg:flex-row lg:overflow-hidden relative">
         {/* ── ZONE DE PRÉVISUALISATION CENTRALE (CANVAS FLUIDE GÉANT) ── */}
-        <main className="flex-1 min-h-[180px] lg:min-h-0 lg:h-full relative flex flex-col items-center justify-center p-3 sm:p-8 bg-[#090a0f] overflow-hidden select-none">
+        <main className="sticky top-14 sm:top-16 z-30 h-[44svh] shrink-0 lg:static lg:z-auto lg:shrink lg:flex-1 lg:h-full lg:min-h-0 flex flex-col items-center justify-center p-3 sm:p-8 bg-[#090a0f] overflow-hidden select-none">
           {/* Mode Présentation: Flottant 'Quitter la présentation (Échap)' */}
           {presentationMode && (
             <div className="absolute top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-2 py-2 rounded-full bg-[#07080c]/90 border border-zinc-800 text-white animate-fade-in select-none">
@@ -3220,7 +3357,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {/* CANVAS DE LA SCÈNE RENDU (taille de référence, réduite par transform) */}
             <div
               ref={sceneRef}
-              className="absolute top-0 left-0 overflow-hidden flex items-center justify-center touch-none"
+              className="absolute top-0 left-0 overflow-hidden flex items-center justify-center touch-pan-y lg:touch-none"
               style={{
                 width: sceneLogicalW,
                 height: sceneLogicalH,
@@ -3341,7 +3478,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 config.layoutMode === 'before-after' ? (
                   /* ── AVANT / APRÈS : ancien site et refonte côte à côte ── */
                   <div
-                    className="absolute cursor-move touch-none z-20 flex items-center justify-center gap-[3%]"
+                    className="absolute lg:cursor-move touch-pan-y lg:touch-none z-20 flex items-center justify-center gap-[3%]"
                     style={{
                       left: '50%',
                       top: '50%',
@@ -3388,7 +3525,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   /* ── MODE DUO : MACBOOK/BROWSER + IPHONE 16 EN SUPERPOSITION (SIGNATURE SHOTS.SO) ── */
                   /* FIX: conteneur 80%×76% pour que l'iPhone reste TOUJOURS dans la scène */
                   <div
-                    className="absolute cursor-move transition-all duration-150 touch-none z-20"
+                    className="absolute lg:cursor-move transition-all duration-150 touch-pan-y lg:touch-none z-20"
                     style={{
                       left: '50%',
                       top: '50%',
@@ -3458,7 +3595,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 ) : config.layoutMode === 'trio-ecosystem' ? (
                   /* ── MODE TRIO ÉCOSYSTÈME (MACBOOK + IPAD + IPHONE) ── */
                   <div
-                    className="absolute cursor-move transition-all duration-150 touch-none z-20"
+                    className="absolute lg:cursor-move transition-all duration-150 touch-pan-y lg:touch-none z-20"
                     style={{
                       left: '50%',
                       top: '50%',
@@ -3552,7 +3689,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 ) : (
                   /* ── MODE SOLO : APPAREIL UNIQUE CENTRÉ ── */
                   <div
-                    className="absolute cursor-move transition-all duration-150 touch-none z-20"
+                    className="absolute lg:cursor-move transition-all duration-150 touch-pan-y lg:touch-none z-20"
                     style={{
                       width: `${soloDeviceWidthPct}%`,
                       left: '50%',
@@ -3591,6 +3728,16 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     )}
                   </div>
                 )
+              )}
+
+              {/* MODE STORES : accroche de l'écran, au-dessus de l'appareil */}
+              {storeMode && activeStore?.caption && (
+                <div
+                  className="absolute inset-x-[7%] top-[4.5%] z-30 text-center pointer-events-none"
+                  style={{ color: storeCaptionColor, fontSize: Math.round(sceneLogicalW * 0.075), fontWeight: 700, lineHeight: 1.1, letterSpacing: '-0.01em' }}
+                >
+                  {activeStore.caption}
+                </div>
               )}
 
               {/* CALQUES DE TEXTES */}
@@ -3970,19 +4117,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         {/* 3. PANNEAU LATÉRAL D'INSPECTION (STYLE DAVINCI / RESOLVE / FIGMA) */}
         {/* ═════════════════════════════════════════════════════════════════ */}
         {showRightPanel && !presentationMode && (
-          <aside className={`w-full lg:w-[380px] xl:w-[410px] ${mobileSheetOpen ? 'max-h-[62%]' : ''} lg:max-h-none lg:h-full bg-[#0a0b10] border-t lg:border-t-0 lg:border-l border-zinc-850/80 flex flex-col shrink-0 z-20 overflow-hidden shadow-2xl`}>
+          <aside className="w-full lg:w-[380px] xl:w-[410px] lg:h-full bg-[#0a0b10] border-t lg:border-t-0 lg:border-l border-zinc-850/80 flex flex-col shrink-0 z-20 lg:overflow-hidden lg:shadow-2xl">
           {/* EN-TÊTE : déplier / replier (téléphone) + mode Simple / Expert */}
           <div className="flex px-2 lg:px-4 py-1 lg:py-2.5 border-b border-zinc-850/80 bg-[#08090d] items-center justify-between gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => setMobileSheetOpen(!mobileSheetOpen)}
-              aria-expanded={mobileSheetOpen}
-              className="lg:hidden flex items-center gap-2 min-h-[44px] px-2 rounded-xl text-zinc-200 hover:bg-zinc-850 transition-colors"
-            >
-              <Sliders className="w-4 h-4 text-pms-accent-soft" />
-              <span className="text-[13px] font-bold">{mobileSheetOpen ? 'Réduire' : 'Réglages'}</span>
-              {mobileSheetOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-            </button>
             <span className="hidden lg:flex text-xs font-bold text-zinc-200 items-center gap-2">
               Réglages
               {draftSavedAt && (
@@ -4019,7 +4156,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           </div>
 
           {/* ONGLETS (un seul niveau) */}
-          <div data-tour="panel" className={`${mobileSheetOpen ? 'block' : 'hidden lg:block'} px-3 py-2 lg:py-2.5 border-b border-zinc-850/80 bg-[#090a0f] shrink-0`}>
+          <div data-tour="panel" className="sticky top-[calc(3.5rem+44svh)] sm:top-[calc(4rem+44svh)] z-20 lg:static px-3 py-2 lg:py-2.5 border-b border-zinc-850/80 bg-[#090a0f] shrink-0">
             <div className={`grid ${expertMode ? 'grid-cols-7' : 'grid-cols-5'} gap-1 p-1 rounded-xl bg-zinc-900/90 border border-zinc-800`} role="tablist">
               {([
                 { key: 'mockup', main: 'mockup', label: 'Appareil', icon: Monitor, expert: false },
@@ -4063,9 +4200,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           {/* CONTENU DE L'INSPECTEUR DÉFILABLE */}
           <div
             ref={inspectorScrollRef}
-            className={`${
-              mobileSheetOpen ? 'flex' : 'hidden lg:flex'
-            } flex-col flex-1 min-h-0 p-4 sm:p-5 space-y-6 overflow-y-auto overscroll-contain studio-scrollbar lg:max-h-[calc(100vh-120px)]`}
+            className="flex flex-col lg:flex-1 lg:min-h-0 p-4 sm:p-5 pb-16 lg:pb-5 space-y-6 lg:overflow-y-auto lg:overscroll-contain studio-scrollbar lg:max-h-[calc(100vh-120px)]"
           >
             {/* ══════════ ONGLET PRINCIPAL MOCKUP ══════════ */}
             {activeMainTab === 'mockup' && (
@@ -4075,6 +4210,95 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
               <div className="space-y-5 animate-fade-in">
                 {/* Ordre pensé pour le téléphone : l'essentiel d'abord (appareil, disposition), les outils avancés ensuite */}
+                {storeMode && (
+                  <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-4">
+                    <div>
+                      <p className="text-[15px] font-semibold text-white">Écrans de l&apos;appli ({storeScreens.length})</p>
+                      <p className="mt-1 text-[13px] text-zinc-400">Un visuel par écran, aux tailles de l&apos;App Store et de Google Play.</p>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {storeScreens.map((sc, i) => (
+                        <button
+                          key={sc.id}
+                          type="button"
+                          onClick={() => selectStoreScreen(sc.id)}
+                          aria-label={`Écran ${i + 1}`}
+                          aria-pressed={activeStore?.id === sc.id}
+                          className={`shrink-0 w-14 h-24 rounded-lg overflow-hidden border-2 ${activeStore?.id === sc.id ? 'border-pms-accent' : 'border-zinc-700'}`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={sc.src} alt="" className="w-full h-full object-cover object-top" />
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => storeFileInputRef.current?.click()}
+                        className="shrink-0 w-14 h-24 rounded-lg border-2 border-dashed border-zinc-600 text-zinc-300 text-[12px] font-semibold flex flex-col items-center justify-center gap-1"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Ajouter
+                      </button>
+                      <input ref={storeFileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleAddStoreScreens} />
+                    </div>
+                    {activeStore && (
+                      <div className="space-y-2">
+                        <label htmlFor="store-caption" className="text-[13px] font-semibold text-zinc-300">
+                          Accroche de cet écran
+                        </label>
+                        <input
+                          id="store-caption"
+                          type="text"
+                          value={activeStore.caption}
+                          maxLength={60}
+                          placeholder="Ex. : Payez en un geste"
+                          onChange={(e) =>
+                            setStoreScreens((list) => list.map((x) => (x.id === activeStore.id ? { ...x, caption: e.target.value } : x)))
+                          }
+                          className="w-full min-h-[44px] px-3 rounded-xl bg-zinc-950 border border-zinc-700 text-white text-[15px] focus:outline-none focus:border-pms-accent"
+                        />
+                        {storeScreens.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeStoreScreen(activeStore.id)}
+                            className="min-h-[44px] text-[13px] font-semibold text-zinc-400 hover:text-white"
+                          >
+                            Retirer cet écran
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <p className="text-[13px] font-semibold text-zinc-300">Fond</p>
+                      <div className="flex gap-3">
+                        {[
+                          { c: '#111111', n: 'Noir' },
+                          { c: '#FFFFFF', n: 'Blanc' },
+                          { c: '#E9E9EB', n: 'Gris clair' },
+                          { c: '#1A4BE0', n: 'Bleu' },
+                          { c: '#E2A93B', n: 'Or' },
+                        ].map(({ c, n }) => (
+                          <button
+                            key={c}
+                            type="button"
+                            aria-label={`Fond ${n}`}
+                            aria-pressed={config.bgValue === c}
+                            onClick={() => setConfig((p) => ({ ...p, bgType: 'solid', bgValue: c, bgTransparent: false }))}
+                            className={`w-10 h-10 rounded-full border-2 ${config.bgValue === c ? 'border-pms-accent scale-110' : 'border-zinc-600'}`}
+                            style={{ background: c }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleExportStoreScreens}
+                      disabled={isExportingPack}
+                      className="w-full min-h-[48px] rounded-xl bg-pms-accent hover:bg-pms-accent-hover text-white text-[15px] font-bold disabled:opacity-50"
+                    >
+                      {isExportingPack ? `Export ${packProgress}` : `Exporter les ${storeScreens.length * 2} captures (App Store + Google Play)`}
+                    </button>
+                  </div>
+                )}
                 {/* Modèle d'appareil (9 options) */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-300">

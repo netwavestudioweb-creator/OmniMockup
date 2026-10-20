@@ -23,7 +23,7 @@ export const CurrencySwitcher: React.FC<CurrencySwitcherProps> = ({
 
   if (variant === 'footer') {
     return (
-      <div className={`inline-flex items-center gap-1.5 p-1 rounded-xl bg-stone-100 border border-sand-300 text-xs ${className}`}>
+      <div className={`inline-flex items-center gap-1.5 p-1 rounded-xl bg-stone-100 border border-pms-line text-xs ${className}`}>
         <span className="text-[10px] font-semibold text-stone-400 pl-1.5 flex items-center gap-1 whitespace-nowrap">
           <Globe className="w-3 h-3 text-stone-400" />
           <span className="hidden sm:inline">Devise :</span>
@@ -55,7 +55,7 @@ export const CurrencySwitcher: React.FC<CurrencySwitcherProps> = ({
   // default ou compact (pour /pricing)
   return (
     <div
-      className={`inline-flex items-center gap-1 p-1 bg-sand-100 rounded-2xl border border-sand-200 ${className}`}
+      className={`inline-flex items-center gap-1 p-1 bg-pms-surface rounded-2xl border border-pms-line ${className}`}
       role="group"
       aria-label="Sélecteur de devise"
     >
@@ -73,8 +73,8 @@ export const CurrencySwitcher: React.FC<CurrencySwitcherProps> = ({
             aria-pressed={isActive}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
               isActive
-                ? 'bg-white text-stone-900 shadow-xs border border-sand-300 font-extrabold'
-                : 'text-stone-600 hover:text-stone-900 hover:bg-sand-200/50'
+                ? 'bg-white text-stone-900 shadow-xs border border-pms-line font-extrabold'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-pms-line/50'
             }`}
           >
             {opt.label}

@@ -53,7 +53,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: HERO_SCRIPT }} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${archivo.variable} font-sans bg-pms-paper text-stone-900 antialiased selection:bg-violet-100 selection:text-violet-900 min-h-screen flex flex-col overflow-x-clip w-full max-w-full`}
+        className={`${geistSans.variable} ${geistMono.variable} ${archivo.variable} font-archivo bg-pms-paper text-stone-900 antialiased selection:bg-pms-accent-tint selection:text-pms-ink min-h-screen flex flex-col overflow-x-clip w-full max-w-full`}
       >
         <UserProvider>
           <CurrencyProvider>

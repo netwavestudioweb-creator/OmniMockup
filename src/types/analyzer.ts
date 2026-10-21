@@ -93,6 +93,7 @@ export interface SceneConfig {
   browserStyle?: BrowserStylePreset;
   cornerRadius?: CornerRadius;
   cropOffsetY?: number; // Défilement vertical de la capture (0% = Haut, 100% = Bas)
+  cropZoom?: number; // Zone montrée : 1 = toute la largeur de la page, 3 = une partie agrandie 3 fois
   layoutMode?: 'single' | 'dual-stacked' | 'trio-ecosystem' | 'before-after';
   /** Avant / Après : libellés affichés au-dessus des deux écrans */
   beforeLabel?: string;

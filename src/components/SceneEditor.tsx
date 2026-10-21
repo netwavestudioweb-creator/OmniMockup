@@ -5,6 +5,7 @@ import { flushSync } from 'react-dom';
 import Link from 'next/link';
 import { toCanvas } from 'html-to-image';
 import { captureOne } from '@/lib/captureCache';
+import { PagePartPicker } from '@/components/PagePartPicker';
 import { trackEvent } from '@/lib/tracking';
 import {
   CaptureItemResult,
@@ -312,6 +313,9 @@ const nextFrame = () =>
     setTimeout(finish, 80);
   });
 const HISTORY_LIMIT = 60;
+
+/** Proportion de l'écran de chaque appareil (largeur / hauteur), pour le cadre de « Partie du site montrée » */
+const SCREEN_RATIO: Partial<Record<string, number>> = { iphone: 1206 / 2454, android: 9 / 19, ipad: 4 / 3, watch: 0.82 };
 
 export const SceneEditor: React.FC<SceneEditorProps> = ({
   captureItem,
@@ -701,9 +705,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     if (tmpl.browserStyle) {
       setBrowserStyle(tmpl.browserStyle);
     }
-    if (tmpl.sceneOverlay) {
-      setSceneOverlay(tmpl.sceneOverlay);
-    }
+    // Toujours remis : sinon l'ombre de feuilles ou de stores d'un modèle précédent restait sur le suivant
+    setSceneOverlay(tmpl.sceneOverlay || 'none');
     // Format exact du réseau visé (ex. LinkedIn 1200 × 627), sinon le premier format du même ratio
     const matchingPreset =
       FRAME_PRESETS.find((p) => p.id === tmpl.framePresetId) || FRAME_PRESETS.find((p) => p.ratioId === tmpl.aspectRatio);
@@ -758,6 +761,30 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
   // Image courante affichée (permet le remplacement à la volée)
   const [currentScreenshot, setCurrentScreenshot] = useState<string>(captureItem.screenshotBase64 || '');
+
+  // Largeur de la capture (fenêtre du navigateur de capture) : plus large = plus de contenu dans l'écran
+  const [captureWidth, setCaptureWidth] = useState(1440);
+  const [recapturingWidth, setRecapturingWidth] = useState(false);
+  const [recaptureError, setRecaptureError] = useState('');
+  const canRecaptureWidth = /^https?:\/\//i.test(captureItem.url || '') && !/youtu\.?be/i.test(captureItem.url || '');
+  const recaptureAtWidth = async (width: number) => {
+    setRecapturingWidth(true);
+    setRecaptureError('');
+    try {
+      const item = await captureOne({
+        targets: [captureItem.url],
+        fullPage: true,
+        viewport: { width, height: Math.round(width / 1.6) },
+      });
+      if (!item.success || !item.screenshotBase64) throw new Error(item.error || 'Capture impossible.');
+      setCurrentScreenshot(item.screenshotBase64);
+      setCaptureWidth(width);
+    } catch (err) {
+      setRecaptureError((err as Error).message || 'La nouvelle capture a échoué. Réessayez.');
+    } finally {
+      setRecapturingWidth(false);
+    }
+  };
 
   useEffect(() => {
     if (captureItem.screenshotBase64) {
@@ -3322,10 +3349,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             <button
               type="button"
               onClick={() => setPresentationMode(true)}
-              className="lg:hidden absolute top-2 right-2 z-40 flex items-center gap-1.5 min-h-[44px] px-3 rounded-full bg-black/70 text-white text-[13px] font-semibold active:scale-95 transition-all"
+              aria-label="Voir en grand"
+              title="Voir en grand"
+              className="lg:hidden absolute top-2 right-2 z-40 w-11 h-11 flex items-center justify-center rounded-full bg-black/60 text-white active:scale-95 transition-all"
             >
               <Maximize2 className="w-4 h-4" />
-              Voir en grand
             </button>
           )}
 
@@ -3510,6 +3538,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         browserStyle={config.browserStyle || browserStyle}
                         cornerRadius={config.cornerRadius}
                         cropOffsetY={config.cropOffsetY}
+                        cropZoom={config.cropZoom}
                             />
                           ) : (
                             <div data-export-hide className="w-full aspect-[16/10] rounded-2xl border-2 border-dashed border-white/40 bg-black/30 flex flex-col items-center justify-center gap-2 text-white text-center p-6">
@@ -3563,6 +3592,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         browserStyle={config.browserStyle || browserStyle}
                         cornerRadius={config.cornerRadius}
                         cropOffsetY={config.cropOffsetY}
+                        cropZoom={config.cropZoom}
                       />
                     </div>
 
@@ -3588,6 +3618,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         styleVariant={config.deviceStyle}
                         cornerRadius="round"
                         cropOffsetY={config.cropOffsetY}
+                        cropZoom={config.cropZoom}
                         deviceColor={config.deviceColor}
                       />
                     </div>
@@ -3633,6 +3664,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         browserStyle={config.browserStyle || browserStyle}
                         cornerRadius={config.cornerRadius}
                         cropOffsetY={config.cropOffsetY}
+                        cropZoom={config.cropZoom}
                       />
                     </div>
 
@@ -3657,6 +3689,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         styleVariant={config.deviceStyle}
                         cornerRadius="round"
                         cropOffsetY={config.cropOffsetY}
+                        cropZoom={config.cropZoom}
                         deviceColor={config.deviceColor}
                       />
                     </div>
@@ -3682,6 +3715,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         styleVariant={config.deviceStyle}
                         cornerRadius="round"
                         cropOffsetY={config.cropOffsetY}
+                        cropZoom={config.cropZoom}
                         deviceColor={config.deviceColor}
                       />
                     </div>
@@ -3724,6 +3758,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         browserStyle={config.browserStyle || browserStyle}
                         cornerRadius={config.cornerRadius}
                         cropOffsetY={config.cropOffsetY}
+                        cropZoom={config.cropZoom}
                       />
                     )}
                   </div>
@@ -4299,6 +4334,37 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </button>
                   </div>
                 )}
+                {/* Modèles prêts : le bouton du haut est masqué sur téléphone, on l'offre ici en premier */}
+                {!storeMode && (
+                  <button
+                    type="button"
+                    onClick={() => setShowTemplatesModal(true)}
+                    className="md:hidden w-full min-h-[52px] rounded-2xl bg-pms-accent hover:bg-pms-accent-hover text-white text-[15px] font-semibold flex items-center justify-center gap-2"
+                  >
+                    <Layout className="w-4 h-4" />
+                    Choisir un modèle prêt à publier
+                  </button>
+                )}
+                {/* Partie du site montrée : la fonction phare (capture longue, zone choisie) */}
+                {!storeMode && currentScreenshot && (
+                  <PagePartPicker
+                    screenshot={currentScreenshot}
+                    offsetY={config.cropOffsetY || 0}
+                    zoom={config.cropZoom || 1}
+                    onChange={({ offsetY, zoom }) =>
+                      setConfig((p) => ({
+                        ...p,
+                        ...(offsetY !== undefined ? { cropOffsetY: offsetY } : {}),
+                        ...(zoom !== undefined ? { cropZoom: zoom } : {}),
+                      }))
+                    }
+                    screenRatio={SCREEN_RATIO[config.mockupType] || 1.6}
+                    captureWidth={canRecaptureWidth ? captureWidth : undefined}
+                    onRecapture={canRecaptureWidth ? recaptureAtWidth : undefined}
+                    recapturing={recapturingWidth}
+                  />
+                )}
+                {recaptureError && <p className="text-[13px] text-rose-300" role="alert">{recaptureError}</p>}
                 {/* Modèle d'appareil (9 options) */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-300">
@@ -5283,30 +5349,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             {/* ══════════ ONGLET 4 : DÉFILEMENT DE PAGE & IMAGE ══════════ */}
             {activeTab === 'content' && (
               <div className="space-y-5 animate-fade-in">
-                {/* Défilement vertical de la capture */}
-                <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="font-bold text-white uppercase flex items-center gap-1.5">
-                      <Move className="w-3.5 h-3.5 text-pms-accent-soft" />
-                      <span>Défilement Web (Haut ↕ Bas)</span>
-                    </span>
-                    <span className="text-pms-accent-soft font-bold">{config.cropOffsetY || 0}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={config.cropOffsetY || 0}
-                    onChange={(e) => setConfig((p) => ({ ...p, cropOffsetY: Number(e.target.value) }))}
-                    className="w-full accent-pms-accent cursor-pointer h-2 bg-zinc-800 rounded-lg"
-                  />
-                  <div className="flex justify-between text-[12px] lg:text-[11px] text-zinc-400 font-mono">
-                    <span>▲ Haut de page</span>
-                    <span>Tarifs / Features</span>
-                    <span>Footer ▼</span>
-                  </div>
-                </div>
-
+                {/* La partie du site montrée se règle dans l'onglet Appareil (« Partie du site montrée ») */}
                 {/* Remplacement manuel de l'image */}
                 <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
                   <div className="flex items-center gap-2">
@@ -6264,6 +6307,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
           }}
           onClose={() => setShowTemplatesModal(false)}
           screenshot={currentScreenshot}
+          mobileScreenshot={mobileScreenshot || undefined}
         />
       )}
 

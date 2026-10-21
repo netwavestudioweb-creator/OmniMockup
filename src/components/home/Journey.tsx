@@ -11,22 +11,22 @@ import { MockupFrame } from '@/components/MockupFrame';
 const STEPS = [
   {
     t: 'Collez le lien du site.',
-    d: 'Ou celui d’une vidéo YouTube. Site en local ou protégé par un mot de passe : déposez votre propre capture.',
+    d: 'Ou celui d’une vidéo YouTube. Site protégé ou en local ? Déposez une capture.',
     value: 'Un simple lien',
   },
   {
     t: 'Le site est capturé en entier.',
-    d: 'En quelques secondes, sans les bannières de cookies. Sur ordinateur et sur téléphone.',
+    d: 'En quelques secondes, sans bandeau de cookies. Version ordinateur et version téléphone.',
     value: 'Une capture propre',
   },
   {
     t: 'Mettez-le en scène.',
-    d: 'MacBook, iPhone, iPad, Android ; l’angle, le fond et le format de chaque réseau.',
+    d: 'MacBook, iPhone, iPad ou Android. Ou un des 14 modèles prêts : tout est réglé d’un coup.',
     value: 'Un visuel de présentation',
   },
   {
     t: 'Envoyez-le et faites signer.',
-    d: 'Image jusqu’en 4K, vidéo, PDF pour un devis, ou un lien à envoyer à votre client, avec le texte de vente.',
+    d: 'En image 4K, en vidéo, en PDF pour le devis ou en simple lien. Le texte de vente est prêt.',
     value: 'Un argument de vente',
   },
 ] as const;
@@ -40,7 +40,7 @@ function StepVisual({ step }: { step: number }) {
         <p className="text-[15px] text-pms-muted">Collez l’adresse du site</p>
         <div className="mt-3 flex flex-col sm:flex-row gap-2 rounded-lg bg-pms-paper p-2">
           <span className="flex-1 min-w-0 truncate px-3 py-3 text-[17px]">https://www.netflix.com</span>
-          <span className="rounded-md bg-pms-accent px-5 py-3 text-[15px] font-semibold text-white text-center">Créer mon mockup</span>
+          <span className="rounded-md bg-pms-accent px-5 py-3 text-[15px] font-semibold text-white text-center">Je crée mon visuel</span>
         </div>
       </div>
     );
@@ -128,7 +128,7 @@ export function Journey() {
   }, []);
 
   return (
-    <ol ref={listRef} className="journey relative mt-12 flex flex-col gap-16 lg:gap-24">
+    <ol ref={listRef} className="journey relative mt-10 flex flex-col gap-12 lg:gap-16">
       {/* La ligne de progression : à gauche sur téléphone, au centre sur ordinateur */}
       <span aria-hidden className="absolute top-0 bottom-0 left-[21px] lg:left-1/2 w-[2px] -translate-x-1/2 bg-pms-line" />
       <span

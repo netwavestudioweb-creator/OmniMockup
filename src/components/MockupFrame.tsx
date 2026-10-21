@@ -16,6 +16,86 @@ const DEVICE_BODY: Record<DeviceColor, { body: string; button: string }> = {
 };
 import { Lock, ExternalLink, Globe, RotateCw, ArrowLeft, ArrowRight, Plus } from 'lucide-react';
 
+/**
+ * Couleur du haut de la capture, pour la barre d'état du téléphone (comme sur un vrai iPhone,
+ * la barre prend la couleur du site). Blanc par défaut si l'image ne peut pas être lue.
+ */
+function useTopColor(src: string, enabled: boolean): string {
+  const [color, setColor] = React.useState('#ffffff');
+  React.useEffect(() => {
+    if (!enabled || !src) return;
+    let cancelled = false;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = 8;
+        c.height = 1;
+        const ctx = c.getContext('2d');
+        if (!ctx) return;
+        // Une fine bande en haut de l'image, réduite à 8 points, dont on fait la moyenne
+        ctx.drawImage(img, 0, 0, img.naturalWidth, Math.max(1, Math.round(img.naturalHeight * 0.004)), 0, 0, 8, 1);
+        const d = ctx.getImageData(0, 0, 8, 1).data;
+        let r = 0, g = 0, b = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          r += d[i];
+          g += d[i + 1];
+          b += d[i + 2];
+        }
+        if (!cancelled) setColor(`rgb(${Math.round(r / 8)}, ${Math.round(g / 8)}, ${Math.round(b / 8)})`);
+      } catch {
+        /* image d'un autre domaine : on garde le blanc */
+      }
+    };
+    img.src = src;
+    return () => {
+      cancelled = true;
+    };
+  }, [src, enabled]);
+  return color;
+}
+
+/** Texte sombre ou clair selon la couleur de fond */
+function isDarkColor(rgb: string): boolean {
+  const m = rgb.match(/\d+/g);
+  if (!m || m.length < 3) return false;
+  const [r, g, b] = m.map(Number);
+  return 0.299 * r + 0.587 * g + 0.114 * b < 140;
+}
+
+/** Barre d'état d'un téléphone (heure, réseau, wifi, batterie), à l'échelle de l'écran */
+function PhoneStatusBar({ bg, ratio }: { bg: string; ratio: number }) {
+  const fg = isDarkColor(bg) ? '#ffffff' : '#111111';
+  const w = 1206;
+  const h = Math.round(w * ratio);
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="absolute inset-x-0 top-0 z-20 w-full h-auto block" aria-hidden>
+      <rect width={w} height={h} fill={bg} />
+      <text x="150" y={h * 0.62} fontSize={h * 0.32} fontWeight="600" fill={fg} fontFamily="-apple-system, system-ui, sans-serif">
+        9:41
+      </text>
+      <g fill={fg} transform={`translate(860 ${h * 0.4})`}>
+        <rect x="0" y={h * 0.16} width="10" height={h * 0.1} rx="3" />
+        <rect x="16" y={h * 0.11} width="10" height={h * 0.15} rx="3" />
+        <rect x="32" y={h * 0.05} width="10" height={h * 0.21} rx="3" />
+        <rect x="48" y="0" width="10" height={h * 0.26} rx="3" />
+        <rect x="160" y="0" width="76" height={h * 0.26} rx="10" fill="none" stroke={fg} strokeWidth="5" opacity="0.6" />
+        <rect x="168" y={h * 0.045} width="54" height={h * 0.17} rx="5" />
+      </g>
+      <path
+        d={`M 965 ${h * 0.47} a 34 34 0 0 1 56 0`}
+        transform={`translate(0 ${h * 0.05})`}
+        stroke={fg}
+        strokeWidth="9"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <circle cx="993" cy={h * 0.64} r="7" fill={fg} />
+    </svg>
+  );
+}
+
 interface MockupFrameProps {
   type: MockupType;
   /** L'appareil remplit toute la largeur disponible (pas de taille maximale fixe) : mode Solo */
@@ -30,6 +110,8 @@ interface MockupFrameProps {
   browserStyle?: BrowserStylePreset;
   cornerRadius?: CornerRadius;
   cropOffsetY?: number;
+  /** Zone montrée : 1 = toute la largeur, plus grand = une partie de la page agrandie */
+  cropZoom?: number;
   onClickImage?: () => void;
   deviceColor?: DeviceColor;
 }
@@ -46,12 +128,15 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
   browserStyle,
   cornerRadius = 'curved',
   cropOffsetY = 0,
+  cropZoom = 1,
   onClickImage,
   deviceColor = 'graphite',
   fill = false,
 }) => {
   const chassis = DEVICE_BODY[deviceColor] || DEVICE_BODY.graphite;
   const [imageError, setImageError] = React.useState(false);
+  const isPhone = type === 'iphone' || type === 'android';
+  const statusBg = useTopColor(screenshotBase64, isPhone);
 
   React.useEffect(() => {
     setImageError(false);
@@ -64,13 +149,15 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
     try {
       return new URL(url).hostname.replace(/^www\./, '');
     } catch {
-      return url;
+      // Image déposée (« Image locale ») : barre d'adresse vide plutôt qu'un texte technique
+      return '';
     }
   }, [domainName, url]);
 
   const faviconSrc = React.useMemo(() => {
     // Toujours servie depuis notre domaine : une image d'un autre domaine fait échouer l'export
     if (faviconUrl && !faviconUrl.includes('google.com/s2/favicons')) return faviconUrl;
+    if (!cleanDomain) return 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='; // pixel transparent
     return `/api/favicon?domain=${encodeURIComponent(cleanDomain)}`;
   }, [faviconUrl, cleanDomain]);
 
@@ -111,7 +198,11 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
         src={screenshotBase64}
         alt={title || url}
         className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01] ${customClasses}`}
-        style={{ objectPosition: `center ${cropOffsetY}%` }}
+        style={{
+          objectPosition: `center ${cropOffsetY}%`,
+          // Agrandissement autour de la même hauteur : la zone choisie reste en place
+          ...(cropZoom > 1 ? { transform: `scale(${cropZoom})`, transformOrigin: `50% ${cropOffsetY}%` } : {}),
+        }}
         onError={() => setImageError(true)}
       />
     );
@@ -437,8 +528,11 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
               </div>
             </div>
 
-            {/* Capture dans l'écran */}
-            {renderScreen('group-hover:scale-[1.02]')}
+            {/* Barre d'état, puis la capture en dessous : le haut du site n'est plus caché par la Dynamic Island */}
+            <PhoneStatusBar bg={statusBg} ratio={(0.064 * 2622) / 1206} />
+            <div className="absolute inset-x-0 bottom-0 top-[6.4%] overflow-hidden" style={{ background: statusBg }}>
+              {renderScreen('group-hover:scale-[1.02]')}
+            </div>
 
             {/* Barre d'accueil */}
             <div className="absolute bottom-[1.2%] left-1/2 -translate-x-1/2 z-30 w-[36%] h-[0.45%] min-h-[3px] bg-white/45 rounded-full backdrop-blur-md" />
@@ -463,7 +557,10 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
           >
             {/* Caméra frontale percée */}
             <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-30 w-3 h-3 rounded-full bg-black border border-white/10 shadow-md" />
-            {renderScreen('group-hover:scale-[1.02]')}
+            <PhoneStatusBar bg={statusBg} ratio={(0.055 * 20) / 9} />
+            <div className="absolute inset-x-0 bottom-0 top-[5.5%] overflow-hidden" style={{ background: statusBg }}>
+              {renderScreen('group-hover:scale-[1.02]')}
+            </div>
             {/* Barre de navigation par gestes */}
             <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 z-30 w-24 h-1 bg-white/40 rounded-full backdrop-blur-md" />
           </div>

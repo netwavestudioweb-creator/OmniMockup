@@ -9,6 +9,8 @@ interface TemplatesModalProps {
   onClose: () => void;
   /** Capture du site en cours : les aperçus montrent le vrai site du client */
   screenshot?: string;
+  /** Version téléphone du site, quand elle existe : montrée dans les iPhone des aperçus */
+  mobileScreenshot?: string;
 }
 
 const RATIO_CSS: Record<string, string> = {
@@ -23,7 +25,7 @@ const RATIO_CSS: Record<string, string> = {
 /** Mini écran : la capture du site, calée en haut */
 const Screen: React.FC<{ src?: string; className?: string }> = ({ src, className = '' }) => (
   <div
-    className={`bg-zinc-200 bg-cover bg-top ${className}`}
+    className={`bg-zinc-200 bg-cover bg-left-top ${className}`}
     style={src ? { backgroundImage: `url(${src})` } : undefined}
   />
 );
@@ -55,7 +57,7 @@ const MiniDesktop: React.FC<{ src?: string; width: string; dark?: boolean; lapto
 );
 
 /** Aperçu d'un modèle avec le site du client */
-const TemplatePreview: React.FC<{ tmpl: StudioTemplate; src?: string }> = ({ tmpl, src }) => {
+const TemplatePreview: React.FC<{ tmpl: StudioTemplate; src?: string; phoneSrc?: string }> = ({ tmpl, src, phoneSrc = src }) => {
   const tilt = `perspective(600px) rotateX(${tmpl.mockupTiltX}deg) rotateY(${tmpl.mockupTiltY}deg) rotateZ(${tmpl.mockupRotation}deg)`;
   const dark = tmpl.browserStyle?.endsWith('dark');
   const layout = tmpl.layoutMode || 'single';
@@ -80,16 +82,16 @@ const TemplatePreview: React.FC<{ tmpl: StudioTemplate; src?: string }> = ({ tmp
           <div className="absolute left-[2%] bottom-0 w-[24%] rounded-md bg-neutral-900 p-[1.5%] shadow-xl">
             <Screen src={src} className="rounded-sm aspect-[3/4]" />
           </div>
-          <MiniPhone src={src} width="12%" style={{ position: 'absolute', right: '4%', bottom: 0 }} />
+          <MiniPhone src={phoneSrc} width="12%" style={{ position: 'absolute', right: '4%', bottom: 0 }} />
         </div>
       ) : layout === 'dual-stacked' ? (
         <div className="relative w-[72%] flex items-end">
           <MiniDesktop src={src} width="88%" laptop={tmpl.mockupType === 'macbook'} dark={dark} />
-          <MiniPhone src={src} width="22%" style={{ position: 'absolute', right: 0, bottom: '-4%', transform: 'rotate(3deg)' }} />
+          <MiniPhone src={phoneSrc} width="22%" style={{ position: 'absolute', right: 0, bottom: '-4%', transform: 'rotate(3deg)' }} />
         </div>
       ) : tmpl.mockupType === 'iphone' ? (
         <div style={{ transform: tilt }} className="h-[80%] flex items-center">
-          <MiniPhone src={src} width="auto" style={{ height: '100%', aspectRatio: '1206 / 2700' }} />
+          <MiniPhone src={phoneSrc} width="auto" style={{ height: '100%', aspectRatio: '1206 / 2700' }} />
         </div>
       ) : tmpl.mockupType === 'ipad' ? (
         <div style={{ transform: tilt }} className="w-[52%] rounded-lg bg-neutral-900 p-[1.5%] shadow-xl">
@@ -105,11 +107,6 @@ const TemplatePreview: React.FC<{ tmpl: StudioTemplate; src?: string }> = ({ tmp
         </div>
       )}
 
-      {tmpl.badge && (
-        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-pms-accent text-white">
-          {tmpl.badge}
-        </span>
-      )}
     </div>
   );
 };
@@ -144,10 +141,25 @@ function useBlobUrl(dataUrl?: string) {
   return url;
 }
 
-export const TemplatesModal: React.FC<TemplatesModalProps> = ({ onSelectTemplate, onClose, screenshot: rawScreenshot }) => {
+export const TemplatesModal: React.FC<TemplatesModalProps> = ({ onSelectTemplate, onClose, screenshot: rawScreenshot, mobileScreenshot }) => {
   const screenshot = useBlobUrl(rawScreenshot);
+  const phoneShot = useBlobUrl(mobileScreenshot);
+
+  // Échap ferme la fenêtre, comme un clic à côté
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-[130] flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-md animate-fade-in">
+    <div
+      className="fixed inset-0 z-[130] flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-md animate-fade-in"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Modèles prêts à publier"
+    >
       <div className="bg-[#141418] border border-zinc-800 rounded-3xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-scale-up">
         <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between gap-3 shrink-0 bg-zinc-900/60">
           <div className="min-w-0">
@@ -199,7 +211,7 @@ export const TemplatesModal: React.FC<TemplatesModalProps> = ({ onSelectTemplate
                         }}
                         className="group text-left rounded-2xl border border-zinc-800 hover:border-pms-accent bg-zinc-900/60 p-3 flex flex-col gap-3 transition-colors"
                       >
-                        <TemplatePreview tmpl={tmpl} src={screenshot} />
+                        <TemplatePreview tmpl={tmpl} src={screenshot} phoneSrc={phoneShot || screenshot} />
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <h4 className="text-sm font-bold text-white group-hover:text-pms-accent-soft transition-colors">{tmpl.title}</h4>

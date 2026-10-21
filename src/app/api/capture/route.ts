@@ -97,7 +97,13 @@ export async function POST(req: NextRequest) {
 
   const fullPage = typeof body?.fullPage === 'boolean' ? body.fullPage : true;
   const hideBanners = typeof body?.hideBanners === 'boolean' ? body.hideBanners : true;
-  const viewport = body?.viewport as { width: number; height: number } | undefined;
+  // Taille de fenêtre bornée : de 320 à 2 560 px de large (le studio propose 1 024 à 2 560)
+  const rawViewport = body?.viewport as { width?: unknown; height?: unknown } | undefined;
+  const clampSize = (v: unknown, min: number, max: number, fallback: number) =>
+    typeof v === 'number' && Number.isFinite(v) ? Math.round(Math.max(min, Math.min(max, v))) : fallback;
+  const viewport = rawViewport
+    ? { width: clampSize(rawViewport.width, 320, 2560, 1440), height: clampSize(rawViewport.height, 320, 1600, 900) }
+    : undefined;
   const mobile = body?.mobile === true;
   const delayMs = typeof body?.delayMs === 'number' ? Math.max(0, Math.min(8000, body.delayMs)) : 0;
   const colorScheme = body?.colorScheme === 'dark' ? 'dark' : 'light';

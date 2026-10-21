@@ -35,8 +35,8 @@ import {
   getLoyaltyFloorFcfa,
 } from '@/lib/pricing';
 import { Check, Loader2 } from 'lucide-react';
-import { HeroShowcase, HeroBackdrop, SmallPhone, ExamplesMarquee, BRANDS_NOTICE } from '@/components/home/HomeStage';
-import { ProblemSection, UsagesSection, AppsSection, FaqSection, SiteFooter } from '@/components/home/Sections';
+import { HeroShowcase, HeroBackdrop, ExamplesMarquee, BRANDS_NOTICE } from '@/components/home/HomeStage';
+import { ProblemSection, UsagesSection, ZoneSection, AppsSection, StudioSection, FaqSection, SiteFooter } from '@/components/home/Sections';
 
 export default function HomePage() {
   const { currency, mobileMoneyRegion } = useCurrency();
@@ -217,11 +217,10 @@ export default function HomePage() {
           <HeroBackdrop />
           <h1 className={`relative ${display} max-w-[20ch]`}>
             <span className="hero-court">Votre site, prêt à faire signer.</span>
-            <span className="hero-long">Un lien, des visuels qui font signer.</span>
+            <span className="hero-long">2 minutes au lieu de 2 heures sur Figma</span>
           </h1>
           <p className={`relative mt-6 ${lead} text-pms-ink max-w-[42ch]`}>
-            Collez le lien d&apos;un site ou d&apos;une vidéo YouTube : en 2 minutes, vous avez les visuels et le texte qui font
-            signer un client, au lieu de 2 heures sur Figma.
+            Collez un lien : visuels et texte de vente en 2 minutes.
           </p>
           <div className="relative mt-8 w-full max-w-3xl -mx-2 sm:-mx-4 text-left">
             {savedDraft && (
@@ -260,13 +259,15 @@ export default function HomePage() {
       <ProblemSection />
 
       {/* ═══ Comment ça marche : 4 étapes en zigzag, la ligne se remplit au défilement ═══ */}
-      <section data-reveal id="comment" className="scroll-mt-16 px-5 sm:px-10 lg:px-[68px] py-20 sm:py-28">
+      <section data-reveal id="comment" className="scroll-mt-16 px-5 sm:px-10 lg:px-[68px] py-12 sm:py-16">
         <h2 className={head}>Comment ça marche</h2>
         <p className="mt-5 text-[17px] leading-relaxed text-pms-muted max-w-[46ch]">
-          D’un simple lien à un visuel qui fait signer, en 4 étapes.
+          4 étapes, 2 minutes. Pas besoin d’être designer.
         </p>
         <Journey />
       </section>
+
+      <ZoneSection />
 
       <UsagesSection />
 
@@ -288,109 +289,25 @@ export default function HomePage() {
       />
 
       {/* ═══ Exemples : un client réel et des sites connus, qui défilent tout seuls ═══ */}
-      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pb-20 sm:pb-28">
+      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pb-12 sm:pb-16">
         <h2 className={head}>Des sites que vous connaissez</h2>
         <p className="mt-5 mb-10 text-[17px] leading-relaxed text-pms-muted max-w-[52ch]">
-          Une boutique en ligne, une page produit, un logiciel : chaque site a été collé tel quel, puis mis en scène en quelques
-          clics.
+          Boutique, page produit, logiciel : chaque site a été collé tel quel, puis mis en scène en quelques clics.
         </p>
         <ExamplesMarquee />
         <p className="mt-6 text-[13px] text-pms-muted max-w-[70ch]">{BRANDS_NOTICE}</p>
       </section>
 
-      {/* ═══ Ce que contient le studio : une petite preuve à côté de chaque texte ═══ */}
-      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] py-20 sm:py-28">
-        <h2 className={`${head}`}>Ce que contient le studio</h2>
-        <div className="mt-16 grid gap-16 xl:grid-cols-2 xl:gap-x-16 xl:gap-y-20">
-          <article className="flex flex-col sm:flex-row gap-5 max-w-[640px]">
-            <div className="sm:w-[360px] shrink-0 h-[160px] rounded-lg bg-pms-surface overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/demo/netflix-desktop.jpg" alt="" width={1440} height={900} loading="lazy" className="w-full h-full object-cover object-left-top" />
-            </div>
-            <div className="sm:w-[250px]">
-              <h3 className="text-[17px] font-semibold">Une capture propre</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Plusieurs pages du site, la version mobile ou sombre.</p>
-              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Les bannières de cookies sont masquées toutes seules.</p>
-            </div>
-          </article>
-
-          <article className="flex flex-col sm:flex-row gap-5 max-w-[640px]">
-            <div className="sm:w-[360px] shrink-0 h-[200px] rounded-lg bg-pms-surface overflow-hidden flex items-start justify-center pt-5">
-              <div className="w-[118px]">
-                <SmallPhone site="wave" />
-              </div>
-            </div>
-            <div className="sm:w-[250px]">
-              <h3 className="text-[17px] font-semibold">Neuf appareils</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">MacBook, PC portable, iMac, iPad, iPhone, Android, montre, navigateur et cadre plat.</p>
-              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Avec la vraie version mobile du site sur le téléphone.</p>
-            </div>
-          </article>
-
-          <article className="flex flex-col sm:flex-row gap-5 max-w-[640px]">
-            <div className="sm:w-[360px] shrink-0 h-[120px] rounded-lg bg-pms-surface p-5 flex flex-wrap content-center gap-2">
-              {['Offre irrésistible', 'Audit des revenus', 'E-mail de prospection', 'Post LinkedIn'].map((t, i) => (
-                <span key={t} className={`px-3 py-1.5 rounded-md text-[13px] font-semibold ${i === 0 ? 'bg-pms-ink text-white' : 'bg-pms-paper text-pms-ink'}`}>
-                  {t}
-                </span>
-              ))}
-            </div>
-            <div className="sm:w-[250px]">
-              <h3 className="text-[17px] font-semibold">Pitch IA</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Les textes de vente rédigés à partir du site : offre, audit, e-mail, post LinkedIn.</p>
-              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Avec votre propre clé IA (Groq et Gemini sont gratuits).</p>
-            </div>
-          </article>
-
-          <article className="flex flex-col sm:flex-row gap-5 max-w-[640px]">
-            <div className="sm:w-[360px] shrink-0 h-[120px] rounded-lg bg-pms-surface p-5 flex items-end gap-3">
-              {[
-                ['16:9', 'w-16 h-9'],
-                ['1:1', 'w-12 h-12'],
-                ['4:5', 'w-10 h-[50px]'],
-                ['9:16', 'w-[34px] h-[60px]'],
-              ].map(([r, size]) => (
-                <div key={r} className="flex flex-col items-center gap-1.5">
-                  <div className={`${size} rounded bg-pms-ink`} />
-                  <span className="text-[13px] tabular-nums text-pms-muted">{r}</span>
-                </div>
-              ))}
-            </div>
-            <div className="sm:w-[250px]">
-              <h3 className="text-[17px] font-semibold">Tous les formats</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">LinkedIn, Instagram, statut WhatsApp, carrousels, App Store et Google Play.</p>
-              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Le pack de formats s’exporte en un clic.</p>
-            </div>
-          </article>
-
-          <article className="flex flex-col sm:flex-row gap-5 max-w-[640px]">
-            <div className="sm:w-[360px] shrink-0 h-[120px] rounded-lg bg-pms-surface p-5 flex flex-col justify-center gap-2">
-              <span className="text-[13px] text-pms-muted">Lien à envoyer au client</span>
-              <span className="flex items-center gap-2">
-                <span className="flex-1 truncate rounded-md bg-pms-paper px-3 py-2 text-[15px]">pitchmysite.com/p/mon-client</span>
-                <span className="rounded-md bg-pms-accent px-3 py-2 text-[13px] font-semibold text-white">Copier</span>
-              </span>
-            </div>
-            <div className="sm:w-[250px]">
-              <h3 className="text-[17px] font-semibold">Lien de partage</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">Votre client voit le mockup et le télécharge, sans créer de compte.</p>
-              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">À votre nom et à votre logo avec le plan Agence.</p>
-            </div>
-          </article>
-        </div>
-        <p className="mt-20 text-[17px] leading-relaxed text-pms-muted max-w-[60ch]">
-          Et aussi : scènes photo réalistes, directeur artistique IA, présentation client en PDF, vidéos et GIF, annotations et
-          floutage, kit de marque, et tous vos projets enregistrés.
-        </p>
-      </section>
+      {/* ═══ Ce que contient le studio : de vraies captures du studio, en grille ═══ */}
+      <StudioSection />
 
       {/* ═══ Tarifs ═══ */}
-      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] py-20 sm:py-28 bg-pms-surface scroll-mt-16" id="pricing">
+      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] py-14 sm:py-20 bg-pms-surface scroll-mt-16" id="pricing">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h2 className={head}>Les tarifs</h2>
+            <h2 className={head}>Gratuit pour tester, simple à payer</h2>
             <p className="mt-5 text-[17px] leading-relaxed text-pms-ink max-w-[46ch]">
-              Gratuit pour tester. Ensuite, un paiement couvre un mois ou un an, sans renouvellement automatique.
+              Un paiement couvre un mois ou un an. Rien ne se renouvelle tout seul. Et votre prix baisse chaque mois payé d’affilée.
             </p>
           </div>
           <div className="inline-flex self-start md:self-auto p-1 rounded-md bg-pms-paper" role="group" aria-label="Durée">
@@ -423,7 +340,7 @@ export default function HomePage() {
           const tint: Record<string, string> = { free: '#FDEDE8', solo: '#EFEFEF', pro: '#E8EEFD', agence: '#E4F4FA' };
           return (
             <>
-              <div className="mt-14 grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:grid-rows-[auto_auto_1fr] xl:gap-y-0">
+              <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:grid-rows-[auto_auto_1fr] xl:gap-y-0">
                 {PLANS.map((p) => {
                   const free = p.id === 'free';
                   const pro = p.id === 'pro';
@@ -504,7 +421,7 @@ export default function HomePage() {
                 })}
               </div>
               <p className="mt-10 text-[17px] leading-relaxed max-w-[60ch]">
-                Vous lancez un SaaS et n&apos;avez besoin que de quelques visuels ?{' '}
+                Besoin de quelques visuels seulement ?{' '}
                 <Link href="/pricing#credits" className="text-pms-accent font-semibold underline underline-offset-4">
                   Les packs de crédits
                 </Link>{' '}
@@ -518,16 +435,16 @@ export default function HomePage() {
       <FaqSection />
 
       {/* ═══ Dernier mot : une phrase, une action ═══ */}
-      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pt-8 pb-24 sm:pb-32 flex flex-col items-center text-center">
+      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pt-4 pb-16 sm:pb-20 flex flex-col items-center text-center">
         <p className={`${lead} max-w-[34ch]`}>
-          Essayez avec le site de votre dernier client : c&apos;est gratuit, il suffit de son adresse.
+          Essayez avec le site de votre dernier client. C&apos;est gratuit.
         </p>
         <button
           type="button"
           onClick={scrollToTop}
           className="mt-6 min-h-[44px] px-5 rounded-md bg-pms-accent hover:bg-pms-accent-hover text-white font-semibold text-[15px] transition-colors"
         >
-          Coller un lien
+          Je crée mon premier visuel
         </button>
       </section>
 

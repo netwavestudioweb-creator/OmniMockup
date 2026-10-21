@@ -153,7 +153,7 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
                     </>
                   ) : (
                     <>
-                      <span>Créer mon Mockup</span>
+                      <span>Je crée mon visuel</span>
                       <ArrowRight className="w-4.5 h-4.5" />
                     </>
                   )}

@@ -131,7 +131,7 @@ export const PLANS: Plan[] = [
     monthlyFcfa: 5500,
     annualFcfa: 48000,
     loyaltyStepFcfa: 500,
-    description: 'Pour les créateurs occasionnels : 20 exports HD par mois.',
+    description: 'Pour quelques clients par mois : 20 exports HD.',
     ctaText: 'Choisir Solo',
     isPopular: false,
     quotas: { pngExportsPerMonth: 20, watermark: true, aiAnalysesPerMonth: 3 },
@@ -157,7 +157,7 @@ export const PLANS: Plan[] = [
     monthlyFcfa: 9500,
     annualFcfa: 78000,
     loyaltyStepFcfa: 1000,
-    description: 'Exports illimités jusqu’en 4K, sans filigrane, avec vidéos et GIF. Le meilleur choix.',
+    description: 'Exports illimités jusqu’en 4K, sans filigrane, avec vidéos et GIF.',
     isPopular: true,
     ctaText: 'Choisir Pro',
     quotas: {

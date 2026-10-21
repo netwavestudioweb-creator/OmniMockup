@@ -77,21 +77,21 @@ export const FORMATS: { id: FormatId; label: string; ratio: string; title: strin
     label: 'Proposition commerciale',
     ratio: '16:9',
     title: 'Pour votre devis',
-    desc: 'Le site sur ordinateur et téléphone, avec le texte de vente rédigé par la Pitch IA. À glisser dans votre devis ou à envoyer à votre client.',
+    desc: 'Le site sur ordinateur et téléphone, avec son texte de vente. À glisser dans votre devis ou à envoyer tel quel.',
   },
   {
     id: 'statut',
     label: 'Story et statut',
     ratio: '9:16',
     title: 'Pour vos réseaux',
-    desc: 'Un visuel au bon format pour les stories Instagram, le statut WhatsApp et LinkedIn, ou tout le pack de formats en un clic.',
+    desc: 'Le bon format pour Instagram, le statut WhatsApp et LinkedIn. Ou tous les formats d’un coup.',
   },
   {
     id: 'store',
     label: 'App Store',
     ratio: '1320 × 2868',
     title: 'Pour les stores d’applications',
-    desc: 'Des captures aux tailles exactes de l’App Store et de Google Play, avec une accroche au-dessus de l’écran.',
+    desc: 'Vos écrans aux tailles exactes de l’App Store et de Google Play, avec une accroche au-dessus.',
   },
 ];
 
@@ -99,7 +99,7 @@ export const FORMATS: { id: FormatId; label: string; ratio: string; title: strin
 export function FormatShot({ format, compact = false }: { format: FormatId; compact?: boolean }) {
   if (format === 'devis') {
     return (
-      <div data-ui className="relative w-full max-w-[520px] aspect-video rounded-lg bg-pms-surface flex items-center justify-center overflow-hidden">
+      <div data-ui className="relative w-full max-w-[520px] aspect-video rounded-lg bg-pms-paper flex items-center justify-center overflow-hidden">
         <div className="w-[70%] -translate-x-[8%]">
           <Laptop site="netflix" />
         </div>
@@ -113,7 +113,7 @@ export function FormatShot({ format, compact = false }: { format: FormatId; comp
     return (
       <div
         data-ui
-        className={`${compact ? 'h-[min(48svh,420px)]' : 'h-[min(62svh,520px)]'} aspect-[9/16] rounded-lg bg-pms-surface flex items-center justify-center px-[10%] overflow-hidden`}
+        className={`${compact ? 'h-[min(48svh,420px)]' : 'h-[min(62svh,520px)]'} aspect-[9/16] rounded-lg bg-pms-paper flex items-center justify-center px-[10%] overflow-hidden`}
       >
         <div className="w-[88%]">
           <Phone site="netflix" />

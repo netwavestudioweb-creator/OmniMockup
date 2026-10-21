@@ -86,6 +86,13 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
   const [setupProvider, setSetupProvider] = useState<AiProvider>('gemini');
   const [setupKey, setSetupKey] = useState('');
   const [setupError, setSetupError] = useState('');
+  // Échap ferme la fenêtre
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
     const saved = getSavedAi();
@@ -227,16 +234,9 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
             <TrendingUp className="w-6 h-6" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-pms-accent-tint text-pms-accent border border-pms-accent-tint">
-                Assistant Vente & Freelance IA
-              </span>
-            </div>
-            <h3 className="text-xl font-extrabold text-stone-900 mt-0.5">
-              Générateur d&apos;Arguments Commerciaux & Posts
-            </h3>
-            <p className="text-xs text-stone-500">
-              Transformez cette réalisation en clients payants et opportunités professionnelles.
+            <h3 className="text-xl font-semibold text-stone-900">Les textes qui font signer</h3>
+            <p className="text-[13px] text-stone-500">
+              L&apos;offre, l&apos;e-mail de prospection et le post LinkedIn, écrits à partir de ce site.
             </p>
           </div>
         </div>
@@ -397,7 +397,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 text-amber-300" />
-                    <span>Générer mes Textes de Vente en 1 Clic</span>
+                    <span>Écrire mes textes de vente</span>
                   </>
                 )}
               </button>

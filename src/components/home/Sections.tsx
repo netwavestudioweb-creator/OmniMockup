@@ -26,16 +26,16 @@ const DEMO = {
 /* ───────────── Le problème : avant / après, avec le temps passé ───────────── */
 export function ProblemSection() {
   return (
-    <section data-reveal className={`${pad} py-20 sm:py-28`}>
+    <section data-reveal className={`${pad} py-12 sm:py-16`}>
       <div className="max-w-[60ch]">
-        <h2 className={head}>Vos clients jugent un site sur une image</h2>
+        <h2 className={head}>Votre client juge votre travail sur une image</h2>
         <p className="mt-5 text-[17px] leading-relaxed text-pms-muted">
-          Proposition commerciale, livraison, portfolio : la première impression se joue sur un visuel. Une capture plate fait
-          paraître un site soigné comme un site bâclé.
+          Devis, livraison, portfolio : tout se joue sur un visuel. Une capture plate fait passer un site soigné pour un site
+          bâclé.
         </p>
       </div>
 
-      <div className="mt-12 grid gap-4 md:grid-cols-2">
+      <div className="mt-10 grid gap-4 md:grid-cols-2">
         <article className="rounded-2xl bg-pms-surface p-6 sm:p-8 flex flex-col">
           <p className="text-[15px] font-semibold text-pms-muted">Sans PitchMySite</p>
           <p className="mt-2 text-[clamp(2rem,1.6rem+1.6vw,2.75rem)] leading-none tabular-nums">2 heures</p>
@@ -46,9 +46,9 @@ export function ProblemSection() {
           </div>
           <ul className="mt-8 space-y-3 text-[16px] leading-relaxed">
             {[
-              'Une capture plate qui ne met pas votre travail en valeur.',
+              'Une capture plate qui ne vend rien.',
               'Des heures non facturées à préparer chaque visuel.',
-              'Tout à refaire à la main à chaque modification du site.',
+              'Tout à refaire dès que le site change.',
             ].map((t) => (
               <li key={t} className="flex gap-3">
                 <X className="w-5 h-5 mt-0.5 shrink-0 text-pms-muted" aria-hidden />
@@ -74,7 +74,7 @@ export function ProblemSection() {
             {[
               'Le site mis en scène sur ordinateur, téléphone et tablette.',
               'Le texte de vente rédigé par la Pitch IA, prêt à copier.',
-              'Un lien à envoyer au client, refait en 2 minutes si le site change.',
+              'Un lien pour votre client. Le site change ? 2 minutes pour refaire.',
             ].map((t) => (
               <li key={t} className="flex gap-3">
                 <Check className="w-5 h-5 mt-0.5 shrink-0 text-pms-accent" aria-hidden />
@@ -103,16 +103,16 @@ export function UsagesSection() {
   }, [touched]);
 
   return (
-    <section id="usages" data-reveal className={`scroll-mt-16 ${pad} py-20 sm:py-28 bg-pms-surface`}>
+    <section id="usages" data-reveal className={`scroll-mt-16 ${pad} py-12 sm:py-16`}>
       <div className="max-w-[60ch]">
         <h2 className={head}>Un lien, trois usages</h2>
         <p className="mt-5 text-[17px] leading-relaxed text-pms-muted">
-          Le même lien (ici, la page publique de Netflix) devient un visuel pour votre devis, pour vos réseaux ou pour les stores
-          d&apos;applications. Choisissez un usage pour voir le résultat.
+          Le même lien (ici, la page publique de Netflix) sert pour votre devis, vos réseaux ou les stores d&apos;applications.
+          Choisissez un usage.
         </p>
       </div>
 
-      <div className="mt-12 grid gap-6 lg:grid-cols-[5fr_7fr] lg:items-start">
+      <div className="mt-10 grid gap-6 lg:grid-cols-[5fr_7fr] lg:items-start">
         <div className="flex flex-col gap-3" role="radiogroup" aria-label="Usage">
           {FORMATS.map((f, i) => {
             const on = format === f.id;
@@ -127,7 +127,7 @@ export function UsagesSection() {
                   setFormat(f.id);
                 }}
                 className={`text-left rounded-2xl p-5 sm:p-6 transition-colors ${
-                  on ? 'bg-pms-paper shadow-[0_12px_32px_-18px_rgba(17,17,17,0.35)]' : 'bg-transparent hover:bg-pms-paper/60'
+                  on ? 'bg-pms-surface' : 'bg-transparent hover:bg-pms-surface/60'
                 }`}
               >
                 <span className="flex items-baseline justify-between gap-4">
@@ -143,7 +143,7 @@ export function UsagesSection() {
           })}
         </div>
 
-        <div className="rounded-2xl bg-pms-paper p-6 sm:p-10 min-h-[420px] sm:min-h-[560px] flex flex-col items-center justify-center">
+        <div className="rounded-2xl bg-pms-surface p-6 sm:p-10 min-h-[420px] sm:min-h-[560px] flex flex-col items-center justify-center">
           <div className="relative w-full flex justify-center">
             {FORMATS.map((f) => (
               <div
@@ -173,13 +173,13 @@ const STORE_SHOTS = [
 
 export function AppsSection({ onPick, inputSlot }: { onPick: () => void; inputSlot: React.ReactNode }) {
   return (
-    <section data-reveal id="stores" className={`scroll-mt-16 ${pad} py-20 sm:py-28`}>
+    <section data-reveal id="stores" className={`scroll-mt-16 ${pad} py-12 sm:py-16`}>
       <div className="grid gap-12 lg:grid-cols-[5fr_7fr] lg:items-center">
         <div>
           <h2 className={`${head} max-w-[18ch]`}>Vous faites des applis ?</h2>
           <p className="mt-5 text-[17px] leading-relaxed text-pms-muted max-w-[46ch]">
-            Déposez les captures de votre appli. Chaque écran est placé dans un iPhone, avec votre phrase d&apos;accroche
-            au-dessus, puis exporté aux tailles exactes demandées par l&apos;App Store et Google Play.
+            Déposez les écrans de votre appli. Chacun entre dans un iPhone, avec votre accroche au-dessus. Tout sort aux tailles
+            de l&apos;App Store et de Google Play.
           </p>
           <ul className="mt-6 space-y-2 text-[16px]">
             {['Jusqu’à 8 écrans à la fois', 'Une accroche et un fond par écran', 'Tout le jeu exporté en un clic'].map((t) => (
@@ -194,9 +194,9 @@ export function AppsSection({ onPick, inputSlot }: { onPick: () => void; inputSl
             onClick={onPick}
             className="mt-8 w-full sm:w-auto min-h-[48px] px-6 rounded-md bg-pms-accent hover:bg-pms-accent-hover text-white font-semibold text-[15px] transition-colors"
           >
-            Déposer les écrans de mon appli
+            Je dépose mes écrans
           </button>
-          <p className="mt-2 text-[13px] text-pms-muted">PNG ou JPG, sans inscription.</p>
+          <p className="mt-2 text-[13px] text-pms-muted">PNG ou JPG. Sans compte.</p>
           {inputSlot}
         </div>
 
@@ -224,33 +224,35 @@ const FAQ: { cat: string; items: Faq[] }[] = [
   {
     cat: 'Pour commencer',
     items: [
-      { q: 'À quoi sert PitchMySite ?', a: 'À transformer le lien d’un site en visuels qui donnent envie de signer : le site mis en scène sur ordinateur et téléphone, au bon format pour un devis, les réseaux ou les stores, avec le texte de vente. Ce qui prend 2 heures sur Figma se fait en 2 minutes.' },
-      { q: 'Faut-il créer un compte pour tester ?', a: 'Non. Vous pouvez tester le studio et exporter jusqu’à 3 images par jour, avec un filigrane discret, sans compte ni carte bancaire.' },
-      { q: 'Puis-je coller un lien YouTube ?', a: 'Oui. Collez le lien d’une vidéo YouTube : sa miniature et son titre sont récupérés en un instant, puis mis en scène comme un site. Pratique pour présenter une chaîne ou une vidéo à un client.' },
-      { q: 'Le site du client est en local ou protégé par un mot de passe ?', a: 'Déposez votre propre capture d’écran (PNG, JPG ou WebP) : vous profitez de la même mise en scène.' },
+      { q: 'À quoi sert PitchMySite ?', a: 'À transformer le lien d’un site en visuels qui donnent envie de signer, avec le texte de vente. 2 minutes au lieu de 2 heures sur Figma.' },
+      { q: 'Je ne suis pas designer. Est-ce pour moi ?', a: 'Oui. Vous collez un lien et choisissez un des 14 modèles prêts. L’appareil, le fond et le format sont déjà réglés.' },
+      { q: 'Faut-il créer un compte pour tester ?', a: 'Non. Vous pouvez exporter 3 images par jour, avec un filigrane discret. Sans compte ni carte bancaire.' },
+      { q: 'Puis-je coller un lien YouTube ?', a: 'Oui. La miniature et le titre de la vidéo sont récupérés en un instant, puis mis en scène comme un site.' },
+      { q: 'Le site du client est en local ou protégé par un mot de passe ?', a: 'Déposez votre propre capture (PNG, JPG ou WebP). Vous avez la même mise en scène.' },
     ],
   },
   {
     cat: 'Utilisation',
     items: [
-      { q: 'Puis-je utiliser les visuels pour mes clients et à des fins commerciales ?', a: 'Oui. Les visuels que vous créez peuvent servir dans vos propositions commerciales, vos livrables clients, votre portfolio et vos publications.' },
-      { q: 'Comment fonctionne la marque blanche ?', a: 'Dès le plan Pro, vos images, vidéos et PDF ne portent plus de filigrane. Avec le plan Agence, les pages de partage affichent aussi le nom et le logo de votre agence, sans mention de PitchMySite.' },
-      { q: 'La Pitch IA est-elle payante ?', a: 'Elle utilise votre propre clé IA. Groq et Gemini proposent des clés gratuites : vous ne payez rien de plus, et votre clé reste dans votre navigateur.' },
+      { q: 'Puis-je utiliser les visuels pour mes clients ?', a: 'Oui : propositions, livrables, portfolio, publications, y compris à des fins commerciales.' },
+      { q: 'Comment fonctionne la marque blanche ?', a: 'Dès le plan Pro, plus aucun filigrane. Avec le plan Agence, vos pages de partage affichent votre nom et votre logo.' },
+      { q: 'La Pitch IA est-elle payante ?', a: 'Non. Elle utilise votre propre clé IA. Groq et Gemini en donnent une gratuitement. Votre clé reste dans votre navigateur.' },
     ],
   },
   {
     cat: 'Paiement et tarifs',
     items: [
-      { q: 'Comment payer ?', a: 'Par Mobile Money via SasPay (MTN, Moov, Celtiis, Orange, Wave, selon votre pays), en FCFA. Le paiement par carte bancaire arrive bientôt.' },
-      { q: 'Comment marche le prix fidélité ?', a: 'En payant au mois, chaque mois payé d’affilée sur la même formule baisse le prix du mois suivant, trois fois au maximum. Repayez au plus tard 3 jours après la fin de votre mois pour garder votre prix ; un mois raté vous ramène au prix de départ.' },
-      { q: 'Puis-je arrêter à tout moment ?', a: 'Il n’y a rien à résilier : un paiement couvre 1 mois ou 1 an, sans renouvellement automatique. Vous repayez seulement si vous voulez continuer.' },
+      { q: 'Comment payer ?', a: 'Par Mobile Money (MTN, Moov, Celtiis, Orange, Wave, selon votre pays), en FCFA. La carte bancaire arrive bientôt.' },
+      { q: 'Est-ce cher pour un freelance ?', a: 'Solo coûte 5 500 FCFA (8 €) par mois. Le prix baisse ensuite chaque mois payé d’affilée.' },
+      { q: 'Comment marche le prix fidélité ?', a: 'Chaque mois payé d’affilée sur la même formule baisse le prix du mois suivant, trois fois au maximum. Repayez au plus tard 3 jours après la fin du mois. Un mois raté vous ramène au prix de départ.' },
+      { q: 'Puis-je arrêter à tout moment ?', a: 'Il n’y a rien à résilier. Un paiement couvre 1 mois ou 1 an, sans renouvellement automatique.' },
     ],
   },
   {
     cat: 'Confidentialité',
     items: [
-      { q: 'Que deviennent les captures des sites de mes clients ?', a: 'La page est chargée par notre moteur de capture, puis l’image est envoyée directement à votre navigateur. Nous ne conservons pas les captures, sauf si vous créez un lien de partage : l’image est alors hébergée jusqu’à ce que vous supprimiez le lien.' },
-      { q: 'Où est stockée ma clé IA ?', a: 'Uniquement dans votre navigateur. Elle n’est jamais enregistrée sur nos serveurs.' },
+      { q: 'Que deviennent les captures des sites de mes clients ?', a: 'L’image va directement dans votre navigateur. Nous ne la gardons pas, sauf si vous créez un lien de partage. Elle reste alors en ligne jusqu’à ce que vous supprimiez le lien.' },
+      { q: 'Où est stockée ma clé IA ?', a: 'Uniquement dans votre navigateur, jamais sur nos serveurs.' },
     ],
   },
 ];
@@ -261,8 +263,8 @@ export function FaqSection() {
   const items = FAQ[cat].items;
 
   return (
-    <section data-reveal id="questions" className="scroll-mt-16 px-3 sm:px-6 lg:px-[68px] py-20 sm:py-28">
-      <div className="relative overflow-hidden rounded-3xl bg-pms-paper shadow-[0_30px_80px_-40px_rgba(17,17,17,0.35)] ring-1 ring-pms-line px-5 sm:px-10 lg:px-16 py-14 sm:py-20">
+    <section data-reveal id="questions" className="scroll-mt-16 px-3 sm:px-6 lg:px-[68px] py-12 sm:py-16">
+      <div className="relative overflow-hidden rounded-3xl bg-pms-paper shadow-[0_30px_80px_-40px_rgba(17,17,17,0.35)] ring-1 ring-pms-line px-5 sm:px-10 lg:px-16 py-12 sm:py-16">
         {/* Fond doux : deux taches de couleur très claires */}
         <span aria-hidden className="pointer-events-none absolute -left-24 top-1/3 w-[420px] h-[420px] rounded-full bg-[#FDEDE8] blur-3xl opacity-80" />
         <span aria-hidden className="pointer-events-none absolute -right-24 -top-24 w-[460px] h-[460px] rounded-full bg-[#E4F4FA] blur-3xl opacity-90" />
@@ -270,7 +272,7 @@ export function FaqSection() {
         <div className="relative text-center max-w-[52ch] mx-auto">
           <h2 className={head}>Vos questions</h2>
           <p className="mt-5 text-[17px] leading-relaxed text-pms-muted">
-            Tout ce qu&apos;il faut savoir avant d&apos;essayer : le studio, le paiement et vos données.
+            Avant d&apos;essayer : le studio, le paiement, vos données.
           </p>
         </div>
 
@@ -334,7 +336,7 @@ export function SiteFooter({ notice }: { notice: string }) {
             <span className="text-[19px] font-semibold">PitchMySite</span>
           </p>
           <p className="mt-4 text-[15px] leading-relaxed text-pms-muted max-w-[34ch]">
-            Le lien d&apos;un site ou d&apos;une vidéo YouTube, transformé en visuels et en texte qui font signer vos clients.
+            Collez un lien. Repartez avec des visuels et un texte qui font signer.
           </p>
         </div>
 
@@ -378,5 +380,204 @@ export function SiteFooter({ notice }: { notice: string }) {
         <span className="max-w-[80ch]">{notice} Exemple de site client : Al Kareem Parfumerie.</span>
       </div>
     </footer>
+  );
+}
+
+/* ───────────── La fonction phare : choisir la partie du site montrée (démonstration à toucher) ───────────── */
+const LONG_PAGE = { src: '/images/demo/wave-long.jpg', ratio: 1824 / 900, url: 'https://www.wave.com', domain: 'wave.com' };
+const ZONES = [
+  { label: 'Haut de page', y: 0 },
+  { label: 'Les avantages', y: 46 },
+  { label: 'Les avis clients', y: 84 },
+  { label: 'Pied de page', y: 100 },
+];
+
+export function ZoneSection() {
+  const boxRef = React.useRef<HTMLDivElement>(null);
+  const [boxW, setBoxW] = useState(0);
+  const [y, setY] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const dragging = React.useRef(false);
+
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setBoxW(el.clientWidth));
+    ro.observe(el);
+    setBoxW(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  // Même calcul que dans le studio : le cadre a la proportion de l'écran du MacBook (16:10)
+  const pageH = boxW * LONG_PAGE.ratio;
+  const rectW = boxW / zoom;
+  const rectH = boxW / (zoom * 1.6);
+  const travel = Math.max(0, pageH - rectH);
+
+  const setFromPointer = (clientY: number) => {
+    const el = boxRef.current;
+    if (!el || travel <= 0) return;
+    const r = el.getBoundingClientRect();
+    const v = clientY - r.top - rectH / 2;
+    setY(Math.round(Math.max(0, Math.min(1, v / travel)) * 100));
+  };
+
+  return (
+    <section data-reveal id="zone" className={`scroll-mt-16 ${pad} py-14 sm:py-20 bg-pms-surface`}>
+      <div className="max-w-[60ch]">
+        <h2 className={head}>Montrez la partie du site qui fait vendre</h2>
+        <p className="mt-5 text-[17px] leading-relaxed text-pms-muted">
+          Le site est capturé en entier, pas seulement le haut. Glissez le cadre sur les tarifs, les avis ou le formulaire.
+          L&apos;écran suit. Essayez ici.
+        </p>
+      </div>
+
+      <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:items-start">
+        <div className="rounded-2xl bg-pms-paper p-4 sm:p-5 shadow-[0_12px_32px_-20px_rgba(17,17,17,0.35)]">
+          <p className="text-[14px] font-semibold text-pms-muted">La page entière, capturée</p>
+          <div
+            ref={boxRef}
+            className="relative mt-3 mx-auto w-[55%] sm:w-[45%] lg:w-[70%] cursor-grab active:cursor-grabbing touch-none select-none rounded-md overflow-hidden ring-1 ring-pms-line"
+            onPointerDown={(e) => {
+              dragging.current = true;
+              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              setFromPointer(e.clientY);
+            }}
+            onPointerMove={(e) => dragging.current && setFromPointer(e.clientY)}
+            onPointerUp={() => (dragging.current = false)}
+            onPointerCancel={() => (dragging.current = false)}
+            role="slider"
+            aria-label="Partie du site montrée"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={y}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown') setY((v) => Math.min(100, v + 5));
+              if (e.key === 'ArrowUp') setY((v) => Math.max(0, v - 5));
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={LONG_PAGE.src} alt="La page d'accueil de Wave capturée en entier" draggable={false} className="block w-full h-auto" loading="lazy" />
+            {boxW > 0 && (
+              <div
+                className="absolute rounded border-2 border-pms-accent bg-pms-accent/10 shadow-[0_0_0_9999px_rgba(255,255,255,0.55)] pointer-events-none transition-[top] duration-150"
+                style={{ top: (y / 100) * travel, left: (boxW - rectW) / 2, width: rectW, height: rectH }}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-5">
+          <div className="rounded-2xl bg-pms-paper p-6 sm:p-10 flex items-center justify-center shadow-[0_12px_32px_-20px_rgba(17,17,17,0.35)]">
+            <div className="w-full max-w-[620px]">
+              <MockupFrame type="macbook" fill screenshotBase64={LONG_PAGE.src} url={LONG_PAGE.url} domainName={LONG_PAGE.domain} cropOffsetY={y} cropZoom={zoom} />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Sections de la page">
+            {ZONES.map((z) => (
+              <button
+                key={z.label}
+                type="button"
+                onClick={() => setY(z.y)}
+                className={`min-h-[44px] px-4 rounded-full text-[15px] font-semibold transition-colors ${
+                  Math.abs(y - z.y) < 4 ? 'bg-pms-ink text-white' : 'bg-pms-paper ring-1 ring-pms-line hover:ring-pms-ink'
+                }`}
+              >
+                {z.label}
+              </button>
+            ))}
+          </div>
+          <div className="max-w-md">
+            <div className="flex items-center justify-between text-[15px]">
+              <label htmlFor="demo-zoom" className="font-semibold">Agrandir un détail</label>
+              <span className="text-pms-muted tabular-nums">{zoom <= 1.01 ? 'Toute la largeur' : `Agrandie ${zoom.toFixed(1).replace('.', ',')} fois`}</span>
+            </div>
+            <input
+              id="demo-zoom"
+              type="range"
+              min={1}
+              max={2.5}
+              step={0.1}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="mt-2 w-full accent-pms-accent cursor-pointer"
+            />
+          </div>
+        </div>
+      </div>
+      <p className="mt-6 text-[13px] text-pms-muted">Exemple réalisé à partir de la page publique de Wave, sans lien avec la marque.</p>
+    </section>
+  );
+}
+
+/* ───────────── Ce que contient le studio : de vraies captures, en grille de cartes ───────────── */
+const STUDIO_CARDS: { img: string; alt: string; title: string; text: string; wide?: boolean; tall?: boolean }[] = [
+  {
+    img: '/images/studio/studio-ensemble.jpg',
+    alt: 'Le studio PitchMySite : le site de Wave sur ordinateur et téléphone',
+    title: 'Neuf appareils, seul ou en duo',
+    text: 'MacBook, iPhone, iPad, Android, iMac, montre… L’ordinateur et le téléphone côte à côte, avec la vraie version mobile du site.',
+    wide: true,
+  },
+  {
+    img: '/images/studio/studio-zone.jpg',
+    alt: 'Le réglage « Partie du site montrée »',
+    title: 'La partie qui fait vendre',
+    text: 'Glissez le cadre sur la partie du site à montrer, agrandissez un détail.',
+    tall: true,
+    // carte haute : même hauteur d'image que la grande carte voisine
+  },
+  {
+    img: '/images/studio/studio-modeles.jpg',
+    alt: 'Les modèles prêts à publier',
+    title: '14 modèles prêts à publier',
+    text: 'LinkedIn, Instagram, statut WhatsApp, devis, portfolio : appareil, fond et format réglés d’un coup.',
+  },
+  {
+    img: '/images/studio/studio-pitch.jpg',
+    alt: 'La Pitch IA',
+    title: 'Le texte de vente, déjà écrit',
+    text: 'L’offre, l’e-mail de prospection et le post LinkedIn, écrits à partir du site. Avec votre clé IA, gratuite chez Groq ou Gemini.',
+  },
+  {
+    img: '/images/studio/studio-exporter.jpg',
+    alt: 'Le menu Exporter',
+    title: 'Envoyé en un clic',
+    text: 'Image jusqu’en 4K, statut WhatsApp, packs réseaux et stores, PDF de présentation ou lien pour le client.',
+  },
+];
+
+export function StudioSection() {
+  return (
+    <section data-reveal className={`${pad} py-12 sm:py-16`}>
+      <div className="max-w-[60ch]">
+        <h2 className={head}>Tout pour présenter un site, sans Figma</h2>
+        <p className="mt-5 text-[17px] leading-relaxed text-pms-muted">
+          Ces images sont de vraies captures du studio, prises avec le site de Wave.
+        </p>
+      </div>
+      <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {STUDIO_CARDS.map((c) => (
+          <article
+            key={c.title}
+            className={`rounded-2xl bg-pms-surface overflow-hidden flex flex-col ${c.wide ? 'md:col-span-2' : ''}`}
+          >
+            <div className={`bg-[#0b0b0f] overflow-hidden ${c.wide || c.tall ? 'h-[240px] sm:h-[340px]' : 'h-[240px]'}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={c.img} alt={c.alt} loading="lazy" className={`w-full h-full object-cover ${c.tall ? 'object-top' : 'object-left-top'}`} />
+            </div>
+            <div className="p-5 sm:p-6">
+              <h3 className="text-[19px] font-semibold">{c.title}</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">{c.text}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+      <p className="mt-8 text-[16px] leading-relaxed text-pms-muted max-w-[70ch]">
+        Et aussi : scènes photo réalistes, avant / après d&apos;une refonte, annotations et floutage, kit de marque, vidéos et GIF,
+        et tous vos projets enregistrés.
+      </p>
+    </section>
   );
 }

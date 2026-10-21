@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { UrlInputForm } from '@/components/UrlInputForm';
+import { Journey } from '@/components/home/Journey';
 import dynamic from 'next/dynamic';
 
 // Le studio (plus de 5 000 lignes) n'est chargé qu'à son ouverture : accueil plus rapide.
@@ -31,12 +32,12 @@ import {
   getPlanMonthlyPrice,
   getPlanAnnualPrice,
   getPlanMonthlyEquivalent,
+  getLoyaltyFloorFcfa,
 } from '@/lib/pricing';
 import { Loader2 } from 'lucide-react';
 import {
   HeroShowcase,
   FormatShot,
-  StepShot,
   SmallPhone,
   ExamplesCarousel,
   FooterLaptop,
@@ -223,64 +224,60 @@ export default function HomePage() {
       <Navbar />
       {showProjects && <ProjectsModal onClose={() => setShowProjects(false)} onOpen={openProject} onChange={setProjects} />}
 
-      {/* ═══ Accroche : la carte rayée à gauche, à droite le site de Wave mis en scène ═══ */}
-      <section className="p-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:min-h-[calc(100svh-64px)]">
-        <div className="h-[48svh] lg:h-auto lg:order-2 lg:sticky lg:top-[76px] lg:max-h-[calc(100svh-88px)]">
-          <HeroShowcase />
+      {/* ═══ Accroche centrée : titre, champ du lien, puis le site de Wave mis en scène en grand ═══ */}
+      <section className="p-3">
+        <div className="px-5 sm:px-10 pt-12 sm:pt-20 pb-10 flex flex-col items-center text-center">
+          <h1 className={`${display} max-w-[20ch]`}>
+            <span className="hero-court">Votre site, prêt à faire signer.</span>
+            <span className="hero-long">Un lien, des visuels qui font signer.</span>
+          </h1>
+          <p className={`mt-6 ${lead} text-pms-ink max-w-[40ch]`}>
+            Préparez en 2 minutes les visuels et le texte qui font signer un client, au lieu de 2 heures sur Figma.
+          </p>
+          <div className="mt-8 w-full max-w-3xl -mx-2 sm:-mx-4 text-left">
+            {savedDraft && (
+              <div className="mx-2 sm:mx-4 mb-5 p-4 rounded-lg bg-pms-surface flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <p className="text-[15px] text-pms-muted min-w-0">
+                  Reprendre votre dernier mockup : <strong className="font-semibold text-pms-ink">{savedDraft.name}</strong>
+                  {', '}
+                  {new Date(savedDraft.updatedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                </p>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => openProject(savedDraft)}
+                    className="min-h-[44px] px-4 rounded-md bg-pms-accent hover:bg-pms-accent-hover text-white text-[15px] font-semibold transition-colors"
+                  >
+                    Reprendre
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowProjects(true)}
+                    className="min-h-[44px] px-3 rounded-md text-pms-accent hover:underline text-[15px] font-semibold"
+                  >
+                    Mes projets ({projects.length})
+                  </button>
+                </div>
+              </div>
+            )}
+            <UrlInputForm onAnalyze={handleAnalyzeUrl} onUploadImage={handleUploadImage} isLoading={isLoading} errorMessage={errorMessage} />
+          </div>
         </div>
 
-        <div className="relative -mt-6 lg:mt-0 lg:order-1 rounded-lg bg-pms-surface overflow-hidden flex flex-col">
+        <HeroShowcase />
 
-          <div className="flex-1 flex flex-col justify-center px-5 sm:px-10 lg:px-14 py-10 lg:py-14">
-            <h1 className={`${display} max-w-[20ch]`}>
-              <span className="hero-court">Votre site, prêt à faire signer.</span>
-              <span className="hero-long">Un lien, des visuels qui font signer.</span>
-            </h1>
-            <p className={`mt-6 ${lead} text-pms-ink max-w-[36ch]`}>
-              Préparez en 2 minutes les visuels et le texte qui font signer un client, au lieu de 2 heures sur Figma.
-            </p>
-
-            <div className="mt-8 -mx-2 sm:-mx-4">
-              {savedDraft && (
-                <div className="mx-2 sm:mx-4 mb-5 p-4 rounded-lg bg-pms-paper flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <p className="text-[15px] text-pms-muted min-w-0">
-                    Reprendre votre dernier mockup : <strong className="font-semibold text-pms-ink">{savedDraft.name}</strong>
-                    {', '}
-                    {new Date(savedDraft.updatedAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
-                  </p>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => openProject(savedDraft)}
-                      className="min-h-[44px] px-4 rounded-md bg-pms-accent hover:bg-pms-accent-hover text-white text-[15px] font-semibold transition-colors"
-                    >
-                      Reprendre
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowProjects(true)}
-                      className="min-h-[44px] px-3 rounded-md text-pms-accent hover:underline text-[15px] font-semibold"
-                    >
-                      Mes projets ({projects.length})
-                    </button>
-                  </div>
-                </div>
-              )}
-              <UrlInputForm onAnalyze={handleAnalyzeUrl} onUploadImage={handleUploadImage} isLoading={isLoading} errorMessage={errorMessage} />
-            </div>
-
-            <p className="mt-6 text-[15px] text-pms-muted max-w-[46ch]">
-              Essai sans inscription ni carte bancaire.{' '}
-              {mobileMoneyRegion
-                ? 'Paiement unique en FCFA par Mobile Money, sans prélèvement automatique.'
-                : 'Paiement unique, sans abonnement automatique.'}
-            </p>
-            <nav className="mt-8 flex flex-wrap gap-x-7 gap-y-2 text-[15px] font-semibold" aria-label="Sur cette page">
-              <a href="#usages" className="min-h-[44px] inline-flex items-center text-pms-accent hover:underline underline-offset-4">Les formats</a>
-              <a href="#pricing" className="min-h-[44px] inline-flex items-center text-pms-accent hover:underline underline-offset-4">Les tarifs</a>
-              <a href="#questions" className="min-h-[44px] inline-flex items-center text-pms-accent hover:underline underline-offset-4">Vos questions</a>
-            </nav>
-          </div>
+        <div className="px-5 sm:px-10 pt-6 pb-4 flex flex-col items-center text-center">
+          <p className="text-[15px] text-pms-muted max-w-[52ch]">
+            Essai sans inscription ni carte bancaire.{' '}
+            {mobileMoneyRegion
+              ? 'Paiement unique en FCFA par Mobile Money, sans prélèvement automatique.'
+              : 'Paiement unique, sans abonnement automatique.'}
+          </p>
+          <nav className="mt-4 flex flex-wrap justify-center gap-x-7 gap-y-2 text-[15px] font-semibold" aria-label="Sur cette page">
+            <a href="#usages" className="min-h-[44px] inline-flex items-center text-pms-accent hover:underline underline-offset-4">Les formats</a>
+            <a href="#pricing" className="min-h-[44px] inline-flex items-center text-pms-accent hover:underline underline-offset-4">Les tarifs</a>
+            <a href="#questions" className="min-h-[44px] inline-flex items-center text-pms-accent hover:underline underline-offset-4">Vos questions</a>
+          </nav>
         </div>
       </section>
 
@@ -407,26 +404,13 @@ export default function HomePage() {
         <p className="mt-4 text-[13px] text-pms-muted max-w-[70ch]">{BRANDS_NOTICE}</p>
       </section>
 
-      {/* ═══ Comment ça marche : chaque phrase a son image juste à côté, qui montre exactement ce qu'elle dit ═══ */}
+      {/* ═══ Comment ça marche : 4 étapes en zigzag, la ligne se remplit au défilement ═══ */}
       <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pt-20 sm:pt-28">
         <h2 className={head}>Comment ça marche</h2>
-        <ol className="mt-12 flex flex-col gap-16 lg:gap-20">
-          {[
-            { t: 'D’abord, collez le lien du site.', d: 'Ou déposez votre propre capture si le site est en local ou protégé par un mot de passe.' },
-            { t: 'Ensuite, choisissez l’appareil et le format.', d: 'MacBook, iPhone, iPad, Android ; l’angle, le fond et le format de chaque réseau.' },
-            { t: 'Enfin, exportez ou partagez.', d: 'Image jusqu’en 4K, vidéo, PDF pour un devis, ou un lien à envoyer à votre client.' },
-          ].map((s, i) => (
-            <li key={s.t} className="grid gap-8 lg:grid-cols-12 lg:gap-10 lg:items-center">
-              <div className="lg:col-span-5">
-                <p className={lead}>{s.t}</p>
-                <p className="mt-3 text-[17px] leading-relaxed text-pms-muted max-w-[36ch]">{s.d}</p>
-              </div>
-              <div className="lg:col-start-7 lg:col-span-6">
-                <StepShot step={i as 0 | 1 | 2} />
-              </div>
-            </li>
-          ))}
-        </ol>
+        <p className="mt-5 text-[17px] leading-relaxed text-pms-muted max-w-[46ch]">
+          D’un simple lien à un visuel qui fait signer, en 4 étapes.
+        </p>
+        <Journey />
       </section>
 
       {/* ═══ Ce que contient le studio : une petite preuve à côté de chaque texte ═══ */}
@@ -543,7 +527,7 @@ export default function HomePage() {
                 isAnnualPricing ? 'bg-pms-ink text-white' : 'text-pms-muted hover:text-pms-ink'
               }`}
             >
-              Annuel, 2 mois offerts
+              Annuel, prix le plus bas
             </button>
           </div>
         </div>
@@ -556,6 +540,7 @@ export default function HomePage() {
               price: formatPrice(0, currency),
               period: 'gratuit à vie',
               fcfa: null as string | null,
+              loyalty: null as string | null,
               billedInfo: null as string | null,
               desc: PLANS[0].description,
               cta: 'Commencer gratuitement',
@@ -575,7 +560,10 @@ export default function HomePage() {
                 price: formatPrice(displayPrice, currency),
                 period: 'par mois',
                 fcfa: mobileMoneyRegion
-                  ? `soit ${new Intl.NumberFormat('fr-FR').format(isAnnualPricing ? p.annualFcfa : p.monthlyFcfa)} FCFA${isAnnualPricing ? ' pour 1 an' : ' pour 1 mois'}`
+                  ? `Par Mobile Money : ${new Intl.NumberFormat('fr-FR').format(isAnnualPricing ? p.annualFcfa : p.monthlyFcfa)} FCFA${isAnnualPricing ? ' pour 1 an' : ' pour 1 mois'}`
+                  : null,
+                loyalty: !isAnnualPricing
+                  ? `Puis ${new Intl.NumberFormat('fr-FR').format(p.loyaltyStepFcfa)} FCFA de moins chaque mois payé d’affilée, jusqu’à ${new Intl.NumberFormat('fr-FR').format(getLoyaltyFloorFcfa(p))} FCFA.`
                   : null,
                 billedInfo: isAnnualPricing ? `Facturé ${formatPrice(annualPrice, currency)} par an` : null,
                 desc: p.description,
@@ -600,6 +588,9 @@ export default function HomePage() {
                   <span className={`text-[15px] ${plan.highlighted ? 'text-white/75' : 'text-pms-muted'}`}>{plan.period}</span>
                 </p>
                 {plan.fcfa && <p className="mt-2 text-[15px] font-semibold">{plan.fcfa}</p>}
+                {plan.fcfa && plan.loyalty && (
+                  <p className={`mt-1 text-[14px] ${plan.highlighted ? 'text-white/75' : 'text-pms-muted'}`}>{plan.loyalty}</p>
+                )}
                 {plan.billedInfo && (
                   <p className={`mt-1 text-[15px] ${plan.highlighted ? 'text-white/75' : 'text-pms-muted'}`}>{plan.billedInfo}</p>
                 )}

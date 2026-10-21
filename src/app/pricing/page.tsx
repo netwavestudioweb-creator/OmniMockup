@@ -17,6 +17,8 @@ import {
   getPlanAnnualSavings,
   formatPrice,
   getCreditPackPrice,
+  getLoyaltyMonthlyFcfa,
+  getLoyaltyFloorFcfa,
   Plan,
   CreditPack,
 } from '@/lib/pricing';
@@ -55,6 +57,19 @@ export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
+
+  // Fidélité : baisses déjà acquises par le client connecté (prix du prochain mois)
+  const [loyaltySteps, setLoyaltySteps] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    if (!user) {
+      setLoyaltySteps(null);
+      return;
+    }
+    fetch('/api/payments/saspay/loyalty', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setLoyaltySteps(d?.steps || null))
+      .catch(() => setLoyaltySteps(null));
+  }, [user]);
 
   // Étape 5 : Modal Downsell Exit-Intent sur /pricing
   const [showExitDownsell, setShowExitDownsell] = useState(false);
@@ -285,7 +300,7 @@ export default function PricingPage() {
 
           <div className="flex flex-wrap items-center justify-center gap-4 w-full md:w-auto">
             {/* Devise détectée automatiquement selon le pays (pas de sélecteur, choix de Dodo) */}
-            {/* Toggle Facturation Annuel / Mensuel (Annuel par défaut avec 2 mois offerts) */}
+            {/* Toggle Facturation Annuel / Mensuel (Annuel par défaut : le prix le plus bas) */}
             <div className="flex items-center gap-3">
               <span
                 onClick={() => setIsAnnual(false)}
@@ -321,7 +336,7 @@ export default function PricingPage() {
               >
                 <span>Annuel</span>
                 <span className="px-2 py-0.5 rounded-full bg-pms-accent text-white text-[10px] font-semibold shadow-2xs">
-                  2 mois offerts (-17 %)
+                  le prix le plus bas
                 </span>
               </span>
             </div>
@@ -377,20 +392,36 @@ export default function PricingPage() {
                     </div>
 
                     {/* Montant réellement payé via SasPay (Mobile Money ou carte), en FCFA */}
-                    {!useStripe && (
-                      <p className="mt-1 text-[11px] font-semibold text-amber-700">
-                        {method === 'card' ? 'Payé par carte via SasPay' : 'Payé en Mobile Money'} :{' '}
-                        {new Intl.NumberFormat('fr-FR').format(isAnnual ? plan.annualFcfa : plan.monthlyFcfa)} FCFA
-                        {isAnnual ? ' pour 1 an' : ' pour 1 mois'}
-                      </p>
-                    )}
+                    {!useStripe && (() => {
+                      const fcfa = (n: number) => `${new Intl.NumberFormat('fr-FR').format(n)} FCFA`;
+                      const step = loyaltySteps?.[plan.id] || 0;
+                      const monthFcfa = getLoyaltyMonthlyFcfa(plan, step);
+                      return (
+                        <>
+                          <p className="mt-1 text-[11px] font-semibold text-amber-700">
+                            {method === 'card' ? 'Payé par carte via SasPay' : 'Payé en Mobile Money'} :{' '}
+                            {isAnnual ? `${fcfa(plan.annualFcfa)} pour 1 an` : `${fcfa(monthFcfa)} pour 1 mois`}
+                            {!isAnnual && step > 0 && (
+                              <span className="font-normal text-stone-500"> au lieu de <s>{fcfa(plan.monthlyFcfa)}</s></span>
+                            )}
+                          </p>
+                          {!isAnnual && (
+                            <p className="mt-1 text-[11px] text-stone-600">
+                              {step > 0
+                                ? `Votre prix fidélité : ${step + 1}e mois d’affilée.`
+                                : `Fidélité : −${new Intl.NumberFormat('fr-FR').format(plan.loyaltyStepFcfa)} FCFA chaque mois payé d’affilée, jusqu’à ${fcfa(getLoyaltyFloorFcfa(plan))}.`}
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()}
 
                     {/* Économie annuelle ou facturation */}
                     <div className="mt-2 text-[11px] font-semibold text-stone-600 flex flex-col gap-0.5">
                       {isAnnual ? (
                         <>
                           <span className="text-emerald-700 font-semibold">
-                            Facturé {formatPrice(annualPrice, currency)} / an (2 mois offerts)
+                            Facturé {formatPrice(annualPrice, currency)} / an
                           </span>
                           <span className="text-stone-500">
                             Économie : {formatPrice(savings, currency)} par an
@@ -733,10 +764,20 @@ export default function PricingPage() {
             <div className="space-y-1.5">
               <h4 className="font-semibold text-stone-900 flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5 text-pms-accent shrink-0" />
-                Comment changer la devise d&apos;affichage (€ ou $) ?
+                Dans quelle devise sont affichés les prix ?
               </h4>
               <p className="leading-relaxed text-stone-500">
-                Les prix sont affichés en euros ou en dollars selon votre région, et vous pouvez changer à tout moment grâce au sélecteur en haut de page ou dans le pied de page. Votre choix est sauvegardé pour vos prochaines visites.
+                En euros ou en dollars selon votre région, avec le montant en FCFA payé par Mobile Money.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <h4 className="font-semibold text-stone-900 flex items-center gap-1.5">
+                <Coins className="w-3.5 h-3.5 text-pms-accent shrink-0" />
+                Comment marche le prix fidélité ?
+              </h4>
+              <p className="leading-relaxed text-stone-500">
+                En payant au mois par Mobile Money, chaque mois payé d&apos;affilée sur la même formule baisse le prix du mois suivant, trois fois au maximum (Solo : 5 500, 5 000, 4 500 puis 4 000 FCFA). Repayez au plus tard 3 jours après la fin de votre mois pour garder votre prix. Un mois raté vous ramène au prix de départ.
               </p>
             </div>
 

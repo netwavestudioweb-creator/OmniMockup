@@ -11,16 +11,7 @@ export type SaspayItem =
  * Article vendu via SasPay, avec son prix en FCFA.
  * Source unique des prix : src/lib/pricing.ts (jamais un montant envoyé par le navigateur).
  */
-/**
- * Article de TEST : 1 crédit pour 200 FCFA (minimum SasPay), pour vérifier un vrai paiement Mobile Money
- * de bout en bout sans payer un pack entier. Réservé à l'administrateur (contrôlé à la création du paiement).
- */
-export const TEST_ITEM_ID = 'test_200';
-
 export function getSaspayItem(itemId: string, cycle: string | null | undefined): SaspayItem | null {
-  if (itemId === TEST_ITEM_ID) {
-    return { kind: 'credits', itemId, credits: 1, amount: 200, label: 'Test de paiement (1 crédit)' };
-  }
   const pack = CREDIT_PACKS.find((p) => p.id === itemId);
   if (pack) {
     return {

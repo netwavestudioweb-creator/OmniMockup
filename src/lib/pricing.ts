@@ -52,6 +52,8 @@ export interface Plan {
   annualUsd: number;
   monthlyFcfa: number;
   annualFcfa: number;
+  /** Fidélité (Mobile Money) : baisse en FCFA à chaque mois payé d'affilée, jusqu'à LOYALTY_MAX_STEPS baisses */
+  loyaltyStepFcfa: number;
   description: string;
   isPopular?: boolean;
   isAnchor?: boolean;
@@ -85,8 +87,10 @@ export function detectCurrencyFromCountry(countryCode?: string | null): Currency
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GRILLE D'ABONNEMENTS
-// Annuel = 10 mois payés ("2 mois offerts") → −16,67 % ≈ −17 %
+// GRILLE D'ABONNEMENTS (validée par Dodo le 21/10/2026)
+// Mensuel FCFA : prix de départ, puis baisse de fidélité à chaque mois payé d'affilée
+// (3 baisses au maximum ; un mois raté → retour au prix de départ).
+// Annuel = 12 × le prix plancher de la fidélité. Euros ≈ FCFA ÷ 656, arrondis.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const PLANS: Plan[] = [
@@ -100,6 +104,7 @@ export const PLANS: Plan[] = [
     annualUsd: 0,
     monthlyFcfa: 0,
     annualFcfa: 0,
+    loyaltyStepFcfa: 0,
     description: 'Le studio complet, sans carte bancaire. Idéal pour tester sur vos projets.',
     ctaText: 'Commencer gratuitement',
     isPopular: false,
@@ -119,12 +124,13 @@ export const PLANS: Plan[] = [
     id: 'solo',
     name: 'Solo',
     badge: 'Entrée de gamme',
-    monthlyEur: 5,
-    annualEur: 50,
-    monthlyUsd: 5,
-    annualUsd: 50,
-    monthlyFcfa: 3300,
-    annualFcfa: 33000,
+    monthlyEur: 8,
+    annualEur: 73,
+    monthlyUsd: 8,
+    annualUsd: 73,
+    monthlyFcfa: 5500,
+    annualFcfa: 48000,
+    loyaltyStepFcfa: 500,
     description: 'Pour les créateurs occasionnels : 20 exports HD par mois.',
     ctaText: 'Choisir Solo',
     isPopular: false,
@@ -144,12 +150,13 @@ export const PLANS: Plan[] = [
     id: 'pro',
     name: 'Pro',
     badge: 'Le plus populaire',
-    monthlyEur: 9,
-    annualEur: 90,
-    monthlyUsd: 9,
-    annualUsd: 90,
-    monthlyFcfa: 5900,
-    annualFcfa: 59000,
+    monthlyEur: 14,
+    annualEur: 119,
+    monthlyUsd: 14,
+    annualUsd: 119,
+    monthlyFcfa: 9500,
+    annualFcfa: 78000,
+    loyaltyStepFcfa: 1000,
     description: 'Exports illimités jusqu’en 4K, sans filigrane, avec vidéos et GIF. Le meilleur choix.',
     isPopular: true,
     ctaText: 'Choisir Pro',
@@ -184,7 +191,8 @@ export const PLANS: Plan[] = [
     monthlyUsd: 29,
     annualUsd: 290,
     monthlyFcfa: 19000,
-    annualFcfa: 190000,
+    annualFcfa: 192000,
+    loyaltyStepFcfa: 1000,
     description: 'Tout le forfait Pro en illimité, avec vos pages de partage à votre marque.',
     isPopular: false,
     isAnchor: true,
@@ -214,6 +222,26 @@ export const PLANS: Plan[] = [
     ],
   },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIDÉLITÉ (Mobile Money, paiement au mois)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Nombre maximum de baisses de fidélité (atteint dès le 4e mois payé d'affilée) */
+export const LOYALTY_MAX_STEPS = 3;
+/** Délai accordé après la fin du mois pour repayer sans perdre la fidélité */
+export const LOYALTY_GRACE_DAYS = 3;
+
+/** Prix d'un mois en FCFA après `step` baisses de fidélité (0 = prix de départ) */
+export function getLoyaltyMonthlyFcfa(plan: Plan, step: number): number {
+  const s = Math.max(0, Math.min(LOYALTY_MAX_STEPS, Math.floor(step)));
+  return plan.monthlyFcfa - s * plan.loyaltyStepFcfa;
+}
+
+/** Prix plancher en FCFA (client fidèle depuis 4 mois ou plus) */
+export function getLoyaltyFloorFcfa(plan: Plan): number {
+  return getLoyaltyMonthlyFcfa(plan, LOYALTY_MAX_STEPS);
+}
 
 export function getPlan(id: PlanId): Plan {
   const plan = PLANS.find((p) => p.id === id);
@@ -309,37 +337,37 @@ export const CREDIT_PACKS: CreditPack[] = [
     id: 'credit_petit',
     name: 'Petit Pack',
     credits: 10,
-    priceEur: 4,
-    priceUsd: 4,
-    priceFcfa: 2600,
-    pricePerCreditEur: 0.40,
-    pricePerCreditUsd: 0.40,
-    pricePerCreditFcfa: 260,
+    priceEur: 5,
+    priceUsd: 5,
+    priceFcfa: 3200,
+    pricePerCreditEur: 0.50,
+    pricePerCreditUsd: 0.50,
+    pricePerCreditFcfa: 320,
     badge: 'Découverte',
   },
   {
     id: 'credit_moyen',
     name: 'Pack Moyen',
     credits: 30,
-    priceEur: 10,
-    priceUsd: 10,
-    priceFcfa: 6600,
-    pricePerCreditEur: 0.33,
-    pricePerCreditUsd: 0.33,
-    pricePerCreditFcfa: 220,
+    priceEur: 11,
+    priceUsd: 11,
+    priceFcfa: 7500,
+    pricePerCreditEur: 0.37,
+    pricePerCreditUsd: 0.37,
+    pricePerCreditFcfa: 250,
     isDecoy: true,
   },
   {
     id: 'credit_grand',
     name: 'Grand Pack',
     credits: 75,
-    priceEur: 15,
-    priceUsd: 15,
-    priceFcfa: 9800,
-    pricePerCreditEur: 0.20,
-    pricePerCreditUsd: 0.20,
-    pricePerCreditFcfa: 131,
-    badge: 'Meilleure valeur : -50 %',
+    priceEur: 19,
+    priceUsd: 19,
+    priceFcfa: 12500,
+    pricePerCreditEur: 0.25,
+    pricePerCreditUsd: 0.25,
+    pricePerCreditFcfa: 167,
+    badge: 'Meilleure valeur : -48 %',
     isTarget: true,
   },
 ];
@@ -392,47 +420,48 @@ export function getOrderBumpPrice(currency: Currency): number {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LOOKUP KEYS STRIPE (idempotence — multi-devises EUR et USD)
+// v3 : nouveaux prix du 21/10/2026 (relancer scripts/setup-stripe-products.ts avant d'activer la carte)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const STRIPE_LOOKUP_KEYS = {
   // Plans mensuels
-  solo_monthly_eur:   'omnimockup_solo_monthly_eur_v2',
-  solo_monthly_usd:   'omnimockup_solo_monthly_usd_v2',
-  pro_monthly_eur:    'omnimockup_pro_monthly_eur_v2',
-  pro_monthly_usd:    'omnimockup_pro_monthly_usd_v2',
-  agence_monthly_eur: 'omnimockup_agence_monthly_eur_v2',
-  agence_monthly_usd: 'omnimockup_agence_monthly_usd_v2',
+  solo_monthly_eur:   'omnimockup_solo_monthly_eur_v3',
+  solo_monthly_usd:   'omnimockup_solo_monthly_usd_v3',
+  pro_monthly_eur:    'omnimockup_pro_monthly_eur_v3',
+  pro_monthly_usd:    'omnimockup_pro_monthly_usd_v3',
+  agence_monthly_eur: 'omnimockup_agence_monthly_eur_v3',
+  agence_monthly_usd: 'omnimockup_agence_monthly_usd_v3',
 
   // Plans annuels
-  solo_annual_eur:    'omnimockup_solo_annual_eur_v2',
-  solo_annual_usd:    'omnimockup_solo_annual_usd_v2',
-  pro_annual_eur:     'omnimockup_pro_annual_eur_v2',
-  pro_annual_usd:     'omnimockup_pro_annual_usd_v2',
-  agence_annual_eur:  'omnimockup_agence_annual_eur_v2',
-  agence_annual_usd:  'omnimockup_agence_annual_usd_v2',
+  solo_annual_eur:    'omnimockup_solo_annual_eur_v3',
+  solo_annual_usd:    'omnimockup_solo_annual_usd_v3',
+  pro_annual_eur:     'omnimockup_pro_annual_eur_v3',
+  pro_annual_usd:     'omnimockup_pro_annual_usd_v3',
+  agence_annual_eur:  'omnimockup_agence_annual_eur_v3',
+  agence_annual_usd:  'omnimockup_agence_annual_usd_v3',
 
   // Packs crédits
-  credit_petit_eur:   'omnimockup_credit_petit_eur_v2',
-  credit_petit_usd:   'omnimockup_credit_petit_usd_v2',
-  credit_moyen_eur:   'omnimockup_credit_moyen_eur_v2',
-  credit_moyen_usd:   'omnimockup_credit_moyen_usd_v2',
-  credit_grand_eur:   'omnimockup_credit_grand_eur_v2',
-  credit_grand_usd:   'omnimockup_credit_grand_usd_v2',
+  credit_petit_eur:   'omnimockup_credit_petit_eur_v3',
+  credit_petit_usd:   'omnimockup_credit_petit_usd_v3',
+  credit_moyen_eur:   'omnimockup_credit_moyen_eur_v3',
+  credit_moyen_usd:   'omnimockup_credit_moyen_usd_v3',
+  credit_grand_eur:   'omnimockup_credit_grand_eur_v3',
+  credit_grand_usd:   'omnimockup_credit_grand_usd_v3',
 
   // Order Bump
   bump_pitch_kit_eur: 'omnimockup_bump_pitch_kit_eur_v2',
   bump_pitch_kit_usd: 'omnimockup_bump_pitch_kit_usd_v2',
 
   // Rétrocompatibilité V2 (pointe vers EUR)
-  solo_monthly:       'omnimockup_solo_monthly_eur_v2',
-  solo_annual:        'omnimockup_solo_annual_eur_v2',
-  pro_monthly:        'omnimockup_pro_monthly_eur_v2',
-  pro_annual:         'omnimockup_pro_annual_eur_v2',
-  agence_monthly:     'omnimockup_agence_monthly_eur_v2',
-  agence_annual:      'omnimockup_agence_annual_eur_v2',
-  credit_petit:       'omnimockup_credit_petit_eur_v2',
-  credit_moyen:       'omnimockup_credit_moyen_eur_v2',
-  credit_grand:       'omnimockup_credit_grand_eur_v2',
+  solo_monthly:       'omnimockup_solo_monthly_eur_v3',
+  solo_annual:        'omnimockup_solo_annual_eur_v3',
+  pro_monthly:        'omnimockup_pro_monthly_eur_v3',
+  pro_annual:         'omnimockup_pro_annual_eur_v3',
+  agence_monthly:     'omnimockup_agence_monthly_eur_v3',
+  agence_annual:      'omnimockup_agence_annual_eur_v3',
+  credit_petit:       'omnimockup_credit_petit_eur_v3',
+  credit_moyen:       'omnimockup_credit_moyen_eur_v3',
+  credit_grand:       'omnimockup_credit_grand_eur_v3',
   bump_pitch_kit:     'omnimockup_bump_pitch_kit_eur_v2',
 } as const;
 

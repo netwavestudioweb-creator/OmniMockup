@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createSaspayCheckout } from '@/lib/saspay';
-import { TEST_ITEM_ID, getSaspayItem } from '@/lib/saspay-apply';
-import { requireAdmin } from '@/lib/admin';
+import { getSaspayItem } from '@/lib/saspay-apply';
+import { getNextLoyaltyStep } from '@/lib/loyalty';
+import { PLANS, getLoyaltyMonthlyFcfa } from '@/lib/pricing';
 import { createRateLimitResponse, checkRateLimitShared } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
@@ -32,11 +33,16 @@ export async function POST(req: NextRequest) {
   if (!item) {
     return NextResponse.json({ success: false, error: 'Article inconnu.' }, { status: 400 });
   }
-  // Paiement de test : seulement depuis le tableau de bord, avec la connexion administrateur
-  if (item.itemId === TEST_ITEM_ID && 'response' in (await requireAdmin())) {
-    return NextResponse.json({ success: false, error: 'Article inconnu.' }, { status: 400 });
-  }
 
+  // Fidélité : un mois payé d'affilée sur la même formule baisse le prix du mois suivant
+  if (item.kind === 'plan' && item.cycle === 'monthly') {
+    const plan = PLANS.find((p) => p.id === item.plan);
+    const step = plan ? await getNextLoyaltyStep(user.id, item.plan) : 0;
+    if (plan && step > 0) {
+      item.amount = getLoyaltyMonthlyFcfa(plan, step);
+      item.label = `${item.label}, prix fidélité`;
+    }
+  }
   const admin = createAdminClient();
 
   // Un abonnement par carte (Stripe) est déjà actif : on refuse un second plan

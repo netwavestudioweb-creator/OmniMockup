@@ -38,19 +38,31 @@ function Phone({ site }: { site: SiteId }) {
   return <MockupFrame type="iphone" fill screenshotBase64={s.mobile} url={s.url} domainName={s.domain} />;
 }
 
-/** Accroche : le site de Wave sur ordinateur et téléphone, sur un aplat */
+/** Petite étiquette posée sur la scène de l'accroche : une vraie option du studio */
+function Tag({ children, className }: { children: React.ReactNode; className: string }) {
+  return (
+    <span className={`absolute z-10 items-center rounded-full bg-pms-paper px-4 py-2 text-[15px] font-semibold shadow-[0_8px_24px_-12px_rgba(17,17,17,0.35)] ${className}`}>
+      {children}
+    </span>
+  );
+}
+
+/** Accroche : le site de Wave sur ordinateur et téléphone, en grand, avec trois options du studio autour */
 export function HeroShowcase() {
   return (
-    <figure data-ui className="relative h-full w-full overflow-hidden rounded-lg bg-pms-surface flex flex-col">
-      <div className="relative flex-1 min-h-0 flex items-center justify-center px-[6%] pt-[8%]">
-        <div className="w-[88%] -translate-x-[6%]">
+    <figure data-ui className="relative w-full rounded-lg bg-pms-surface overflow-hidden">
+      <div className="relative mx-auto max-w-[1100px] px-[6%] pt-[6%] pb-[4%]">
+        <Tag className="hidden sm:inline-flex left-[3%] top-[18%]">MacBook et iPhone</Tag>
+        <Tag className="hidden sm:inline-flex right-[3%] top-[10%]">Format LinkedIn 4:5</Tag>
+        <Tag className="hidden sm:inline-flex right-[2%] bottom-[30%]">Export 4K</Tag>
+        <div className="w-[86%] mx-auto -translate-x-[4%]">
           <Laptop site="wave" />
         </div>
-        <div className="absolute right-[6%] bottom-[6%] w-[20%]">
+        <div className="absolute right-[7%] bottom-[5%] w-[17%]">
           <Phone site="wave" />
         </div>
       </div>
-      <figcaption className="px-6 pb-5 pt-3 text-[13px] text-pms-muted">
+      <figcaption className="px-6 pb-5 text-[13px] text-pms-muted text-center">
         Le site de Wave, collé tel quel dans PitchMySite. Exemple sans lien avec la marque.
       </figcaption>
     </figure>
@@ -120,67 +132,6 @@ export function FormatShot({ format, compact = false }: { format: FormatId; comp
         <Phone site="netflix" />
       </div>
     </div>
-  );
-}
-
-/** Bouton d'interface montré dans les illustrations (pas cliquable) */
-function Chip({ children, on = false }: { children: React.ReactNode; on?: boolean }) {
-  return (
-    <span className={`px-3 py-1.5 rounded-md text-[15px] font-semibold ${on ? 'bg-pms-ink text-white' : 'bg-pms-paper text-pms-ink'}`}>
-      {children}
-    </span>
-  );
-}
-
-/**
- * « Comment ça marche » : chaque image montre exactement la phrase à côté d'elle.
- * 0 = le champ du lien rempli, 1 = le choix de l'appareil et du format, 2 = le visuel fini et ses boutons d'export.
- */
-export function StepShot({ step }: { step: 0 | 1 | 2 }) {
-  if (step === 0) {
-    return (
-      <figure data-ui className="w-full rounded-lg bg-pms-surface p-6 sm:p-8">
-        <p className="text-[15px] text-pms-muted">Collez l’adresse du site</p>
-        <div className="mt-3 flex flex-col sm:flex-row gap-2 rounded-lg bg-pms-paper p-2">
-          <span className="flex-1 min-w-0 truncate px-3 py-3 text-[17px]">https://www.netflix.com</span>
-          <span className="rounded-md bg-pms-accent px-5 py-3 text-[15px] font-semibold text-white text-center">Créer mon Mockup</span>
-        </div>
-        <figcaption className="mt-4 text-[15px] text-pms-muted">La page est capturée en quelques secondes, bannières de cookies masquées.</figcaption>
-      </figure>
-    );
-  }
-  if (step === 1) {
-    return (
-      <figure data-ui className="w-full rounded-lg bg-pms-surface p-6 sm:p-8">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="w-20 text-[15px] text-pms-muted">Appareil</span>
-          <Chip on>MacBook</Chip>
-          <Chip>iPhone</Chip>
-          <Chip>iPad</Chip>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="w-20 text-[15px] text-pms-muted">Format</span>
-          <Chip on>16:9</Chip>
-          <Chip>1:1</Chip>
-          <Chip>9:16</Chip>
-        </div>
-        <div className="mt-6 mx-auto w-[82%]">
-          <Laptop site="netflix" />
-        </div>
-      </figure>
-    );
-  }
-  return (
-    <figure data-ui className="w-full rounded-lg bg-pms-surface p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
-      <div className="w-[150px] shrink-0">
-        <Phone site="netflix" />
-      </div>
-      <div className="flex flex-col gap-2 w-full sm:w-auto">
-        <span className="rounded-md bg-pms-accent px-5 py-3 text-[15px] font-semibold text-white text-center">Télécharger en PNG 4K</span>
-        <span className="rounded-md bg-pms-paper px-5 py-3 text-[15px] font-semibold text-center">Copier le lien de partage</span>
-        <figcaption className="mt-2 text-[15px] text-pms-muted">Le visuel est prêt : en image, en vidéo, en PDF, ou en lien pour votre client.</figcaption>
-      </div>
-    </figure>
   );
 }
 

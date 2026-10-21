@@ -89,7 +89,7 @@ export const FORMATS: { id: FormatId; label: string; ratio: string; title: strin
   {
     id: 'store',
     label: 'App Store',
-    ratio: '1290 × 2796',
+    ratio: '1320 × 2868',
     title: 'Pour les stores d’applications',
     desc: 'Des captures aux tailles exactes de l’App Store et de Google Play, avec une accroche au-dessus de l’écran.',
   },
@@ -140,29 +140,59 @@ export function SmallPhone({ site }: { site: SiteId }) {
   return <Phone site={site} />;
 }
 
-/** Carrousel d'exemples : un client réel (Al Kareem) et des sites connus, chacun sur un appareil */
+/** Exemples qui défilent tout seuls, en boucle (pause au survol) : un client réel et des sites connus */
 const EXAMPLES: { site: SiteId; device: 'laptop' | 'phone'; note: string }[] = [
   { site: 'alkareem', device: 'laptop', note: 'Site client, parfumerie en ligne' },
   { site: 'apple', device: 'phone', note: 'Page produit sur iPhone' },
   { site: 'notion', device: 'laptop', note: 'Page d’accueil d’un logiciel' },
   { site: 'spotify', device: 'phone', note: 'Application de musique' },
+  { site: 'wave', device: 'laptop', note: 'Service de paiement mobile' },
+  { site: 'netflix', device: 'phone', note: 'Plateforme de vidéo' },
 ];
 
-export function ExamplesCarousel() {
+export function ExamplesMarquee() {
+  const card = (ex: (typeof EXAMPLES)[number], copy: boolean) => (
+    <li key={`${ex.site}-${copy}`} aria-hidden={copy || undefined} className="shrink-0 w-[78vw] sm:w-[436px] pl-4">
+      <figure data-ui className="h-[300px] rounded-2xl bg-pms-surface flex items-center justify-center overflow-hidden">
+        <div className={ex.device === 'laptop' ? 'w-[82%]' : 'w-[34%] mt-10'}>
+          {ex.device === 'laptop' ? <Laptop site={ex.site} /> : <Phone site={ex.site} />}
+        </div>
+      </figure>
+      <p className="mt-3 text-[17px] font-semibold">{SITES[ex.site].name}</p>
+      <p className="text-[15px] text-pms-muted">{ex.note}</p>
+    </li>
+  );
   return (
-    <ul className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-4 -mx-5 px-5 scroll-pl-5 sm:-mx-10 sm:px-10 sm:scroll-pl-10 lg:-mx-[68px] lg:px-[68px] lg:scroll-pl-[68px] [scrollbar-width:thin]">
-      {EXAMPLES.map((ex) => (
-        <li key={ex.site} className="snap-start shrink-0 w-[78vw] sm:w-[420px]">
-          <figure data-ui className="h-[300px] rounded-lg bg-pms-surface flex items-center justify-center overflow-hidden">
-            <div className={ex.device === 'laptop' ? 'w-[82%]' : 'w-[34%] mt-10'}>
-              {ex.device === 'laptop' ? <Laptop site={ex.site} /> : <Phone site={ex.site} />}
-            </div>
-          </figure>
-          <p className="mt-3 text-[17px] font-semibold">{SITES[ex.site].name}</p>
-          <p className="text-[15px] text-pms-muted">{ex.note}</p>
-        </li>
-      ))}
-    </ul>
+    <div className="marquee overflow-hidden -mx-5 sm:-mx-10 lg:-mx-[68px]">
+      {/* La liste est doublée : quand la première moitié est sortie, la boucle repart sans à-coup */}
+      <ul className="marquee-track flex w-max">
+        {EXAMPLES.map((ex) => card(ex, false))}
+        {EXAMPLES.map((ex) => card(ex, true))}
+      </ul>
+    </div>
+  );
+}
+
+/** Fond de l'accroche : des sites mis en scène, inclinés et très atténués, avec une ombre douce */
+export function HeroBackdrop() {
+  const shots = ['netflix', 'apple', 'notion', 'spotify', 'wave', 'alkareem', 'apple', 'netflix'] as SiteId[];
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute left-1/2 top-[-6%] w-[150%] sm:w-[120%] -translate-x-1/2 -rotate-[8deg] grid grid-cols-3 sm:grid-cols-4 gap-5 sm:gap-8 opacity-[0.22]">
+        {shots.map((id, i) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={i}
+            src={SITES[id].desktop}
+            alt=""
+            className="w-full aspect-[16/10] object-cover object-top rounded-xl shadow-[0_30px_60px_-20px_rgba(17,17,17,0.6)]"
+          />
+        ))}
+      </div>
+      {/* Voile blanc : le fond reste visible sur les bords, le texte reste lisible au centre */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_55%_at_50%_45%,rgba(255,255,255,0.97)_0%,rgba(255,255,255,0.86)_55%,rgba(255,255,255,0.55)_100%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-white" />
+    </div>
   );
 }
 

@@ -469,6 +469,21 @@ html:not([data-hero="court"]) .hero-court { display: none; }
   }
 }
 
+/* Accueil, exemples : défilement automatique en boucle, pause au survol, sans barre de défilement */
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee 45s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee { overflow-x: auto; }
+  .marquee-track { animation: none; }
+}
+
 /* Accueil, parcours en 4 étapes : l'image d'une étape s'éclaire quand on l'atteint */
 .journey-shot {
   transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1), filter 0.6s ease;

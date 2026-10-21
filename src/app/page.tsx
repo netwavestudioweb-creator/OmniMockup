@@ -34,18 +34,9 @@ import {
   getPlanMonthlyEquivalent,
   getLoyaltyFloorFcfa,
 } from '@/lib/pricing';
-import { Loader2 } from 'lucide-react';
-import {
-  HeroShowcase,
-  FormatShot,
-  SmallPhone,
-  ExamplesCarousel,
-  FooterLaptop,
-  FORMATS,
-  BRANDS_NOTICE,
-  type FormatId,
-} from '@/components/home/HomeStage';
-import { SUPPORT_EMAIL } from '@/lib/contact';
+import { Check, Loader2 } from 'lucide-react';
+import { HeroShowcase, HeroBackdrop, SmallPhone, ExamplesMarquee, BRANDS_NOTICE } from '@/components/home/HomeStage';
+import { ProblemSection, UsagesSection, AppsSection, FaqSection, SiteFooter } from '@/components/home/Sections';
 
 export default function HomePage() {
   const { currency, mobileMoneyRegion } = useCurrency();
@@ -81,7 +72,6 @@ export default function HomePage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loadingSeconds, setLoadingSeconds] = useState(0);
   const captureAbortRef = useRef<AbortController | null>(null);
-  const [activePricingPlan, setActivePricingPlan] = useState<number>(2); // 0=Découverte, 1=Solo, 2=Pro (recommandé), 3=Agence
   const [isAnnualPricing, setIsAnnualPricing] = useState<boolean>(true);
   // Mode « Captures pour les stores » : écrans d'une appli déposés depuis l'accueil
   const [storeShots, setStoreShots] = useState<string[] | null>(null);
@@ -112,8 +102,6 @@ export default function HomePage() {
     });
   };
 
-  // « Un lien, trois formats » : le format choisi par le visiteur
-  const [format, setFormat] = useState<FormatId>('devis');
 
   // Entrées au défilement : chaque section apparaît une fois (rien sans JavaScript ni si l'animation est réduite)
   useEffect(() => {
@@ -217,7 +205,6 @@ export default function HomePage() {
   const display = 'text-[clamp(2.125rem,1.5rem+2.6vw,3.5rem)] leading-[1.02] tracking-[-0.02em] font-normal';
   const head = 'text-[clamp(2rem,1.4rem+2vw,2.75rem)] leading-[1.05] tracking-[-0.02em] font-normal';
   const lead = 'text-[clamp(1.25rem,1.1rem+0.6vw,1.5rem)] leading-snug';
-  const current = FORMATS.find((f) => f.id === format) || FORMATS[0];
 
   return (
     <div className="font-archivo min-h-screen bg-pms-paper text-pms-ink flex flex-col w-full max-w-full overflow-x-clip selection:bg-pms-accent selection:text-white">
@@ -226,15 +213,17 @@ export default function HomePage() {
 
       {/* ═══ Accroche centrée : titre, champ du lien, puis le site de Wave mis en scène en grand ═══ */}
       <section className="p-3">
-        <div className="px-5 sm:px-10 pt-12 sm:pt-20 pb-10 flex flex-col items-center text-center">
-          <h1 className={`${display} max-w-[20ch]`}>
+        <div className="relative isolate px-5 sm:px-10 pt-12 sm:pt-20 pb-10 flex flex-col items-center text-center">
+          <HeroBackdrop />
+          <h1 className={`relative ${display} max-w-[20ch]`}>
             <span className="hero-court">Votre site, prêt à faire signer.</span>
             <span className="hero-long">Un lien, des visuels qui font signer.</span>
           </h1>
-          <p className={`mt-6 ${lead} text-pms-ink max-w-[40ch]`}>
-            Préparez en 2 minutes les visuels et le texte qui font signer un client, au lieu de 2 heures sur Figma.
+          <p className={`relative mt-6 ${lead} text-pms-ink max-w-[42ch]`}>
+            Collez le lien d&apos;un site ou d&apos;une vidéo YouTube : en 2 minutes, vous avez les visuels et le texte qui font
+            signer un client, au lieu de 2 heures sur Figma.
           </p>
-          <div className="mt-8 w-full max-w-3xl -mx-2 sm:-mx-4 text-left">
+          <div className="relative mt-8 w-full max-w-3xl -mx-2 sm:-mx-4 text-left">
             {savedDraft && (
               <div className="mx-2 sm:mx-4 mb-5 p-4 rounded-lg bg-pms-surface flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <p className="text-[15px] text-pms-muted min-w-0">
@@ -266,151 +255,47 @@ export default function HomePage() {
 
         <HeroShowcase />
 
-        <div className="px-5 sm:px-10 pt-6 pb-4 flex flex-col items-center text-center">
-          <p className="text-[15px] text-pms-muted max-w-[52ch]">
-            Essai sans inscription ni carte bancaire.{' '}
-            {mobileMoneyRegion
-              ? 'Paiement unique en FCFA par Mobile Money, sans prélèvement automatique.'
-              : 'Paiement unique, sans abonnement automatique.'}
-          </p>
-          <nav className="mt-4 flex flex-wrap justify-center gap-x-7 gap-y-2 text-[15px] font-semibold" aria-label="Sur cette page">
-            <a href="#usages" className="min-h-[44px] inline-flex items-center text-pms-accent hover:underline underline-offset-4">Les formats</a>
-            <a href="#pricing" className="min-h-[44px] inline-flex items-center text-pms-accent hover:underline underline-offset-4">Les tarifs</a>
-            <a href="#questions" className="min-h-[44px] inline-flex items-center text-pms-accent hover:underline underline-offset-4">Vos questions</a>
-          </nav>
-        </div>
       </section>
 
-      {/* ═══ Un lien → trois formats : ce que vous donnez à gauche, ce que vous recevez à droite ═══ */}
-      <section id="usages" aria-labelledby="usages-titre" className="scroll-mt-16 mt-3 md:grid md:grid-cols-2">
-        <div className="relative bg-pms-field text-white px-5 sm:px-10 lg:px-[68px] pt-16 pb-28 md:min-h-[90svh] flex flex-col">
-          <p className="text-[15px] text-white/70">Le lien que vous collez</p>
-          <code className="mt-3 block font-archivo text-[clamp(1.25rem,1.1rem+0.6vw,1.5rem)] leading-snug break-all max-w-[34ch]">
-            https://www.netflix.com
-          </code>
-
-          <p className="mt-12 text-[15px] text-white/70" id="format-label">Choisissez un format</p>
-          <div className="mt-3 flex flex-col gap-2 max-w-sm" role="radiogroup" aria-labelledby="format-label">
-            {FORMATS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                role="radio"
-                aria-checked={format === f.id}
-                onClick={() => setFormat(f.id)}
-                className={`min-h-[52px] px-4 rounded-md text-left flex items-center justify-between gap-4 transition-colors ${
-                  format === f.id ? 'bg-white text-pms-ink' : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                <span className="text-[17px] font-semibold">{f.label}</span>
-                <span className={`text-[15px] tabular-nums ${format === f.id ? 'text-pms-muted' : 'text-white/70'}`}>{f.ratio}</span>
-              </button>
-            ))}
-          </div>
-          <p className="mt-8 text-[17px] leading-relaxed text-white/85 max-w-[40ch]" aria-live="polite">
-            {current.desc}
-          </p>
-
-          <h2 id="usages-titre" className={`absolute bottom-8 left-5 sm:left-10 lg:left-[68px] ${head}`}>Un lien collé,</h2>
-        </div>
-
-        <div className="relative bg-pms-paper px-5 sm:px-10 pt-24 pb-28 md:pt-16 min-h-[70svh] md:min-h-[90svh] flex items-start justify-center">
-          <div className="relative w-full flex justify-center">
-            {FORMATS.map((f) => (
-              <div
-                key={f.id}
-                aria-hidden={format !== f.id}
-                className={`${format === f.id ? 'relative opacity-100' : 'absolute inset-x-0 top-0 opacity-0 pointer-events-none'} flex justify-center transition-opacity duration-700 motion-reduce:transition-none`}
-              >
-                <FormatShot format={f.id} />
-              </div>
-            ))}
-          </div>
-          <p className={`absolute bottom-8 right-5 sm:right-10 lg:right-[68px] ${head} text-right`}>trois formats.</p>
-        </div>
-      </section>
-
-      {/* ═══ Applis mobiles : captures pour l'App Store et Google Play ═══ */}
-      <section data-reveal id="stores" className="scroll-mt-16 mt-3 px-5 sm:px-10 lg:px-[68px] py-16 sm:py-20 bg-pms-surface lg:mx-3 lg:rounded-lg">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
-          <div>
-            <h2 className={`${head} max-w-[18ch]`}>Vous faites des applis ?</h2>
-            <p className="mt-5 text-[17px] leading-relaxed text-pms-ink max-w-[52ch]">
-              Déposez les écrans de votre appli : chacun est mis dans un iPhone, avec votre accroche au-dessus, puis exporté aux
-              tailles exactes de l&apos;App Store et de Google Play.
-            </p>
-          </div>
-          <div className="shrink-0">
-            <button
-              type="button"
-              onClick={() => storeInputRef.current?.click()}
-              className="w-full sm:w-auto min-h-[48px] px-6 rounded-md bg-pms-accent hover:bg-pms-accent-hover text-white font-semibold text-[15px] transition-colors"
-            >
-              Déposer les écrans de mon appli
-            </button>
-            <p className="mt-2 text-[13px] text-pms-muted">Jusqu&apos;à 8 images, PNG ou JPG.</p>
-            <input
-              ref={storeInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                handleStoreFiles(e.target.files);
-                e.target.value = '';
-              }}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ Le problème : grand aplat d'encre ═══ */}
-      <section data-reveal className="bg-pms-field text-white mt-3">
-        <div className="px-5 sm:px-10 lg:px-[68px] py-20 sm:py-28">
-          <h2 className={`${head} max-w-[22ch]`}>Vos clients jugent un site sur une image</h2>
-          <p className="mt-6 text-[17px] leading-relaxed text-white/85 max-w-[56ch]">
-            Proposition commerciale, livraison, portfolio : la première impression se joue sur un visuel. Une capture plate fait
-            paraître un site soigné comme un site bâclé.
-          </p>
-          <div className="mt-14 grid gap-12 md:grid-cols-2 max-w-5xl">
-            <div>
-              <h3 className={`${lead} text-white/70`}>Sans PitchMySite</h3>
-              <ul className="mt-5 space-y-4 text-[17px] leading-relaxed text-white/85">
-                <li>Des captures plates qui ne mettent pas votre travail en valeur.</li>
-                <li>Des heures non facturées à préparer des visuels sur Figma pour chaque client.</li>
-                <li>Des captures à refaire à la main à chaque modification du site.</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className={lead}>Avec PitchMySite</h3>
-              <ul className="mt-5 space-y-4 text-[17px] leading-relaxed text-white">
-                <li>Vous collez l&apos;adresse : les pages sont capturées, bannières de cookies masquées.</li>
-                <li>Le site est mis en scène sur ordinateur, téléphone et tablette, angle et fond réglables.</li>
-                <li>Un lien de partage pour votre client, à votre marque avec le plan Agence.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ Exemples : un client réel et des sites connus, chacun mis en scène ═══ */}
-      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pt-20 sm:pt-28">
-        <h2 className={head}>Des sites que vous connaissez</h2>
-        <p className="mt-5 mb-10 text-[17px] leading-relaxed text-pms-ink max-w-[52ch]">
-          Une boutique en ligne, une page produit, un logiciel : chaque site a été collé tel quel, puis mis en scène en quelques
-          clics.
-        </p>
-        <ExamplesCarousel />
-        <p className="mt-4 text-[13px] text-pms-muted max-w-[70ch]">{BRANDS_NOTICE}</p>
-      </section>
+      <ProblemSection />
 
       {/* ═══ Comment ça marche : 4 étapes en zigzag, la ligne se remplit au défilement ═══ */}
-      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pt-20 sm:pt-28">
+      <section data-reveal id="comment" className="scroll-mt-16 px-5 sm:px-10 lg:px-[68px] py-20 sm:py-28">
         <h2 className={head}>Comment ça marche</h2>
         <p className="mt-5 text-[17px] leading-relaxed text-pms-muted max-w-[46ch]">
           D’un simple lien à un visuel qui fait signer, en 4 étapes.
         </p>
         <Journey />
+      </section>
+
+      <UsagesSection />
+
+      <AppsSection
+        onPick={() => storeInputRef.current?.click()}
+        inputSlot={
+          <input
+            ref={storeInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              handleStoreFiles(e.target.files);
+              e.target.value = '';
+            }}
+          />
+        }
+      />
+
+      {/* ═══ Exemples : un client réel et des sites connus, qui défilent tout seuls ═══ */}
+      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pb-20 sm:pb-28">
+        <h2 className={head}>Des sites que vous connaissez</h2>
+        <p className="mt-5 mb-10 text-[17px] leading-relaxed text-pms-muted max-w-[52ch]">
+          Une boutique en ligne, une page produit, un logiciel : chaque site a été collé tel quel, puis mis en scène en quelques
+          clics.
+        </p>
+        <ExamplesMarquee />
+        <p className="mt-6 text-[13px] text-pms-muted max-w-[70ch]">{BRANDS_NOTICE}</p>
       </section>
 
       {/* ═══ Ce que contient le studio : une petite preuve à côté de chaque texte ═══ */}
@@ -533,122 +418,90 @@ export default function HomePage() {
         </div>
 
         {(() => {
-          const homepagePlans = [
-            {
-              id: 0,
-              name: 'Découverte',
-              price: formatPrice(0, currency),
-              period: 'gratuit à vie',
-              fcfa: null as string | null,
-              loyalty: null as string | null,
-              billedInfo: null as string | null,
-              desc: PLANS[0].description,
-              cta: 'Commencer gratuitement',
-              href: '#',
-              onCtaClick: scrollToTop as (() => void) | undefined,
-              highlighted: false,
-              features: PLANS[0].features,
-            },
-            ...[PLANS[1], PLANS[2], PLANS[3]].map((p, idx) => {
-              const monthlyPrice = getPlanMonthlyPrice(p, currency);
-              const annualPrice = getPlanAnnualPrice(p, currency);
-              const eq = getPlanMonthlyEquivalent(p, currency);
-              const displayPrice = isAnnualPricing ? eq : monthlyPrice;
-              return {
-                id: idx + 1,
-                name: p.name,
-                price: formatPrice(displayPrice, currency),
-                period: 'par mois',
-                fcfa: mobileMoneyRegion
-                  ? `Par Mobile Money : ${new Intl.NumberFormat('fr-FR').format(isAnnualPricing ? p.annualFcfa : p.monthlyFcfa)} FCFA${isAnnualPricing ? ' pour 1 an' : ' pour 1 mois'}`
-                  : null,
-                loyalty: !isAnnualPricing
-                  ? `Puis ${new Intl.NumberFormat('fr-FR').format(p.loyaltyStepFcfa)} FCFA de moins chaque mois payé d’affilée, jusqu’à ${new Intl.NumberFormat('fr-FR').format(getLoyaltyFloorFcfa(p))} FCFA.`
-                  : null,
-                billedInfo: isAnnualPricing ? `Facturé ${formatPrice(annualPrice, currency)} par an` : null,
-                desc: p.description,
-                cta: `Choisir ${p.name}`,
-                href: '/pricing',
-                onCtaClick: undefined as (() => void) | undefined,
-                highlighted: p.id === 'pro',
-                features: p.features,
-              };
-            }),
-          ];
-
-          const renderPlan = (plan: (typeof homepagePlans)[number]) => (
-            <div
-              key={plan.id}
-              className={`flex flex-col justify-between p-6 rounded-lg ${plan.highlighted ? 'bg-pms-field text-white' : 'bg-pms-paper text-pms-ink'}`}
-            >
-              <div>
-                <h3 className="text-[22px] leading-tight font-semibold">{plan.name}</h3>
-                <p className="mt-4 flex items-baseline gap-1.5">
-                  <span className="text-[2.25rem] leading-none tabular-nums whitespace-nowrap">{plan.price}</span>
-                  <span className={`text-[15px] ${plan.highlighted ? 'text-white/75' : 'text-pms-muted'}`}>{plan.period}</span>
-                </p>
-                {plan.fcfa && <p className="mt-2 text-[15px] font-semibold">{plan.fcfa}</p>}
-                {plan.fcfa && plan.loyalty && (
-                  <p className={`mt-1 text-[14px] ${plan.highlighted ? 'text-white/75' : 'text-pms-muted'}`}>{plan.loyalty}</p>
-                )}
-                {plan.billedInfo && (
-                  <p className={`mt-1 text-[15px] ${plan.highlighted ? 'text-white/75' : 'text-pms-muted'}`}>{plan.billedInfo}</p>
-                )}
-                <p className={`mt-4 text-[15px] leading-relaxed ${plan.highlighted ? 'text-white/85' : 'text-pms-muted'}`}>
-                  {plan.highlighted && 'La formule que nous conseillons. '}
-                  {plan.desc}
-                </p>
-                <ul className="mt-6 space-y-2 text-[15px] leading-snug">
-                  {plan.features
-                    .filter((f) => f.included)
-                    .map((f) => (
-                      <li key={f.name}>{f.name}</li>
-                    ))}
-                </ul>
-              </div>
-              {plan.onCtaClick ? (
-                <button
-                  type="button"
-                  onClick={plan.onCtaClick}
-                  className="mt-8 w-full min-h-[44px] rounded-md bg-pms-surface hover:bg-pms-line text-[15px] font-semibold transition-colors"
-                >
-                  {plan.cta}
-                </button>
-              ) : (
-                <Link
-                  href={plan.href}
-                  className={`mt-8 w-full min-h-[44px] flex items-center justify-center rounded-md text-[15px] font-semibold transition-colors ${
-                    plan.highlighted ? 'bg-pms-accent text-white hover:bg-pms-accent-hover' : 'bg-pms-surface hover:bg-pms-line'
-                  }`}
-                >
-                  {plan.cta}
-                </Link>
-              )}
-            </div>
-          );
-
-          const activePlan = homepagePlans[activePricingPlan] || homepagePlans[2];
+          const fcfa = (n: number) => `${new Intl.NumberFormat('fr-FR').format(n)} FCFA`;
+          // Une couleur très claire en haut de chaque carte (modèle de Dodo), sans violet
+          const tint: Record<string, string> = { free: '#FDEDE8', solo: '#EFEFEF', pro: '#E8EEFD', agence: '#E4F4FA' };
           return (
             <>
-              <div className="mt-12 hidden lg:grid lg:grid-cols-4 gap-3 items-stretch">{homepagePlans.map(renderPlan)}</div>
-              <div className="mt-10 lg:hidden">
-                <div className="flex p-1 rounded-md bg-pms-paper max-w-md" role="tablist" aria-label="Formules">
-                  {homepagePlans.map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={activePricingPlan === tab.id}
-                      onClick={() => setActivePricingPlan(tab.id)}
-                      className={`flex-1 min-h-[44px] px-1 rounded text-[15px] font-semibold transition-colors ${
-                        activePricingPlan === tab.id ? 'bg-pms-ink text-white' : 'text-pms-muted hover:text-pms-ink'
-                      }`}
+              <div className="mt-14 grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:grid-rows-[auto_auto_1fr] xl:gap-y-0">
+                {PLANS.map((p) => {
+                  const free = p.id === 'free';
+                  const pro = p.id === 'pro';
+                  const price = free ? 0 : isAnnualPricing ? getPlanMonthlyEquivalent(p, currency) : getPlanMonthlyPrice(p, currency);
+                  return (
+                    <div
+                      key={p.id}
+                      className={`relative flex flex-col xl:grid xl:grid-rows-subgrid xl:row-span-3 rounded-2xl bg-pms-paper p-6 sm:p-7 shadow-[0_20px_50px_-30px_rgba(17,17,17,0.35)] ${pro ? 'ring-2 ring-pms-accent' : 'ring-1 ring-pms-line'}`}
                     >
-                      {tab.name}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-4 max-w-md">{renderPlan(activePlan)}</div>
+                      <div
+                        aria-hidden
+                        className="absolute inset-x-0 top-0 h-48 rounded-t-2xl"
+                        style={{ background: `linear-gradient(to bottom, ${tint[p.id]}, rgba(255,255,255,0))` }}
+                      />
+                      {pro && (
+                        <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10 rounded-md bg-pms-ink text-white text-[13px] font-semibold px-3 py-1.5 whitespace-nowrap">
+                          Recommandé
+                        </span>
+                      )}
+                      <div className="relative">
+                        <h3 className="text-[19px] font-semibold">{p.name}</h3>
+                        <p className="mt-5 flex items-baseline gap-2">
+                          <span className="text-[2.5rem] leading-none tabular-nums whitespace-nowrap">{formatPrice(price, currency)}</span>
+                          <span className="text-[15px] text-pms-muted">{free ? 'gratuit à vie' : 'par mois'}</span>
+                        </p>
+                        {!free && mobileMoneyRegion && (
+                          <p className="mt-2 text-[15px] font-semibold">
+                            Par Mobile Money : {isAnnualPricing ? `${fcfa(p.annualFcfa)} pour 1 an` : `${fcfa(p.monthlyFcfa)} pour 1 mois`}
+                          </p>
+                        )}
+                        {!free && !isAnnualPricing && (
+                          <p className="mt-1 text-[14px] text-pms-muted">
+                            Puis {fcfa(p.loyaltyStepFcfa)} de moins chaque mois payé d&apos;affilée, jusqu&apos;à {fcfa(getLoyaltyFloorFcfa(p))}.
+                          </p>
+                        )}
+                        {!free && isAnnualPricing && (
+                          <p className="mt-1 text-[14px] text-pms-muted">Facturé {formatPrice(getPlanAnnualPrice(p, currency), currency)} par an</p>
+                        )}
+                        <p className="mt-4 text-[15px] leading-relaxed text-pms-muted">{p.description}</p>
+                      </div>
+
+                      <div className="relative">
+                        {free ? (
+                          <button
+                            type="button"
+                            onClick={scrollToTop}
+                            className="mt-6 w-full min-h-[48px] rounded-lg bg-pms-paper ring-1 ring-pms-line hover:ring-pms-ink text-[15px] font-semibold shadow-sm transition-colors"
+                          >
+                            Commencer gratuitement
+                          </button>
+                        ) : (
+                          <Link
+                            href="/pricing"
+                            className={`mt-6 w-full min-h-[48px] flex items-center justify-center rounded-lg text-[15px] font-semibold shadow-sm transition-colors ${
+                              pro ? 'bg-pms-accent text-white hover:bg-pms-accent-hover' : 'bg-pms-paper ring-1 ring-pms-line hover:ring-pms-ink'
+                            }`}
+                          >
+                            {p.ctaText}
+                          </Link>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <hr className="my-7 border-pms-line" />
+                        <p className="text-[16px] font-semibold">{free ? 'Gratuit, pour toujours :' : 'Ce qui est inclus :'}</p>
+                        <ul className="mt-4 space-y-3 text-[15px] leading-snug">
+                          {p.features
+                            .filter((f) => f.included)
+                            .map((f) => (
+                              <li key={f.name} className="flex gap-2.5">
+                                <Check className={`w-4 h-4 mt-0.5 shrink-0 ${f.highlight ? 'text-pms-accent' : 'text-pms-ink'}`} aria-hidden />
+                                <span>{f.name}</span>
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
               <p className="mt-10 text-[17px] leading-relaxed max-w-[60ch]">
                 Vous lancez un SaaS et n&apos;avez besoin que de quelques visuels ?{' '}
@@ -662,49 +515,10 @@ export default function HomePage() {
         })()}
       </section>
 
-      {/* ═══ Questions : à lire d'un coup d'œil, sans menus dépliants ═══ */}
-      <section data-reveal id="questions" className="scroll-mt-16 px-5 sm:px-10 lg:px-[68px] py-20 sm:py-28 lg:grid lg:grid-cols-[1fr_3fr] lg:gap-16">
-        <h2 className={head}>Vos questions</h2>
-        <div className="mt-10 lg:mt-0 md:columns-2 md:gap-14 text-[17px] leading-[1.55]">
-          {[
-            {
-              q: 'Puis-je utiliser les mockups pour mes clients et à des fins commerciales ?',
-              a: 'Oui. Les visuels que vous créez avec PitchMySite peuvent servir dans vos propositions commerciales, vos livrables clients, votre portfolio et vos publications.',
-            },
-            {
-              q: 'Comment fonctionne la marque blanche ?',
-              a: 'Dès le plan Pro, vos images, vidéos et PDF ne portent plus de filigrane. Avec le plan Agence, les pages de partage affichent aussi le nom et le logo de votre agence, sans mention de PitchMySite.',
-            },
-            {
-              q: 'Que deviennent les captures des sites de mes clients ?',
-              a: 'La page est chargée par notre moteur de capture, puis l’image est envoyée directement à votre navigateur. Nous ne conservons pas les captures, sauf si vous créez un lien de partage : l’image est alors hébergée jusqu’à ce que vous supprimiez le lien.',
-            },
-            {
-              q: 'Faut-il créer un compte pour tester ?',
-              a: 'Non. Vous pouvez tester le studio et exporter jusqu’à 3 images par jour, avec un filigrane discret, sans compte ni carte bancaire.',
-            },
-            {
-              q: 'Le site du client est en local ou protégé par un mot de passe ?',
-              a: 'Déposez votre propre capture d’écran (PNG, JPG ou WebP) : vous profitez de la même mise en scène.',
-            },
-            {
-              q: 'Comment payer ?',
-              a: 'Par Mobile Money via SasPay (MTN, Moov, Celtiis, Orange, Wave, selon votre pays), en FCFA. Le paiement par carte bancaire arrive bientôt.',
-            },
-            {
-              q: 'Puis-je arrêter à tout moment ?',
-              a: 'Il n’y a rien à résilier : un paiement couvre 1 mois ou 1 an, sans renouvellement automatique. Vous repayez seulement si vous voulez continuer.',
-            },
-          ].map((faq) => (
-            <p key={faq.q} className="mb-5 break-inside-avoid text-pms-ink">
-              <strong className="font-semibold">{faq.q}</strong> {faq.a}
-            </p>
-          ))}
-        </div>
-      </section>
+      <FaqSection />
 
       {/* ═══ Dernier mot : une phrase, une action ═══ */}
-      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pt-[16svh] pb-[14svh]">
+      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pt-8 pb-24 sm:pb-32 flex flex-col items-center text-center">
         <p className={`${lead} max-w-[34ch]`}>
           Essayez avec le site de votre dernier client : c&apos;est gratuit, il suffit de son adresse.
         </p>
@@ -717,36 +531,7 @@ export default function HomePage() {
         </button>
       </section>
 
-      {/* ═══ Pied de page : la photo à gauche, le menu en grand à droite ═══ */}
-      <footer className="md:grid md:grid-cols-2 bg-pms-surface">
-        <div data-ui className="bg-pms-field flex items-center justify-center px-8 py-16 min-h-[50svh]">
-          <div className="w-full max-w-[560px]">
-            <FooterLaptop />
-          </div>
-        </div>
-        <div className="px-5 sm:px-10 lg:px-[68px] py-16 md:py-20 flex flex-col">
-          <p className="text-[17px] font-semibold">PitchMySite</p>
-          <nav className="mt-10 flex flex-col gap-5 text-[clamp(1.75rem,1.2rem+1.6vw,2.25rem)] leading-none" aria-label="Pied de page">
-            <a href="#usages" className="hover:text-pms-accent transition-colors">Les formats</a>
-            <a href="#pricing" className="hover:text-pms-accent transition-colors">Les tarifs</a>
-            <a href="#questions" className="hover:text-pms-accent transition-colors">Vos questions</a>
-            <Link href="/login" className="hover:text-pms-accent transition-colors">Connexion</Link>
-            <Link href="/signup" className="hover:text-pms-accent transition-colors">Créer un compte</Link>
-          </nav>
-          <div className="mt-14 text-[15px]">
-            <p className="text-pms-muted">Contact</p>
-            <a href={`mailto:${SUPPORT_EMAIL}`} className="mt-1 inline-block hover:text-pms-accent">{SUPPORT_EMAIL}</a>
-          </div>
-          <div className="mt-auto pt-14 text-[13px] text-pms-muted space-y-2">
-            <p className="flex flex-wrap gap-x-5 gap-y-1">
-              <Link href="/terms" className="hover:text-pms-ink">Conditions (CGU/CGV)</Link>
-              <Link href="/privacy" className="hover:text-pms-ink">Confidentialité</Link>
-              <span>© {new Date().getFullYear()} PitchMySite</span>
-            </p>
-            <p>{BRANDS_NOTICE} Exemple de site client : Al Kareem Parfumerie.</p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter notice={BRANDS_NOTICE} />
 
       {/* Fenêtre de chargement */}
       {isLoading && (

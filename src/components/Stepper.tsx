@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowLeft, Check, Compass, Globe, Sparkles, LayoutTemplate, Palette } from 'lucide-react';
+import { ArrowLeft, Check, Compass, Globe, Lightbulb, LayoutTemplate, Palette } from 'lucide-react';
 
 export type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -16,7 +16,7 @@ interface StepperProps {
 const STEPS = [
   { id: 1 as WizardStep, label: 'URL & Détection', shortLabel: 'URL', icon: Globe },
   { id: 2 as WizardStep, label: 'Pages Détectées', shortLabel: 'Pages', icon: Compass },
-  { id: 3 as WizardStep, label: 'Sections IA', shortLabel: 'Sections', icon: Sparkles },
+  { id: 3 as WizardStep, label: 'Sections IA', shortLabel: 'Sections', icon: Lightbulb },
   { id: 4 as WizardStep, label: 'Choix du Mockup', shortLabel: 'Mockup', icon: LayoutTemplate },
   { id: 5 as WizardStep, label: 'Studio & Export', shortLabel: 'Studio', icon: Palette },
 ];

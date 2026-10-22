@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Globe, ArrowRight, Loader2, X, Sparkles, AlertCircle, Upload, Image as ImageIcon } from 'lucide-react';
+import { Globe, ArrowRight, Loader2, X, AlertCircle, Upload, Image as ImageIcon,
+  Lightbulb,
+} from 'lucide-react';
 import { CaptureSettings } from '@/types/analyzer';
 
 interface UrlInputFormProps {
@@ -199,7 +201,7 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
       {activeTab === 'url' && (
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-[13px] w-full text-center">
           <span className="text-pms-muted flex items-center gap-1.5 font-medium shrink-0">
-            <Sparkles className="w-3.5 h-3.5 text-pms-accent shrink-0" />
+            <Lightbulb className="w-3.5 h-3.5 text-pms-accent shrink-0" />
             Exemples rapides :
           </span>
           <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">

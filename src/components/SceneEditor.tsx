@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { toCanvas } from 'html-to-image';
 import { captureOne } from '@/lib/captureCache';
 import { PagePartPicker } from '@/components/PagePartPicker';
+import { StudioMobileHelp } from '@/components/StudioMobileHelp';
 import { trackEvent } from '@/lib/tracking';
 import {
   CaptureItemResult,
@@ -26,7 +27,6 @@ import { MockupFrame } from './MockupFrame';
 import { useUser } from '@/context/UserContext';
 import {
   Download,
-  Sparkles,
   Palette,
   Image as ImageIcon,
   Move,
@@ -101,6 +101,7 @@ import {
   EyeOff as BlurIcon,
   Trophy,
   Activity,
+  UserPlus,
 } from 'lucide-react';
 import { TechStackPicker, AVAILABLE_TECHS } from './TechStackPicker';
 import { DeveloperSalesKitModal } from './DeveloperSalesKitModal';
@@ -2654,7 +2655,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="hidden sm:flex w-8 h-8 rounded-xl bg-pms-accent text-white items-center justify-center shadow-lg ring-1 ring-white/15 shrink-0">
-                <Sparkles className="w-4 h-4 text-amber-200" />
+                <Layers className="w-4 h-4 text-amber-200" />
               </div>
               <div className="min-w-0 hidden sm:block">
                 <div className="flex items-center gap-1.5">
@@ -2668,9 +2669,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 truncate">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
                   <span className="truncate max-w-[120px] sm:max-w-[200px] font-mono text-[10px] text-zinc-300">
-                    {captureItem.domainName || captureItem.url}
+                    {captureItem.domainName || (/^https?:\/\//i.test(captureItem.url) ? captureItem.url : 'Image déposée')}
                   </span>
-                  {captureItem.url && (
+                  {/^https?:\/\//i.test(captureItem.url || '') && (
                     <a
                       href={captureItem.url}
                       target="_blank"
@@ -2757,7 +2758,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               className="flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 px-3 py-1.5 rounded-xl bg-pms-accent-hover/40 hover:bg-pms-accent-hover/60 border border-pms-accent/40 hover:border-pms-accent text-pms-accent-soft hover:text-white text-xs font-bold transition-all shadow-xs active:scale-95"
               title="Rédiger un post LinkedIn, une proposition commerciale et une étude de cas avec l'IA"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <PenLine className="w-3.5 h-3.5 text-amber-300" />
               <span className="hidden xl:inline">Pitch IA</span>
             </button>
 
@@ -3245,7 +3246,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           onClick={() => setUserDropdownOpen(false)}
                           className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-pms-accent hover:bg-pms-accent-hover text-white font-bold text-[11px] transition-all shadow-md"
                         >
-                          <Sparkles className="w-3 h-3 text-amber-300" />
+                          <Zap className="w-3 h-3 text-amber-300" />
                           <span>Passer au Pro</span>
                         </Link>
                       </div>
@@ -3304,7 +3305,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           onClick={() => setUserDropdownOpen(false)}
                           className="flex items-center gap-2.5 px-4 py-2 text-pms-accent-soft hover:text-pms-accent-soft hover:bg-zinc-850/80 transition-colors font-bold"
                         >
-                          <Sparkles className="w-3.5 h-3.5 text-pms-accent-soft" />
+                          <UserPlus className="w-3.5 h-3.5 text-pms-accent-soft" />
                           <span>Créer un compte gratuit</span>
                         </Link>
 
@@ -4238,6 +4239,11 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
             className="flex flex-col lg:flex-1 lg:min-h-0 p-4 sm:p-5 pb-16 lg:pb-5 space-y-6 lg:overflow-y-auto lg:overscroll-contain studio-scrollbar lg:max-h-[calc(100vh-120px)]"
           >
             {/* ══════════ ONGLET PRINCIPAL MOCKUP ══════════ */}
+            {/* Téléphone et tablette : conseil « plutôt sur ordinateur » et repère « autres réglages plus bas » */}
+            <StudioMobileHelp
+              tabKey={activeMainTab === 'frame' ? 'frame' : activeTab}
+              tabLabel={{ mockup: 'Appareil', '3d': 'Angle', frame: 'Fond', branding: 'Textes', annotate: 'Annoter', callouts: 'Badges', content: 'Image' }[activeMainTab === 'frame' ? 'frame' : activeTab] || 'Réglages'}
+            />
             {activeMainTab === 'mockup' && (
               <div className="space-y-0 animate-fade-in">
             {/* ══════════ ONGLET 1 : APPAREIL & MODÈLES ══════════ */}
@@ -4879,7 +4885,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   <div className="flex items-center justify-between p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-xl bg-pms-accent/20 text-pms-accent-soft">
-                        <Sparkles className="w-4 h-4" />
+                        <Palette className="w-4 h-4" />
                       </div>
                       <span className="text-xs font-bold text-white">Couleurs tirées du site</span>
                     </div>
@@ -5857,7 +5863,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     <div className="p-3.5 rounded-2xl bg-zinc-900 border border-pms-accent/30 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-pms-accent-soft" />
+                          <Palette className="w-3.5 h-3.5 text-pms-accent-soft" />
                           <span className="text-xs font-bold text-white">Couleurs tirées du site</span>
                         </div>
                         <span className="text-[12px] lg:text-[10px] text-pms-accent-soft font-mono">Auto IA</span>
@@ -6095,7 +6101,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       }`}
                     >
                       <div className={`p-2 rounded-xl ${vfxGlow ? 'bg-pms-accent text-white' : 'bg-zinc-800 text-zinc-300'}`}>
-                        <Sparkles className="w-4 h-4" />
+                        <Sun className="w-4 h-4" />
                       </div>
                       <div>
                         <div className="text-xs font-bold text-white">Lueur</div>

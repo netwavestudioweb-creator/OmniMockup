@@ -19,7 +19,6 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
-  Sparkles,
   Check,
 } from 'lucide-react';
 
@@ -250,14 +249,9 @@ function SignupForm() {
             <div className="absolute bottom-0 left-0 w-60 h-60 bg-pms-accent/20 rounded-full blur-2xl pointer-events-none" />
 
             <div className="relative z-10 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-pms-accent-soft text-xs font-medium">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Révolutionnez vos démos produits</span>
-              </div>
 
               <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight leading-tight text-white">
-                Transformez une simple URL en un visualiseur 3D ultra-attractif.
-              </h2>
+                Votre premier visuel en 2 minutes.</h2>
 
               {/* Ce que vous obtenez (sans faux témoignage) */}
               <ul className="p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 space-y-3 shadow-xl text-xs sm:text-sm text-stone-200">

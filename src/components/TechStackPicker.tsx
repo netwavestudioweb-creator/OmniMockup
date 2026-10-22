@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, Check } from 'lucide-react';
+import { Check,
+  Lightbulb,
+} from 'lucide-react';
 
 export interface TechBadgeItem {
   id: string;
@@ -58,7 +60,7 @@ export const TechStackPicker: React.FC<TechStackPickerProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h4 className="font-bold text-stone-900 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-pms-accent" />
+            <Lightbulb className="w-3.5 h-3.5 text-pms-accent" />
             <span>Badges Stack Technique</span>
           </h4>
           <p className="text-[11px] text-stone-500">

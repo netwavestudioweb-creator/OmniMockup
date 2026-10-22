@@ -7,7 +7,6 @@ import {
   SectionCoordinates,
 } from '@/types/analyzer';
 import {
-  Sparkles,
   Smartphone,
   Monitor,
   Share2,
@@ -19,6 +18,7 @@ import {
   ArrowRight,
   ShieldAlert,
   Info,
+  Lightbulb,
 } from 'lucide-react';
 
 interface SmartSectionPickerProps {
@@ -154,7 +154,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-pms-accent-tint text-pms-accent">
-              <Sparkles className="w-5 h-5 text-pms-accent" />
+              <Lightbulb className="w-5 h-5 text-pms-accent" />
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900 flex items-center gap-2">
@@ -247,7 +247,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
             className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-pms-accent-tint hover:bg-pms-accent-tint text-pms-accent border border-pms-accent-tint text-xs font-semibold transition-all"
             title="Sélectionner les sections recommandées pour ce format"
           >
-            <Sparkles className="w-3 h-3 text-pms-accent" />
+            <Lightbulb className="w-3 h-3 text-pms-accent" />
             <span>Recommandées</span>
           </button>
 
@@ -301,7 +301,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
 
                     {isRecommended && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-pms-accent-tint text-pms-accent border border-pms-accent-tint">
-                        <Sparkles className="w-2.5 h-2.5 text-pms-accent" />
+                        <Lightbulb className="w-2.5 h-2.5 text-pms-accent" />
                         Recommandé
                       </span>
                     )}
@@ -343,7 +343,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
                   <div className="flex items-center justify-between gap-1.5 mb-1.5">
                     <div className="flex items-center gap-1.5">
                       <span className="p-0.5 rounded bg-pms-accent-tint text-pms-accent">
-                        <Sparkles className="w-3 h-3 text-pms-accent" />
+                        <Lightbulb className="w-3 h-3 text-pms-accent" />
                       </span>
                       <span className="font-bold text-pms-accent text-[10px] uppercase tracking-wider">
                         Avis DA Marketing

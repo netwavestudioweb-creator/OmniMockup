@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { TEMPLATES_CATALOG, TEMPLATE_CATEGORIES, StudioTemplate } from '@/lib/shotsPresets';
-import { X, Sparkles, ArrowRight, Monitor, Smartphone, Tablet, Layers } from 'lucide-react';
+import { X, ArrowRight, Monitor, Smartphone, Tablet, Layers,
+  LayoutTemplate,
+} from 'lucide-react';
 
 interface TemplatesModalProps {
   onSelectTemplate: (template: StudioTemplate) => void;
@@ -164,7 +166,7 @@ export const TemplatesModal: React.FC<TemplatesModalProps> = ({ onSelectTemplate
         <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between gap-3 shrink-0 bg-zinc-900/60">
           <div className="min-w-0">
             <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-pms-accent-soft shrink-0" />
+              <LayoutTemplate className="w-5 h-5 text-pms-accent-soft shrink-0" />
               <span>Modèles prêts à publier</span>
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">

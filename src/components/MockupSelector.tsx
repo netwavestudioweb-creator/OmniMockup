@@ -2,7 +2,9 @@
 
 import React from 'react';
 import { MockupType } from '@/types/analyzer';
-import { Monitor, Laptop, Smartphone, Tablet, Layers, Watch, Tv, Check, X, Sparkles } from 'lucide-react';
+import { Monitor, Laptop, Smartphone, Tablet, Layers, Watch, Tv, Check, X,
+  Lightbulb,
+} from 'lucide-react';
 
 interface MockupOption {
   type: MockupType;
@@ -83,7 +85,7 @@ export const MockupSelector: React.FC<MockupSelectorProps> = ({
       <div className="flex items-start justify-between pb-5 border-b border-sand-200">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-pms-accent-tint text-pms-accent text-[11px] font-semibold border border-pms-accent-tint">
-            <Sparkles className="w-3 h-3 text-pms-accent" />
+            <Lightbulb className="w-3 h-3 text-pms-accent" />
             <span>Habillage Haute Fidélité</span>
           </div>
           <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900">

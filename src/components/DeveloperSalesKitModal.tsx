@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import {
-  Sparkles,
   X,
   Copy,
   Check,
@@ -22,6 +21,7 @@ import {
   Mail,
   BadgeDollarSign,
   Lightbulb,
+  PenLine,
 } from 'lucide-react';
 import Link from 'next/link';
 import { AVAILABLE_TECHS } from './TechStackPicker';
@@ -375,7 +375,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
               )}
 
               <div className="p-3.5 rounded-2xl bg-sand-50 border border-sand-200 text-xs text-stone-600 flex items-start gap-2.5">
-                <Sparkles className="w-4 h-4 text-pms-accent shrink-0 mt-0.5" />
+                <PenLine className="w-4 h-4 text-pms-accent shrink-0 mt-0.5" />
                 <span>
                   {screenshot
                     ? 'L’IA lit votre site section par section, puis rédige un post LinkedIn, une proposition commerciale et une étude de cas fidèles à ce qu’elle a vu. Les champs ci-dessus sont facultatifs.'
@@ -396,7 +396,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    <PenLine className="w-4 h-4 text-amber-300" />
                     <span>Écrire mes textes de vente</span>
                   </>
                 )}
@@ -544,7 +544,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                       activeTab === 'sections' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
                     }`}
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <PenLine className="w-3.5 h-3.5 text-amber-500" />
                     <span>Captures</span>
                   </button>
                 )}

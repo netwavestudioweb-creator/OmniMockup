@@ -36,7 +36,7 @@ import {
 } from '@/lib/pricing';
 import { Check, Loader2 } from 'lucide-react';
 import { HeroShowcase, HeroBackdrop, ExamplesMarquee, BRANDS_NOTICE } from '@/components/home/HomeStage';
-import { ProblemSection, UsagesSection, ZoneSection, AppsSection, StudioSection, FaqSection, SiteFooter } from '@/components/home/Sections';
+import { ProblemSection, UsagesSection, ZoneSection, AppsSection, StudioSection, SoonSection, FaqSection, SiteFooter } from '@/components/home/Sections';
 
 export default function HomePage() {
   const { currency, mobileMoneyRegion } = useCurrency();
@@ -431,6 +431,8 @@ export default function HomePage() {
           );
         })()}
       </section>
+
+      <SoonSection />
 
       <FaqSection />
 

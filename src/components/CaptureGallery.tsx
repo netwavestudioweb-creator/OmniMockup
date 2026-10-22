@@ -15,8 +15,8 @@ import {
   Monitor,
   Laptop,
   Smartphone,
-  Sparkles,
   LayoutTemplate,
+  Lightbulb,
 } from 'lucide-react';
 
 interface CaptureGalleryProps {
@@ -270,7 +270,7 @@ export const CaptureGallery: React.FC<CaptureGalleryProps> = ({
                         }`}
                         title="Ouvrir dans l'Éditeur de Scène (shots.so)"
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+                        <Lightbulb className="w-3.5 h-3.5 text-brand-400" />
                         <span>Éditer la scène</span>
                       </button>
                     )}
@@ -324,7 +324,7 @@ export const CaptureGallery: React.FC<CaptureGalleryProps> = ({
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-white/[0.08] flex items-center justify-between bg-obsidian-950/80">
               <div className="flex items-center gap-3 min-w-0">
-                <Sparkles className="w-5 h-5 text-brand-400 flex-shrink-0" />
+                <Lightbulb className="w-5 h-5 text-brand-400 flex-shrink-0" />
                 <div className="min-w-0">
                   <h3 className="text-sm sm:text-base font-semibold text-white truncate">
                     {activeModalItem.title || activeModalItem.url}
@@ -384,7 +384,7 @@ export const CaptureGallery: React.FC<CaptureGalleryProps> = ({
                     }}
                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-accent-cyan hover:from-brand-500 hover:to-cyan-400 text-white text-xs font-semibold shadow-md transition-all"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-white" />
+                    <Lightbulb className="w-3.5 h-3.5 text-white" />
                     <span>Ouvrir dans le Studio (shots.so)</span>
                   </button>
                 )}

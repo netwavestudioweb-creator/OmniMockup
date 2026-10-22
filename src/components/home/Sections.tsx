@@ -609,3 +609,34 @@ export function StudioSection() {
     </section>
   );
 }
+
+/* ───────────── Bientôt : ce qui arrive, dit honnêtement ───────────── */
+const SOON = [
+  { title: 'Tutoriels vidéo', text: 'De courtes vidéos pour prendre le studio en main en quelques minutes.' },
+  { title: 'Paiement par carte bancaire', text: 'Visa et Mastercard, en plus du Mobile Money.' },
+];
+
+export function SoonSection() {
+  return (
+    <section data-reveal id="bientot" className={`scroll-mt-16 ${pad} py-12 sm:py-16`}>
+      <div className="max-w-[60ch]">
+        <h2 className={head}>Bientôt disponible</h2>
+        <p className="mt-5 text-[17px] leading-relaxed text-pms-muted">
+          PitchMySite est lancé depuis octobre 2026. Voici ce que nous préparons.
+        </p>
+      </div>
+      <ol className="mt-10 grid gap-3 sm:grid-cols-2 max-w-3xl">
+        {SOON.map((s, i) => (
+          <li key={s.title} className="rounded-2xl bg-pms-surface p-5 flex flex-col">
+            <span className="flex items-center justify-between text-[14px]">
+              <span className="font-semibold tabular-nums text-pms-muted">0{i + 1}</span>
+              <span className="rounded-full bg-pms-paper ring-1 ring-pms-line px-2.5 py-0.5 text-[13px] text-pms-accent font-semibold">Bientôt</span>
+            </span>
+            <h3 className="mt-4 text-[17px] font-semibold leading-snug">{s.title}</h3>
+            <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">{s.text}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}

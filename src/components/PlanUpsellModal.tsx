@@ -3,7 +3,9 @@
 import React from 'react';
 import { usePrices } from '@/lib/usePrices';
 import Link from 'next/link';
-import { Sparkles, Flame, Check, X, Coins, Zap } from 'lucide-react';
+import { Flame, Check, X, Coins, Zap,
+  BadgeCheck,
+} from 'lucide-react';
 import { trackEvent } from '@/lib/tracking';
 import { RewardedAdOffer } from './RewardedAdOffer';
 
@@ -43,7 +45,7 @@ export const PlanUpsellModal: React.FC<PlanUpsellModalProps> = ({
           <>
             <div className="space-y-1 text-center sm:text-left">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pms-accent-tint text-pms-accent text-xs font-black uppercase mb-1">
-                <Sparkles className="w-3.5 h-3.5 text-pms-accent" />
+                <BadgeCheck className="w-3.5 h-3.5 text-pms-accent" />
                 <span>Vos 3 exports gratuits du jour sont utilisés</span>
               </div>
               <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">

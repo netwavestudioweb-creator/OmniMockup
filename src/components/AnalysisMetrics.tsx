@@ -11,7 +11,7 @@ import {
   Activity,
   Camera,
   Loader2,
-  Sparkles,
+  Lightbulb,
 } from 'lucide-react';
 import { DiscoveredPage } from '@/types/analyzer';
 
@@ -220,7 +220,7 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+                  <Lightbulb className="w-3.5 h-3.5 text-brand-400" />
                   <span>Analyse IA (Gemini)</span>
                 </>
               )}

@@ -13,7 +13,6 @@ import {
   Zap,
   Shield,
   CreditCard,
-  Sparkles,
   ArrowRight,
   ExternalLink,
   LogOut,
@@ -27,6 +26,7 @@ import {
   AlertTriangle,
   HeartHandshake,
   X,
+  BadgeCheck,
 } from 'lucide-react';
 
 interface UsageData {
@@ -305,7 +305,7 @@ function AccountContent() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-pms-accent flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-pms-accent" />
+                  <BadgeCheck className="w-4 h-4 text-pms-accent" />
                   Analyses IA ({usage?.month || 'Ce mois'})
                 </span>
                 <span className="text-xs font-semibold text-stone-600">
@@ -425,7 +425,7 @@ function AccountContent() {
                   href="/pricing"
                   className="py-2.5 px-5 rounded-xl font-semibold text-xs text-white bg-pms-accent hover:bg-pms-accent flex items-center justify-center gap-2 transition-all shadow-sm"
                 >
-                  <Sparkles className="w-4 h-4 text-pms-accent" />
+                  <BadgeCheck className="w-4 h-4 text-pms-accent" />
                   <span>Passer au Pro ({price.pro}/mois)</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>

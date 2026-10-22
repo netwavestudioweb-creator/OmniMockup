@@ -142,7 +142,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onReset, showPricingLink = true 
                         className="flex items-center gap-2.5 px-3.5 py-2 text-pms-accent hover:bg-pms-surface transition-colors font-semibold"
                       >
                         <Zap className="w-4 h-4 text-pms-accent" />
-                        <span>Passer Pro ✨</span>
+                        <span>Passer Pro</span>
                       </Link>
                     )}
                   </div>

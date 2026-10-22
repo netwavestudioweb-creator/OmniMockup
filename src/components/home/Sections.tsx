@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Check, ChevronRight, Layers, Plus, X } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronRight, Layers, Plus, X } from 'lucide-react';
 import { MockupFrame } from '@/components/MockupFrame';
 import { FORMATS, FormatShot, type FormatId } from '@/components/home/HomeStage';
 import { SUPPORT_EMAIL } from '@/lib/contact';
@@ -338,6 +338,15 @@ export function SiteFooter({ notice }: { notice: string }) {
           <p className="mt-4 text-[15px] leading-relaxed text-pms-muted max-w-[34ch]">
             Collez un lien. Repartez avec des visuels et un texte qui font signer.
           </p>
+          <a
+            href="https://www.netwave-studio.company/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-5 inline-flex items-center gap-1.5 min-h-[44px] text-[15px] font-semibold text-pms-ink hover:text-pms-accent transition-colors"
+          >
+            Un service de NetWave Studio
+            <ArrowUpRight className="w-4 h-4" aria-hidden />
+          </a>
         </div>
 
         <nav aria-label="PitchMySite">
@@ -376,7 +385,12 @@ export function SiteFooter({ notice }: { notice: string }) {
       </div>
 
       <div className={`${pad} py-6 border-t border-pms-line text-[13px] text-pms-muted flex flex-col sm:flex-row sm:justify-between gap-2`}>
-        <span>© {new Date().getFullYear()} PitchMySite</span>
+        <span>
+          © {new Date().getFullYear()} PitchMySite, par{' '}
+          <a href="https://www.netwave-studio.company/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-pms-ink">
+            NetWave Studio
+          </a>
+        </span>
         <span className="max-w-[80ch]">{notice} Exemple de site client : Al Kareem Parfumerie.</span>
       </div>
     </footer>
@@ -386,10 +400,10 @@ export function SiteFooter({ notice }: { notice: string }) {
 /* ───────────── La fonction phare : choisir la partie du site montrée (démonstration à toucher) ───────────── */
 const LONG_PAGE = { src: '/images/demo/wave-long.jpg', ratio: 1824 / 900, url: 'https://www.wave.com', domain: 'wave.com' };
 const ZONES = [
-  { label: 'Haut de page', y: 0 },
-  { label: 'Les avantages', y: 46 },
-  { label: 'Les avis clients', y: 84 },
-  { label: 'Pied de page', y: 100 },
+  { label: 'Haut de page', desc: 'Le premier écran, celui qu’on voit en arrivant', y: 0 },
+  { label: 'Les avantages', desc: 'Ce que le service apporte au client', y: 46 },
+  { label: 'Les avis clients', desc: 'La preuve qui rassure', y: 84 },
+  { label: 'Pied de page', desc: 'Les liens, les contacts, les applis', y: 100 },
 ];
 
 export function ZoneSection() {
@@ -421,92 +435,106 @@ export function ZoneSection() {
     const v = clientY - r.top - rectH / 2;
     setY(Math.round(Math.max(0, Math.min(1, v / travel)) * 100));
   };
+  const active = ZONES.reduce((a, z) => (Math.abs(z.y - y) < Math.abs(a.y - y) ? z : a), ZONES[0]);
 
   return (
-    <section data-reveal id="zone" className={`scroll-mt-16 ${pad} py-14 sm:py-20 bg-pms-surface`}>
-      <div className="max-w-[60ch]">
-        <h2 className={head}>Montrez la partie du site qui fait vendre</h2>
-        <p className="mt-5 text-[17px] leading-relaxed text-pms-muted">
-          Le site est capturé en entier, pas seulement le haut. Glissez le cadre sur les tarifs, les avis ou le formulaire.
-          L&apos;écran suit. Essayez ici.
-        </p>
-      </div>
+    <section data-reveal id="zone" className="scroll-mt-16 px-3 sm:px-6 lg:px-[68px] py-12 sm:py-16">
+      <div className="relative overflow-hidden rounded-3xl bg-pms-field text-white px-5 sm:px-10 lg:px-14 py-12 sm:py-16">
+        {/* Lumière bleue très douce derrière l'ordinateur */}
+        <span aria-hidden className="pointer-events-none absolute -right-32 -top-32 w-[620px] h-[620px] rounded-full bg-pms-accent/25 blur-3xl" />
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:items-start">
-        <div className="rounded-2xl bg-pms-paper p-4 sm:p-5 shadow-[0_12px_32px_-20px_rgba(17,17,17,0.35)]">
-          <p className="text-[14px] font-semibold text-pms-muted">La page entière, capturée</p>
-          <div
-            ref={boxRef}
-            className="relative mt-3 mx-auto w-[55%] sm:w-[45%] lg:w-[70%] cursor-grab active:cursor-grabbing touch-none select-none rounded-md overflow-hidden ring-1 ring-pms-line"
-            onPointerDown={(e) => {
-              dragging.current = true;
-              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-              setFromPointer(e.clientY);
-            }}
-            onPointerMove={(e) => dragging.current && setFromPointer(e.clientY)}
-            onPointerUp={() => (dragging.current = false)}
-            onPointerCancel={() => (dragging.current = false)}
-            role="slider"
-            aria-label="Partie du site montrée"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={y}
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowDown') setY((v) => Math.min(100, v + 5));
-              if (e.key === 'ArrowUp') setY((v) => Math.max(0, v - 5));
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={LONG_PAGE.src} alt="La page d'accueil de Wave capturée en entier" draggable={false} className="block w-full h-auto" loading="lazy" />
-            {boxW > 0 && (
-              <div
-                className="absolute rounded border-2 border-pms-accent bg-pms-accent/10 shadow-[0_0_0_9999px_rgba(255,255,255,0.55)] pointer-events-none transition-[top] duration-150"
-                style={{ top: (y / 100) * travel, left: (boxW - rectW) / 2, width: rectW, height: rectH }}
+        <div className="relative grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center">
+          <div>
+            <p className="text-[15px] font-semibold text-pms-accent-soft">La fonction qui change tout</p>
+            <h2 className={`mt-3 ${head}`}>Montrez la partie du site qui fait vendre</h2>
+            <p className="mt-5 text-[17px] leading-relaxed text-white/70 max-w-[46ch]">
+              Le site est capturé en entier, pas seulement le haut. Choisissez la section : l&apos;écran suit.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-2" role="radiogroup" aria-label="Sections de la page">
+              {ZONES.map((z, i) => {
+                const on = active.label === z.label;
+                return (
+                  <button
+                    key={z.label}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => setY(z.y)}
+                    className={`group text-left rounded-xl px-4 py-3 flex items-start gap-4 transition-colors ${
+                      on ? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/5'
+                    }`}
+                  >
+                    <span className={`mt-0.5 text-[14px] font-semibold tabular-nums ${on ? 'text-pms-accent-soft' : 'text-white/40'}`}>0{i + 1}</span>
+                    <span>
+                      <span className={`block text-[17px] font-semibold ${on ? 'text-white' : 'text-white/80'}`}>{z.label}</span>
+                      <span className="block text-[14px] text-white/55">{z.desc}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-8 max-w-sm">
+              <div className="flex items-center justify-between text-[15px]">
+                <label htmlFor="demo-zoom" className="font-semibold">Agrandir un détail</label>
+                <span className="text-white/60 tabular-nums">{zoom <= 1.01 ? 'Toute la largeur' : `${zoom.toFixed(1).replace('.', ',')} fois`}</span>
+              </div>
+              <input
+                id="demo-zoom"
+                type="range"
+                min={1}
+                max={2.5}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="mt-3 w-full accent-pms-accent cursor-pointer"
               />
-            )}
+            </div>
           </div>
-        </div>
 
-        <div className="flex flex-col gap-5">
-          <div className="rounded-2xl bg-pms-paper p-6 sm:p-10 flex items-center justify-center shadow-[0_12px_32px_-20px_rgba(17,17,17,0.35)]">
-            <div className="w-full max-w-[620px]">
-              <MockupFrame type="macbook" fill screenshotBase64={LONG_PAGE.src} url={LONG_PAGE.url} domainName={LONG_PAGE.domain} cropOffsetY={y} cropZoom={zoom} />
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Sections de la page">
-            {ZONES.map((z) => (
-              <button
-                key={z.label}
-                type="button"
-                onClick={() => setY(z.y)}
-                className={`min-h-[44px] px-4 rounded-full text-[15px] font-semibold transition-colors ${
-                  Math.abs(y - z.y) < 4 ? 'bg-pms-ink text-white' : 'bg-pms-paper ring-1 ring-pms-line hover:ring-pms-ink'
-                }`}
+          <div className="relative pb-10 sm:pb-6 lg:pl-10">
+            <MockupFrame type="macbook" fill screenshotBase64={LONG_PAGE.src} url={LONG_PAGE.url} domainName={LONG_PAGE.domain} cropOffsetY={y} cropZoom={zoom} />
+
+            {/* La page entière, posée sur l'ordinateur : on y fait glisser le cadre bleu */}
+            <div className="absolute left-0 -bottom-2 sm:bottom-0 w-[30%] sm:w-[26%] lg:w-[24%] -rotate-3 rounded-xl bg-white p-1.5 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.7)]">
+              <div
+                ref={boxRef}
+                className="relative rounded-lg overflow-hidden cursor-grab active:cursor-grabbing touch-none select-none"
+                onPointerDown={(e) => {
+                  dragging.current = true;
+                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                  setFromPointer(e.clientY);
+                }}
+                onPointerMove={(e) => dragging.current && setFromPointer(e.clientY)}
+                onPointerUp={() => (dragging.current = false)}
+                onPointerCancel={() => (dragging.current = false)}
+                role="slider"
+                aria-label="Faire glisser le cadre sur la page"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={y}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown') setY((v) => Math.min(100, v + 5));
+                  if (e.key === 'ArrowUp') setY((v) => Math.max(0, v - 5));
+                }}
               >
-                {z.label}
-              </button>
-            ))}
-          </div>
-          <div className="max-w-md">
-            <div className="flex items-center justify-between text-[15px]">
-              <label htmlFor="demo-zoom" className="font-semibold">Agrandir un détail</label>
-              <span className="text-pms-muted tabular-nums">{zoom <= 1.01 ? 'Toute la largeur' : `Agrandie ${zoom.toFixed(1).replace('.', ',')} fois`}</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={LONG_PAGE.src} alt="La page d'accueil de Wave capturée en entier" draggable={false} className="block w-full h-auto" loading="lazy" />
+                {boxW > 0 && (
+                  <div
+                    className="absolute rounded-[3px] ring-2 ring-pms-accent bg-pms-accent/15 shadow-[0_0_0_9999px_rgba(17,17,17,0.45)] pointer-events-none transition-[top] duration-200"
+                    style={{ top: (y / 100) * travel, left: (boxW - rectW) / 2, width: rectW, height: rectH }}
+                  />
+                )}
+              </div>
+              <p className="px-1 pt-1.5 pb-0.5 text-[11px] sm:text-[12px] font-semibold text-pms-ink text-center">Glissez le cadre</p>
             </div>
-            <input
-              id="demo-zoom"
-              type="range"
-              min={1}
-              max={2.5}
-              step={0.1}
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-              className="mt-2 w-full accent-pms-accent cursor-pointer"
-            />
           </div>
         </div>
+        <p className="relative mt-10 text-[13px] text-white/45">Exemple réalisé à partir de la page publique de Wave, sans lien avec la marque.</p>
       </div>
-      <p className="mt-6 text-[13px] text-pms-muted">Exemple réalisé à partir de la page publique de Wave, sans lien avec la marque.</p>
     </section>
   );
 }

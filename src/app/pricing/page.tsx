@@ -26,6 +26,7 @@ import { trackEvent } from '@/lib/tracking';
 import { CARD_PROVIDER, cardPaymentsEnabled } from '@/lib/paymentConfig';
 import {
   Check,
+  Lightbulb,
   X as XIcon,
   ArrowRight,
   ShieldCheck,
@@ -531,7 +532,8 @@ export default function PricingPage() {
             </div>
 
             <div className="text-xs text-stone-600 bg-pms-surface px-3.5 py-2 rounded-xl border border-pms-line shrink-0">
-              💡 <strong>Crédits à vie :</strong> vos crédits n&apos;expirent jamais.
+              <Lightbulb className="inline w-3.5 h-3.5 mr-1 -mt-0.5 text-pms-accent" aria-hidden />
+              <strong>Crédits à vie :</strong> vos crédits n&apos;expirent jamais.
             </div>
           </div>
 
@@ -652,7 +654,7 @@ export default function PricingPage() {
                     Solo ({formatPrice(getPlanMonthlyPrice(PLANS[1], currency), currency)})
                   </th>
                   <th className="py-3 px-4 font-semibold text-pms-accent text-center bg-pms-accent-tint rounded-t-xl">
-                    Pro ({formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency)}) ⭐
+                    Pro ({formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency)})
                   </th>
                   <th className="py-3 px-4 font-semibold text-stone-900 text-center">
                     Agence ({formatPrice(getPlanMonthlyPrice(PLANS[3], currency), currency)})

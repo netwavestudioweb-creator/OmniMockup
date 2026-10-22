@@ -20,7 +20,7 @@ const PROVIDER_STORAGE = 'pms_ai_provider';
 
 export const PROVIDER_INFO: Record<AiProvider, { label: string; getKeyUrl: string; hint: string }> = {
   groq: {
-    label: 'Groq (Gratuit & Ultra-rapide ⚡)',
+    label: 'Groq (gratuit et très rapide)',
     getKeyUrl: 'https://console.groq.com/keys',
     hint: 'Réponse en 1 seconde. Clé 100% gratuite créée en 30 secondes sans carte bancaire.',
   },

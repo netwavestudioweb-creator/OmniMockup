@@ -261,11 +261,11 @@ function SignupForm() {
 
               {/* Ce que vous obtenez (sans faux témoignage) */}
               <ul className="p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 space-y-3 shadow-xl text-xs sm:text-sm text-stone-200">
-                <li>✓ Capture automatique de la page depuis son URL</li>
-                <li>✓ Mise en scène sur MacBook, iPhone et iPad</li>
-                <li>✓ Formats prêts pour présentation, LinkedIn et Instagram</li>
-                <li>✓ Exports HD et 4K sans filigrane dès le plan Pro</li>
-                <li>✓ Lien de partage pour vos clients, à votre marque avec le plan Agence</li>
+                <li className="flex gap-2.5"><Check className="w-4 h-4 mt-0.5 shrink-0" aria-hidden /><span>Capture automatique de la page depuis son URL</span></li>
+                <li className="flex gap-2.5"><Check className="w-4 h-4 mt-0.5 shrink-0" aria-hidden /><span>Mise en scène sur MacBook, iPhone et iPad</span></li>
+                <li className="flex gap-2.5"><Check className="w-4 h-4 mt-0.5 shrink-0" aria-hidden /><span>Formats prêts pour présentation, LinkedIn et Instagram</span></li>
+                <li className="flex gap-2.5"><Check className="w-4 h-4 mt-0.5 shrink-0" aria-hidden /><span>Exports HD et 4K sans filigrane dès le plan Pro</span></li>
+                <li className="flex gap-2.5"><Check className="w-4 h-4 mt-0.5 shrink-0" aria-hidden /><span>Lien de partage pour vos clients, à votre marque avec le plan Agence</span></li>
               </ul>
             </div>
 

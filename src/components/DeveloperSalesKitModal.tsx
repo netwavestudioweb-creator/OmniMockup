@@ -318,7 +318,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                         aria-pressed={setupProvider === p}
                         className={`min-h-[44px] py-2 px-1 text-[13px] rounded-lg font-bold transition-colors ${setupProvider === p ? 'bg-pms-accent text-white shadow-2xs' : 'text-stone-600 hover:text-stone-900'}`}
                       >
-                        {p === 'groq' ? '⚡ Groq (Gratuit)' : p === 'gemini' ? 'Gemini (Gratuit)' : p === 'openai' ? 'OpenAI' : 'Claude'}
+                        {p === 'groq' ? 'Groq (Gratuit)' : p === 'gemini' ? 'Gemini (Gratuit)' : p === 'openai' ? 'OpenAI' : 'Claude'}
                       </button>
                     ))}
                   </div>

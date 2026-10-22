@@ -99,6 +99,8 @@ import {
   Circle,
   Hash,
   EyeOff as BlurIcon,
+  Trophy,
+  Activity,
 } from 'lucide-react';
 import { TechStackPicker, AVAILABLE_TECHS } from './TechStackPicker';
 import { DeveloperSalesKitModal } from './DeveloperSalesKitModal';
@@ -264,11 +266,11 @@ const APP_STORE_PACK_PRESET_IDS = ['app-iphone-63', 'app-iphone-69', 'app-ipad-1
 const PLAY_STORE_PACK_PRESET_IDS = ['play-phone', 'play-tablet', 'play-feature'];
 
 // Badges de confiance : aucun chiffre pré-rempli, l'utilisateur saisit SES vraies données
-const TRUST_BADGES: { type: SocialProofBadgeType; label: string; icon: string; placeholder: string; hint: string }[] = [
-  { type: 'trustpilot', label: 'Note clients', icon: '★', placeholder: 'Votre note (ex. 4,8/5)', hint: 'Note moyenne réelle de vos avis' },
-  { type: 'stripe-mrr', label: 'Chiffre clé', icon: '📈', placeholder: 'Votre chiffre clé', hint: 'Un résultat vérifiable du projet' },
-  { type: 'product-hunt', label: 'Distinction', icon: '🏆', placeholder: 'Votre distinction', hint: 'Prix ou classement réellement obtenu' },
-  { type: 'uptime', label: 'Disponibilité', icon: '🟢', placeholder: 'Votre disponibilité', hint: 'Taux mesuré par votre outil de suivi' },
+const TRUST_BADGES: { type: SocialProofBadgeType; label: string; icon: React.ComponentType<{ className?: string }>; placeholder: string; hint: string }[] = [
+  { type: 'trustpilot', label: 'Note clients', icon: Star, placeholder: 'Votre note (ex. 4,8/5)', hint: 'Note moyenne réelle de vos avis' },
+  { type: 'stripe-mrr', label: 'Chiffre clé', icon: TrendingUp, placeholder: 'Votre chiffre clé', hint: 'Un résultat vérifiable du projet' },
+  { type: 'product-hunt', label: 'Distinction', icon: Trophy, placeholder: 'Votre distinction', hint: 'Prix ou classement réellement obtenu' },
+  { type: 'uptime', label: 'Disponibilité', icon: Activity, placeholder: 'Votre disponibilité', hint: 'Taux mesuré par votre outil de suivi' },
 ];
 
 // Image transparente utilisée si une image de la scène ne peut pas être chargée pendant l'export
@@ -3934,9 +3936,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     const text = (badge.customText ?? '').trim() || tb.placeholder;
                     return (
                       <div className="px-3.5 py-2 rounded-2xl bg-zinc-950/90 text-white flex items-center gap-2 shadow-xl border border-white/15 backdrop-blur-md">
-                        <span className={tb.type === 'trustpilot' ? 'text-amber-300 text-sm' : 'text-sm'} aria-hidden>
-                          {tb.type === 'trustpilot' ? '★' : tb.icon}
-                        </span>
+                        <tb.icon className={`w-4 h-4 shrink-0 ${tb.type === 'trustpilot' ? 'text-amber-300 fill-amber-300' : tb.type === 'uptime' ? 'text-emerald-400' : 'text-white'}`} />
                         <div className="leading-tight">
                           <div className="text-[9px] font-semibold uppercase tracking-wider text-zinc-400">{tb.label}</div>
                           <div className="text-xs font-bold">{text}</div>
@@ -4597,7 +4597,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                                 Capture de la version mobile du site…
                               </>
                             )}
-                            {mobileCaptureState === 'done' && <>✓ Le téléphone affiche la vraie version mobile du site.</>}
+                            {mobileCaptureState === 'done' && <>Le téléphone affiche la vraie version mobile du site.</>}
                             {mobileCaptureState === 'error' && (
                               <>
                                 Version mobile indisponible : le téléphone affiche l&apos;image de l&apos;ordinateur.{' '}
@@ -5577,10 +5577,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           title={tb.hint}
                         >
                           <span className="text-[12px] lg:text-[11px] font-bold text-white flex items-center gap-1.5">
-                            <span>{tb.icon}</span>
+                            <tb.icon className="w-3.5 h-3.5 shrink-0" />
                             {tb.label}
                           </span>
-                          <span className="text-[12px] lg:text-[9px] text-zinc-400 font-mono">{isActive ? '✓ Sur l\'image (cliquer pour retirer)' : '+ Ajouter'}</span>
+                          <span className="text-[12px] lg:text-[9px] text-zinc-400 font-mono">{isActive ? 'Sur l\'image (cliquer pour retirer)' : 'Ajouter'}</span>
                         </button>
                       );
                     })}
@@ -5593,7 +5593,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         if (!tb) return null;
                         return (
                           <div key={b.id} className="flex items-center gap-2">
-                            <span className="w-6 text-center text-sm" aria-hidden>{tb.icon}</span>
+                            <tb.icon className="w-4 h-4 shrink-0 mx-1 text-zinc-300" />
                             <input
                               type="text"
                               value={b.customText ?? ''}
@@ -5636,34 +5636,34 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     <div className="grid grid-cols-2 gap-1.5">
                       <button
                         type="button"
-                        onClick={() => handleAddCallout('📱 Adapté au mobile', 'emerald')}
+                        onClick={() => handleAddCallout('Adapté au mobile', 'emerald')}
                         className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-emerald-400 hover:border-emerald-500/50 transition-all flex items-center gap-1.5"
                       >
-                        <span>📱</span>
+                        <Smartphone className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">Adapté au mobile</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleAddCallout('⚡ Chargement rapide', 'violet')}
+                        onClick={() => handleAddCallout('Chargement rapide', 'violet')}
                         className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-pms-accent-soft hover:border-pms-accent/50 transition-all flex items-center gap-1.5"
                       >
-                        <span>⚡</span>
+                        <Zap className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">Chargement rapide</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleAddCallout('💳 Paiement en ligne', 'amber')}
+                        onClick={() => handleAddCallout('Paiement en ligne', 'amber')}
                         className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-amber-400 hover:border-amber-500/50 transition-all flex items-center gap-1.5"
                       >
-                        <span>💳</span>
+                        <CreditCard className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">Paiement en ligne</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleAddCallout('🔒 Espace client sécurisé', 'blue')}
+                        onClick={() => handleAddCallout('Espace client sécurisé', 'blue')}
                         className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-left text-xs font-medium text-blue-400 hover:border-blue-500/50 transition-all flex items-center gap-1.5"
                       >
-                        <span>🔒</span>
+                        <Lock className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">Espace sécurisé</span>
                       </button>
                     </div>
@@ -5766,7 +5766,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   )}
 
                   <div className="p-3 rounded-xl bg-pms-accent/10 border border-pms-accent/20 text-[12px] lg:text-[11px] text-pms-accent-soft leading-relaxed flex items-start gap-2">
-                    <span className="text-base leading-none">💡</span>
+                    <Lightbulb className="w-4 h-4 shrink-0" />
                     <span>
                       <strong>Astuce :</strong> faites glisser une bulle ou un badge directement sur l&apos;image pour le placer.
                     </span>

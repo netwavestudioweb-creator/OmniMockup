@@ -18,7 +18,6 @@ const PRESET_URLS = [
   { label: 'Next.js', url: 'https://nextjs.org' },
   { label: 'Tailwind CSS', url: 'https://tailwindcss.com' },
   { label: 'Stripe', url: 'https://stripe.com' },
-  { label: 'Vidéo YouTube', url: 'https://www.youtube.com/watch?v=M576WGiDBdQ' },
 ];
 
 
@@ -122,7 +121,7 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
                   id="url-input"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://votre-site.com ou lien YouTube..."
+                  placeholder="https://votre-site.com"
                   disabled={isLoading}
                   className="w-full min-w-0 flex-1 bg-transparent border-none text-pms-ink placeholder-pms-muted focus:outline-none text-base sm:text-lg font-medium tracking-normal"
                   autoComplete="off"

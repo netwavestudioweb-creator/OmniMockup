@@ -11,7 +11,7 @@ import { MockupFrame } from '@/components/MockupFrame';
 const STEPS = [
   {
     t: 'Collez le lien du site.',
-    d: 'Ou celui d’une vidéo YouTube. Site protégé ou en local ? Déposez une capture.',
+    d: 'Site protégé ou en local ? Déposez simplement une capture d’écran.',
     value: 'Un simple lien',
   },
   {

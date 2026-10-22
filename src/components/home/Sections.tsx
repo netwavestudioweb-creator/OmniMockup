@@ -191,7 +191,6 @@ const FAQ: { cat: string; items: Faq[] }[] = [
       { q: 'À quoi sert PitchMySite ?', a: 'À transformer le lien d’un site en visuels qui donnent envie de signer, avec le texte de vente. 2 minutes au lieu de 2 heures sur Figma.' },
       { q: 'Je ne suis pas designer. Est-ce pour moi ?', a: 'Oui. Vous collez un lien et choisissez un des 14 modèles prêts. L’appareil, le fond et le format sont déjà réglés.' },
       { q: 'Faut-il créer un compte pour tester ?', a: 'Non. Vous pouvez exporter 3 images par jour, avec un filigrane discret. Sans compte ni carte bancaire.' },
-      { q: 'Puis-je coller un lien YouTube ?', a: 'Oui. La miniature et le titre de la vidéo sont récupérés en un instant, puis mis en scène comme un site.' },
       { q: 'Le site du client est en local ou protégé par un mot de passe ?', a: 'Déposez votre propre capture (PNG, JPG ou WebP). Vous avez la même mise en scène.' },
     ],
   },

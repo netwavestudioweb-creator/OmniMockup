@@ -35,8 +35,8 @@ import {
   getLoyaltyFloorFcfa,
 } from '@/lib/pricing';
 import { Check, Loader2 } from 'lucide-react';
-import { HeroShowcase, HeroBackdrop, ExamplesMarquee, BRANDS_NOTICE } from '@/components/home/HomeStage';
-import { ProblemSection, UsagesSection, ZoneSection, AppsSection, StudioSection, SoonSection, FaqSection, SiteFooter } from '@/components/home/Sections';
+import { HeroShowcase, HeroBackdrop, BRANDS_NOTICE } from '@/components/home/HomeStage';
+import { ProblemSection, UsagesSection, ZoneSection, StudioSection, TestimonialsSection, FaqSection, SiteFooter } from '@/components/home/Sections';
 
 export default function HomePage() {
   const { currency, mobileMoneyRegion } = useCurrency();
@@ -269,10 +269,8 @@ export default function HomePage() {
 
       <ZoneSection />
 
-      <UsagesSection />
-
-      <AppsSection
-        onPick={() => storeInputRef.current?.click()}
+      <UsagesSection
+        onPickStores={() => storeInputRef.current?.click()}
         inputSlot={
           <input
             ref={storeInputRef}
@@ -288,18 +286,9 @@ export default function HomePage() {
         }
       />
 
-      {/* ═══ Exemples : un client réel et des sites connus, qui défilent tout seuls ═══ */}
-      <section data-reveal className="px-5 sm:px-10 lg:px-[68px] pb-12 sm:pb-16">
-        <h2 className={head}>Des sites que vous connaissez</h2>
-        <p className="mt-5 mb-10 text-[17px] leading-relaxed text-pms-muted max-w-[52ch]">
-          Boutique, page produit, logiciel : chaque site a été collé tel quel, puis mis en scène en quelques clics.
-        </p>
-        <ExamplesMarquee />
-        <p className="mt-6 text-[13px] text-pms-muted max-w-[70ch]">{BRANDS_NOTICE}</p>
-      </section>
-
-      {/* ═══ Ce que contient le studio : de vraies captures du studio, en grille ═══ */}
       <StudioSection />
+
+      <TestimonialsSection />
 
       {/* ═══ Tarifs ═══ */}
       <section data-reveal className="px-5 sm:px-10 lg:px-[68px] py-14 sm:py-20 bg-pms-surface scroll-mt-16" id="pricing">
@@ -427,12 +416,13 @@ export default function HomePage() {
                 </Link>{' '}
                 se paient une fois, sans abonnement.
               </p>
+              <p className="mt-3 text-[15px] text-pms-muted">
+                Bientôt : le paiement par carte bancaire, et des tutoriels vidéo pour prendre le studio en main.
+              </p>
             </>
           );
         })()}
       </section>
-
-      <SoonSection />
 
       <FaqSection />
 

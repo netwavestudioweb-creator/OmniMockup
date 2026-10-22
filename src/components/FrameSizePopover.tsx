@@ -60,7 +60,7 @@ export const FrameSizePopover: React.FC<FrameSizePopoverProps> = ({
         {/* Header avec champs custom W / H */}
         <div className="p-4 border-b border-zinc-800/80 bg-zinc-900/90 shrink-0">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-mono">
+            <span className="text-xs font-bold text-zinc-400 font-mono">
               Dimensions & Ratios du Canvas
             </span>
             <button

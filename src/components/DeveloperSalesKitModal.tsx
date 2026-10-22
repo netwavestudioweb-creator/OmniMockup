@@ -556,7 +556,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                   <div className="p-4 rounded-2xl bg-pms-accent border border-amber-200/80">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-2xs">
                           Offre irrésistible
                         </span>
                         <span className="text-[10px] font-semibold text-stone-500">
@@ -592,7 +592,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                       </button>
                     </div>
 
-                    <h4 className="text-base font-extrabold text-stone-900 leading-snug">
+                    <h4 className="text-base font-semibold text-stone-900 leading-snug">
                       {salesData.hormoziOffer.offerName}
                     </h4>
                   </div>
@@ -698,7 +698,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-200/80">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-2xs">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-2xs">
                           Audit de Monétisation
                         </span>
                         <span className="text-[10px] font-semibold text-stone-500">
@@ -751,7 +751,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                   {/* Quick Win 30 Jours */}
                   {salesData.monetizationAudit.quickWin30Days && (
                     <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-emerald-500/5 border border-emerald-300/80 text-xs">
-                      <div className="flex items-center gap-1.5 font-extrabold text-emerald-950 mb-1">
+                      <div className="flex items-center gap-1.5 font-semibold text-emerald-950 mb-1">
                         <Zap className="w-4 h-4 text-emerald-600 fill-emerald-500" />
                         <span>Action Prioritaire 30 Jours (Quick Win) :</span>
                       </div>
@@ -819,7 +819,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
                   <div className="p-4 rounded-2xl bg-pms-accent border border-pms-accent/80">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-pms-accent text-white shadow-2xs">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-pms-accent text-white shadow-2xs">
                           Cold Outreach B2B
                         </span>
                         <span className="text-[10px] font-semibold text-stone-500">

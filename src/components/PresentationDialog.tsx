@@ -99,19 +99,19 @@ export const PresentationDialog: React.FC<PresentationDialogProps> = ({
         <div className="overflow-y-auto px-5 py-4 space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="space-y-1 sm:col-span-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Titre</span>
+              <span className="text-[10px] font-bold text-zinc-500">Titre</span>
               <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={90} className={field} />
             </label>
             <label className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Préparé pour (client)</span>
+              <span className="text-[10px] font-bold text-zinc-500">Préparé pour (client)</span>
               <input value={client} onChange={(e) => setClient(e.target.value)} maxLength={60} placeholder="Ex. Hôtel du Lac" className={field} />
             </label>
             <label className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Présenté par</span>
+              <span className="text-[10px] font-bold text-zinc-500">Présenté par</span>
               <input value={author} onChange={(e) => setAuthor(e.target.value)} maxLength={60} placeholder="Votre nom ou votre agence" className={field} />
             </label>
             <label className="space-y-1 sm:col-span-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Texte d&apos;introduction (facultatif)</span>
+              <span className="text-[10px] font-bold text-zinc-500">Texte d&apos;introduction (facultatif)</span>
               <textarea
                 value={intro}
                 onChange={(e) => setIntro(e.target.value)}
@@ -138,7 +138,7 @@ export const PresentationDialog: React.FC<PresentationDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+            <span className="text-[10px] font-bold text-zinc-500">
               Pages ({slides.length} / {MAX_PRESENTATION_SLIDES})
             </span>
             {slides.length === 0 && (

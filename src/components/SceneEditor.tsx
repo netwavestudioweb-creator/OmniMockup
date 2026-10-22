@@ -2590,7 +2590,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
         `${shadowOffsetX}px ${shadowOffsetY}px 24px rgba(0, 0, 0, ${effectiveAlpha}), 0 2px 8px rgba(0, 0, 0, ${(Number(effectiveAlpha) * 0.35).toFixed(2)})`;
 
   return (
-    <div className={`w-screen min-h-[100dvh] lg:h-[100dvh] flex flex-col bg-[#0b0b0e] text-zinc-150 select-none overflow-x-clip lg:overflow-hidden font-sans relative lg:fixed lg:inset-0 z-50 ${STUDIO_FONT_VARIABLES}`}>
+    <div className={`w-screen min-h-[100dvh] lg:h-[100dvh] flex flex-col bg-[#0b0b0e] text-zinc-150 select-none overflow-x-clip lg:overflow-hidden font-archivo relative lg:fixed lg:inset-0 z-50 ${STUDIO_FONT_VARIABLES}`}>
       {confirmQuit && onClose && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
@@ -2659,16 +2659,16 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               </div>
               <div className="min-w-0 hidden sm:block">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs sm:text-sm font-black tracking-tight text-white truncate">
+                  <span className="text-xs sm:text-sm font-semibold tracking-tight text-white truncate">
                     Pitch<span className="text-pms-accent-soft">MySite</span>
                   </span>
-                  <span className="px-1.5 py-0.2 rounded-md bg-pms-accent/15 text-pms-accent-soft border border-pms-accent/30 text-[9px] font-bold tracking-wider uppercase shrink-0">
+                  <span className="px-1.5 py-0.2 rounded-md bg-pms-accent/15 text-pms-accent-soft border border-pms-accent/30 text-[9px] font-bold shrink-0">
                     Studio
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 truncate">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
-                  <span className="truncate max-w-[120px] sm:max-w-[200px] font-mono text-[10px] text-zinc-300">
+                  <span className="truncate max-w-[120px] sm:max-w-[200px] text-[10px] text-zinc-300">
                     {captureItem.domainName || (/^https?:\/\//i.test(captureItem.url) ? captureItem.url : 'Image déposée')}
                   </span>
                   {/^https?:\/\//i.test(captureItem.url || '') && (
@@ -2842,7 +2842,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                   {/* Format de fichier */}
                   <div className="space-y-1.5">
-                    <span className="text-[12px] lg:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Format du fichier</span>
+                    <span className="text-[12px] lg:text-[10px] font-bold text-zinc-500">Format du fichier</span>
                     <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-zinc-900 border border-zinc-800">
                       {([
                         { id: 'png', label: 'PNG', hint: 'Qualité maximale, fond transparent possible' },
@@ -2867,7 +2867,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                   {/* Qualité (dimensions réelles du fichier) */}
                   <div className="space-y-1.5">
-                    <span className="text-[12px] lg:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Qualité</span>
+                    <span className="text-[12px] lg:text-[10px] font-bold text-zinc-500">Qualité</span>
                     <div className="space-y-1">
                       {([
                         { id: 'standard', label: 'Standard', allowed: true, plan: '' },
@@ -2892,7 +2892,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                               {!q.allowed && <Lock className="w-3 h-3 text-amber-400" />}
                               {q.label}
                             </span>
-                            <span className="font-mono text-[12px] lg:text-[10px] text-zinc-400">
+                            <span className="text-[12px] lg:text-[10px] text-zinc-400">
                               {size.width} × {size.height}
                               {!q.allowed && (
                                 <span className="ml-1.5 text-amber-400 font-sans font-bold">
@@ -2921,7 +2921,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                   {/* Autres exports */}
                   <div className="pt-3 border-t border-zinc-800 space-y-1">
-                    <span className="text-[12px] lg:text-[10px] font-bold uppercase tracking-wider text-zinc-500">Autres exports</span>
+                    <span className="text-[12px] lg:text-[10px] font-bold text-zinc-500">Autres exports</span>
                     {canShareFiles && (
                       <button
                         type="button"
@@ -3138,7 +3138,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               >
                 {/* Avatar utilisateur */}
                 <div className="relative">
-                  <div className="w-7 h-7 rounded-lg bg-pms-accent text-white flex items-center justify-center font-bold text-[11px] shadow-sm uppercase">
+                  <div className="w-7 h-7 rounded-lg bg-pms-accent text-white flex items-center justify-center font-bold text-[11px] shadow-sm">
                     {user?.email ? user.email.slice(0, 2) : <UserIcon className="w-3.5 h-3.5 text-white" />}
                   </div>
                   <span
@@ -3150,7 +3150,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                 {/* Badge du forfait */}
                 <span
-                  className={`hidden lg:inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                  className={`hidden lg:inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                     userPlan === 'agence'
                       ? 'bg-amber-400/15 text-amber-300 border-amber-400/30'
                       : userPlan === 'pro'
@@ -3189,7 +3189,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 <div className="absolute right-0 mt-2.5 w-72 bg-[#0c0d14] border border-zinc-800 rounded-2xl shadow-2xl shadow-black/80 py-2.5 z-50 animate-slide-up text-xs backdrop-blur-2xl">
                   {/* Header compte */}
                   <div className="px-4 py-3 border-b border-zinc-800/80">
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                    <p className="text-[10px] text-zinc-500 font-bold">
                       {user ? 'Compte Connecté' : 'Mode Découverte'}
                     </p>
                     <p className="font-semibold text-white truncate text-sm mt-0.5">
@@ -3197,7 +3197,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </p>
                     <div className="mt-2 flex items-center justify-between">
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-semibold ${
                           userPlan === 'agence'
                             ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
                             : userPlan === 'pro'
@@ -3228,7 +3228,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   <div className="p-3 mx-3 my-2 rounded-xl bg-zinc-900/80 border border-zinc-800 text-zinc-300 space-y-1.5">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-zinc-400">Qualité d&apos;export :</span>
-                      <span className="font-mono font-bold text-white">
+                      <span className="font-bold text-white">
                         {userPlan === 'free' ? 'Standard (filigrane)' : userPlan === 'solo' ? 'HD' : 'HD et 4K'}
                       </span>
                     </div>
@@ -3263,7 +3263,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           className="flex items-center gap-2.5 px-4 py-2 text-zinc-300 hover:text-white hover:bg-zinc-850/80 transition-colors"
                         >
                           <UserIcon className="w-3.5 h-3.5 text-zinc-400" />
-                          <span>Mon Compte &amp; Facturation</span>
+                          <span>Mon compte et mes paiements</span>
                         </Link>
 
                         <Link
@@ -3524,7 +3524,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       { key: 'after', label: config.afterLabel ?? 'Après', shot: currentScreenshot, accent: 'bg-pms-accent text-white' },
                     ] as const).map((side) => (
                       <div key={side.key} className="relative w-[48.5%] flex flex-col items-center gap-[4%]">
-                        <span className={`px-4 py-1.5 rounded-full text-[18px] font-extrabold tracking-wide shadow-lg ${side.accent}`}>
+                        <span className={`px-4 py-1.5 rounded-full text-[18px] font-semibold tracking-wide shadow-lg ${side.accent}`}>
                           {side.label}
                         </span>
                         <div className="w-full" style={{ filter: config.shadowEnabled ? `drop-shadow(${dynamicShadow})` : undefined }}>
@@ -3889,7 +3889,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     >
                       <span className="w-2 h-2 rounded-full bg-pms-accent animate-ping" />
                       {callout.badge && (
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-pms-accent text-white">
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-pms-accent text-white">
                           {callout.badge}
                         </span>
                       )}
@@ -3939,7 +3939,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       <div className="px-3.5 py-2 rounded-2xl bg-zinc-950/90 text-white flex items-center gap-2 shadow-xl border border-white/15 backdrop-blur-md">
                         <tb.icon className={`w-4 h-4 shrink-0 ${tb.type === 'trustpilot' ? 'text-amber-300 fill-amber-300' : tb.type === 'uptime' ? 'text-emerald-400' : 'text-white'}`} />
                         <div className="leading-tight">
-                          <div className="text-[9px] font-semibold uppercase tracking-wider text-zinc-400">{tb.label}</div>
+                          <div className="text-[9px] font-semibold text-zinc-400">{tb.label}</div>
                           <div className="text-xs font-bold">{text}</div>
                         </div>
                       </div>
@@ -4032,7 +4032,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     e.preventDefault();
                     setUpsellModal({ open: true, mode: 'feature_locked' });
                   }}
-                  className="absolute bottom-3 right-3 z-40 px-2.5 py-1 rounded-lg bg-black/65 hover:bg-pms-accent-hover/80 backdrop-blur-md text-white/90 hover:text-white text-[10px] font-mono font-semibold flex items-center gap-1.5 shadow-sm border border-white/20 hover:border-pms-accent transition-all select-none group"
+                  className="absolute bottom-3 right-3 z-40 px-2.5 py-1 rounded-lg bg-black/65 hover:bg-pms-accent-hover/80 backdrop-blur-md text-white/90 hover:text-white text-[10px] font-semibold flex items-center gap-1.5 shadow-sm border border-white/20 hover:border-pms-accent transition-all select-none group"
                   title="Créé avec PitchMySite. Débloquez le plan Pro pour supprimer le filigrane."
                 >
                   <Layers className="w-3 h-3 text-pms-accent-soft group-hover:scale-110 transition-transform" />
@@ -4112,7 +4112,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               >
                 <ZoomOut className="w-3.5 h-3.5" />
               </button>
-              <span className="text-[11px] font-mono font-medium px-1 text-zinc-300 min-w-[36px] text-center">
+              <span className="text-[11px] font-medium px-1 text-zinc-300 min-w-[36px] text-center">
                 {canvasZoom}%
               </span>
               <button
@@ -4126,7 +4126,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
               <button
                 type="button"
                 onClick={() => setCanvasZoom(100)}
-                className="px-1.5 py-0.5 text-[10px] font-mono text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+                className="px-1.5 py-0.5 text-[10px] text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
                 title="Ajuster (100%)"
               >
                 Fit
@@ -4374,7 +4374,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* Modèle d'appareil (9 options) */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-300">
-                    Modèle d&apos;Appareil
+                    Modèle d&apos;appareil
                   </label>
                   <div className="grid grid-cols-3 gap-1.5">
                     {[
@@ -4546,7 +4546,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     )}
 
                     <div className="space-y-1.5">
-                      <span className="text-[12px] lg:text-[10px] font-mono font-bold text-zinc-400 uppercase">Couleur de l&apos;appareil</span>
+                      <span className="text-[12px] lg:text-[10px] font-bold text-zinc-400">Couleur de l&apos;appareil</span>
                       <div className="flex flex-wrap items-center gap-2">
                         {([
                           // Les 4 coloris de l'iPhone 18 Pro d'abord, puis les teintes classiques
@@ -4576,7 +4576,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                     {phoneVisible && canCaptureMobile && (
                       <div className="space-y-1.5">
-                        <span className="text-[12px] lg:text-[10px] font-mono font-bold text-zinc-400 uppercase">Écran du téléphone</span>
+                        <span className="text-[12px] lg:text-[10px] font-bold text-zinc-400">Écran du téléphone</span>
                         <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-zinc-950 border border-zinc-800">
                           {([
                             { id: 'mobile', label: 'Version mobile' },
@@ -4658,7 +4658,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <span className="text-[12px] lg:text-[10px] font-mono font-bold text-zinc-400 uppercase">Thème</span>
+                      <span className="text-[12px] lg:text-[10px] font-bold text-zinc-400">Thème</span>
                       <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                         <button
                           type="button"
@@ -4684,7 +4684,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     </div>
 
                     <div className="space-y-1.5">
-                      <span className="text-[12px] lg:text-[10px] font-mono font-bold text-zinc-400 uppercase">Style</span>
+                      <span className="text-[12px] lg:text-[10px] font-bold text-zinc-400">Style</span>
                       <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                         {(['default', 'glass'] as const).map((st) => (
                           <button
@@ -4704,7 +4704,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                   {/* Rayon d'angle */}
                   <div className="space-y-1.5">
-                    <span className="text-[12px] lg:text-[10px] font-mono font-bold text-zinc-400 uppercase">Rayon d&apos;angle</span>
+                    <span className="text-[12px] lg:text-[10px] font-bold text-zinc-400">Rayon d&apos;angle</span>
                     <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
                       {[
                         { id: 'sharp', label: 'Droit (0px)' },
@@ -4730,7 +4730,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* ── STYLE NAVIGATEUR (Shots.so) ── */}
                 {(config.mockupType === 'browser' || config.mockupType === 'macbook' || config.mockupType === 'laptop' || config.mockupType === 'imac') && (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-zinc-300">Style Navigateur</label>
+                    <label className="text-xs font-bold text-zinc-300">Style du navigateur</label>
                     <div className="grid grid-cols-3 gap-1.5">
                       {[
                         { id: 'safari-light' as const, label: 'Safari', sub: 'Clair', dot: 'bg-red-500' },
@@ -4771,7 +4771,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* ── BARRE D'ADRESSE PERSONNALISÉE ── */}
                 {(config.mockupType === 'browser' || config.mockupType === 'macbook' || config.mockupType === 'laptop' || config.mockupType === 'imac') && (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-zinc-300">Barre d&apos;Adresse</label>
+                    <label className="text-xs font-bold text-zinc-300">Barre d&apos;adresse</label>
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 focus-within:border-pms-accent/60 transition-colors">
                       <Globe className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                       <input
@@ -4792,7 +4792,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                 {/* ── GRILLE D'ALIGNEMENT 3×3 ── */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-zinc-300">Position Rapide</label>
+                  <label className="text-xs font-bold text-zinc-300">Position rapide</label>
                   <div className="flex items-center gap-3">
                     <div className="grid grid-cols-3 gap-1">
                       {[
@@ -4855,7 +4855,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   {shadowType !== 'none' && (
                     <>
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[12px] lg:text-[10px] font-mono">
+                        <div className="flex items-center justify-between text-[12px] lg:text-[10px]">
                           <span className="text-zinc-400">Opacité</span>
                           <span className="text-pms-accent-soft font-bold">{shadowOpacity}%</span>
                         </div>
@@ -4866,8 +4866,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[12px] lg:text-[10px] font-mono">
-                          <span className="text-zinc-400">Angle de Lumière</span>
+                        <div className="flex items-center justify-between text-[12px] lg:text-[10px]">
+                          <span className="text-zinc-400">Angle de la lumière</span>
                           <span className="text-amber-400 font-bold">{shadowLightAngle}°</span>
                         </div>
                         <input
@@ -4898,7 +4898,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
-                      <span className="text-[12px] lg:text-[10px] font-mono text-zinc-400 min-w-[28px] text-center">
+                      <span className="text-[12px] lg:text-[10px] text-zinc-400 min-w-[28px] text-center">
                         {magicPresetIdx + 1}/{autoGradients.length}
                       </span>
                       <button
@@ -4936,9 +4936,9 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 <div className="space-y-3 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-zinc-300">
-                      Échelle UI
+                      Taille de l&apos;interface
                     </label>
-                    <span className="text-xs font-mono font-bold text-pms-accent-soft">{uiScale}%</span>
+                    <span className="text-xs font-bold text-pms-accent-soft">{uiScale}%</span>
                   </div>
                   <input
                     type="range"
@@ -4996,7 +4996,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                               if (found) setCurrentFramePreset(found);
                             }
                           }}
-                          className={`py-1.5 rounded-lg border text-[12px] lg:text-[10px] font-mono font-bold transition-all text-center ${
+                          className={`py-1.5 rounded-lg border text-[12px] lg:text-[10px] font-bold transition-all text-center ${
                             isActive
                               ? 'bg-pms-accent text-white border-pms-accent shadow-xs'
                               : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
@@ -5061,7 +5061,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   </div>
                   <div className="grid grid-cols-4 gap-1.5">
                     {[
-                      { label: 'À Plat', tx: 0, ty: 0, rot: 0 },
+                      { label: 'À plat', tx: 0, ty: 0, rot: 0 },
                       { label: 'Incliné à gauche', tx: 14, ty: -18, rot: -6 },
                       { label: 'Incliné à droite', tx: 14, ty: 18, rot: 6 },
                       { label: 'Perspective', tx: -12, ty: 0, rot: 4 },
@@ -5095,7 +5095,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* Sliders de Perspective 3D */}
                 <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-4">
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-mono text-zinc-300">
+                    <div className="flex items-center justify-between text-xs text-zinc-300">
                       <span>Tilt Vertical (Haut / Bas)</span>
                       <span className="font-bold text-pms-accent-soft">{config.mockupTiltX || 0}°</span>
                     </div>
@@ -5110,7 +5110,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-mono text-zinc-300">
+                    <div className="flex items-center justify-between text-xs text-zinc-300">
                       <span>Tilt Horizontal (Gauche / Droite)</span>
                       <span className="font-bold text-pms-accent-soft">{config.mockupTiltY || 0}°</span>
                     </div>
@@ -5125,7 +5125,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-mono text-zinc-300">
+                    <div className="flex items-center justify-between text-xs text-zinc-300">
                       <span>Rotation Angulaire (Angle Z)</span>
                       <span className="font-bold text-pms-accent-soft">{config.mockupRotation || 0}°</span>
                     </div>
@@ -5143,8 +5143,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 </>)}
                 {/* Échelle / Taille */}
                 <div className="space-y-2 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="font-bold text-zinc-300 uppercase">Échelle & Taille du Mockup</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-zinc-300">Échelle & Taille du Mockup</span>
                     <span className="text-pms-accent-soft font-bold">{config.mockupScale}%</span>
                   </div>
                   <input
@@ -5161,7 +5161,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* Ombre portée 3D */}
                 <div className="space-y-2 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-zinc-300">Ombre Portée Réaliste</span>
+                    <span className="text-xs font-bold text-zinc-300">Ombre réaliste</span>
                     <input
                       type="checkbox"
                       checked={config.shadowEnabled}
@@ -5490,7 +5490,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           onChange={(e) => handleUpdateText(activeText.id, { fontSize: Number(e.target.value) })}
                           className="flex-1 accent-pms-accent"
                         />
-                        <span className="text-xs font-mono text-zinc-400">{activeText.fontSize}px</span>
+                        <span className="text-xs text-zinc-400">{activeText.fontSize}px</span>
                       </div>
                     </div>
                   )}
@@ -5499,7 +5499,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* Logo Client / Watermark */}
                 <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">Logo Personnalisé</span>
+                    <span className="text-xs font-bold text-white">Logo personnalisé</span>
                     <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
                     <button
                       type="button"
@@ -5507,7 +5507,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       className="min-h-[44px] lg:min-h-0 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white text-[12px] lg:text-[11px] font-bold flex items-center gap-1 transition-all"
                     >
                       <Plus className="w-3 h-3" />
-                      <span>Ajouter Logo</span>
+                      <span>Ajouter un logo</span>
                     </button>
                   </div>
                   {config.logos.length > 0 && (
@@ -5586,7 +5586,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                             <tb.icon className="w-3.5 h-3.5 shrink-0" />
                             {tb.label}
                           </span>
-                          <span className="text-[12px] lg:text-[9px] text-zinc-400 font-mono">{isActive ? 'Sur l\'image (cliquer pour retirer)' : 'Ajouter'}</span>
+                          <span className="text-[12px] lg:text-[9px] text-zinc-400">{isActive ? 'Sur l\'image (cliquer pour retirer)' : 'Ajouter'}</span>
                         </button>
                       );
                     })}
@@ -5638,7 +5638,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
                   {/* Presets rapides en 1 clic */}
                   <div className="space-y-1.5">
-                    <span className="text-[12px] lg:text-[10px] font-mono uppercase text-zinc-400">Exemples (modifiables) :</span>
+                    <span className="text-[12px] lg:text-[10px] text-zinc-400">Exemples (modifiables) :</span>
                     <div className="grid grid-cols-2 gap-1.5">
                       <button
                         type="button"
@@ -5688,7 +5688,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                   {/* Liste des callouts actifs pour édition */}
                   {(config.callouts || []).length > 0 && (
                     <div className="space-y-2 pt-2">
-                      <span className="text-[12px] lg:text-[10px] font-mono uppercase text-zinc-400">
+                      <span className="text-[12px] lg:text-[10px] text-zinc-400">
                         Bulles sur l&apos;image ({(config.callouts || []).length}) :
                       </span>
                       <div className="space-y-2">
@@ -5720,7 +5720,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                               </button>
                             </div>
 
-                            <div className="flex items-center justify-between text-[12px] lg:text-[10px] font-mono text-zinc-400">
+                            <div className="flex items-center justify-between text-[12px] lg:text-[10px] text-zinc-400">
                               <span className="flex items-center gap-1.5">
                                 <span>Couleur :</span>
                                 <div className="flex gap-1">
@@ -5758,10 +5758,10 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                                   }
                                   className="bg-zinc-950 text-white border border-zinc-800 rounded px-1.5 py-0.5 text-[12px] lg:text-[10px] focus:outline-none"
                                 >
-                                  <option value="bottom-left">Bas Gauche</option>
-                                  <option value="bottom-right">Bas Droite</option>
-                                  <option value="top-left">Haut Gauche</option>
-                                  <option value="top-right">Haut Droite</option>
+                                  <option value="bottom-left">En bas à gauche</option>
+                                  <option value="bottom-right">En bas à droite</option>
+                                  <option value="top-left">En haut à gauche</option>
+                                  <option value="top-right">En haut à droite</option>
                                 </select>
                               </span>
                             </div>
@@ -5791,7 +5791,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                 {/* 4. Arrière-Plans (FrameCapture.PNG, Frame1.PNG, Frame2.PNG) */}
                 <div className="space-y-4 pt-1">
                   <label className="text-xs font-bold text-zinc-300">
-                    Arrière-Plan
+                    Arrière-plan
                   </label>
 
                   {/* 4 Boutons Rapides : Transparent, Couleur, Image, Flouté */}
@@ -5850,7 +5850,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                       }`}
                     >
                       <Flame className="w-4 h-4 mx-auto mb-1 text-pink-400" />
-                      <span className="text-[12px] lg:text-[10px] block truncate">Flou Web</span>
+                      <span className="text-[12px] lg:text-[10px] block truncate">Site flouté</span>
                     </button>
                   </div>
 
@@ -5866,7 +5866,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                           <Palette className="w-3.5 h-3.5 text-pms-accent-soft" />
                           <span className="text-xs font-bold text-white">Couleurs tirées du site</span>
                         </div>
-                        <span className="text-[12px] lg:text-[10px] text-pms-accent-soft font-mono">Auto IA</span>
+                        <span className="text-[12px] lg:text-[10px] text-pms-accent-soft">Auto IA</span>
                       </div>
                       <p className="text-[12px] lg:text-[10px] text-zinc-400">
                         Extrait les teintes dominantes de votre capture pour un accord parfait.
@@ -5900,7 +5900,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     <div className="space-y-2 p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-zinc-300">
-                          Couleurs Unies
+                          Couleurs unies
                         </span>
                         <button
                           type="button"
@@ -5952,7 +5952,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                                 </span>
                               )}
                             </div>
-                            <span className="text-[12px] lg:text-[10px] text-zinc-500 font-mono">
+                            <span className="text-[12px] lg:text-[10px] text-zinc-500">
                               {cat.presets.length} presets
                             </span>
                           </div>
@@ -6003,14 +6003,14 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     className="w-full p-3 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-pms-accent/60 flex items-center justify-between transition-all group shadow-sm hover:bg-zinc-850"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-7 rounded-lg bg-zinc-950 border border-zinc-750 flex items-center justify-center text-[12px] lg:text-[10px] font-mono font-bold text-pms-accent-soft group-hover:border-pms-accent">
+                      <div className="w-9 h-7 rounded-lg bg-zinc-950 border border-zinc-750 flex items-center justify-center text-[12px] lg:text-[10px] font-bold text-pms-accent-soft group-hover:border-pms-accent">
                         {currentFramePreset.ratioLabel}
                       </div>
                       <div className="text-left">
                         <div className="text-xs font-bold text-white group-hover:text-pms-accent-soft transition-colors">
                           {currentFramePreset.name}
                         </div>
-                        <div className="text-[12px] lg:text-[10px] text-zinc-500 font-mono">
+                        <div className="text-[12px] lg:text-[10px] text-zinc-500">
                           {currentFramePreset.width} × {currentFramePreset.height} • {currentFramePreset.category}
                         </div>
                       </div>

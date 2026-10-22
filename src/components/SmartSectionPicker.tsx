@@ -300,7 +300,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
                     </h3>
 
                     {isRecommended && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-pms-accent-tint text-pms-accent border border-pms-accent-tint">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-pms-accent-tint text-pms-accent border border-pms-accent-tint">
                         <Lightbulb className="w-2.5 h-2.5 text-pms-accent" />
                         Recommandé
                       </span>
@@ -345,7 +345,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
                       <span className="p-0.5 rounded bg-pms-accent-tint text-pms-accent">
                         <Lightbulb className="w-3 h-3 text-pms-accent" />
                       </span>
-                      <span className="font-bold text-pms-accent text-[10px] uppercase tracking-wider">
+                      <span className="font-bold text-pms-accent text-[10px]">
                         Avis DA Marketing
                       </span>
                     </div>
@@ -353,7 +353,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
                     <div className="flex items-center gap-1.5">
                       {section.verdict && (
                         <span
-                          className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                          className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
                             section.verdict === 'excellent'
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                               : section.verdict === 'bon'
@@ -370,7 +370,7 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
                         <Info className="w-3.5 h-3.5 text-stone-400 hover:text-stone-700 transition-colors" />
                         {section.visualAnalysis && (
                           <div className="hidden group-hover/tooltip:block absolute z-30 bottom-full right-0 mb-2 w-64 p-2.5 rounded-xl bg-stone-900 text-stone-200 text-[11px] shadow-xl pointer-events-none border border-stone-700">
-                            <span className="font-semibold text-pms-accent-soft text-[10px] uppercase block mb-1">
+                            <span className="font-semibold text-pms-accent-soft text-[10px] block mb-1">
                               Analyse Visuelle
                             </span>
                             <p className="leading-snug">{section.visualAnalysis}</p>
@@ -395,13 +395,13 @@ export const SmartSectionPicker: React.FC<SmartSectionPickerProps> = ({
                 <div className="flex items-center gap-3">
                   {typeof section.marketingScore === 'number' && (
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] uppercase font-semibold text-pms-accent">Impact DA :</span>
+                      <span className="text-[10px] font-semibold text-pms-accent">Impact DA :</span>
                       <span className="font-bold text-pms-accent">{section.marketingScore}%</span>
                     </div>
                   )}
 
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] uppercase font-semibold text-stone-400">Qualité :</span>
+                    <span className="text-[10px] font-semibold text-stone-400">Qualité :</span>
                     <span
                       className={`font-semibold ${
                         section.qualityScore >= 85

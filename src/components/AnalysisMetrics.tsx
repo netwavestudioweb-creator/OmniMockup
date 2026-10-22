@@ -113,7 +113,7 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
           <p className="text-xs text-slate-400 font-medium">Méthode Source</p>
           <div className="mt-2 flex items-center gap-1.5">
             <span
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${
                 source === 'sitemap'
                   ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
                   : 'bg-accent-cyan/20 text-cyan-300 border border-accent-cyan/30'

@@ -178,7 +178,7 @@ export const BrandKitPanel: React.FC<BrandKitPanelProps> = ({ userId, onApply })
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="hidden" aria-label="Logo de l'agence" onChange={onLogo} />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono uppercase text-zinc-400 w-16">Couleurs</span>
+            <span className="text-[10px] font-mono text-zinc-400 w-16">Couleurs</span>
             {[0, 1, 2].map((i) => (
               <input
                 key={i}

@@ -399,7 +399,7 @@ export const MockupFrame: React.FC<MockupFrameProps> = ({
 
             <div className="w-8 flex justify-end shrink-0">
               <span
-                className={`text-[10px] font-mono uppercase font-semibold tracking-wider ${
+                className={`text-[10px] font-mono font-semibold ${
                   isDark ? 'text-stone-400' : 'text-stone-400'
                 }`}
               >

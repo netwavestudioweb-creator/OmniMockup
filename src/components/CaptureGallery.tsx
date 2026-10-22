@@ -248,7 +248,7 @@ export const CaptureGallery: React.FC<CaptureGalleryProps> = ({
               {/* Pied de carte : Détails et actions */}
               <div className="pt-3 border-t border-white/[0.05] flex items-center justify-between text-xs text-slate-400">
                 <div className="flex items-center gap-2 font-mono">
-                  <span className="px-2 py-0.5 rounded-md bg-white/[0.04] text-slate-300 font-semibold uppercase tracking-wider text-[10px]">
+                  <span className="px-2 py-0.5 rounded-md bg-white/[0.04] text-slate-300 font-semibold text-[10px]">
                     Cadre : {currentMockup}
                   </span>
                   <div className="flex items-center gap-1 text-[11px] text-slate-500">

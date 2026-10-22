@@ -54,7 +54,7 @@ export const Stepper: React.FC<StepperProps> = ({
               {currentStep}
             </div>
             <div className="min-w-0 flex-1">
-              <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-pms-accent block leading-tight">
+              <span className="text-[10px] font-mono font-semibold text-pms-accent block leading-tight">
                 Étape {currentStep} sur 5
               </span>
               <span className="text-xs font-bold text-stone-900 truncate block leading-tight">

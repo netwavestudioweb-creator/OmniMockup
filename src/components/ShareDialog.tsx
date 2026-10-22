@@ -171,7 +171,7 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({ loggedIn, demo, defaul
           ) : (
             <>
               <label className="block space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Titre affiché au client</span>
+                <span className="text-[10px] font-bold text-zinc-500">Titre affiché au client</span>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -202,7 +202,7 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({ loggedIn, demo, defaul
 
                   {/* Message prêt à envoyer */}
                   <div className="space-y-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Message à envoyer avec le lien</span>
+                    <span className="text-[10px] font-bold text-zinc-400">Message à envoyer avec le lien</span>
                     <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-zinc-950 border border-zinc-800" role="radiogroup" aria-label="Destinataire du message">
                       {(
                         [
@@ -273,7 +273,7 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({ loggedIn, demo, defaul
               )}
 
               <div className="space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                <span className="text-[10px] font-bold text-zinc-500">
                   Mes liens actifs ({active}
                   {limit !== null ? ` / ${limit}` : ''})
                 </span>

@@ -4,8 +4,9 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, Check, ChevronRight, Layers, Plus, X } from 'lucide-react';
 import { MockupFrame } from '@/components/MockupFrame';
-import { FORMATS, FormatShot, type FormatId } from '@/components/home/HomeStage';
+import { FORMATS, FormatShot, ExamplesMarquee, BRANDS_NOTICE, type FormatId } from '@/components/home/HomeStage';
 import { SUPPORT_EMAIL } from '@/lib/contact';
+import { TESTIMONIALS } from '@/lib/testimonials';
 
 /*
  * Sections de l'accueil refaites d'après les modèles envoyés par Dodo (21/10/2026) :
@@ -89,7 +90,7 @@ export function ProblemSection() {
 }
 
 /* ───────────── Un lien, trois usages : on choisit à gauche, on voit le résultat à droite ───────────── */
-export function UsagesSection() {
+export function UsagesSection({ onPickStores, inputSlot }: { onPickStores: () => void; inputSlot: React.ReactNode }) {
   const [format, setFormat] = useState<FormatId>('devis');
   const [touched, setTouched] = useState(false);
 
@@ -113,7 +114,8 @@ export function UsagesSection() {
       </div>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-[5fr_7fr] lg:items-start">
-        <div className="flex flex-col gap-3" role="radiogroup" aria-label="Usage">
+        <div>
+          <div className="flex flex-col gap-3" role="radiogroup" aria-label="Usage">
           {FORMATS.map((f, i) => {
             const on = format === f.id;
             return (
@@ -142,7 +144,23 @@ export function UsagesSection() {
             );
           })}
         </div>
-
+          {/* Ancienne section « Vous faites des applis ? », réunie ici pour raccourcir la page */}
+          <div id="stores" className="scroll-mt-24 mt-4 rounded-2xl ring-1 ring-pms-line p-5 sm:p-6">
+            <p className="text-[17px] font-semibold">Vous faites des applis ?</p>
+            <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">
+              Jusqu&apos;à 8 écrans à la fois, chacun dans un iPhone avec votre accroche, aux tailles de l&apos;App Store et de Google
+              Play.
+            </p>
+            <button
+              type="button"
+              onClick={onPickStores}
+              className="mt-4 min-h-[44px] px-5 rounded-md bg-pms-ink hover:bg-black text-white font-semibold text-[15px] transition-colors"
+            >
+              Je dépose mes écrans
+            </button>
+            {inputSlot}
+          </div>
+        </div>
         <div className="rounded-2xl bg-pms-surface p-6 sm:p-10 min-h-[420px] sm:min-h-[560px] flex flex-col items-center justify-center">
           <div className="relative w-full flex justify-center">
             {FORMATS.map((f) => (
@@ -158,60 +176,6 @@ export function UsagesSection() {
           <p className="mt-6 text-[14px] text-pms-muted text-center">
             {FORMATS.find((f) => f.id === format)?.label}, à partir du lien https://www.netflix.com
           </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ───────────── Applis : trois écrans de store montrent ce qu'on obtient ───────────── */
-const STORE_SHOTS = [
-  { site: DEMO.wave, text: 'Votre accroche au-dessus de chaque écran', bg: 'bg-pms-ink text-white' },
-  { site: DEMO.spotify, text: 'Un iPhone par écran de votre appli', bg: 'bg-pms-accent text-white' },
-  { site: DEMO.apple, text: 'Aux tailles de l’App Store et de Google Play', bg: 'bg-[#FDEDE8] text-pms-ink' },
-];
-
-export function AppsSection({ onPick, inputSlot }: { onPick: () => void; inputSlot: React.ReactNode }) {
-  return (
-    <section data-reveal id="stores" className={`scroll-mt-16 ${pad} py-12 sm:py-16`}>
-      <div className="grid gap-12 lg:grid-cols-[5fr_7fr] lg:items-center">
-        <div>
-          <h2 className={`${head} max-w-[18ch]`}>Vous faites des applis ?</h2>
-          <p className="mt-5 text-[17px] leading-relaxed text-pms-muted max-w-[46ch]">
-            Déposez les écrans de votre appli. Chacun entre dans un iPhone, avec votre accroche au-dessus. Tout sort aux tailles
-            de l&apos;App Store et de Google Play.
-          </p>
-          <ul className="mt-6 space-y-2 text-[16px]">
-            {['Jusqu’à 8 écrans à la fois', 'Une accroche et un fond par écran', 'Tout le jeu exporté en un clic'].map((t) => (
-              <li key={t} className="flex gap-3">
-                <Check className="w-5 h-5 mt-0.5 shrink-0 text-pms-accent" aria-hidden />
-                <span>{t}</span>
-              </li>
-            ))}
-          </ul>
-          <button
-            type="button"
-            onClick={onPick}
-            className="mt-8 w-full sm:w-auto min-h-[48px] px-6 rounded-md bg-pms-accent hover:bg-pms-accent-hover text-white font-semibold text-[15px] transition-colors"
-          >
-            Je dépose mes écrans
-          </button>
-          <p className="mt-2 text-[13px] text-pms-muted">PNG ou JPG. Sans compte.</p>
-          {inputSlot}
-        </div>
-
-        <div data-ui className="grid grid-cols-3 gap-3 sm:gap-4">
-          {STORE_SHOTS.map((s, i) => (
-            <figure
-              key={s.text}
-              className={`aspect-[1320/2868] rounded-xl sm:rounded-2xl ${s.bg} flex flex-col items-center px-[9%] pt-[12%] gap-[7%] overflow-hidden ${i === 1 ? 'translate-y-6' : ''}`}
-            >
-              <figcaption className="text-center text-[12px] sm:text-[15px] leading-tight font-semibold">{s.text}</figcaption>
-              <div className="w-[86%]">
-                <MockupFrame type="iphone" fill screenshotBase64={s.site.mobile} url={s.site.url} domainName={s.site.domain} />
-              </div>
-            </figure>
-          ))}
         </div>
       </div>
     </section>
@@ -602,7 +566,11 @@ export function StudioSection() {
           </article>
         ))}
       </div>
-      <p className="mt-8 text-[16px] leading-relaxed text-pms-muted max-w-[70ch]">
+      <h3 className="mt-14 text-[22px] font-semibold">Des sites que vous connaissez, mis en scène</h3>
+      <p className="mt-2 mb-6 text-[16px] text-pms-muted">Boutique, page produit, logiciel : chaque site a été collé tel quel.</p>
+      <ExamplesMarquee />
+      <p className="mt-4 text-[13px] text-pms-muted max-w-[70ch]">{BRANDS_NOTICE}</p>
+      <p className="mt-10 text-[16px] leading-relaxed text-pms-muted max-w-[70ch]">
         Et aussi : scènes photo réalistes, avant / après d&apos;une refonte, annotations et floutage, kit de marque, vidéos et GIF,
         et tous vos projets enregistrés.
       </p>
@@ -610,33 +578,32 @@ export function StudioSection() {
   );
 }
 
-/* ───────────── Bientôt : ce qui arrive, dit honnêtement ───────────── */
-const SOON = [
-  { title: 'Tutoriels vidéo', text: 'De courtes vidéos pour prendre le studio en main en quelques minutes.' },
-  { title: 'Paiement par carte bancaire', text: 'Visa et Mastercard, en plus du Mobile Money.' },
-];
-
-export function SoonSection() {
+/* ───────────── Avis de vrais clients : n'apparaît que lorsqu'il y en a (src/lib/testimonials.ts) ───────────── */
+export function TestimonialsSection() {
+  if (TESTIMONIALS.length === 0) return null;
   return (
-    <section data-reveal id="bientot" className={`scroll-mt-16 ${pad} py-12 sm:py-16`}>
-      <div className="max-w-[60ch]">
-        <h2 className={head}>Bientôt disponible</h2>
-        <p className="mt-5 text-[17px] leading-relaxed text-pms-muted">
-          PitchMySite est lancé depuis octobre 2026. Voici ce que nous préparons.
-        </p>
-      </div>
-      <ol className="mt-10 grid gap-3 sm:grid-cols-2 max-w-3xl">
-        {SOON.map((s, i) => (
-          <li key={s.title} className="rounded-2xl bg-pms-surface p-5 flex flex-col">
-            <span className="flex items-center justify-between text-[14px]">
-              <span className="font-semibold tabular-nums text-pms-muted">0{i + 1}</span>
-              <span className="rounded-full bg-pms-paper ring-1 ring-pms-line px-2.5 py-0.5 text-[13px] text-pms-accent font-semibold">Bientôt</span>
-            </span>
-            <h3 className="mt-4 text-[17px] font-semibold leading-snug">{s.title}</h3>
-            <p className="mt-2 text-[15px] leading-relaxed text-pms-muted">{s.text}</p>
-          </li>
+    <section data-reveal id="avis" className={`scroll-mt-16 ${pad} py-12 sm:py-16`}>
+      <h2 className={head}>Ils l&apos;utilisent pour leurs clients</h2>
+      <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {TESTIMONIALS.map((t) => (
+          <figure key={t.name} className="rounded-2xl bg-pms-surface overflow-hidden flex flex-col">
+            {t.visual && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={t.visual} alt={`Visuel créé par ${t.name}`} loading="lazy" className="w-full aspect-video object-cover" />
+            )}
+            <blockquote className="p-6 text-[17px] leading-relaxed flex-1">« {t.quote} »</blockquote>
+            <figcaption className="px-6 pb-6 text-[15px]">
+              <span className="font-semibold">{t.name}</span>
+              <span className="text-pms-muted">, {t.role}</span>
+              {t.site && (
+                <a href={t.site} target="_blank" rel="noopener noreferrer" className="block mt-1 text-pms-accent hover:underline">
+                  {t.site.replace(/^https?:\/\/(www\.)?/, '')}
+                </a>
+              )}
+            </figcaption>
+          </figure>
         ))}
-      </ol>
+      </div>
     </section>
   );
 }

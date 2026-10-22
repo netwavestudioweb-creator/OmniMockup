@@ -56,6 +56,14 @@ const MOBILE_VIEWPORT = { width: 390, height: 844 };
 // Hauteur maximale d'une capture mobile pleine page (6 écrans) : évite des images de 40 000 px
 const MOBILE_MAX_HEIGHT = MOBILE_VIEWPORT.height * 6;
 
+/**
+ * Liens YouTube : désactivés en attendant le lancement de la fonction (choix de Dodo, 22/10/2026).
+ * Passer à true pour les réactiver (penser à remettre les mentions sur l'accueil).
+ */
+export const YOUTUBE_LINKS_ENABLED = false;
+export const YOUTUBE_SOON_MESSAGE =
+  'Les liens YouTube arrivent bientôt. Pour l’instant, collez le lien d’un site, ou déposez une capture d’écran.';
+
 export function extractYouTubeVideoId(url: string): string | null {
   try {
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/))([a-zA-Z0-9_-]{11})/i);
@@ -133,6 +141,7 @@ export async function captureWebPage(
   // Tier 0 : Détection YouTube
   const ytVideoId = extractYouTubeVideoId(targetUrl);
   if (ytVideoId) {
+    if (!YOUTUBE_LINKS_ENABLED) throw new Error(YOUTUBE_SOON_MESSAGE);
     return await captureYouTubeVideo(ytVideoId, targetUrl);
   }
 

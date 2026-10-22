@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { captureWebPage } from '@/lib/browser';
+import { captureWebPage, extractYouTubeVideoId, YOUTUBE_LINKS_ENABLED, YOUTUBE_SOON_MESSAGE } from '@/lib/browser';
 import { captureKey, readStoredCapture, saveStoredCapture } from '@/lib/captureStore';
 import { CaptureItemResult, CaptureResponse, SectionCoordinates } from '@/types/analyzer';
 import { createRateLimitResponse, validateSafeUrl, checkRateLimitShared } from '@/lib/security';
@@ -114,6 +114,18 @@ export async function POST(req: NextRequest) {
 
   for (const target of targetsToProcess) {
     const itemStartTime = Date.now();
+    // Liens YouTube désactivés pour l'instant : message clair, sans capture ni mémoire
+    if (!YOUTUBE_LINKS_ENABLED && extractYouTubeVideoId(target.url)) {
+      results.push({
+        url: target.url,
+        title: target.label || target.url,
+        success: false,
+        error: YOUTUBE_SOON_MESSAGE,
+        capturedAt: new Date().toISOString(),
+        durationMs: 0,
+      });
+      continue;
+    }
     try {
       const key = captureKey(target.url, { fullPage, hideBanners, viewport: viewport || null, mobile, delayMs, colorScheme });
       const stored = fresh ? null : await readStoredCapture(key);

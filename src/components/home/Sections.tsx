@@ -205,7 +205,7 @@ const FAQ: { cat: string; items: Faq[] }[] = [
   {
     cat: 'Paiement et tarifs',
     items: [
-      { q: 'Comment payer ?', a: 'Par Mobile Money (MTN, Moov, Celtiis, Orange, Wave, selon votre pays), en FCFA. La carte bancaire arrive bientôt.' },
+      { q: 'Comment payer ?', a: 'Par Mobile Money, en FCFA, sur la page sécurisée de SasPay : Bénin, Côte d’Ivoire, Sénégal, Togo, Mali, Burkina Faso et Niger (MTN, Moov, Orange, Wave, Celtiis, Free Money…). La carte bancaire arrive bientôt.' },
       { q: 'Est-ce cher pour un freelance ?', a: 'Solo coûte 5 500 FCFA (8 €) par mois. Le prix baisse ensuite chaque mois payé d’affilée.' },
       { q: 'Comment marche le prix fidélité ?', a: 'Chaque mois payé d’affilée sur la même formule baisse le prix du mois suivant, trois fois au maximum. Repayez au plus tard 3 jours après la fin du mois. Un mois raté vous ramène au prix de départ.' },
       { q: 'Puis-je arrêter à tout moment ?', a: 'Il n’y a rien à résilier. Un paiement couvre 1 mois ou 1 an, sans renouvellement automatique.' },

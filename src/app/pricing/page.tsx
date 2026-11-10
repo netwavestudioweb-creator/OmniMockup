@@ -24,6 +24,8 @@ import {
 } from '@/lib/pricing';
 import { trackEvent } from '@/lib/tracking';
 import { CARD_PROVIDER, cardPaymentsEnabled } from '@/lib/paymentConfig';
+import { MOBILE_MONEY_SHORT } from '@/lib/paymentMethods';
+import { PaymentMethodsNote, PaymentCountriesList } from '@/components/PaymentMethodsNote';
 import {
   Check,
   Lightbulb,
@@ -292,7 +294,7 @@ export default function PricingPage() {
             </div>
             <p className="text-[11px] text-stone-500 leading-relaxed text-center md:text-left">
               {method === 'mobile'
-                ? 'Via SasPay, en FCFA : MTN, Moov, Celtiis, Orange, Wave… selon votre pays. Paiement unique pour 1 mois ou 1 an, sans renouvellement automatique.'
+                ? `Via SasPay, en FCFA : ${MOBILE_MONEY_SHORT} selon votre pays. Paiement unique pour 1 mois ou 1 an, sans renouvellement automatique.`
                 : CARD_PROVIDER === 'stripe'
                   ? `Visa, Mastercard ou American Express via Stripe, débitée en ${currency === 'USD' ? 'dollars' : 'euros'}. Abonnement résiliable à tout moment depuis votre compte.`
                   : 'Visa ou Mastercard via SasPay : choisissez « Carte » sur la page de paiement. Paiement unique pour 1 mois ou 1 an, sans renouvellement automatique.'}
@@ -343,6 +345,7 @@ export default function PricingPage() {
             </div>
           </div>
         </div>
+        {method === 'mobile' && <PaymentCountriesList className="max-w-5xl mx-auto -mt-6 mb-10 px-1" />}
 
         {/* ══════════════════════════════════════════════════════════════════════ */}
         {/* GRILLE DES 3 PLANS PAYANTS (Solo, Pro ⭐, Agence) — EFFET LEURRE POPCORN */}
@@ -486,6 +489,7 @@ export default function PricingPage() {
                       </>
                     )}
                   </button>
+                  {!useStripe && <PaymentMethodsNote className="mt-4" />}
                 </div>
               </div>
             );
@@ -584,7 +588,7 @@ export default function PricingPage() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-pms-line flex items-center justify-between">
-                    <span className="text-[11px] text-stone-500">Paiement unique</span>
+                    <span className="text-[12px] text-stone-500">Paiement unique{!useStripe && ', par Mobile Money'}</span>
                     <button
                       type="button"
                       onClick={() => handleCreditBuy(pack)}

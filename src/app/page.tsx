@@ -35,6 +35,7 @@ import {
   getLoyaltyFloorFcfa,
 } from '@/lib/pricing';
 import { Check, Loader2 } from 'lucide-react';
+import { PaymentMethodsNote, PaymentCountriesList } from '@/components/PaymentMethodsNote';
 import { HeroShowcase, HeroBackdrop, BRANDS_NOTICE } from '@/components/home/HomeStage';
 import { ProblemSection, UsagesSection, ZoneSection, StudioSection, TestimonialsSection, FaqSection, SiteFooter } from '@/components/home/Sections';
 
@@ -390,6 +391,7 @@ export default function HomePage() {
                             {p.ctaText}
                           </Link>
                         )}
+                        {!free && <PaymentMethodsNote className="mt-4" />}
                       </div>
                       <div className="relative">
                         <hr className="my-7 border-pms-line" />
@@ -416,8 +418,9 @@ export default function HomePage() {
                 </Link>{' '}
                 se paient une fois, sans abonnement.
               </p>
+              <PaymentCountriesList className="mt-6" />
               <p className="mt-3 text-[15px] text-pms-muted">
-                Bientôt : le paiement par carte bancaire, et des tutoriels vidéo pour prendre le studio en main.
+                Bientôt : des tutoriels vidéo pour prendre le studio en main.
               </p>
             </>
           );

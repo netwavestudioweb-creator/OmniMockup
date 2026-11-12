@@ -12,6 +12,7 @@ export function PaymentMethodsNote({ className = '' }: { className?: string }) {
         Paiement par Mobile Money, en FCFA
       </p>
       <p className="mt-1">{MOBILE_MONEY_SHORT}</p>
+      <p className="mt-1">Frais de l’opérateur de paiement en plus : environ 4&nbsp;% selon le pays. Le montant exact s’affiche avant de valider.</p>
       {!cardPaymentsEnabled && <p className="mt-1 text-[12px]">Carte bancaire : bientôt.</p>}
     </div>
   );

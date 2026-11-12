@@ -199,7 +199,7 @@ const FAQ: { cat: string; items: Faq[] }[] = [
     items: [
       { q: 'Puis-je utiliser les visuels pour mes clients ?', a: 'Oui : propositions, livrables, portfolio, publications, y compris à des fins commerciales.' },
       { q: 'Comment fonctionne la marque blanche ?', a: 'Dès le plan Pro, plus aucun filigrane. Avec le plan Agence, vos pages de partage affichent votre nom et votre logo.' },
-      { q: 'La Pitch IA est-elle payante ?', a: 'Non. Elle utilise votre propre clé IA. Groq et Gemini en donnent une gratuitement. Votre clé reste dans votre navigateur.' },
+      { q: 'La Pitch IA est-elle payante ?', a: 'Non. Elle utilise votre propre clé IA : Groq (gratuit avec limites, recommandé), Gemini (gratuit avec quota), OpenAI ou Claude (payants à l’usage). Votre clé reste dans votre navigateur.' },
     ],
   },
   {
@@ -207,7 +207,7 @@ const FAQ: { cat: string; items: Faq[] }[] = [
     items: [
       { q: 'Comment payer ?', a: 'Par Mobile Money, en FCFA, sur la page sécurisée de SasPay : Bénin, Côte d’Ivoire, Sénégal, Togo, Mali, Burkina Faso et Niger (MTN, Moov, Orange, Wave, Celtiis, Free Money…). La carte bancaire arrive bientôt.' },
       { q: 'Est-ce cher pour un freelance ?', a: 'Solo coûte 5 500 FCFA (8 €) par mois. Le prix baisse ensuite chaque mois payé d’affilée.' },
-      { q: 'Comment marche le prix fidélité ?', a: 'Chaque mois payé d’affilée sur la même formule baisse le prix du mois suivant, trois fois au maximum. Repayez au plus tard 3 jours après la fin du mois. Un mois raté vous ramène au prix de départ.' },
+      { q: 'Comment marche le prix fidélité ?', a: 'Chaque mois payé d’affilée sur la même formule baisse le prix du mois suivant, trois fois au maximum (Solo : 5 500, 5 000, 4 500 puis 4 000 FCFA ; Pro et Agence : 1 000 FCFA de moins à chaque fois). Repayez au plus tard 3 jours après la fin du mois. Un mois raté vous ramène au prix de départ.' },
       { q: 'Puis-je arrêter à tout moment ?', a: 'Il n’y a rien à résilier. Un paiement couvre 1 mois ou 1 an, sans renouvellement automatique.' },
     ],
   },
@@ -222,8 +222,6 @@ const FAQ: { cat: string; items: Faq[] }[] = [
 
 export function FaqSection() {
   const [cat, setCat] = useState(0);
-  const [open, setOpen] = useState(0);
-  const items = FAQ[cat].items;
 
   return (
     <section data-reveal id="questions" className="scroll-mt-16 px-3 sm:px-6 lg:px-[68px] py-12 sm:py-16">
@@ -247,10 +245,7 @@ export function FaqSection() {
                 type="button"
                 role="tab"
                 aria-selected={cat === i}
-                onClick={() => {
-                  setCat(i);
-                  setOpen(0);
-                }}
+                onClick={() => setCat(i)}
                 className={`shrink-0 min-h-[48px] lg:min-h-[60px] px-5 rounded-xl flex items-center justify-between gap-4 text-left text-[16px] font-semibold transition-colors ${
                   cat === i ? 'bg-pms-paper text-pms-ink shadow-[0_8px_24px_-14px_rgba(17,17,17,0.35)] ring-1 ring-pms-line' : 'bg-pms-paper/50 text-pms-muted hover:text-pms-ink'
                 }`}
@@ -261,24 +256,26 @@ export function FaqSection() {
             ))}
           </div>
 
-          <div className="flex flex-col gap-3">
-            {items.map((f, i) => {
-              const isOpen = open === i;
-              return (
-                <div key={f.q} className={`rounded-xl transition-colors ${isOpen ? 'bg-pms-paper shadow-[0_8px_24px_-14px_rgba(17,17,17,0.3)] ring-1 ring-pms-line' : 'bg-pms-paper/60 ring-1 ring-pms-line/70'}`}>
-                  <button
-                    type="button"
-                    aria-expanded={isOpen}
-                    onClick={() => setOpen(isOpen ? -1 : i)}
-                    className="w-full min-h-[56px] px-5 py-4 flex items-center justify-between gap-4 text-left text-[16px] font-semibold"
+          {/* Toutes les réponses sont dans la page (lisibles par les moteurs de recherche), même fermées ou dans une autre catégorie */}
+          <div>
+            {FAQ.map((c, ci) => (
+              <div key={c.cat} hidden={ci !== cat} className="flex flex-col gap-3">
+                {c.items.map((f, i) => (
+                  <details
+                    key={f.q}
+                    open={i === 0}
+                    className="group rounded-xl transition-colors bg-pms-paper/60 ring-1 ring-pms-line/70 open:bg-pms-paper open:ring-pms-line open:shadow-[0_8px_24px_-14px_rgba(17,17,17,0.3)]"
                   >
-                    <span>{f.q}</span>
-                    {isOpen ? <X className="w-5 h-5 shrink-0" aria-hidden /> : <Plus className="w-5 h-5 shrink-0" aria-hidden />}
-                  </button>
-                  {isOpen && <p className="px-5 pb-5 -mt-1 text-[15px] leading-relaxed text-pms-muted">{f.a}</p>}
-                </div>
-              );
-            })}
+                    <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer w-full min-h-[56px] px-5 py-4 flex items-center justify-between gap-4 text-left text-[16px] font-semibold">
+                      <span>{f.q}</span>
+                      <Plus className="w-5 h-5 shrink-0 group-open:hidden" aria-hidden />
+                      <X className="w-5 h-5 shrink-0 hidden group-open:block" aria-hidden />
+                    </summary>
+                    <p className="px-5 pb-5 -mt-1 text-[15px] leading-relaxed text-pms-muted">{f.a}</p>
+                  </details>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -529,7 +526,7 @@ const STUDIO_CARDS: { img: string; alt: string; title: string; text: string; wid
     img: '/images/studio/studio-pitch.jpg',
     alt: 'La Pitch IA',
     title: 'Le texte de vente, déjà écrit',
-    text: 'L’offre, l’e-mail de prospection et le post LinkedIn, écrits à partir du site. Avec votre clé IA, gratuite chez Groq ou Gemini.',
+    text: 'L’offre, l’e-mail de prospection et le post LinkedIn, écrits à partir du site. Avec votre propre clé IA : Groq ou Gemini gratuits, OpenAI ou Claude payants.',
   },
   {
     img: '/images/studio/studio-exporter.jpg',

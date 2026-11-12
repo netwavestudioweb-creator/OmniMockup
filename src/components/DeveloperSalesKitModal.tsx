@@ -80,7 +80,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
   const [activeTab, setActiveTab] = useState<'hormozi' | 'audit' | 'coldemail' | 'proposal' | 'linkedin' | 'casestudy' | 'twitter' | 'sections'>('hormozi');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // IA du client : sa propre clé Gemini ou Claude, gardée dans son navigateur seulement
+  // IA du client : sa propre clé Groq, Gemini, OpenAI ou Claude, gardée dans son navigateur seulement
   const [ai, setAi] = useState<{ provider: AiProvider; key: string } | null>(null);
   const [showAiSetup, setShowAiSetup] = useState(false);
   const [setupProvider, setSetupProvider] = useState<AiProvider>('gemini');
@@ -186,7 +186,7 @@ export const DeveloperSalesKitModal: React.FC<DeveloperSalesKitModalProps> = ({
       if (res.status === 503) {
         // Pas d'IA sur le serveur : le client connecte la sienne
         setShowAiSetup(true);
-        setNotice({ kind: 'error', text: 'Connectez votre IA (Gemini ou Claude) pour générer vos textes.' });
+        setNotice({ kind: 'error', text: 'Connectez votre IA (Groq ou Gemini gratuits, OpenAI ou Claude payants) pour générer vos textes.' });
       } else if (json.success && json.data) {
         setSalesData(json.data);
         if (json.data.hormoziOffer) setActiveTab('hormozi');

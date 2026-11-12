@@ -11,6 +11,9 @@
 
 export type Currency = 'EUR' | 'USD' | 'XOF';
 
+/** Clé IA du client : la même phrase partout (fournisseurs acceptés par src/lib/byokPitch.ts, conditions vérifiées le 11/11/2026) */
+export const AI_KEY_PROVIDERS = 'Groq (gratuit avec limites, recommandé), Gemini (gratuit avec quota), OpenAI ou Claude (payants à l’usage)';
+
 export type PlanId = 'free' | 'solo' | 'pro' | 'agence';
 
 export interface PlanFeature {
@@ -117,7 +120,7 @@ export const PLANS: Plan[] = [
       { name: '3 analyses IA directeur artistique par mois', included: true },
       { name: 'Exports HD et 4K', included: false },
       { name: 'Vidéos et GIF animés', included: false },
-      { name: 'Pitch IA avec votre clé Gemini ou Claude', included: true },
+      { name: 'Pitch IA avec votre propre clé IA : Groq ou Gemini gratuits, OpenAI ou Claude payants', included: true },
     ],
   },
   {
@@ -143,7 +146,7 @@ export const PLANS: Plan[] = [
       { name: '3 analyses IA directeur artistique par mois', included: true },
       { name: 'Exports 4K', included: false },
       { name: 'Vidéos et GIF animés', included: false },
-      { name: 'Pitch IA avec votre clé Gemini ou Claude', included: true },
+      { name: 'Pitch IA avec votre propre clé IA : Groq ou Gemini gratuits, OpenAI ou Claude payants', included: true },
     ],
   },
   {
@@ -176,7 +179,7 @@ export const PLANS: Plan[] = [
       { name: 'Aucun filigrane', included: true, highlight: true },
       { name: '10 vidéos ou GIF animés par mois', included: true, highlight: true },
       { name: 'Analyses IA directeur artistique illimitées', included: true },
-      { name: 'Pitch IA avec votre clé Gemini ou Claude', included: true },
+      { name: 'Pitch IA avec votre propre clé IA : Groq ou Gemini gratuits, OpenAI ou Claude payants', included: true },
       { name: 'Liens de partage illimités', included: true },
       { name: 'Support par e-mail', included: true },
       { name: 'Marque blanche', included: false },
@@ -216,7 +219,7 @@ export const PLANS: Plan[] = [
     features: [
       { name: 'Tout le forfait Pro inclus', included: true },
       { name: 'Vidéos et GIF animés illimités', included: true, highlight: true },
-      { name: 'Pitch IA avec votre clé Gemini ou Claude', included: true },
+      { name: 'Pitch IA avec votre propre clé IA : Groq ou Gemini gratuits, OpenAI ou Claude payants', included: true },
       { name: 'Marque blanche : pages de partage à votre nom et logo, sans mention de PitchMySite', included: true, highlight: true },
       { name: 'Support WhatsApp prioritaire', included: true, highlight: true },
     ],

@@ -31,8 +31,8 @@ import {
   formatPrice,
   getPlanMonthlyPrice,
   getPlanAnnualPrice,
-  getPlanMonthlyEquivalent,
   getLoyaltyFloorFcfa,
+  CREDIT_PACKS,
 } from '@/lib/pricing';
 import { Check, Loader2 } from 'lucide-react';
 import { PaymentMethodsNote, PaymentCountriesList } from '@/components/PaymentMethodsNote';
@@ -40,7 +40,7 @@ import { HeroShowcase, HeroBackdrop, BRANDS_NOTICE } from '@/components/home/Hom
 import { ProblemSection, UsagesSection, ZoneSection, StudioSection, TestimonialsSection, FaqSection, SiteFooter } from '@/components/home/Sections';
 
 export default function HomePage() {
-  const { currency, mobileMoneyRegion } = useCurrency();
+  const { currency } = useCurrency();
 
   const [activeCaptureItem, setActiveCaptureItem] = useState<CaptureItemResult | null>(null);
   // Mes projets : mockups enregistrés sur cet appareil, le plus récent proposé à la reprise
@@ -73,7 +73,7 @@ export default function HomePage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loadingSeconds, setLoadingSeconds] = useState(0);
   const captureAbortRef = useRef<AbortController | null>(null);
-  const [isAnnualPricing, setIsAnnualPricing] = useState<boolean>(true);
+  const [isAnnualPricing, setIsAnnualPricing] = useState<boolean>(false);
   // Mode « Captures pour les stores » : écrans d'une appli déposés depuis l'accueil
   const [storeShots, setStoreShots] = useState<string[] | null>(null);
   const storeInputRef = useRef<HTMLInputElement>(null);
@@ -297,7 +297,7 @@ export default function HomePage() {
           <div>
             <h2 className={head}>Gratuit pour tester, simple à payer</h2>
             <p className="mt-5 text-[17px] leading-relaxed text-pms-ink max-w-[46ch]">
-              Un paiement couvre un mois ou un an. Rien ne se renouvelle tout seul. Et votre prix baisse chaque mois payé d’affilée.
+              Un paiement couvre un mois ou un an. Rien ne se renouvelle tout seul. Au mois, votre prix baisse chaque mois payé d’affilée : Solo passe de {new Intl.NumberFormat('fr-FR').format(PLANS[1].monthlyFcfa)} à {new Intl.NumberFormat('fr-FR').format(getLoyaltyFloorFcfa(PLANS[1]))} FCFA dès le 4<sup>e</sup> mois.
             </p>
           </div>
           <div className="inline-flex self-start md:self-auto p-1 rounded-md bg-pms-paper" role="group" aria-label="Durée">
@@ -334,7 +334,8 @@ export default function HomePage() {
                 {PLANS.map((p) => {
                   const free = p.id === 'free';
                   const pro = p.id === 'pro';
-                  const price = free ? 0 : isAnnualPricing ? getPlanMonthlyEquivalent(p, currency) : getPlanMonthlyPrice(p, currency);
+                  const priceFcfa = isAnnualPricing ? p.annualFcfa : p.monthlyFcfa;
+                  const priceOther = isAnnualPricing ? getPlanAnnualPrice(p, currency) : getPlanMonthlyPrice(p, currency);
                   return (
                     <div
                       key={p.id}
@@ -353,21 +354,20 @@ export default function HomePage() {
                       <div className="relative">
                         <h3 className="text-[19px] font-semibold">{p.name}</h3>
                         <p className="mt-5 flex items-baseline gap-2">
-                          <span className="text-[2.5rem] leading-none tabular-nums whitespace-nowrap">{formatPrice(price, currency)}</span>
-                          <span className="text-[15px] text-pms-muted">{free ? 'gratuit à vie' : 'par mois'}</span>
+                          <span className="text-[2.25rem] leading-none tabular-nums whitespace-nowrap">{free ? 'Gratuit' : fcfa(priceFcfa)}</span>
+                          <span className="text-[15px] text-pms-muted">{free ? 'à vie' : isAnnualPricing ? 'pour 1 an' : 'par mois'}</span>
                         </p>
-                        {!free && mobileMoneyRegion && (
-                          <p className="mt-2 text-[15px] font-semibold">
-                            Par Mobile Money : {isAnnualPricing ? `${fcfa(p.annualFcfa)} pour 1 an` : `${fcfa(p.monthlyFcfa)} pour 1 mois`}
+                        {!free && (
+                          <p className="mt-2 text-[14px] text-pms-muted">
+                            Soit {formatPrice(priceOther, currency)}
+                            {isAnnualPricing && `, ou ${fcfa(Math.round(p.annualFcfa / 12))} par mois`}
                           </p>
                         )}
-                        {!free && !isAnnualPricing && (
+                        {!free && (
                           <p className="mt-1 text-[14px] text-pms-muted">
-                            Puis {fcfa(p.loyaltyStepFcfa)} de moins chaque mois payé d&apos;affilée, jusqu&apos;à {fcfa(getLoyaltyFloorFcfa(p))}.
+                            {isAnnualPricing ? `Au mois : ${fcfa(p.monthlyFcfa)}, puis ` : 'Puis '}
+                            {fcfa(p.loyaltyStepFcfa)} de moins chaque mois payé d&apos;affilée, jusqu&apos;à {fcfa(getLoyaltyFloorFcfa(p))}.
                           </p>
-                        )}
-                        {!free && isAnnualPricing && (
-                          <p className="mt-1 text-[14px] text-pms-muted">Facturé {formatPrice(getPlanAnnualPrice(p, currency), currency)} par an</p>
                         )}
                         <p className="mt-4 text-[15px] leading-relaxed text-pms-muted">{p.description}</p>
                       </div>
@@ -416,7 +416,7 @@ export default function HomePage() {
                 <Link href="/pricing#credits" className="text-pms-accent font-semibold underline underline-offset-4">
                   Les packs de crédits
                 </Link>{' '}
-                se paient une fois, sans abonnement.
+                se paient une fois, sans abonnement : {CREDIT_PACKS[0].credits} images HD sans filigrane pour {new Intl.NumberFormat('fr-FR').format(CREDIT_PACKS[0].priceFcfa)} FCFA ({formatPrice(CREDIT_PACKS[0].priceEur, 'EUR')}).
               </p>
               <PaymentCountriesList className="mt-6" />
               <p className="mt-3 text-[15px] text-pms-muted">

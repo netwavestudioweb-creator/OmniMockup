@@ -221,11 +221,27 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
 
       {/* Alerte d'erreur */}
       {errorMessage && (
-        <div className="mt-5 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-start gap-3 animate-fade-in text-left">
-          <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="font-semibold text-rose-200">Échec de la capture</p>
-            <p className="mt-0.5 text-rose-400 text-[13px] leading-relaxed">{errorMessage}</p>
+        <div role="alert" className="mt-5 p-4 rounded-2xl bg-red-50 border border-red-200 text-pms-ink text-sm flex items-start gap-3 animate-fade-in text-left">
+          <AlertCircle className="w-5 h-5 text-red-700 flex-shrink-0 mt-0.5" aria-hidden />
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-red-800">Ce site n&apos;a pas pu être capturé</p>
+            <p className="mt-1 text-[14px] leading-relaxed break-words">{errorMessage}</p>
+            <p className="mt-1 text-[14px] leading-relaxed text-pms-muted">
+              C&apos;est souvent un site protégé, lent ou en local. Faites une capture d&apos;écran du site et déposez-la : la mise en scène est la même.
+            </p>
+            {activeTab === 'url' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('upload');
+                  // Le champ de fichier n'existe qu'une fois l'onglet affiché
+                  setTimeout(() => fileInputRef.current?.click(), 50);
+                }}
+                className="mt-3 min-h-[44px] px-4 rounded-md bg-pms-ink hover:bg-pms-accent text-white text-[15px] font-semibold transition-colors"
+              >
+                Importer une capture d&apos;écran
+              </button>
+            )}
           </div>
         </div>
       )}

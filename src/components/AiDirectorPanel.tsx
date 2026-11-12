@@ -295,7 +295,7 @@ export const AiDirectorPanel: React.FC<AiDirectorPanelProps> = ({ url, onUseSect
           {result.isFallback && (
             <div className="p-3 rounded-xl bg-zinc-950/70 border border-pms-accent/30 space-y-2">
               <p className="text-[11px] text-amber-300 leading-relaxed">
-                Sections repérées automatiquement, sans notes. Connectez votre IA (Gemini ou Claude) pour obtenir le verdict de chaque section.
+                Sections repérées automatiquement, sans notes. Connectez votre IA (Groq ou Gemini gratuits, OpenAI ou Claude payants) pour obtenir le verdict de chaque section.
                 Votre clé reste dans votre navigateur.
               </p>
               <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-zinc-900 border border-zinc-800" role="radiogroup" aria-label="Fournisseur d'IA">

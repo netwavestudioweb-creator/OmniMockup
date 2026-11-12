@@ -1,6 +1,6 @@
 /**
  * Consigne de la Pitch IA, partagée par le serveur et par le navigateur
- * (quand le client utilise sa propre clé Gemini ou Claude).
+ * (quand le client utilise sa propre clé Groq, Gemini, OpenAI ou Claude).
  */
 export interface PitchInput {
   projectTitle: string;

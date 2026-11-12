@@ -13,12 +13,11 @@ import {
   CREDIT_PACKS,
   getPlanMonthlyPrice,
   getPlanAnnualPrice,
-  getPlanMonthlyEquivalent,
-  getPlanAnnualSavings,
   formatPrice,
   getCreditPackPrice,
   getLoyaltyMonthlyFcfa,
   getLoyaltyFloorFcfa,
+  AI_KEY_PROVIDERS,
   Plan,
   CreditPack,
 } from '@/lib/pricing';
@@ -28,13 +27,11 @@ import { MOBILE_MONEY_SHORT } from '@/lib/paymentMethods';
 import { PaymentMethodsNote, PaymentCountriesList } from '@/components/PaymentMethodsNote';
 import {
   Check,
-  Lightbulb,
   X as XIcon,
   ArrowRight,
   ShieldCheck,
   Loader2,
   AlertCircle,
-  Flame,
   Clock,
   Smartphone,
   CreditCard,
@@ -56,7 +53,7 @@ export default function PricingPage() {
   }, [mobileMoneyRegion]);
   const useStripe = method === 'card' && CARD_PROVIDER === 'stripe';
   const paymentMethod: 'stripe' | 'saspay' = useStripe ? 'stripe' : 'saspay';
-  const [isAnnual, setIsAnnual] = useState(true);
+  const [isAnnual, setIsAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
@@ -74,12 +71,9 @@ export default function PricingPage() {
       .catch(() => setLoyaltySteps(null));
   }, [user]);
 
-  // Étape 5 : Modal Downsell Exit-Intent sur /pricing
-  const [showExitDownsell, setShowExitDownsell] = useState(false);
-
   // Tracking pricing_view au chargement
   useEffect(() => {
-    trackEvent('pricing_view', { is_annual_default: true });
+    trackEvent('pricing_view', { is_annual_default: false });
 
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -90,20 +84,6 @@ export default function PricingPage() {
       else if (params.get('pending') === 'true') setPaymentResult('pending');
       else if (params.get('error') === 'verification_failed') setPaymentResult('verification');
     }
-  }, []);
-
-  // Détection exit-intent pour le Downsell (une seule fois par session)
-  useEffect(() => {
-    const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY <= 10 && !sessionStorage.getItem('downsell_pricing_shown')) {
-        sessionStorage.setItem('downsell_pricing_shown', 'true');
-        setShowExitDownsell(true);
-        trackEvent('downsell_shown', { trigger: 'exit_intent' });
-      }
-    };
-
-    document.addEventListener('mouseleave', handleMouseLeave);
-    return () => document.removeEventListener('mouseleave', handleMouseLeave);
   }, []);
 
   // Déclencheur clic sur un plan d'abonnement
@@ -202,6 +182,12 @@ export default function PricingPage() {
     startSaspayCheckout(pack.id);
   };
 
+  // Prix du tableau comparatif : le même que sur les cartes, pour la durée choisie
+  const tablePrice = (plan: Plan) =>
+    useStripe
+      ? `${formatPrice(isAnnual ? getPlanAnnualPrice(plan, currency) : getPlanMonthlyPrice(plan, currency), currency)} ${isAnnual ? 'par an' : 'par mois'}`
+      : `${formatPrice(isAnnual ? plan.annualFcfa : plan.monthlyFcfa, 'XOF')} ${isAnnual ? 'par an' : 'par mois'}`;
+
   // Filtrer les plans payants pour la grille principale (Solo, Pro, Agence)
   const paidPlans = PLANS.filter((p) => p.id !== 'free');
 
@@ -264,7 +250,7 @@ export default function PricingPage() {
                   method === 'mobile' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
-                <Smartphone className="w-4 h-4 text-amber-600" />
+                <Smartphone className="w-4 h-4 text-pms-ink" />
                 <span className="whitespace-nowrap">Mobile Money</span>
               </button>
               <button
@@ -338,9 +324,7 @@ export default function PricingPage() {
                 }`}
               >
                 <span>Annuel</span>
-                <span className="px-2 py-0.5 rounded-full bg-pms-accent text-white text-[10px] font-semibold shadow-2xs">
-                  le prix le plus bas
-                </span>
+                <span className="text-stone-500 font-normal">(prix le plus bas)</span>
               </span>
             </div>
           </div>
@@ -356,10 +340,6 @@ export default function PricingPage() {
 
             const monthlyPrice = getPlanMonthlyPrice(plan, currency);
             const annualPrice = getPlanAnnualPrice(plan, currency);
-            const eq = getPlanMonthlyEquivalent(plan, currency);
-            const savings = getPlanAnnualSavings(plan, currency);
-
-            const displayPrice = isAnnual ? eq : monthlyPrice;
 
             return (
               <div
@@ -384,59 +364,51 @@ export default function PricingPage() {
                     </p>
                   </div>
 
-                  {/* Prix — Une seule devise affichée */}
+                  {/* Prix : le montant payé par Mobile Money (FCFA) en premier, l'euro ou le dollar en petit */}
                   <div className="p-4 rounded-2xl bg-pms-surface border border-pms-line/80 mb-6">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl sm:text-5xl font-semibold text-stone-950 tracking-tight">
-                        {formatPrice(displayPrice, currency, false)}
-                      </span>
-                      <span className="text-xs text-stone-500 font-semibold">
-                        {currency === 'USD' ? '$ / mois' : '€ / mois'}
-                      </span>
-                    </div>
-
-                    {/* Montant réellement payé via SasPay (Mobile Money ou carte), en FCFA */}
-                    {!useStripe && (() => {
+                    {(() => {
                       const fcfa = (n: number) => `${new Intl.NumberFormat('fr-FR').format(n)} FCFA`;
+                      const otherPrice = isAnnual ? annualPrice : monthlyPrice;
+                      if (useStripe) {
+                        return (
+                          <>
+                            <div className="flex items-baseline gap-1.5 flex-wrap">
+                              <span className="text-3xl sm:text-4xl font-semibold text-stone-950 tracking-tight tabular-nums">{formatPrice(otherPrice, currency)}</span>
+                              <span className="text-sm text-stone-500 font-semibold">{isAnnual ? 'par an' : 'par mois'}</span>
+                            </div>
+                            <p className="mt-1 text-[13px] text-stone-500">Abonnement par carte, résiliable à tout moment depuis votre compte.</p>
+                          </>
+                        );
+                      }
                       const step = loyaltySteps?.[plan.id] || 0;
                       const monthFcfa = getLoyaltyMonthlyFcfa(plan, step);
                       return (
                         <>
-                          <p className="mt-1 text-[11px] font-semibold text-amber-700">
-                            {method === 'card' ? 'Payé par carte via SasPay' : 'Payé en Mobile Money'} :{' '}
-                            {isAnnual ? `${fcfa(plan.annualFcfa)} pour 1 an` : `${fcfa(monthFcfa)} pour 1 mois`}
-                            {!isAnnual && step > 0 && (
-                              <span className="font-normal text-stone-500"> au lieu de <s>{fcfa(plan.monthlyFcfa)}</s></span>
-                            )}
-                          </p>
-                          {!isAnnual && (
-                            <p className="mt-1 text-[11px] text-stone-600">
-                              {step > 0
-                                ? `Votre prix fidélité : ${step + 1}e mois d’affilée.`
-                                : `Fidélité : −${new Intl.NumberFormat('fr-FR').format(plan.loyaltyStepFcfa)} FCFA chaque mois payé d’affilée, jusqu’à ${fcfa(getLoyaltyFloorFcfa(plan))}.`}
+                          <div className="flex items-baseline gap-1.5 flex-wrap">
+                            <span className="text-3xl sm:text-4xl font-semibold text-stone-950 tracking-tight tabular-nums whitespace-nowrap">
+                              {fcfa(isAnnual ? plan.annualFcfa : monthFcfa)}
+                            </span>
+                            <span className="text-sm text-stone-500 font-semibold">{isAnnual ? 'pour 1 an' : 'par mois'}</span>
+                          </div>
+                          {!isAnnual && step > 0 && (
+                            <p className="mt-1 text-[13px] text-stone-600">
+                              Au lieu de <s>{fcfa(plan.monthlyFcfa)}</s> : votre prix fidélité ({step + 1}e mois d’affilée).
                             </p>
                           )}
+                          <p className="mt-1 text-[13px] text-stone-500">
+                            Soit {formatPrice(otherPrice, currency)}
+                            {isAnnual && `, ou ${fcfa(Math.round(plan.annualFcfa / 12))} par mois`}
+                          </p>
+                          <p className="mt-1 text-[13px] text-stone-600">
+                            {isAnnual ? `Au mois : ${fcfa(plan.monthlyFcfa)}, puis ` : 'Puis '}
+                            {fcfa(plan.loyaltyStepFcfa)} de moins chaque mois payé d’affilée, jusqu’à {fcfa(getLoyaltyFloorFcfa(plan))}.
+                          </p>
+                          <p className="mt-1 text-[13px] text-stone-500">
+                            {isAnnual ? '1 an' : '1 mois'}, sans engagement ni renouvellement automatique.
+                          </p>
                         </>
                       );
                     })()}
-
-                    {/* Économie annuelle ou facturation */}
-                    <div className="mt-2 text-[11px] font-semibold text-stone-600 flex flex-col gap-0.5">
-                      {isAnnual ? (
-                        <>
-                          <span className="text-emerald-700 font-semibold">
-                            Facturé {formatPrice(annualPrice, currency)} / an
-                          </span>
-                          <span className="text-stone-500">
-                            Économie : {formatPrice(savings, currency)} par an
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-stone-500">
-                          {useStripe ? 'Facturation mensuelle, résiliable à tout moment' : '1 mois, sans engagement ni renouvellement automatique'}
-                        </span>
-                      )}
-                    </div>
                   </div>
 
                   {/* Liste des fonctionnalités — Éléments non inclus avec ✕ et texte barré bien visibles */}
@@ -503,7 +475,6 @@ export default function PricingPage() {
           <div className="space-y-1 text-center sm:text-left">
             <div className="flex items-center gap-2 justify-center sm:justify-start">
               <span className="font-semibold text-sm text-stone-900">Vous débutez ? Essayez le plan Découverte</span>
-              <span className="text-[10px] bg-pms-surface text-stone-700 px-2 py-0.5 rounded-full font-semibold">100% Gratuit</span>
             </div>
             <p className="text-xs text-stone-500">
               3 exports par jour en qualité Standard, filigrane discret, studio complet, sans carte bancaire.
@@ -523,31 +494,25 @@ export default function PricingPage() {
         <div id="credits" className="max-w-6xl mx-auto mb-16 p-6 sm:p-10 rounded-3xl bg-white border border-pms-line shadow-md">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-100 text-amber-950 text-xs font-semibold mb-2 border border-amber-200">
-                <Coins className="w-3.5 h-3.5 text-amber-600" />
-                <span>Sans abonnement : payez à l&apos;usage</span>
-              </div>
               <h2 className="text-xl sm:text-2xl font-semibold text-stone-900">
                 Packs de crédits à la carte
               </h2>
               <p className="text-xs sm:text-sm text-stone-500 mt-1 max-w-2xl leading-relaxed">
-                Besoin ponctuel pour un pitch client ou une release ? Achetez des crédits valables à vie sans aucun abonnement récurrent.
+                Sans abonnement : un crédit = une image HD sans filigrane. Vos crédits n&apos;expirent jamais.
               </p>
             </div>
 
-            <div className="text-xs text-stone-600 bg-pms-surface px-3.5 py-2 rounded-xl border border-pms-line shrink-0">
-              <Lightbulb className="inline w-3.5 h-3.5 mr-1 -mt-0.5 text-pms-accent" aria-hidden />
-              <strong>Crédits à vie :</strong> vos crédits n&apos;expirent jamais.
-            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {CREDIT_PACKS.map((pack) => {
               const isTargetPack = pack.isTarget;
               const packPrice = getCreditPackPrice(pack, currency);
-              const priceDisplay = formatPrice(packPrice, currency);
-              const perCredit = packPrice / pack.credits;
-              const perCreditDisplay = `${formatPrice(perCredit, currency)} / crédit`;
+              const fcfaFirst = !useStripe;
+              const priceDisplay = fcfaFirst ? formatPrice(pack.priceFcfa, 'XOF') : formatPrice(packPrice, currency);
+              const perCreditDisplay = fcfaFirst
+                ? `${formatPrice(pack.pricePerCreditFcfa, 'XOF')} par crédit, soit ${formatPrice(packPrice, currency)} le pack`
+                : `${formatPrice(packPrice / pack.credits, currency)} par crédit`;
 
               return (
                 <div
@@ -558,24 +523,10 @@ export default function PricingPage() {
                       : 'bg-pms-surface border-pms-line hover:bg-white hover:border-pms-accent'
                   }`}
                 >
-                  {pack.badge && (
-                    <div className="mb-2">
-                      <span
-                        className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
-                          isTargetPack
-                            ? 'bg-pms-accent text-white'
-                            : 'bg-stone-200 text-stone-800'
-                        }`}
-                      >
-                        {pack.badge}
-                      </span>
-                    </div>
-                  )}
-
                   <div>
                     <h3 className="text-lg font-semibold text-stone-900">{pack.name}</h3>
                     <div className="mt-3 flex items-baseline gap-2">
-                      <span className="text-3xl font-semibold text-stone-950">
+                      <span className="text-3xl font-semibold text-stone-950 whitespace-nowrap">
                         {priceDisplay}
                       </span>
                       <span className="text-xs font-semibold text-pms-accent bg-pms-accent-tint px-2 py-0.5 rounded-md">
@@ -583,7 +534,7 @@ export default function PricingPage() {
                       </span>
                     </div>
                     <p className="text-xs font-semibold text-stone-500 mt-1">
-                      Soit seulement {perCreditDisplay}
+                      {perCreditDisplay}
                     </p>
                   </div>
 
@@ -632,7 +583,7 @@ export default function PricingPage() {
               </div>
               <div className="p-3 rounded-xl bg-pms-surface border border-pms-line text-center">
                 <div className="font-semibold text-stone-900">0 crédit</div>
-                <div className="text-[11px] text-stone-500 mt-0.5">Pitch IA (avec votre clé Gemini ou Claude)</div>
+                <div className="text-[11px] text-stone-500 mt-0.5">Pitch IA, avec votre clé IA : {AI_KEY_PROVIDERS}</div>
               </div>
             </div>
           </div>
@@ -643,7 +594,7 @@ export default function PricingPage() {
         {/* ══════════════════════════════════════════════════════════════════════ */}
         <div className="max-w-6xl mx-auto mb-16 rounded-3xl bg-white border border-pms-line p-6 sm:p-10 shadow-xs">
           <h2 className="text-xl sm:text-2xl font-semibold text-stone-900 mb-6 text-center">
-            Tableau Comparatif Détaillé des Fonctionnalités
+            Les forfaits en détail
           </h2>
 
           <div className="overflow-x-auto">
@@ -652,16 +603,16 @@ export default function PricingPage() {
                 <tr className="border-b border-pms-line">
                   <th className="py-3 px-4 font-semibold text-stone-500">Fonctionnalité</th>
                   <th className="py-3 px-4 font-semibold text-stone-600 text-center">
-                    Découverte ({formatPrice(0, currency)})
+                    Découverte (gratuit)
                   </th>
                   <th className="py-3 px-4 font-semibold text-stone-900 text-center">
-                    Solo ({formatPrice(getPlanMonthlyPrice(PLANS[1], currency), currency)})
+                    Solo ({tablePrice(PLANS[1])})
                   </th>
                   <th className="py-3 px-4 font-semibold text-pms-accent text-center bg-pms-accent-tint rounded-t-xl">
-                    Pro ({formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency)})
+                    Pro ({tablePrice(PLANS[2])})
                   </th>
                   <th className="py-3 px-4 font-semibold text-stone-900 text-center">
-                    Agence ({formatPrice(getPlanMonthlyPrice(PLANS[3], currency), currency)})
+                    Agence ({tablePrice(PLANS[3])})
                   </th>
                 </tr>
               </thead>
@@ -677,8 +628,8 @@ export default function PricingPage() {
                   <td className="py-3.5 px-4 font-medium text-stone-800">Filigrane</td>
                   <td className="py-3.5 px-4 text-center text-stone-500">Oui</td>
                   <td className="py-3.5 px-4 text-center text-stone-600">Discret</td>
-                  <td className="py-3.5 px-4 text-center font-semibold text-emerald-600 bg-pms-accent-tint">ZÉRO filigrane</td>
-                  <td className="py-3.5 px-4 text-center font-semibold text-emerald-600">ZÉRO filigrane</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-pms-accent bg-pms-accent-tint">Aucun</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-pms-accent">Aucun</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-stone-800">Qualité 4K</td>
@@ -702,7 +653,7 @@ export default function PricingPage() {
                   <td className="py-3.5 px-4 text-center font-semibold text-stone-900">Illimité</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-medium text-stone-800">Pitch IA (avec votre clé Gemini ou Claude)</td>
+                  <td className="py-3.5 px-4 font-medium text-stone-800">Pitch IA, avec votre propre clé IA</td>
                   <td className="py-3.5 px-4 text-center text-stone-700">Inclus</td>
                   <td className="py-3.5 px-4 text-center text-stone-700">Inclus</td>
                   <td className="py-3.5 px-4 text-center font-semibold text-pms-accent bg-pms-accent-tint">Inclus</td>
@@ -713,7 +664,7 @@ export default function PricingPage() {
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
                   <td className="py-3.5 px-4 text-center text-stone-300">—</td>
                   <td className="py-3.5 px-4 text-center text-stone-300 bg-pms-accent-tint">—</td>
-                  <td className="py-3.5 px-4 text-center font-semibold text-emerald-600">Inclus</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-pms-accent">Inclus</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-stone-800">Liens de partage pour vos clients</td>
@@ -727,7 +678,7 @@ export default function PricingPage() {
                   <td className="py-3.5 px-4 text-center text-stone-500">E-mail</td>
                   <td className="py-3.5 px-4 text-center text-stone-500">E-mail</td>
                   <td className="py-3.5 px-4 text-center font-semibold text-pms-accent bg-pms-accent-tint">E-mail</td>
-                  <td className="py-3.5 px-4 text-center font-semibold text-emerald-600">WhatsApp prioritaire</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-pms-accent">WhatsApp prioritaire</td>
                 </tr>
               </tbody>
             </table>
@@ -744,7 +695,7 @@ export default function PricingPage() {
             </div>
             <div>
               <h3 className="text-lg sm:text-xl font-semibold text-stone-900">
-                Garantie Qualité & Questions Fréquentes
+                Vos questions sur le paiement
               </h3>
               <p className="text-xs text-stone-500">
                 Tout ce que vous devez savoir sur le paiement, les devises et les exports.
@@ -800,68 +751,17 @@ export default function PricingPage() {
             <div className="space-y-1.5">
               <h4 className="font-semibold text-stone-900 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-pms-accent shrink-0" />
-                Puis-je résilier mon abonnement à tout moment ?
+                Faut-il résilier ?
               </h4>
               <p className="leading-relaxed text-stone-500">
-                Absolument. Aucun engagement de durée : vous pouvez suspendre ou résilier votre abonnement en un clic depuis votre espace compte. Vous conservez vos accès jusqu&apos;à la fin de la période facturée.
+                {CARD_PROVIDER === 'stripe'
+                  ? 'Par Mobile Money, il n’y a rien à résilier : un paiement couvre 1 mois ou 1 an, sans renouvellement automatique. Par carte, c’est un abonnement : vous l’arrêtez en un clic depuis votre compte et gardez vos accès jusqu’à la fin de la période payée.'
+                  : 'Non, il n’y a rien à résilier. Un paiement couvre 1 mois ou 1 an, sans renouvellement automatique : vous repayez seulement si vous voulez continuer.'}
               </p>
             </div>
           </div>
         </div>
 
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {/* MODAL ÉTAPE 5 : DOWNSELL EXIT-INTENT (PROPOSER PRO FACE À AGENCE) */}
-        {/* ══════════════════════════════════════════════════════════════════════ */}
-        {showExitDownsell && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-pms-line relative space-y-5 animate-scale-up text-center">
-              <button
-                type="button"
-                onClick={() => setShowExitDownsell(false)}
-                className="absolute top-4 right-4 p-2 text-stone-500 hover:text-stone-700 rounded-full hover:bg-pms-surface transition-colors"
-              >
-                <XIcon className="w-5 h-5" />
-              </button>
-
-              <div className="w-12 h-12 rounded-2xl bg-pms-accent-tint text-pms-accent mx-auto flex items-center justify-center font-semibold">
-                <Flame className="w-6 h-6 text-pms-accent fill-pms-accent" />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-xl font-semibold text-stone-900">
-                  Vous hésitez sur le plan Agence ?
-                </h3>
-                <p className="text-xs text-stone-600 leading-relaxed">
-                  Le forfait <strong>Pro</strong> vous offre déjà les exports HD/4K <strong>illimités</strong>, <strong>zéro filigrane</strong> et 10 vidéos par mois pour seulement <strong>{formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency)}/mois</strong> (ou {formatPrice(getPlanMonthlyEquivalent(PLANS[2], currency), currency)} en annuel) !
-                </p>
-              </div>
-
-              <div className="pt-2 flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    trackEvent('downsell_accepted', { offer: 'pro_exit_downsell' });
-                    setShowExitDownsell(false);
-                    const proPlan = PLANS.find((p) => p.id === 'pro');
-                    if (proPlan) handlePlanClick(proPlan);
-                  }}
-                  className="w-full py-3.5 px-4 rounded-xl bg-pms-accent hover:bg-pms-accent text-white font-semibold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
-                >
-                  <span>Passer au Pro ({formatPrice(getPlanMonthlyPrice(PLANS[2], currency), currency)}/mois)</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowExitDownsell(false)}
-                  className="w-full py-2 text-xs font-semibold text-stone-500 hover:text-stone-800 transition-colors"
-                >
-                  Non merci, je continue de regarder
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
       </main>
 

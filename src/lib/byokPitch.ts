@@ -4,7 +4,7 @@ import { buildPitchPrompt, parseJsonReply, type PitchInput, type PitchResult } f
 import { buildArtDirectorPrompt, type ArtDirectorCandidate, type ArtDirectorReply } from '@/lib/artDirectorPrompt';
 
 /**
- * Pitch IA avec la clé du client (Gemini ou Claude).
+ * Pitch IA avec la clé du client (Groq, Gemini, OpenAI ou Claude).
  * La clé reste dans le navigateur du client (stockage local) : elle n'est jamais envoyée aux serveurs
  * de PitchMySite. L'appel part directement du navigateur vers Google ou Anthropic, qui facturent le client.
  */
@@ -20,22 +20,22 @@ const PROVIDER_STORAGE = 'pms_ai_provider';
 
 export const PROVIDER_INFO: Record<AiProvider, { label: string; getKeyUrl: string; hint: string }> = {
   groq: {
-    label: 'Groq (gratuit et très rapide)',
+    label: 'Groq (gratuit avec limites, recommandé)',
     getKeyUrl: 'https://console.groq.com/keys',
-    hint: 'Réponse en 1 seconde. Clé 100% gratuite créée en 30 secondes sans carte bancaire.',
+    hint: 'Réponse en quelques secondes. Formule gratuite avec un nombre limité de demandes par jour.',
   },
   gemini: {
-    label: 'Google Gemini (Gratuit)',
+    label: 'Google Gemini (gratuit avec quota)',
     getKeyUrl: 'https://aistudio.google.com/apikey',
-    hint: 'Clé gratuite pour commencer, créée en 1 minute avec un compte Google.',
+    hint: 'Clé gratuite créée avec un compte Google. En gratuit, Google peut utiliser les contenus envoyés pour améliorer ses produits.',
   },
   openai: {
-    label: 'OpenAI (GPT-4o / GPT-4o-mini)',
+    label: 'OpenAI (payant à l’usage)',
     getKeyUrl: 'https://platform.openai.com/api-keys',
     hint: 'Clé de votre compte OpenAI Developer (payante à l’usage).',
   },
   claude: {
-    label: 'Claude (Anthropic)',
+    label: 'Claude (payant à l’usage)',
     getKeyUrl: 'https://platform.claude.com/settings/keys',
     hint: 'Clé de la console Claude (payante à l’usage). Un abonnement Claude.ai (chat) ne donne pas de clé.',
   },

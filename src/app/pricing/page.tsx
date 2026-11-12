@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PaymentResultPanel, type PaymentResult } from '@/components/PaymentResultPanel';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,6 +22,7 @@ import {
   CreditPack,
 } from '@/lib/pricing';
 import { trackEvent } from '@/lib/tracking';
+import { checkoutPath, parsePendingCheckout } from '@/lib/pendingCheckout';
 import { CARD_PROVIDER, cardPaymentsEnabled } from '@/lib/paymentConfig';
 import { MOBILE_MONEY_SHORT } from '@/lib/paymentMethods';
 import { PaymentMethodsNote, PaymentCountriesList } from '@/components/PaymentMethodsNote';
@@ -41,7 +42,7 @@ import {
 
 export default function PricingPage() {
   const router = useRouter();
-  const { user, profile } = useUser();
+  const { user, profile, isLoading: userLoading } = useUser();
   const { currency, mobileMoneyRegion } = useCurrency();
 
   // Mobile Money (SasPay, en FCFA) toujours disponible. La carte bancaire se branche avec
@@ -87,8 +88,9 @@ export default function PricingPage() {
   }, []);
 
   // Déclencheur clic sur un plan d'abonnement
-  const handlePlanClick = (plan: Plan) => {
-    trackEvent('plan_click', { plan_id: plan.id, billing: isAnnual ? 'annual' : 'monthly' });
+  const handlePlanClick = (plan: Plan, billingChoice?: 'monthly' | 'annual') => {
+    const billing = billingChoice || (isAnnual ? 'annual' : 'monthly');
+    trackEvent('plan_click', { plan_id: plan.id, billing });
 
     if (plan.id === 'free') {
       router.push('/');
@@ -96,7 +98,8 @@ export default function PricingPage() {
     }
 
     if (!user) {
-      router.push(`/signup?redirect=${encodeURIComponent('/pricing')}`);
+      // Le forfait choisi suit l'inscription : /pricing ouvre ensuite directement son paiement
+      router.push(`/signup?redirect=${encodeURIComponent(checkoutPath(plan.id, billing))}`);
       return;
     }
 
@@ -108,10 +111,10 @@ export default function PricingPage() {
     }
 
     if (useStripe) {
-      startStripeCheckout({ plan: plan.id, billing: isAnnual ? 'annual' : 'monthly' }, plan.id);
+      startStripeCheckout({ plan: plan.id, billing }, plan.id);
       return;
     }
-    startSaspayCheckout(plan.id, isAnnual ? 'annual' : 'monthly');
+    startSaspayCheckout(plan.id, billing);
   };
 
   // Carte par Stripe (euros ou dollars) : redirection vers la page de paiement Stripe
@@ -171,7 +174,7 @@ export default function PricingPage() {
     trackEvent('plan_click', { pack_id: pack.id, type: 'credits' });
 
     if (!user) {
-      router.push(`/signup?redirect=${encodeURIComponent('/pricing#credits')}`);
+      router.push(`/signup?redirect=${encodeURIComponent(checkoutPath(pack.id))}`);
       return;
     }
 
@@ -187,6 +190,26 @@ export default function PricingPage() {
     useStripe
       ? `${formatPrice(isAnnual ? getPlanAnnualPrice(plan, currency) : getPlanMonthlyPrice(plan, currency), currency)} ${isAnnual ? 'par an' : 'par mois'}`
       : `${formatPrice(isAnnual ? plan.annualFcfa : plan.monthlyFcfa, 'XOF')} ${isAnnual ? 'par an' : 'par mois'}`;
+
+  // Retour d'inscription ou de connexion avec un achat choisi (?checkout=…) : le paiement s'ouvre tout seul, une fois
+  const resumedCheckout = useRef(false);
+  useEffect(() => {
+    if (userLoading || !user || resumedCheckout.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const pending = parsePendingCheckout(params.get('checkout'), params.get('billing'));
+    if (!pending) return;
+    resumedCheckout.current = true;
+    window.history.replaceState(null, '', '/pricing');
+    const plan = PLANS.find((p) => p.id === pending.id);
+    if (plan) {
+      setIsAnnual(pending.billing === 'annual');
+      handlePlanClick(plan, pending.billing);
+      return;
+    }
+    const pack = CREDIT_PACKS.find((p) => p.id === pending.id);
+    if (pack) handleCreditBuy(pack);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, userLoading]);
 
   // Filtrer les plans payants pour la grille principale (Solo, Pro, Agence)
   const paidPlans = PLANS.filter((p) => p.id !== 'free');

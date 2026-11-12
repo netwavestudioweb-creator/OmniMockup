@@ -7,6 +7,8 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { createClient } from '@/lib/supabase/client';
 import { safeRedirectPath } from '@/lib/safeRedirect';
+import { pendingCheckoutFromPath } from '@/lib/pendingCheckout';
+import { CheckoutReminder } from '@/components/CheckoutReminder';
 import {
   Layers,
   Mail,
@@ -23,6 +25,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = safeRedirectPath(searchParams.get('redirect'));
+  const pendingCheckout = pendingCheckoutFromPath(redirectPath);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -99,6 +102,7 @@ function LoginForm() {
                 <p className="text-xs sm:text-sm text-stone-500 mt-1.5 leading-relaxed">
                   Connectez-vous pour retrouver votre studio et vos exports HD.
                 </p>
+                {pendingCheckout && <CheckoutReminder checkout={pendingCheckout} className="mt-5" />}
               </div>
 
               {errorMessage && (

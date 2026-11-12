@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePrices } from '@/lib/usePrices';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
+import { ReceiptsSection } from '@/components/ReceiptsSection';
 import { Footer } from '@/components/Footer';
 import { useUser } from '@/context/UserContext';
 import { trackEvent } from '@/lib/tracking';
@@ -219,6 +220,9 @@ function AccountContent() {
             </div>
           </div>
         )}
+
+        {/* Reçus des paiements Mobile Money (confirmés côté serveur) */}
+        {user && <ReceiptsSection justPaid={isSuccessCheckout && searchParams.get('provider') === 'saspay'} planEnd={planExpiresAt} />}
 
         {portalError && (
           <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2.5 animate-shake">

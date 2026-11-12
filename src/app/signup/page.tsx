@@ -9,6 +9,8 @@ import { createClient } from '@/lib/supabase/client';
 import { trackEvent } from '@/lib/tracking';
 import { getHeroVariant } from '@/lib/heroTest';
 import { safeRedirectPath } from '@/lib/safeRedirect';
+import { pendingCheckoutFromPath } from '@/lib/pendingCheckout';
+import { CheckoutReminder } from '@/components/CheckoutReminder';
 import {
   Layers,
   Mail,
@@ -26,6 +28,7 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = safeRedirectPath(searchParams.get('redirect'));
+  const pendingCheckout = pendingCheckoutFromPath(redirectPath);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -97,11 +100,11 @@ function SignupForm() {
             </div>
             <h2 className="text-2xl font-semibold text-stone-900">Vérifiez votre boîte mail</h2>
             <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-              Un lien de confirmation a été envoyé à <strong className="text-stone-900">{email}</strong>. Cliquez dessus pour activer votre compte et débloquer la génération de mockups 4K.
+              Un lien de confirmation a été envoyé à <strong className="text-stone-900">{email}</strong>. Cliquez dessus pour activer votre compte{pendingCheckout ? <> : vous arriverez directement au paiement ({pendingCheckout.label}).</> : '.'}
             </p>
             <div className="pt-4">
               <Link
-                href="/login"
+                href={`/login${redirectPath !== '/' ? `?redirect=${encodeURIComponent(redirectPath)}` : ''}`}
                 className="inline-flex items-center justify-center w-full py-3 px-4 rounded-xl bg-pms-accent hover:bg-pms-accent text-white text-xs sm:text-sm font-semibold transition-all shadow-md"
               >
                 Retour à la connexion
@@ -142,6 +145,7 @@ function SignupForm() {
                 <p className="text-xs sm:text-sm text-stone-500 mt-1.5 leading-relaxed">
                   Créez votre compte gratuit et testez le studio : 3 exports par jour, sans carte bancaire.
                 </p>
+                {pendingCheckout && <CheckoutReminder checkout={pendingCheckout} className="mt-5" />}
               </div>
 
               {errorMessage && (

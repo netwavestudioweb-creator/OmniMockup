@@ -23,6 +23,11 @@ export interface SaspayPayment {
   currency: string;
   status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED';
   flow_direction: string;
+  /** Montant réellement débité au client, frais compris */
+  debited_amount?: string;
+  client_fee?: string;
+  reference?: string;
+  network_code?: string;
 }
 
 function getSecretKey(): string {

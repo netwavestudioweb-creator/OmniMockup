@@ -17,10 +17,13 @@ import {
   Wallet,
   UserCheck,
   ListChecks,
+  Filter,
 } from 'lucide-react';
 import { TEMPLATES_CATALOG } from '@/lib/shotsPresets';
 import { Card, Kpi, PLAN_LABEL, date, fmt, money } from './ui';
 import { AttemptsTab, CustomerSheet, CustomersTab, HeroTestCard, SalesTab } from './SalesTabs';
+import { PaymentAlerts } from './PaymentAlerts';
+import { FunnelTab } from './FunnelTab';
 
 /* ───────────── Types des réponses ───────────── */
 type Stats = {
@@ -163,9 +166,10 @@ const DayChart: React.FC<{ series: Stats['series']; field: 'signups' | 'exports'
 };
 
 /* ───────────── Page ───────────── */
-type Tab = 'sales' | 'customers' | 'attempts' | 'dashboard' | 'users' | 'payments' | 'analytics';
+type Tab = 'sales' | 'funnel' | 'customers' | 'attempts' | 'dashboard' | 'users' | 'payments' | 'analytics';
 const TABS: { id: Tab; label: string; short: string; Icon: React.ElementType }[] = [
   { id: 'sales', label: 'Ventes', short: 'Ventes', Icon: Wallet },
+  { id: 'funnel', label: 'Abandons', short: 'Abandons', Icon: Filter },
   { id: 'customers', label: 'Clients payants', short: 'Clients', Icon: UserCheck },
   { id: 'attempts', label: 'Tentatives de paiement', short: 'Tentatives', Icon: ListChecks },
   { id: 'dashboard', label: 'Tableau de bord', short: 'Résumé', Icon: LayoutDashboard },
@@ -267,6 +271,9 @@ export default function AdminPage() {
           )}
         </header>
 
+        {/* Chaque paiement des 7 derniers jours, sur tous les onglets */}
+        <PaymentAlerts />
+
         {status === 'error' && (tab === 'dashboard' || tab === 'analytics') && <p className="text-sm text-rose-300">Les statistiques n’ont pas pu être chargées. Réessayez avec « Actualiser ».</p>}
         {status === 'loading' && !stats && (tab === 'dashboard' || tab === 'analytics') && (
           <p className="text-sm text-zinc-400 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Chargement…</p>
@@ -275,6 +282,7 @@ export default function AdminPage() {
         {tab === 'sales' && <SalesTab onOpenCustomer={setSheetUser} />}
         {tab === 'customers' && <CustomersTab onOpenCustomer={setSheetUser} />}
         {tab === 'attempts' && <AttemptsTab onOpenCustomer={setSheetUser} />}
+        {tab === 'funnel' && <FunnelTab />}
         {tab === 'dashboard' && stats && <Dashboard s={stats} />}
         {tab === 'analytics' && stats && <Analytics s={stats} />}
         {tab === 'users' && <UsersTab onOpenCustomer={setSheetUser} />}

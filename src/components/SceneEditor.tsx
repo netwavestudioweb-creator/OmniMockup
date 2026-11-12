@@ -4032,11 +4032,15 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     e.preventDefault();
                     setUpsellModal({ open: true, mode: 'feature_locked' });
                   }}
-                  className="absolute bottom-3 right-3 z-40 px-2.5 py-1 rounded-lg bg-black/65 hover:bg-pms-accent-hover/80 backdrop-blur-md text-white/90 hover:text-white text-[10px] font-semibold flex items-center gap-1.5 shadow-sm border border-white/20 hover:border-pms-accent transition-all select-none group"
+                  className="absolute bottom-4 right-4 z-40 px-4 py-2.5 rounded-xl bg-black/75 hover:bg-pms-accent-hover/80 backdrop-blur-md text-white hover:text-white flex items-center gap-2.5 shadow-sm border border-white/20 hover:border-pms-accent transition-all select-none group"
                   title="Créé avec PitchMySite. Débloquez le plan Pro pour supprimer le filigrane."
                 >
-                  <Layers className="w-3 h-3 text-pms-accent-soft group-hover:scale-110 transition-transform" />
-                  <span>Réalisé avec PitchMySite</span>
+                  {/* Assez grand pour rester lisible quand l'image est vue en entier sur un téléphone (statut WhatsApp) */}
+                  <Layers className="w-6 h-6 text-pms-accent-soft group-hover:scale-110 transition-transform" />
+                  <span className="flex flex-col leading-tight">
+                    <span className="text-[18px] font-semibold">Réalisé avec PitchMySite</span>
+                    <span className="text-[17px] font-bold text-white">pitchmysite.com</span>
+                  </span>
                   <span data-export-hide className="text-[9px] bg-pms-accent/60 px-1 py-0.5 rounded text-pms-accent-soft group-hover:bg-pms-accent font-sans">
                     Retirer
                   </span>

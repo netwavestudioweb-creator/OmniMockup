@@ -478,6 +478,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   }, [activeTab, activeMainTab]);
   const [showFrameSizePopover, setShowFrameSizePopover] = useState<boolean>(false);
   const [currentFramePreset, setCurrentFramePreset] = useState<FramePresetOption>(FRAME_PRESETS[0]); // 16:9 1920 × 1080
+  const portraitFrame = currentFramePreset.height > currentFramePreset.width;
 
   // ══ MODE « CAPTURES POUR LES STORES » ══
   // Un visuel par écran de l'appli : l'écran dans un iPhone, une accroche au-dessus, un fond uni,
@@ -4032,15 +4033,22 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
                     e.preventDefault();
                     setUpsellModal({ open: true, mode: 'feature_locked' });
                   }}
-                  className="absolute bottom-4 right-4 z-40 px-4 py-2.5 rounded-xl bg-black/75 hover:bg-pms-accent-hover/80 backdrop-blur-md text-white hover:text-white flex items-center gap-2.5 shadow-sm border border-white/20 hover:border-pms-accent transition-all select-none group"
+                  className={`absolute z-40 bg-black/75 hover:bg-pms-accent-hover/80 backdrop-blur-md text-white hover:text-white flex items-center shadow-sm border border-white/20 hover:border-pms-accent transition-all select-none group ${
+                    portraitFrame ? 'bottom-4 right-4 px-4 py-2.5 rounded-xl gap-2.5' : 'bottom-2 right-2 px-2.5 py-1 rounded-lg gap-1.5'
+                  }`}
                   title="Créé avec PitchMySite. Débloquez le plan Pro pour supprimer le filigrane."
                 >
-                  {/* Assez grand pour rester lisible quand l'image est vue en entier sur un téléphone (statut WhatsApp) */}
-                  <Layers className="w-6 h-6 text-pms-accent-soft group-hover:scale-110 transition-transform" />
-                  <span className="flex flex-col leading-tight">
-                    <span className="text-[18px] font-semibold">Réalisé avec PitchMySite</span>
-                    <span className="text-[17px] font-bold text-white">pitchmysite.com</span>
-                  </span>
+                  {/* Format vertical (statut WhatsApp, story) : grand, pour rester lisible sur un téléphone.
+                      Formats larges : une seule ligne discrète dans le coin, pour ne pas couvrir la maquette. */}
+                  <Layers className={`${portraitFrame ? 'w-6 h-6' : 'w-3.5 h-3.5'} text-pms-accent-soft group-hover:scale-110 transition-transform`} />
+                  {portraitFrame ? (
+                    <span className="flex flex-col leading-tight">
+                      <span className="text-[18px] font-semibold">Réalisé avec PitchMySite</span>
+                      <span className="text-[17px] font-bold text-white">pitchmysite.com</span>
+                    </span>
+                  ) : (
+                    <span className="text-[13px] font-semibold whitespace-nowrap">Réalisé avec PitchMySite · pitchmysite.com</span>
+                  )}
                   <span data-export-hide className="text-[9px] bg-pms-accent/60 px-1 py-0.5 rounded text-pms-accent-soft group-hover:bg-pms-accent font-sans">
                     Retirer
                   </span>

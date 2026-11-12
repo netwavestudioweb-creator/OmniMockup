@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { UrlInputForm } from '@/components/UrlInputForm';
 import { Journey } from '@/components/home/Journey';
+import { CaptureWait } from '@/components/home/CaptureWait';
 import dynamic from 'next/dynamic';
 
 // Le studio (plus de 5 000 lignes) n'est chargé qu'à son ouverture : accueil plus rapide.
@@ -34,7 +35,7 @@ import {
   getLoyaltyFloorFcfa,
   CREDIT_PACKS,
 } from '@/lib/pricing';
-import { Check, Loader2 } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { PaymentMethodsNote, PaymentCountriesList } from '@/components/PaymentMethodsNote';
 import { HeroShowcase, HeroBackdrop, BRANDS_NOTICE } from '@/components/home/HomeStage';
 import { ProblemSection, UsagesSection, ZoneSection, StudioSection, TestimonialsSection, FaqSection, SiteFooter } from '@/components/home/Sections';
@@ -73,6 +74,8 @@ export default function HomePage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loadingSeconds, setLoadingSeconds] = useState(0);
   const captureAbortRef = useRef<AbortController | null>(null);
+  const lastCaptureRef = useRef<{ url: string; settings?: import('@/types/analyzer').CaptureSettings } | null>(null);
+  const [openUploadSignal, setOpenUploadSignal] = useState(0);
   const [isAnnualPricing, setIsAnnualPricing] = useState<boolean>(false);
   // Mode « Captures pour les stores » : écrans d'une appli déposés depuis l'accueil
   const [storeShots, setStoreShots] = useState<string[] | null>(null);
@@ -119,6 +122,7 @@ export default function HomePage() {
 
   const handleAnalyzeUrl = async (urlToCapture: string, settings?: import('@/types/analyzer').CaptureSettings) => {
     trackEvent('hero_capture', { hero: getHeroVariant() });
+    lastCaptureRef.current = { url: urlToCapture, settings };
     setIsLoading(true);
     setErrorMessage(null);
     setLoadingSeconds(0);
@@ -249,7 +253,14 @@ export default function HomePage() {
                 </div>
               </div>
             )}
-            <UrlInputForm onAnalyze={handleAnalyzeUrl} onUploadImage={handleUploadImage} isLoading={isLoading} errorMessage={errorMessage} />
+            <UrlInputForm
+              onAnalyze={handleAnalyzeUrl}
+              onUploadImage={handleUploadImage}
+              isLoading={isLoading}
+              errorMessage={errorMessage}
+              onRetry={lastCaptureRef.current ? () => lastCaptureRef.current && handleAnalyzeUrl(lastCaptureRef.current.url, lastCaptureRef.current.settings) : undefined}
+              openUploadSignal={openUploadSignal}
+            />
           </div>
         </div>
 
@@ -447,27 +458,14 @@ export default function HomePage() {
 
       {/* Fenêtre de chargement */}
       {isLoading && (
-        <div className="fixed inset-0 bg-pms-ink/60 z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-pms-paper rounded-lg p-7 sm:p-9 max-w-sm w-full text-center space-y-4" role="status">
-            <Loader2 className="w-8 h-8 mx-auto text-pms-accent animate-spin" />
-            <h3 className="text-[22px] font-semibold">Capture du site en cours</h3>
-            <p className="text-[15px] text-pms-muted" aria-live="polite">
-              {loadingSeconds < 8
-                ? 'Ouverture de la page et prise de la photo.'
-                : loadingSeconds < 20
-                  ? 'Les pages longues ou chargées d’images prennent un peu plus de temps.'
-                  : 'Ce site est lent à répondre, encore quelques secondes.'}
-            </p>
-            <p className="text-[15px] text-pms-muted tabular-nums">{loadingSeconds} s</p>
-            <button
-              type="button"
-              onClick={cancelCapture}
-              className="w-full sm:w-auto min-h-[44px] px-5 rounded-md bg-pms-surface hover:bg-pms-line text-[15px] font-semibold transition-colors"
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
+        <CaptureWait
+          seconds={loadingSeconds}
+          onCancel={cancelCapture}
+          onUpload={() => {
+            cancelCapture();
+            setOpenUploadSignal((n) => n + 1);
+          }}
+        />
       )}
     </div>
   );

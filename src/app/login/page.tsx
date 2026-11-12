@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
@@ -34,6 +34,29 @@ function LoginForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const supabase = createClient();
+  const justConfirmed = searchParams.get('confirmed') === '1';
+  const linkInvalid = searchParams.get('error') === 'link_invalid';
+  const [finishingLink, setFinishingLink] = useState(false);
+
+  // Lien de confirmation qui transmet la session après le « # » de l'adresse : on l'ouvre ici, puis on reprend le parcours
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const access_token = hash.get('access_token');
+    const refresh_token = hash.get('refresh_token');
+    if (!access_token || !refresh_token) return;
+    setFinishingLink(true);
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    supabase.auth.setSession({ access_token, refresh_token }).then(({ error }: { error: unknown }) => {
+      if (error) {
+        setFinishingLink(false);
+        setErrorMessage('Votre adresse est confirmée, mais la connexion automatique a échoué. Connectez-vous ci-dessous.');
+        return;
+      }
+      router.replace(redirectPath);
+      router.refresh();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,6 +128,24 @@ function LoginForm() {
                 {pendingCheckout && <CheckoutReminder checkout={pendingCheckout} className="mt-5" />}
               </div>
 
+              {finishingLink && (
+                <div className="mb-6 p-4 rounded-2xl bg-pms-accent-tint text-pms-ink text-sm flex items-center gap-2.5">
+                  <Loader2 className="w-4 h-4 animate-spin text-pms-accent shrink-0" />
+                  <span>Adresse confirmée. Connexion en cours…</span>
+                </div>
+              )}
+              {!finishingLink && justConfirmed && !errorMessage && (
+                <div className="mb-6 p-4 rounded-2xl bg-pms-accent-tint text-pms-ink text-sm flex items-start gap-2.5">
+                  <Check className="w-4 h-4 text-pms-accent shrink-0 mt-0.5" />
+                  <span>Votre adresse e-mail est confirmée. Connectez-vous pour continuer{pendingCheckout ? ' vers le paiement' : ''}.</span>
+                </div>
+              )}
+              {linkInvalid && !errorMessage && (
+                <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-pms-ink text-sm flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-red-700 shrink-0 mt-0.5" />
+                  <span>Ce lien a expiré ou a déjà servi. Connectez-vous avec votre e-mail et votre mot de passe : si l&apos;adresse n&apos;est pas encore confirmée, un nouveau lien vous sera demandé.</span>
+                </div>
+              )}
               {errorMessage && (
                 <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5 animate-shake">
                   <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />

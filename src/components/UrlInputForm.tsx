@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Globe, ArrowRight, Loader2, X, AlertCircle, Upload, Image as ImageIcon,
   Lightbulb,
 } from 'lucide-react';
@@ -12,6 +12,10 @@ interface UrlInputFormProps {
   isLoading: boolean;
   errorMessage?: string | null;
   initialUrl?: string;
+  /** Relance la dernière capture (bouton « Réessayer » du message d'échec) */
+  onRetry?: () => void;
+  /** Change de valeur pour ouvrir l'import d'une capture d'écran (depuis l'écran d'attente) */
+  openUploadSignal?: number;
 }
 
 const PRESET_URLS = [
@@ -27,11 +31,22 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
   isLoading,
   errorMessage,
   initialUrl = '',
+  onRetry,
+  openUploadSignal = 0,
 }) => {
   const [url, setUrl] = useState(initialUrl);
   const [activeTab, setActiveTab] = useState<'url' | 'upload'>('url');
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const openUpload = () => {
+    setActiveTab('upload');
+    // Le champ de fichier n'existe qu'une fois l'onglet affiché
+    setTimeout(() => fileInputRef.current?.click(), 50);
+  };
+  useEffect(() => {
+    if (openUploadSignal > 0) openUpload();
+  }, [openUploadSignal]);
 
   // Réglages de capture fixes sur l'accueil (page entière, bannières masquées, écran d'ordinateur 1440 × 900) :
   // les réglages fins (appareil, format, pages du site) se font ensuite dans le studio.
@@ -229,19 +244,26 @@ export const UrlInputForm: React.FC<UrlInputFormProps> = ({
             <p className="mt-1 text-[14px] leading-relaxed text-pms-muted">
               C&apos;est souvent un site protégé, lent ou en local. Faites une capture d&apos;écran du site et déposez-la : la mise en scène est la même.
             </p>
-            {activeTab === 'url' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('upload');
-                  // Le champ de fichier n'existe qu'une fois l'onglet affiché
-                  setTimeout(() => fileInputRef.current?.click(), 50);
-                }}
-                className="mt-3 min-h-[44px] px-4 rounded-md bg-pms-ink hover:bg-pms-accent text-white text-[15px] font-semibold transition-colors"
-              >
-                Importer une capture d&apos;écran
-              </button>
-            )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {onRetry && activeTab === 'url' && (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="min-h-[44px] px-4 rounded-md bg-pms-accent hover:bg-pms-accent-hover text-white text-[15px] font-semibold transition-colors"
+                >
+                  Réessayer
+                </button>
+              )}
+              {activeTab === 'url' && (
+                <button
+                  type="button"
+                  onClick={openUpload}
+                  className="min-h-[44px] px-4 rounded-md bg-pms-ink hover:bg-pms-accent text-white text-[15px] font-semibold transition-colors"
+                >
+                  Importer une capture d&apos;écran
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -747,7 +747,7 @@ export default function PricingPage() {
                 Dans quelle devise sont affichés les prix ?
               </h4>
               <p className="leading-relaxed text-stone-500">
-                En euros ou en dollars selon votre région, avec le montant en FCFA payé par Mobile Money.
+                En FCFA d&apos;abord : c&apos;est le montant payé par Mobile Money (plus les frais de l&apos;opérateur, affichés avant de valider). L&apos;équivalent en euros, ou en dollars hors d&apos;Europe et d&apos;Afrique, est indiqué en petit dessous.
               </p>
             </div>
 

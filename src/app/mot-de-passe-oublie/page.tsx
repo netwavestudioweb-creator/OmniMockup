@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -13,6 +13,12 @@ export default function ForgotPasswordPage() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
+  // Retour d'un lien expiré ou déjà utilisé (/auth/confirm)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('error') === 'link_invalid') {
+      setError('Ce lien a expiré ou a déjà servi. Demandez-en un nouveau ci-dessous.');
+    }
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

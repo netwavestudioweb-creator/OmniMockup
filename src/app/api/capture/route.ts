@@ -109,6 +109,8 @@ export async function POST(req: NextRequest) {
   const colorScheme = body?.colorScheme === 'dark' ? 'dark' : 'light';
   // « fresh » : le client demande une capture neuve (site modifié depuis), sans passer par la mémoire
   const fresh = body?.fresh === true;
+  // Page entière chargée en arrière-plan après l'ouverture du studio : comptée à part dans les statistiques
+  const background = body?.background === true;
 
   const results: CaptureItemResult[] = [];
 
@@ -130,7 +132,7 @@ export async function POST(req: NextRequest) {
       const key = captureKey(target.url, { fullPage, hideBanners, viewport: viewport || null, mobile, delayMs, colorScheme });
       const stored = fresh ? null : await readStoredCapture(key);
       if (stored) {
-        await logServerEvent('capture_result', { ok: true, engine: 'cache', ms: Date.now() - itemStartTime, mobile });
+        await logServerEvent('capture_result', { ok: true, engine: 'cache', ms: Date.now() - itemStartTime, mobile, background });
         results.push({
           url: target.url,
           title: target.label || stored.pageTitle || target.url,
@@ -145,7 +147,7 @@ export async function POST(req: NextRequest) {
         continue;
       }
       const captureRes = await captureWebPage(target.url, { fullPage, hideBanners, viewport, mobile, delayMs, colorScheme });
-      await logServerEvent('capture_result', { ok: true, engine: captureRes.source, ms: Date.now() - itemStartTime, mobile });
+      await logServerEvent('capture_result', { ok: true, engine: captureRes.source, ms: Date.now() - itemStartTime, mobile, background });
       await saveStoredCapture(key, {
         screenshotBase64: captureRes.screenshotBase64,
         pageTitle: captureRes.pageTitle,
@@ -165,7 +167,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (err: unknown) {
       const errorObj = err as { message?: string };
-      await logServerEvent('capture_result', { ok: false, reason: failureReason(errorObj?.message || ''), ms: Date.now() - itemStartTime, mobile });
+      await logServerEvent('capture_result', { ok: false, reason: failureReason(errorObj?.message || ''), ms: Date.now() - itemStartTime, mobile, background });
       results.push({
         url: target.url,
         title: target.label || target.url,

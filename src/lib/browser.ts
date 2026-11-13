@@ -46,7 +46,19 @@ export interface CaptureOptions {
   delayMs?: number;
   /** Version claire ou sombre du site (préférence système simulée) */
   colorScheme?: 'light' | 'dark';
+  /** Usage interne : notre moteur seulement (le service en ligne est déjà en cours en parallèle) */
+  skipCloud?: boolean;
 }
+
+/**
+ * Microlink gratuit a une limite par jour, partagée par tous les visiteurs (même adresse de serveur).
+ * Une fois atteinte, on ne l'attend plus jusqu'à sa remise à zéro (mémoire de l'instance du serveur).
+ */
+let microlinkPausedUntil = 0;
+const microlinkAvailable = () => Date.now() >= microlinkPausedUntil;
+
+/** Délai après lequel notre moteur démarre en parallèle si le service en ligne n'a pas encore répondu */
+const OWN_ENGINE_HEDGE_MS = 4000;
 
 const DESKTOP_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -159,15 +171,32 @@ export async function captureWebPage(
   // Sur Vercel, pour la version ordinateur, le service de capture en ligne est le plus rapide (5 à 7 s
   // contre 15 à 20 s pour notre navigateur sur le serveur) : on l'essaie d'abord, et notre moteur
   // prend le relais s'il échoue. Pour la version téléphone, notre moteur est plus fiable : il passe en premier.
-  let cloudTried = false;
-  if (process.env.VERCEL && !mobile) {
+  // S'il n'a pas répondu en 4 s, notre moteur démarre en parallèle : le premier qui réussit gagne
+  // (avant : on attendait jusqu'à 15 s le service en ligne avant de lancer notre moteur).
+  let cloudTried = options.skipCloud === true;
+  if (process.env.VERCEL && !mobile && !cloudTried) {
     cloudTried = true;
-    try {
-      return await captureWebPageCloudFallback(targetUrl, options, 15000);
-    } catch (cloudErr) {
-      const message = (cloudErr as Error)?.message || String(cloudErr);
-      if (cloudErr instanceof SiteUnreachableError) throw cloudErr;
-      console.warn('[Capture Engine] Service en ligne indisponible, bascule sur notre moteur :', message);
+    if (!microlinkAvailable()) {
+      console.warn('[Capture Engine] Limite du jour du service en ligne atteinte : notre moteur directement');
+    } else {
+      const cloud = captureWebPageCloudFallback(targetUrl, options, 15000);
+      cloud.catch(() => {}); // évite une erreur non suivie si notre moteur gagne
+      const early = await Promise.race([
+        cloud.then(
+          (result) => ({ result }),
+          (error: unknown) => ({ error })
+        ),
+        new Promise<null>((r) => setTimeout(() => r(null), OWN_ENGINE_HEDGE_MS)),
+      ]);
+      if (early && 'result' in early) return early.result;
+      if (early && 'error' in early) {
+        if (early.error instanceof SiteUnreachableError) throw early.error;
+        console.warn('[Capture Engine] Service en ligne indisponible, bascule sur notre moteur :', (early.error as Error)?.message);
+      } else {
+        const own = captureWebPage(targetUrl, { ...options, skipCloud: true });
+        own.catch(() => {});
+        return await firstSuccess([cloud, own]);
+      }
     }
   }
 
@@ -390,6 +419,21 @@ export async function captureWebPage(
   return await captureWebPageCloudFallback(targetUrl, options, process.env.VERCEL ? 25000 : 45000);
 }
 
+/** Le premier résultat réussi ; si tous échouent, l'erreur la plus utile (site introuvable, réseau interne, sinon la dernière) */
+function firstSuccess<T>(promises: Promise<T>[]): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const errors: unknown[] = [];
+    promises.forEach((p) =>
+      p.then(resolve, (err) => {
+        errors.push(err);
+        if (errors.length === promises.length) {
+          reject(errors.find((e) => e instanceof SiteUnreachableError || e instanceof InternalAccessError) || errors[errors.length - 1]);
+        }
+      })
+    );
+  });
+}
+
 /** La page a tenté d'atteindre le réseau interne : capture refusée, aucun autre moteur n'est essayé */
 class InternalAccessError extends Error {
   constructor() {
@@ -472,6 +516,13 @@ async function captureWebPageCloudFallback(
       headers: { Accept: 'application/json' },
       signal,
     });
+
+    // Limite du jour atteinte : on ne l'attendra plus jusqu'à sa remise à zéro
+    if (response.status === 429) {
+      const reset = Number(response.headers.get('x-rate-limit-reset'));
+      microlinkPausedUntil = Number.isFinite(reset) && reset > 0 ? reset * 1000 : Date.now() + 3600 * 1000;
+      throw new Error('Service en ligne : limite du jour atteinte');
+    }
 
     if (response.ok) {
       const contentType = response.headers.get('content-type') || '';

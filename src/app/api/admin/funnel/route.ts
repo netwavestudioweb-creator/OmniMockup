@@ -50,11 +50,11 @@ export async function GET() {
 
   for (const e of events.data || []) {
     const r = row(e.created_at as string);
-    const p = (e.properties || {}) as { ok?: boolean; mobile?: boolean; ms?: number };
+    const p = (e.properties || {}) as { ok?: boolean; mobile?: boolean; ms?: number; background?: boolean };
     if (e.event_name === 'home_view') r.visite++;
     else if (e.event_name === 'hero_capture') r.capture_lancee++;
     else if (e.event_name === 'plan_click') r.clic_forfait++;
-    else if (e.event_name === 'capture_result' && p.ok && p.mobile !== true) {
+    else if (e.event_name === 'capture_result' && p.ok && p.mobile !== true && p.background !== true) {
       // Capture de la page d'ordinateur (celle lancée depuis l'accueil) ; la vue téléphone est une capture en plus
       r.capture_reussie++;
       if (typeof p.ms === 'number') r.durees.push(p.ms);

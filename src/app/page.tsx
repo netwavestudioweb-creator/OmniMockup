@@ -134,25 +134,34 @@ export default function HomePage() {
     const startedAt = Date.now();
     const ticker = setInterval(() => setLoadingSeconds(Math.floor((Date.now() - startedAt) / 1000)), 1000);
 
+    const request = {
+      targets: [urlToCapture],
+      hideBanners: settings?.hideBanners ?? true,
+      viewport: settings ? { width: settings.viewportWidth, height: settings.viewportHeight } : { width: 1440, height: 900 },
+      delayMs: (settings?.delaySeconds ?? 0) * 1000,
+      colorScheme: settings?.darkMode ? 'dark' : 'light',
+    };
+    const wantsFullPage = settings?.fullPage ?? true;
+
     try {
-      const item = await captureOne(
-        {
-          targets: [urlToCapture],
-          fullPage: settings?.fullPage ?? true,
-          hideBanners: settings?.hideBanners ?? true,
-          viewport: settings
-            ? { width: settings.viewportWidth, height: settings.viewportHeight }
-            : { width: 1440, height: 900 },
-          delayMs: (settings?.delaySeconds ?? 0) * 1000,
-          colorScheme: settings?.darkMode ? 'dark' : 'light',
-        },
-        controller.signal
-      );
+      // En deux temps : le haut du site d'abord (bien plus rapide), le studio s'ouvre aussitôt ;
+      // la page entière arrive ensuite en arrière-plan et remplace l'image (choix de la partie du site).
+      const item = await captureOne({ ...request, fullPage: false }, controller.signal);
 
       if (item.success && item.screenshotBase64) {
         setResumedDraft(null);
         setActiveProjectId(newProjectId());
         setActiveCaptureItem(item);
+        if (wantsFullPage) {
+          captureOne({ ...request, fullPage: true, background: true })
+            .then((full) => {
+              if (!full.success || !full.screenshotBase64) return;
+              setActiveCaptureItem((prev) => (prev && prev.url === full.url && prev.capturedAt === item.capturedAt ? { ...prev, ...full, capturedAt: prev.capturedAt } : prev));
+            })
+            .catch(() => {
+              // la page entière n'a pas pu être chargée : le haut du site reste affiché
+            });
+        }
       } else {
         setErrorMessage(item.error || 'Impossible de réaliser la capture de cette page web.');
       }

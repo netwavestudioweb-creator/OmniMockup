@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
               <h1 className="text-xl font-semibold">Vérifiez votre boîte mail</h1>
               <p className="text-sm text-stone-600 leading-relaxed">
                 Si un compte existe avec <strong>{email.trim()}</strong>, vous allez recevoir un lien pour choisir un nouveau mot de passe.
-                Ouvrez-le <strong>sur cet appareil</strong>, dans ce navigateur. Pensez à regarder dans les spams.
+                Le lien est valable 1 heure, et vous pouvez l&apos;ouvrir sur n&apos;importe quel appareil. Pensez à regarder dans les spams.
               </p>
               <Link href="/login" className="inline-flex items-center gap-1.5 text-sm font-semibold text-pms-accent hover:text-pms-accent">
                 <ArrowLeft className="w-4 h-4" /> Retour à la connexion

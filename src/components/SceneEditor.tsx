@@ -561,6 +561,25 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
     cost?: number;
     balance?: number;
     credits_used?: number;
+    /** Jeton pour annuler l'export si l'image n'a pas pu être créée (voir /api/exports/refund) */
+    refund_token?: string | null;
+  };
+  // Dernier export autorisé : s'il échoue ensuite dans le navigateur, il n'est plus compté
+  const lastExportTokenRef = useRef<string | null>(null);
+  const refundLastExport = () => {
+    const token = lastExportTokenRef.current;
+    lastExportTokenRef.current = null;
+    if (!token) return;
+    fetch('/api/exports/refund', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.ok && d.credits) refreshProfile();
+      })
+      .catch(() => {});
   };
   const [creditOffer, setCreditOffer] = useState<{
     kind: 'image' | 'pack' | 'video';
@@ -570,6 +589,13 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
   } | null>(null);
 
   const authorizeExport = async (kind: 'image' | 'pack' | 'video', quality: ExportQuality): Promise<ExportAuth | null> => {
+    lastExportTokenRef.current = null;
+    const result = await authorizeExportOnce(kind, quality);
+    lastExportTokenRef.current = result?.refund_token || null;
+    return result;
+  };
+
+  const authorizeExportOnce = async (kind: 'image' | 'pack' | 'video', quality: ExportQuality): Promise<ExportAuth | null> => {
     const call = async (useCredits: boolean): Promise<ExportAuth | 'busy' | null> => {
       try {
         const res = await fetch('/api/exports/authorize', {
@@ -1439,6 +1465,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
 
     } catch (err) {
       console.error('Erreur export image:', err);
+      refundLastExport();
       showExportError("L'image n'a pas pu être créée. Réessayez ; si le problème continue, choisissez une qualité plus basse.");
     } finally {
       setIsExporting(false);
@@ -1489,6 +1516,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       setShowExportMenu(false);
     } catch (err) {
       console.error('Erreur export WhatsApp:', err);
+      refundLastExport();
       showExportError("Le statut WhatsApp n'a pas pu être créé. Réessayez.");
     } finally {
       selectFramePreset(originalPreset);
@@ -1511,7 +1539,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       await navigator.share({ files: [blobToFile(blob, `${fileBaseName}-${width}x${height}.${format}`)], title: 'Mockup' });
       setShowExportMenu(false);
     } catch (err) {
-      // Partage annulé par l'utilisateur : rien à signaler
+      // Image non partagée (annulé ou impossible) : l'export n'est pas compté
+      refundLastExport();
       if ((err as Error)?.name !== 'AbortError') console.error('Erreur partage:', err);
     } finally {
       setIsExporting(false);
@@ -1540,6 +1569,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       setTimeout(() => setCopySuccess(false), 2500);
     } catch (err) {
       console.error('Erreur copie presse-papier:', err);
+      refundLastExport();
       showExportError('Ce navigateur ne permet pas de copier une image. Utilisez « Télécharger l’image ».');
     } finally {
       setIsCopying(false);
@@ -1878,6 +1908,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       );
     } catch (err) {
       console.error('Erreur export vidéo:', err);
+      refundLastExport();
       showExportError('La vidéo n’a pas pu être créée. Il faut un navigateur récent (Chrome, Edge, Firefox ou Safari), et garder cet onglet ouvert pendant la création.');
     } finally {
       setIsExportingVideo(false);
@@ -2254,6 +2285,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       showExportDone(`${packPresets.length} fichiers téléchargés`);
     } catch (err) {
       console.error('Erreur export pack:', err);
+      refundLastExport();
       showExportError('Le pack n’a pas pu être téléchargé en entier. Réessayez.');
     } finally {
       selectFramePreset(originalPreset);
@@ -2299,6 +2331,7 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       showExportDone(`${total} fichiers téléchargés`);
     } catch (err) {
       console.error('Erreur export des écrans :', err);
+      refundLastExport();
       showExportError('Les captures n’ont pas pu être toutes téléchargées. Réessayez.');
     } finally {
       selectFramePreset(originalPreset);
@@ -2560,7 +2593,8 @@ export const SceneEditor: React.FC<SceneEditorProps> = ({
       ? portraitScene ? 46 : 25
       : config.mockupType === 'ipad'
       ? portraitScene ? 82 : 56
-      : 82;
+      : // Écran large (navigateur, ordinateur) dans un format vertical (4:5, story) : toute la largeur, sinon trop de vide
+        portraitScene ? 100 : 82;
   const soloFitPct =
     (98 * currentFramePreset.height) / ((SOLO_DEVICE_ASPECT[config.mockupType] || 0.7) * currentFramePreset.width);
   const soloDeviceWidthPct = Math.round(Math.min(soloBasePct, soloFitPct) * 10) / 10;

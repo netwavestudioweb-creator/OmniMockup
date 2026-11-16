@@ -24,6 +24,7 @@ import { Card, Kpi, PLAN_LABEL, date, fmt, money } from './ui';
 import { AttemptsTab, CustomerSheet, CustomersTab, HeroTestCard, SalesTab } from './SalesTabs';
 import { PaymentAlerts } from './PaymentAlerts';
 import { FunnelTab } from './FunnelTab';
+import { GiftsPanel } from './GiftsPanel';
 
 /* ───────────── Types des réponses ───────────── */
 type Stats = {
@@ -282,6 +283,7 @@ export default function AdminPage() {
         {tab === 'sales' && <SalesTab onOpenCustomer={setSheetUser} />}
         {tab === 'customers' && <CustomersTab onOpenCustomer={setSheetUser} />}
         {tab === 'attempts' && <AttemptsTab onOpenCustomer={setSheetUser} />}
+        {tab === 'sales' && <GiftsPanel />}
         {tab === 'funnel' && <FunnelTab />}
         {tab === 'dashboard' && stats && <Dashboard s={stats} />}
         {tab === 'analytics' && stats && <Analytics s={stats} />}

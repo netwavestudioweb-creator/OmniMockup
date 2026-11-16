@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getEffectivePlan } from '@/lib/plan';
 import { createRateLimitResponse, getClientIp, checkRateLimitShared } from '@/lib/security';
+import { createRefundToken } from '@/lib/exportRefund';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,7 +64,20 @@ export async function POST(req: NextRequest) {
       p_use_credits: useCredits,
     });
     if (error) throw error;
-    return NextResponse.json({ ...(data as Record<string, unknown>), plan });
+    const result = data as Record<string, unknown>;
+
+    // Export compté : jeton pour l'annuler si l'image n'a pas pu être créée dans le navigateur
+    let refund_token: string | null = null;
+    if (result?.allowed) {
+      const ip = userId ? null : getClientIp(req);
+      let query = createAdminClient().from('export_events').select('id').eq('kind', kind).order('id', { ascending: false }).limit(1);
+      query = userId ? query.eq('user_id', userId) : query.is('user_id', null).eq('client_ip', ip as string);
+      const { data: last } = await query.maybeSingle();
+      if (last?.id) {
+        refund_token = createRefundToken({ id: Number(last.id), userId, ip, credits: Number(result.credits_used) || 0 });
+      }
+    }
+    return NextResponse.json({ ...result, plan, refund_token });
   } catch (err) {
     // Base indisponible (ou migration pas encore appliquée) : on n'empêche pas l'export,
     // mais la qualité reste plafonnée selon le forfait connu.

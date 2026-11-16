@@ -25,6 +25,21 @@ const COLOR: Record<State, string> = {
 /** Bandeau en haut de /admin : chaque paiement des 7 derniers jours, réussi ou non */
 export function PaymentAlerts() {
   const [data, setData] = useState<Data | null>(null);
+  const [testState, setTestState] = useState<'idle' | 'sending'>('idle');
+  const [testMessage, setTestMessage] = useState('');
+  const sendTestReceipt = async () => {
+    setTestState('sending');
+    setTestMessage('');
+    try {
+      const res = await fetch('/api/admin/test-receipt', { method: 'POST' });
+      const json = await res.json().catch(() => null);
+      setTestMessage(json?.message || 'Réponse illisible.');
+    } catch {
+      setTestMessage('Le serveur ne répond pas.');
+    } finally {
+      setTestState('idle');
+    }
+  };
   useEffect(() => {
     fetch('/api/admin/payment-alerts', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
@@ -67,6 +82,17 @@ export function PaymentAlerts() {
           ))}
         </ul>
       )}
+      <div className="flex flex-wrap items-center gap-3 pt-1">
+        <button
+          type="button"
+          onClick={sendTestReceipt}
+          disabled={testState === 'sending'}
+          className="px-3 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-xs font-semibold text-zinc-200 hover:text-white disabled:opacity-60"
+        >
+          {testState === 'sending' ? 'Envoi…' : 'Envoyer un reçu de test (dernier paiement réussi)'}
+        </button>
+        {testMessage && <span className="text-xs text-zinc-300">{testMessage}</span>}
+      </div>
     </section>
   );
 }

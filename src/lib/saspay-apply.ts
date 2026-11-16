@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getSaspayCheckout, verifySaspayPayment } from '@/lib/saspay';
 import { PLANS, CREDIT_PACKS } from '@/lib/pricing';
 import { recordPayment } from '@/lib/admin';
+import { buildSaspayReceipt, sendSaspayReceiptEmail } from '@/lib/saspayReceipt';
 
 export type SaspayItem =
   | { kind: 'plan'; itemId: string; plan: 'solo' | 'pro' | 'agence'; cycle: 'monthly' | 'annual'; amount: number; label: string }
@@ -137,9 +138,10 @@ async function applySaspayCheckoutOnce(checkoutRef: string): Promise<SaspayApply
       : { status: 'applied', kind: 'plan', plan: item.plan };
   }
 
+  const appliedAt = new Date().toISOString();
   await admin
     .from('saspay_checkouts')
-    .update({ status: 'applied', transaction_id: payment.id, applied_at: new Date().toISOString() })
+    .update({ status: 'applied', transaction_id: payment.id, applied_at: appliedAt })
     .eq('id', row.id);
 
   // Chiffre d'affaires du tableau de bord (une seule fois par paiement)
@@ -152,6 +154,24 @@ async function applySaspayCheckoutOnce(checkoutRef: string): Promise<SaspayApply
     amount: Number(payment.requested_amount) || row.amount_xof,
     currency: 'XOF',
   });
+
+  // Reçu par e-mail : seulement à la première application (jamais pour « already_applied »).
+  // Un échec d'envoi ne remet jamais en cause le paiement : le reçu reste visible dans /account.
+  if (result.status === 'applied') {
+    await sendSaspayReceiptEmail({
+      checkoutId: row.id,
+      userId: row.user_id,
+      receipt: buildSaspayReceipt({
+        id: row.id,
+        itemId: row.item_id,
+        item,
+        amountXof: row.amount_xof,
+        payment,
+        paidAt: appliedAt,
+        transactionId: payment.id,
+      }),
+    }).catch((err) => console.error('[SasPay] Reçu par e-mail non envoyé :', err));
+  }
 
   return result;
 }
